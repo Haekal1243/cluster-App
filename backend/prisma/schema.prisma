@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  WARGA
+  PENGURUS
+}
+
+enum StatusPembayaran {
+  LUNAS
+  BELUM_LUNAS
+  MENUNGGU_KONFIRMASI
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nama      String
+  email     String   @unique
+  password  String   
+  noHp      String?
+  role      Role     @default(WARGA)
+  
+  rumah     Rumah?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Rumah {
+  id        Int      @id @default(autoincrement())
+  blok      String   
+  nomor     String   
+  
+  userId    Int?     @unique
+  penghuni  User?    @relation(fields: [userId], references: [id])
+  
+  tagihan   Ipl[]
+}
+
+model Ipl {
+  id            Int              @id @default(autoincrement())
+  bulan         String           
+  tahun         Int
+  nominal       Int
+  status        StatusPembayaran @default(BELUM_LUNAS)
+  buktiTransfer String?          
+  
+  rumahId       Int
+  rumah         Rumah            @relation(fields: [rumahId], references: [id])
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model Kegiatan {
+  id           Int      @id @default(autoincrement())
+  judul        String
+  deskripsi    String   @db.Text
+  gambarUrl    String   
+  tanggalAcara DateTime
+  
+  createdAt    DateTime @default(now())
+}

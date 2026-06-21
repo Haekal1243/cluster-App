@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from './modules/auth/auth.module';
-import { WargaModule } from './modules/warga/warga.module';
-import { IplModule } from './modules/ipl/ipl.module';
-import { KegiatanModule } from './modules/kegiatan/kegiatan.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module';
+import { WargaModule } from './warga/warga.module';
 
-@Module({ imports: [AuthModule, WargaModule, IplModule, KegiatanModule] })
+@Module({
+  imports: [PrismaModule, WargaModule],
+  controllers: [AppController],
+  providers: [AppService],
+})
 export class AppModule {}

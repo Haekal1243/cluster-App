@@ -1,0 +1,143 @@
+/* frontend/src/pages/Login.css */
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.login-card {
+  display: flex;
+  background-color: #f8f9fa;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  width: 1000px; 
+  max-width: 95%; 
+  height: 550px; 
+  overflow: hidden;
+}
+
+/* Bagian Kiri (Gradient & Logo) */
+.login-left {
+  flex: 0.8; 
+  background: linear-gradient(135deg, #0FCFCC 0%, #067BA5 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.login-logo {
+  max-width: 85%; 
+  height: auto;
+}
+
+/* Bagian Kanan (Form) */
+.login-right {
+  flex: 1.5; 
+  background-color: #ffffff;
+  padding: 60px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.welcome-section h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 5px;
+}
+
+.welcome-section p {
+  color: #777777;
+  font-size: 0.95rem;
+  margin-bottom: 40px;
+}
+
+/* Styling Form Inputs */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #000000;
+}
+
+.form-control {
+  width: 100%;
+  padding: 15px 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #333;
+}
+
+.form-control::placeholder {
+  color: #bbb;
+}
+
+/* Styling Baris Opsi (Remember me & Forgot Password) */
+.options-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  font-size: 0.9rem;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+}
+
+.remember-me input {
+  width: 16px;
+  height: 16px;
+}
+
+/* Styling Teks Gradasi (Forgot Password & Register Link) */
+.forgot-password, .register-link {
+  background: linear-gradient(135deg, #0FCFCC 0%, #067BA5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.forgot-password:hover, .register-link:hover {
+  opacity: 0.8; /* Sedikit memudar saat di-hover */
+}
+
+/* Styling Tombol Sign In dengan Gradasi */
+.btn-sign-in {
+  background: linear-gradient(135deg, #0FCFCC 0%, #067BA5 100%);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.3s;
+}
+
+.btn-sign-in:hover {
+  opacity: 0.9;
+}
+
+/* Styling Link Register */
+.register-section {
+  text-align: center;
+  margin-top: 30px;
+  color: #555;
+  font-size: 0.9rem;
+}

@@ -1,0 +1,227 @@
+/* src/Pages/RegisterPage/PersonalData.css */
+
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #b0b8c3;
+}
+
+.register-card {
+ display: flex;
+  background-color: #f8f9fa;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  width: 1000px; 
+  max-width: 95%; 
+  height: 550px; 
+  overflow: hidden;
+}
+
+/* Bagian Kiri sama seperti sebelumnya */
+.register-left {
+  flex: 0.8;
+  background: linear-gradient(135deg, #0FCFCC 0%, #067BA5 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.register-logo {
+  max-width: 85%;
+  height: auto;
+}
+
+/* Bagian Kanan */
+.register-right {
+  flex: 1.5;
+  padding: 30px 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.register-header h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 5px;
+}
+
+.register-header p {
+  color: #888;
+  font-size: 0.95rem;
+  margin-bottom: 25px;
+}
+
+/* Layout Split untuk Stepper dan Form */
+.register-content-split {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+}
+
+/* Kotak Stepper Kiri */
+.stepper-box {
+  width: 200px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 30px 20px;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.step.active .step-dot {
+  background-color: #067BA5;
+}
+
+.step.inactive .step-dot {
+  background-color: #cbd5e1;
+}
+
+.step-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.step.active .step-label {
+  color: #000;
+}
+
+.step.inactive .step-label {
+  color: #94a3b8;
+}
+
+.step-line {
+  width: 2px;
+  height: 40px;
+  background-color: #cbd5e1;
+  margin-left: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+/* Kotak Form Kanan */
+.form-box {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-box-header {
+  background: #11aebf; /* Warna solid sesuai gambar */
+  color: white;
+  padding: 12px 20px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.form-box-body {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: white;
+}
+
+.text-area {
+  resize: none; /* Mencegah user mengubah ukuran textarea */
+}
+
+/* Tombol Action */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto; /* Mendorong tombol ke bagian paling bawah form */
+  padding-top: 20px;
+}
+
+.btn-back {
+  background: transparent;
+  color: #11aebf;
+  border: 1px solid #11aebf;
+  
+  /* Ukuran Fix */
+  width: 120px;
+  height: 40px;
+  padding: 0; /* Reset padding karena sudah pakai height */
+  
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  
+  /* Flexbox untuk menengahkan teks persis di tengah tombol */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-next {
+  background: linear-gradient(135deg, #0FCFCC 0%, #067BA5 100%);
+  color: white;
+  border: none;
+  
+  /* Ukuran Fix */
+  width: 120px;
+  height: 40px;
+  padding: 0; /* Reset padding karena sudah pakai height */
+  
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  
+  /* Flexbox untuk menengahkan teks persis di tengah tombol */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.required-star {
+  color: red;
+  margin-left: 4px;
+}
+
+.btn-next:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 1;
+}

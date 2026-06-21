@@ -1,0 +1,279 @@
+/* src/Pages/RegisterPage/PersonalData.css */
+
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #b0b8c3;
+}
+
+.register-card {
+  display: flex;
+  background-color: #f8f9fa;
+  border-radius: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  width: 1000px; 
+  max-width: 95%; 
+  height: 550px; 
+  overflow: hidden;
+}
+
+/* Bagian Kiri */
+.register-left {
+  flex: 0.8;
+  background: linear-gradient(135deg, #0FCFCC 0%, #067BA5 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.register-logo {
+  max-width: 85%;
+  height: auto;
+}
+
+/* Bagian Kanan */
+.register-right {
+  flex: 1.5;
+  padding: 30px 40px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.register-header h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 5px;
+}
+
+.register-header p {
+  color: #888;
+  font-size: 0.95rem;
+  margin-bottom: 25px;
+}
+
+/* Layout Split untuk Stepper dan Form */
+.register-content-split {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Kotak Stepper Kiri */
+.stepper-box {
+  width: 200px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 30px 20px;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.step.active .step-dot {
+  background-color: #067BA5;
+}
+
+.step.inactive .step-dot {
+  background-color: #cbd5e1;
+}
+
+.step-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.step.active .step-label {
+  color: #000;
+}
+
+.step.inactive .step-label {
+  color: #94a3b8;
+}
+
+.step-line {
+  width: 2px;
+  height: 40px;
+  background-color: #cbd5e1;
+  margin-left: 5px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+/* Kotak Form Kanan */
+.form-box {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.form-box-header {
+  background: #11aebf;
+  color: white;
+  padding: 12px 20px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.form-box-body {
+  padding: 20px;
+  flex: 1;
+  overflow-y: auto;   
+  scrollbar-width: thin;
+}
+
+.form-box-body form {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+/* Form Control berlaku untuk Input dan Select */
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: white;
+  font-family: inherit;
+}
+
+/* Tombol Action */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 20px;
+  padding-bottom: 15px;
+}
+
+.btn-back {
+  background: transparent;
+  color: #11aebf;
+  border: 1px solid #11aebf;
+  width: 120px;
+  height: 40px;
+  padding: 0;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-next {
+  background: linear-gradient(135deg, #0FCFCC 0%, #067BA5 100%);
+  color: white;
+  border: none;
+  width: 120px;
+  height: 40px;
+  padding: 0;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Styling untuk bintang merah wajib isi */
+.required-star {
+  color: red;
+  margin-left: 4px;
+}
+
+/* Styling untuk tombol Next/Finish saat di-disabled */
+.btn-next:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* =========================================
+   Layout untuk baris alamat (RT & Blok)
+========================================= */
+.address-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 15px;
+}
+
+.address-row .form-group {
+  margin-bottom: 0;
+}
+
+.rt-section {
+  flex: 1;
+}
+
+.blok-section {
+  flex: 1.5;
+}
+
+/* =========================================
+   Styling Custom Dropdown (Select)
+========================================= */
+.custom-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px top 50%;
+  background-size: 12px auto;
+  cursor: pointer;
+  padding-right: 40px; 
+}
+
+.is-placeholder {
+  color: #94a3b8;
+}
+
+.custom-select option {
+  color: #333;
+  background-color: white;
+}
+
+.custom-select:focus {
+  border-color: #067BA5;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(6, 123, 165, 0.1);
+}

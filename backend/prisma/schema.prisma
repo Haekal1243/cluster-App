@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==========================================
+// ENUMS
+// ==========================================
+
 enum Role {
   ADMIN
   WARGA
@@ -19,45 +23,101 @@ enum StatusPembayaran {
   MENUNGGU_KONFIRMASI
 }
 
+enum RT {
+  RT_01
+  RT_02
+  RT_03
+  RT_04
+}
+
+// ==========================================
+// PERMISSIONS
+// ==========================================
+
+model RolePermission {
+  id           Int      @id @default(autoincrement())
+  role         Role     @map("role") // Menggunakan enum Role sebagai pengganti role_id
+  permissionId Int      @map("permission_id") 
+  createBy     String?  @map("create_by")
+  createAt     DateTime @default(now()) @map("create_at")
+
+  @@map("tb_Role_permission")
+}
+
+// ==========================================
+// SESUAI PDM: TABEL MASTER DATA
+// ==========================================
+
 model User {
   id        Int      @id @default(autoincrement())
-  nama      String
+  namaUser  String   @map("nama_user")
   email     String   @unique
   password  String   
-  noHp      String?
-  role      Role     @default(WARGA)
+  noTelp    String?  @map("no_telp")
+  role      Role     @default(WARGA) @map("role") // Kembali menggunakan enum Role
+  createAt  DateTime @default(now()) @map("create_at")
   
-  rumah     Rumah?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Relasi
+  rumah      Rumah[]  // 1 User bisa memiliki/menghuni banyak rumah
+  pembayaran PembayaranIpl[]
+
+  @@map("tb_User")
 }
 
 model Rumah {
-  id        Int      @id @default(autoincrement())
-  blok      String   
-  nomor     String   
+  id         Int      @id @default(autoincrement())
+  rt         RT       @map("RT")
+  blokRumah  String   @map("block_rumah")
   
-  userId    Int?     @unique
-  penghuni  User?    @relation(fields: [userId], references: [id])
+  // Berdasarkan garis relasi dari tb_User ke tb_Rumah
+  userId     Int?     @map("id_user")
+  penghuni   User?    @relation(fields: [userId], references: [id])
   
-  tagihan   Ipl[]
+  // Relasi
+  tagihanIpl Ipl[]
+
+  @@map("tb_Rumah")
 }
 
+// ==========================================
+// SESUAI PDM: TRANSAKSI (TAGIHAN & PEMBAYARAN)
+// ==========================================
+
+// Ini merepresentasikan trx_IPL (Tagihan bulanan)
 model Ipl {
-  id            Int              @id @default(autoincrement())
-  bulan         String           
-  tahun         Int
-  nominal       Int
-  status        StatusPembayaran @default(BELUM_LUNAS)
-  buktiTransfer String?          
+  id               Int              @id @default(autoincrement())
+  idRumah          Int              @map("Id_rumah")
+  bulanPeriode     String           @map("bulan_periode")
+  tahunPeriode     String           @map("tahun_periode")
+  nominal          Int
+  statusPembayaran StatusPembayaran @default(BELUM_LUNAS) @map("status_pembayaran")
   
-  rumahId       Int
-  rumah         Rumah            @relation(fields: [rumahId], references: [id])
-  
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  // Relasi
+  rumah            Rumah            @relation(fields: [idRumah], references: [id])
+  pembayaran       PembayaranIpl[]
+
+  @@map("trx_IPL")
 }
+
+// Ini merepresentasikan trx_pembayaran_ipl (Riwayat saat user membayar tagihan)
+model PembayaranIpl {
+  idPembayaran    Int      @id @default(autoincrement()) @map("id_pembayaran")
+  idUser          Int      @map("id_user")
+  idIpl           Int      @map("Id_IPL")
+  tanggalBayar    DateTime @default(now()) @map("tanggal_bayar")
+  buktiTransaksi  String?  @map("bukti_transaksi")
+  nominal         Int      @map("Nominal")
+
+  // Relasi
+  user            User     @relation(fields: [idUser], references: [id])
+  ipl             Ipl      @relation(fields: [idIpl], references: [id])
+
+  @@map("trx_pembayaran_ipl")
+}
+
+// ==========================================
+// TABEL TAMBAHAN
+// ==========================================
 
 model Kegiatan {
   id           Int      @id @default(autoincrement())
@@ -65,6 +125,5 @@ model Kegiatan {
   deskripsi    String   @db.Text
   gambarUrl    String   
   tanggalAcara DateTime
-  
   createdAt    DateTime @default(now())
 }

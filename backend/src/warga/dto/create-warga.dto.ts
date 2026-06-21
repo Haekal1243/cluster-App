@@ -1,21 +1,32 @@
-// src/warga/dto/create-warga.dto.ts
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum } from 'class-validator';
+import {RT } from '@prisma/client';
 
 export class CreateWargaDto {
-  @IsNotEmpty()
   @IsString()
-  nama!: string; 
-
   @IsNotEmpty()
+  nama!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  no_hp!: string;
+
+  @IsEnum(RT)
+  @IsNotEmpty()
+  rt!: RT;
+
+  @IsString()
+  @IsNotEmpty()
+  blokRumah!: string;
+
   @IsEmail()
+  @IsNotEmpty()
   email!: string;
 
-  @IsNotEmpty()
   @IsString()
   @MinLength(6)
-  password!: string; 
+  password!: string;
 
-  @IsNotEmpty()
   @IsString()
-  noHp!: string; 
+  @IsOptional()
+  role?: string; 
 }

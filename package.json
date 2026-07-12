@@ -5,5 +5,8 @@
   "workspaces": [
     "backend",
     "frontend"
-  ]
+  ],
+  "dependencies": {
+    "next": "^16.2.10"
+  }
 }

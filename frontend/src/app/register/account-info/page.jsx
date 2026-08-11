@@ -16,6 +16,8 @@ export default function AccountInfoPage() {
     confirmPassword: "",
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     const storedValue = sessionStorage.getItem("registerPersonalData");
 
@@ -38,7 +40,7 @@ export default function AccountInfoPage() {
     router.push("/register");
   };
 
-  const handleFinish = (event) => {
+  const handleFinish = async (event) => {
     event.preventDefault();
 
     if (!personalData) {
@@ -61,14 +63,58 @@ export default function AccountInfoPage() {
       return;
     }
 
-    sessionStorage.removeItem("registerPersonalData");
-    showMessage(
-      "Registrasi Berhasil",
-      "Silakan login dengan akun yang sudah dibuat.",
-      "success",
-    ).then(() => {
-      router.push("/");
-    });
+    const payload = {
+      nama: personalData.fullName,
+      no_hp: personalData.phoneNumber,
+      rt: personalData.rt,
+      blokRumah: personalData.blokRumah,
+      email: accountData.email,
+      password: accountData.password,
+    };
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("http://localhost:3000/warga", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 409) {
+          showMessage(
+            "Email Sudah Terdaftar",
+            errorData.message || "Email ini sudah digunakan. Silakan gunakan email lain.",
+            "error",
+          );
+        } else {
+          showMessage(
+            "Registrasi Gagal",
+            errorData.message || "Terjadi kesalahan saat registrasi. Silakan coba lagi.",
+            "error",
+          );
+        }
+        return;
+      }
+
+      sessionStorage.removeItem("registerPersonalData");
+      showMessage(
+        "Registrasi Berhasil",
+        "Akun Anda berhasil dibuat. Silakan login.",
+        "success",
+      ).then(() => {
+        router.push("/");
+      });
+    } catch (error) {
+      showMessage(
+        "Koneksi Gagal",
+        "Tidak dapat terhubung ke server. Pastikan server backend berjalan.",
+        "error",
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFinishDisabled =
@@ -154,9 +200,9 @@ export default function AccountInfoPage() {
                   type="button"
                   className="btn-next"
                   onClick={handleFinish}
-                  disabled={isFinishDisabled}
+                  disabled={isFinishDisabled || isLoading}
                 >
-                  Finish
+                  {isLoading ? "Menyimpan..." : "Finish"}
                 </button>
               </div>
             </form>

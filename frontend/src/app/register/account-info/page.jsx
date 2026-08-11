@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { showMessage } from "@/lib/message";
 
 export default function AccountInfoPage() {
   const router = useRouter();
@@ -39,13 +40,21 @@ export default function AccountInfoPage() {
     event.preventDefault();
 
     if (!personalData) {
-      alert("Data personal belum ditemukan. Silakan ulangi registrasi.");
+      showMessage(
+        "Data Tidak Lengkap",
+        "Data personal belum ditemukan. Silakan ulangi registrasi.",
+        "error",
+      );
       router.push("/register");
       return;
     }
 
     if (accountData.password !== accountData.confirmPassword) {
-      alert("Password dan Confirm Password tidak cocok!");
+      showMessage(
+        "Password Tidak Cocok",
+        "Password dan Confirm Password tidak cocok!",
+        "warning",
+      );
       return;
     }
 
@@ -78,11 +87,15 @@ export default function AccountInfoPage() {
       console.log("BERHASIL DISIMPAN:", result);
 
       sessionStorage.removeItem("registerPersonalData");
-      alert("Registrasi Selesai! Akun berhasil dibuat.");
+      await showMessage(
+        "Registrasi Selesai!",
+        "Akun berhasil dibuat.",
+        "success",
+      );
       router.push("/");
     } catch (error) {
       console.error("ERROR API:", error);
-      alert(`Terjadi kesalahan: ${error.message}`);
+      showMessage("Terjadi Kesalahan", error.message, "error");
     }
   };
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
+import { showMessage } from "@/lib/message";
 
 export default function AccountInfoPage() {
   const router = useRouter();
@@ -41,19 +42,33 @@ export default function AccountInfoPage() {
     event.preventDefault();
 
     if (!personalData) {
-      alert("Data personal belum ditemukan. Silakan ulangi registrasi.");
-      router.push("/register");
+      showMessage(
+        "Data Tidak Lengkap",
+        "Data personal belum ditemukan. Silakan ulangi registrasi.",
+        "error",
+      ).then(() => {
+        router.push("/register");
+      });
       return;
     }
 
     if (accountData.password !== accountData.confirmPassword) {
-      alert("Password dan Confirm Password tidak cocok!");
+      showMessage(
+        "Password Tidak Cocok",
+        "Password dan Confirm Password tidak cocok!",
+        "warning",
+      );
       return;
     }
 
     sessionStorage.removeItem("registerPersonalData");
-    alert("Registrasi Selesai! Silakan login dengan akun yang sudah dibuat.");
-    router.push("/");
+    showMessage(
+      "Registrasi Berhasil",
+      "Silakan login dengan akun yang sudah dibuat.",
+      "success",
+    ).then(() => {
+      router.push("/");
+    });
   };
 
   const isFinishDisabled =

@@ -1,0 +1,60 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Users,
+  Wallet,
+  CalendarDays,
+  X,
+} from "lucide-react";
+
+const NAV_ITEMS = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Data Warga", href: "/dashboard/warga", icon: Users },
+  { label: "Tagihan IPL", href: "/dashboard/iuran", icon: Wallet },
+  { label: "Kegiatan", href: "/dashboard/kegiatan", icon: CalendarDays },
+];
+
+export default function Sidebar({ isOpen, onClose }) {
+  const pathname = usePathname();
+
+  return (
+    <>
+      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
+
+      <aside className={`dashboard-sidebar ${isOpen ? "is-open" : ""}`}>
+        <div className="sidebar-brand">
+          <img src="/LogoTopaz.svg" alt="Topaz Cluster" />
+          <span>Topaz Cluster</span>
+          <button
+            type="button"
+            className="sidebar-close"
+            onClick={onClose}
+            aria-label="Tutup menu"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <nav className="sidebar-nav">
+          {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+            const isActive = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`sidebar-link ${isActive ? "active" : ""}`}
+                onClick={onClose}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
+  );
+}

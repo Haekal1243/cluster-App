@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showMessage } from "@/lib/message";
+import { isValidEmail, isValidPassword } from "@/lib/validators";
 
 export default function AccountInfoPage() {
   const router = useRouter();
@@ -99,9 +100,15 @@ export default function AccountInfoPage() {
     }
   };
 
+  const showEmailError =
+    accountData.email.trim() !== "" && !isValidEmail(accountData.email);
+
+  const showPasswordError =
+    accountData.password !== "" && !isValidPassword(accountData.password);
+
   const isFinishDisabled =
-    !accountData.email.trim() ||
-    !accountData.password.trim() ||
+    !isValidEmail(accountData.email) ||
+    !isValidPassword(accountData.password) ||
     !accountData.confirmPassword.trim();
 
   if (!personalData) {
@@ -159,6 +166,11 @@ export default function AccountInfoPage() {
                       value={accountData.email}
                       onChange={handleChange}
                     />
+                    {showEmailError && (
+                      <span className="field-error">
+                        Format email tidak valid
+                      </span>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -173,6 +185,11 @@ export default function AccountInfoPage() {
                       value={accountData.password}
                       onChange={handleChange}
                     />
+                    {showPasswordError && (
+                      <span className="field-error">
+                        Password minimal 6 karakter
+                      </span>
+                    )}
                   </div>
 
                   <div className="form-group">

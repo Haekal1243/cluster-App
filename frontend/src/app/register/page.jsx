@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { showConfirm } from "@/lib/message";
+import { isValidFullName, isValidPhoneNumber } from "@/lib/validators";
 
 export default function PersonalDataPage() {
   const router = useRouter();
@@ -40,9 +41,16 @@ export default function PersonalDataPage() {
     }
   };
 
+  const showFullNameError =
+    formData.fullName.trim() !== "" && !isValidFullName(formData.fullName);
+
+  const showPhoneNumberError =
+    formData.phoneNumber.trim() !== "" &&
+    !isValidPhoneNumber(formData.phoneNumber);
+
   const isNextDisabled =
-    !formData.fullName.trim() ||
-    !formData.phoneNumber.trim() ||
+    !isValidFullName(formData.fullName) ||
+    !isValidPhoneNumber(formData.phoneNumber) ||
     !formData.rt ||
     !formData.blokRumah.trim();
 
@@ -93,6 +101,12 @@ export default function PersonalDataPage() {
                       value={formData.fullName}
                       onChange={handleChange}
                     />
+                    {showFullNameError && (
+                      <span className="field-error">
+                        Nama hanya boleh berisi huruf dan spasi (min. 3
+                        karakter)
+                      </span>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -107,6 +121,11 @@ export default function PersonalDataPage() {
                       value={formData.phoneNumber}
                       onChange={handleChange}
                     />
+                    {showPhoneNumberError && (
+                      <span className="field-error">
+                        Format nomor HP tidak valid (contoh: 08123456789)
+                      </span>
+                    )}
                   </div>
 
                   <div className="address-row">

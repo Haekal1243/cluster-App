@@ -362,6 +362,13 @@ select {
   color: red;
 }
 
+.field-error {
+  display: block;
+  margin-top: 6px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
 .btn-next:disabled {
   background: #e2e8f0;
   color: #94a3b8;

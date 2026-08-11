@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AuthShell from "@/components/auth/AuthShell";
+import RegisterStepper from "@/components/auth/RegisterStepper";
 
 export default function AccountInfoPage() {
   const router = useRouter();
@@ -49,41 +51,9 @@ export default function AccountInfoPage() {
       return;
     }
 
-    const payload = {
-      nama: personalData.fullName,
-      no_hp: personalData.phoneNumber,
-      rt: personalData.rt,
-      blokRumah: personalData.blokRumah,
-      email: accountData.email,
-      password: accountData.password,
-    };
-
-    try {
-      const response = await fetch("http://localhost:3000/warga", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Gagal menyimpan data ke database",
-        );
-      }
-
-      const result = await response.json();
-      console.log("BERHASIL DISIMPAN:", result);
-
-      sessionStorage.removeItem("registerPersonalData");
-      alert("Registrasi Selesai! Akun berhasil dibuat.");
-      router.push("/");
-    } catch (error) {
-      console.error("ERROR API:", error);
-      alert(`Terjadi kesalahan: ${error.message}`);
-    }
+    sessionStorage.removeItem("registerPersonalData");
+    alert("Registrasi Selesai! Silakan login dengan akun yang sudah dibuat.");
+    router.push("/");
   };
 
   const isFinishDisabled =
@@ -100,105 +70,84 @@ export default function AccountInfoPage() {
   }
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <div className="register-left">
-          <img
-            src="/LogoTopaz.svg"
-            alt="Topaz Cluster Logo"
-            className="register-logo"
-          />
-        </div>
+    <AuthShell
+      left={
+        <img
+          src="/LogoTopaz.svg"
+          alt="Topaz Cluster Logo"
+          className="auth-logo"
+        />
+      }
+      title="Create Account"
+      subtitle="Join the Permata Cimanggis Topaz Cluster Community"
+    >
+      <div className="register-content-split">
+        <RegisterStepper activeStep={2} />
 
-        <div className="register-right">
-          <div className="register-header">
-            <h2>Create Account</h2>
-            <p>Join the Permata Cimanggis Topaz Cluster Community</p>
-          </div>
+        <div className="form-box">
+          <div className="form-box-header">Account Info</div>
 
-          <div className="register-content-split">
-            <div className="stepper-box">
-              <div className="step inactive">
-                <div className="step-dot" />
-                <span className="step-label">Personal Data</span>
+          <div className="form-box-body">
+            <form>
+              <div className="form-group">
+                <label htmlFor="email">
+                  Email Address <span className="required-star">*</span>
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  className="form-control"
+                  value={accountData.email}
+                  onChange={handleChange}
+                />
               </div>
-              <div className="step-line" />
-              <div className="step active">
-                <div className="step-dot" />
-                <span className="step-label">Account Info</span>
+
+              <div className="form-group">
+                <label htmlFor="password">
+                  Password <span className="required-star">*</span>
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  name="password"
+                  className="form-control"
+                  value={accountData.password}
+                  onChange={handleChange}
+                />
               </div>
-            </div>
 
-            <div className="form-box">
-              <div className="form-box-header">Account Info</div>
-
-              <div className="form-box-body">
-                <form>
-                  <div className="form-group">
-                    <label htmlFor="email">
-                      Email Address <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      name="email"
-                      className="form-control"
-                      value={accountData.email}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="password">
-                      Password <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="password"
-                      type="password"
-                      name="password"
-                      className="form-control"
-                      value={accountData.password}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="confirmPassword">
-                      Confirm Password <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      name="confirmPassword"
-                      className="form-control"
-                      value={accountData.confirmPassword}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="form-actions">
-                    <button
-                      type="button"
-                      className="btn-back"
-                      onClick={handleBack}
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-next"
-                      onClick={handleFinish}
-                      disabled={isFinishDisabled}
-                    >
-                      Finish
-                    </button>
-                  </div>
-                </form>
+              <div className="form-group">
+                <label htmlFor="confirmPassword">
+                  Confirm Password <span className="required-star">*</span>
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  className="form-control"
+                  value={accountData.confirmPassword}
+                  onChange={handleChange}
+                />
               </div>
-            </div>
+
+              <div className="form-actions">
+                <button type="button" className="btn-back" onClick={handleBack}>
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className="btn-next"
+                  onClick={handleFinish}
+                  disabled={isFinishDisabled}
+                >
+                  Finish
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
-    </div>
+    </AuthShell>
   );
 }

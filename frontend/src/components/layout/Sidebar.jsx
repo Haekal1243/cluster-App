@@ -8,6 +8,8 @@ import {
   Wallet,
   CalendarDays,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -17,17 +19,28 @@ const NAV_ITEMS = [
   { label: "Kegiatan", href: "/dashboard/kegiatan", icon: CalendarDays },
 ];
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }) {
   const pathname = usePathname();
 
   return (
     <>
       {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
 
-      <aside className={`dashboard-sidebar ${isOpen ? "is-open" : ""}`}>
+      <aside
+        className={`dashboard-sidebar ${isOpen ? "is-open" : ""} ${isCollapsed ? "collapsed" : ""}`}
+      >
+        <button
+          type="button"
+          className="sidebar-toggle-btn"
+          onClick={onToggleCollapse}
+          aria-label={isCollapsed ? "Buka sidebar" : "Ciutkan sidebar"}
+        >
+          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
+
         <div className="sidebar-brand">
           <img src="/LogoTopaz.svg" alt="Topaz Cluster" />
-          <span>Topaz Cluster</span>
+          <span className="sidebar-brand-text">Topaz</span>
           <button
             type="button"
             className="sidebar-close"
@@ -47,9 +60,12 @@ export default function Sidebar({ isOpen, onClose }) {
                 href={href}
                 className={`sidebar-link ${isActive ? "active" : ""}`}
                 onClick={onClose}
+                title={isCollapsed ? label : undefined}
               >
-                <Icon size={18} />
-                <span>{label}</span>
+                <span className="sidebar-link-icon">
+                  <Icon size={17} />
+                </span>
+                <span className="sidebar-link-label">{label}</span>
               </Link>
             );
           })}

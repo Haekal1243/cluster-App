@@ -67,7 +67,7 @@ export default function Header({ onMenuClick }) {
           <ChevronDown size={16} />
 
           {isMenuOpen && (
-            <div className="header-dropdown">
+            <div className="header-dropdown animate-pop">
               <button type="button" onClick={handleLogout}>
                 <LogOut size={16} />
                 Keluar

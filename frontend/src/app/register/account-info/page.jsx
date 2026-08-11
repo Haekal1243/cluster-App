@@ -69,7 +69,7 @@ export default function AccountInfoPage() {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/warga", {
+      const response = await fetch("http://localhost:4000/warga", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

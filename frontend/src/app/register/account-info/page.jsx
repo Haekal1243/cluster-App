@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Mail, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
 import { showMessage } from "@/lib/message";
@@ -154,42 +155,51 @@ export default function AccountInfoPage() {
                 <label htmlFor="email">
                   Email Address <span className="required-star">*</span>
                 </label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  className="form-control"
-                  value={accountData.email}
-                  onChange={handleChange}
-                />
+                <div className="input-wrapper">
+                  <Mail className="input-icon" />
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    className="form-control with-icon"
+                    value={accountData.email}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
                 <label htmlFor="password">
                   Password <span className="required-star">*</span>
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  name="password"
-                  className="form-control"
-                  value={accountData.password}
-                  onChange={handleChange}
-                />
+                <div className="input-wrapper">
+                  <Lock className="input-icon" />
+                  <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    className="form-control with-icon"
+                    value={accountData.password}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
                 <label htmlFor="confirmPassword">
                   Confirm Password <span className="required-star">*</span>
                 </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  name="confirmPassword"
-                  className="form-control"
-                  value={accountData.confirmPassword}
-                  onChange={handleChange}
-                />
+                <div className="input-wrapper">
+                  <Lock className="input-icon" />
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    name="confirmPassword"
+                    className="form-control with-icon"
+                    value={accountData.confirmPassword}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
 
               <div className="form-actions">

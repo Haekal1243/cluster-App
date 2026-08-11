@@ -18,9 +18,21 @@ export default function PersonalDataPage() {
   });
 
   const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    if (name === "phoneNumber") {
+      const numericValue = value.replace(/\D/g, "");
+      if (numericValue.length > 13) return;
+      setFormData({
+        ...formData,
+        [name]: numericValue,
+      });
+      return;
+    }
+
     setFormData({
       ...formData,
-      [event.target.name]: event.target.value,
+      [name]: value,
     });
   };
 
@@ -94,6 +106,7 @@ export default function PersonalDataPage() {
                   className="form-control"
                   value={formData.phoneNumber}
                   onChange={handleChange}
+                  maxLength="13"
                 />
               </div>
 

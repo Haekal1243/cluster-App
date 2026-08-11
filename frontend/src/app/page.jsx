@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Mail, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 
 export default function LoginPage() {
@@ -29,28 +30,34 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            className="form-control"
-            placeholder="Email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
+          <div className="input-wrapper">
+            <Mail className="input-icon" />
+            <input
+              type="email"
+              id="email"
+              className="form-control with-icon"
+              placeholder="Email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </div>
         </div>
 
         <div className="form-group">
           <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            className="form-control"
-            placeholder="*********"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+          <div className="input-wrapper">
+            <Lock className="input-icon" />
+            <input
+              type="password"
+              id="password"
+              className="form-control with-icon"
+              placeholder="*********"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </div>
         </div>
 
         <div className="options-row">

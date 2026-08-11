@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { showConfirm } from "@/lib/message";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
+
 
 export default function PersonalDataPage() {
   const router = useRouter();
@@ -28,8 +30,17 @@ export default function PersonalDataPage() {
     router.push("/register/account-info");
   };
 
-  const handleBack = () => {
-    router.push("/");
+  const handleBack = async () => {
+    const ok = await showConfirm(
+      "Batalkan Registrasi?",
+      "Data yang sudah diisi akan hilang.",
+      "warning",
+      "Ya, batalkan",
+      "Lanjut isi",
+    );
+    if (ok) {
+      router.push("/");
+    }
   };
 
   const isNextDisabled =

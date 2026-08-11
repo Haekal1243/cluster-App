@@ -37,7 +37,7 @@ export default function AccountInfoPage() {
     router.push("/register");
   };
 
-  const handleFinish = async (event) => {
+  const handleFinish = (event) => {
     event.preventDefault();
 
     if (!personalData) {

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
 import { showMessage } from "@/lib/message";
-import { isValidEmail, isValidPassword } from "@/lib/validators";
 
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const isValidPassword = (password) => password.length >= 6;
 export default function AccountInfoPage() {
   const router = useRouter();
   const [personalData, setPersonalData] = useState(null);
@@ -171,6 +172,11 @@ export default function AccountInfoPage() {
                   value={accountData.email}
                   onChange={handleChange}
                 />
+                {showEmailError && (
+                  <span className="field-error">
+                    Format email tidak valid dan salah
+                  </span>
+                )}
               </div>
 
               <div className="form-group">
@@ -185,85 +191,25 @@ export default function AccountInfoPage() {
                   value={accountData.password}
                   onChange={handleChange}
                 />
+                {showPasswordError && (
+                  <span className="field-error">
+                    Panjang password minimal 6 karakter
+                  </span>
+                )}
               </div>
 
-            </form>
-
-            <div className="form-box">
-              <div className="form-box-header">Account Info</div>
-
-              <div className="form-box-body">
-                <form>
-                  <div className="form-group">
-                    <label htmlFor="email">
-                      Email Address <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      name="email"
-                      className="form-control"
-                      value={accountData.email}
-                      onChange={handleChange}
-                    />
-                    {showEmailError && (
-                      <span className="field-error">
-                        Format email tidak valid dan salah
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="password">
-                      Password <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="password"
-                      type="password"
-                      name="password"
-                      className="form-control"
-                      value={accountData.password}
-                      onChange={handleChange}
-                    />
-                    {showPasswordError && (
-                      <span className="field-error">
-                        Panjang password minimal 6 karakter
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="confirmPassword">
-                      Confirm Password <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      name="confirmPassword"
-                      className="form-control"
-                      value={accountData.confirmPassword}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="form-actions">
-                    <button
-                      type="button"
-                      className="btn-back"
-                      onClick={handleBack}
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-next"
-                      onClick={handleFinish}
-                      disabled={isFinishDisabled}
-                    >
-                      Finish
-                    </button>
-                  </div>
-                </form>
+              <div className="form-group">
+                <label htmlFor="confirmPassword">
+                  Confirm Password <span className="required-star">*</span>
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  className="form-control"
+                  value={accountData.confirmPassword}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="form-actions">
@@ -279,7 +225,7 @@ export default function AccountInfoPage() {
                   {isLoading ? "Menyimpan..." : "Finish"}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </div>

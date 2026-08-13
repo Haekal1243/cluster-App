@@ -6,7 +6,6 @@ import { showConfirm } from "@/lib/message";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
 
-
 export default function PersonalDataPage() {
   const router = useRouter();
 
@@ -18,9 +17,21 @@ export default function PersonalDataPage() {
   });
 
   const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    if (name === "phoneNumber") {
+      const numericValue = value.replace(/\D/g, "");
+      if (numericValue.length > 13) return;
+      setFormData({
+        ...formData,
+        [name]: numericValue,
+      });
+      return;
+    }
+
     setFormData({
       ...formData,
-      [event.target.name]: event.target.value,
+      [name]: value,
     });
   };
 
@@ -101,6 +112,7 @@ export default function PersonalDataPage() {
                   className="form-control"
                   value={formData.phoneNumber}
                   onChange={handleChange}
+                  maxLength="13"
                 />
               </div>
 
@@ -135,7 +147,7 @@ export default function PersonalDataPage() {
                     type="text"
                     name="blokRumah"
                     className="form-control"
-                    placeholder="Contoh: E13/19"
+                    placeholder="Ex: E13/19"
                     value={formData.blokRumah}
                     onChange={handleChange}
                   />

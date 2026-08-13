@@ -58,7 +58,7 @@ export default function Navbar() {
         ))}
         <div style={{ width: 1, height: 20, background: "#1E293B" }} />
         <Link href="/register" className="lp-btn-primary lp-btn-sm">
-          Masuk Portal Warga
+          Login
         </Link>
       </div>
     </nav>

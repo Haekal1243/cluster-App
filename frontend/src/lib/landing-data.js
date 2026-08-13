@@ -93,6 +93,29 @@ export const kegiatan = [
       "Kegiatan ronda rutin yang dilaksanakan secara bergilir oleh warga untuk menjaga keamanan lingkungan.",
     gambar: "/images/kegiatan 3.jpeg",
   },
+
+  {
+    id: "buron",
+    label: "KRIMINAL",
+    labelStyle: "merah",
+    bg: "#0C1A2E",
+    tanggal: "13 Agustus 2026",
+    judul: "Maling yang tertangkap",
+    deskripsi:
+      "Telah ditangkap maling karena ketahuan ngambil jemuran warga.",
+    gambar: "/images/kegiatan 5.jpeg",
+  },
+  {
+    id: "kebersamaan",
+    label: "KEBERSAMAAN",
+    labelStyle: "hijau",
+    bg: "#0C1A2E",
+    tanggal: "All Day",
+    judul: "Pentingnya kebersamaan",
+    deskripsi:
+      "Indahnya kebersamaan bareng dengan teman.",
+    gambar: "/images/kegiatan 4.jpeg",
+  },
 ];
 
 export const pengumuman = [

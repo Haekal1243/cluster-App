@@ -6,7 +6,6 @@ import { showConfirm } from "@/lib/message";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
 
-
 export default function PersonalDataPage() {
   const router = useRouter();
 
@@ -141,7 +140,7 @@ export default function PersonalDataPage() {
                     type="text"
                     name="blokRumah"
                     className="form-control"
-                    placeholder="Contoh: E13/19"
+                    placeholder="Ex: E13/19"
                     value={formData.blokRumah}
                     onChange={handleChange}
                   />

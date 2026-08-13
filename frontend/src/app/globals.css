@@ -91,8 +91,11 @@ select {
   font: inherit;
 }
 
-.login-container,
-.register-container {
+/* ========================================= */
+/* BAGIAN AUTH WRAPPER (LOGIN & REGISTER)    */
+/* ========================================= */
+
+.auth-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -100,19 +103,17 @@ select {
   padding: 20px;
 }
 
-.login-card,
-.register-card {
+.auth-card {
   display: flex;
   width: min(1000px, 100%);
-  min-height: 550px;
+  height: 650px; /* FIXED HEIGHT: Agar semua halaman konsisten */
   overflow: hidden;
   background-color: #f8f9fa;
   border-radius: 24px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
-.login-left,
-.register-left {
+.auth-left {
   flex: 0.8;
   display: flex;
   justify-content: center;
@@ -121,36 +122,37 @@ select {
   background: linear-gradient(135deg, #0fcfcc 0%, #067ba5 100%);
 }
 
-.login-logo,
-.register-logo {
+.auth-logo {
   max-width: 85%;
   height: auto;
 }
 
-.login-right,
-.register-right {
+.auth-right {
   flex: 1.5;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: center; /* Untuk halaman login tetap di tengah */
   padding: 40px 50px;
   background-color: #ffffff;
+  overflow-y: auto; /* Memastikan sisi kanan bisa di-scroll jika kepanjangan */
 }
 
-.welcome-section h2,
-.register-header h2 {
+.auth-header h2 {
   margin-bottom: 6px;
   color: #000;
   font-size: clamp(2rem, 3vw, 2.5rem);
   font-weight: 700;
 }
 
-.welcome-section p,
-.register-header p {
+.auth-header p {
   margin-bottom: 32px;
   color: var(--text-secondary);
   font-size: 0.95rem;
 }
+
+/* ========================================= */
+/* KOMPONEN FORM GLOBAL                      */
+/* ========================================= */
 
 .form-group {
   margin-bottom: 18px;
@@ -230,6 +232,10 @@ select {
   font-size: 0.9rem;
   text-align: center;
 }
+
+/* ========================================= */
+/* LAYOUT HALAMAN REGISTER (STEPPER & BOX)   */
+/* ========================================= */
 
 .register-content-split {
   display: flex;
@@ -952,20 +958,24 @@ select {
 }
 
 @media (max-width: 900px) {
-  .login-card,
-  .register-card,
+  .auth-card {
+    flex-direction: column;
+    height: auto; /* Di mobile dibiarkan memanjang ke bawah agar konten muat */
+    min-height: 100vh;
+  }
+  
   .register-content-split {
     flex-direction: column;
   }
 
-  .login-left,
-  .register-left {
+  .auth-left {
     padding: 28px;
+    flex: none; /* Reset flex */
   }
 
-  .login-right,
-  .register-right {
+  .auth-right {
     padding: 28px;
+    flex: none; /* Reset flex */
   }
 
   .stepper-box {

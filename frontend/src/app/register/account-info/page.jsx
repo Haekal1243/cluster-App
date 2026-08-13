@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AuthShell from "@/components/auth/AuthShell";
+import RegisterStepper from "@/components/auth/RegisterStepper";
 import { showMessage } from "@/lib/message";
 import { isValidEmail, isValidPassword } from "@/lib/validators";
 
@@ -14,6 +16,8 @@ export default function AccountInfoPage() {
     password: "",
     confirmPassword: "",
   });
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const storedValue = sessionStorage.getItem("registerPersonalData");
@@ -45,8 +49,9 @@ export default function AccountInfoPage() {
         "Data Tidak Lengkap",
         "Data personal belum ditemukan. Silakan ulangi registrasi.",
         "error",
-      );
-      router.push("/register");
+      ).then(() => {
+        router.push("/register");
+      });
       return;
     }
 
@@ -68,35 +73,48 @@ export default function AccountInfoPage() {
       password: accountData.password,
     };
 
+    setIsLoading(true);
     try {
       const response = await fetch("http://localhost:4000/warga", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Gagal menyimpan data ke database",
-        );
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 409) {
+          showMessage(
+            "Email Sudah Terdaftar",
+            errorData.message || "Email ini sudah digunakan. Silakan gunakan email lain.",
+            "error",
+          );
+        } else {
+          showMessage(
+            "Registrasi Gagal",
+            errorData.message || "Terjadi kesalahan saat registrasi. Silakan coba lagi.",
+            "error",
+          );
+        }
+        return;
       }
 
-      const result = await response.json();
-      console.log("BERHASIL DISIMPAN:", result);
-
       sessionStorage.removeItem("registerPersonalData");
-      await showMessage(
-        "Registrasi Selesai!",
-        "Akun berhasil dibuat.",
+      showMessage(
+        "Registrasi Berhasil",
+        "Akun Anda berhasil dibuat. Silakan login.",
         "success",
-      );
-      router.push("/");
+      ).then(() => {
+        router.push("/");
+      });
     } catch (error) {
-      console.error("ERROR API:", error);
-      showMessage("Terjadi Kesalahan", error.message, "error");
+      showMessage(
+        "Koneksi Gagal",
+        "Tidak dapat terhubung ke server. Pastikan server backend berjalan.",
+        "error",
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -120,115 +138,84 @@ export default function AccountInfoPage() {
   }
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <div className="register-left">
-          <img
-            src="/LogoTopaz.svg"
-            alt="Topaz Cluster Logo"
-            className="register-logo"
-          />
-        </div>
+    <AuthShell
+      left={
+        <img
+          src="/LogoTopaz.svg"
+          alt="Topaz Cluster Logo"
+          className="auth-logo"
+        />
+      }
+      title="Create Account"
+      subtitle="Join the Permata Cimanggis Topaz Cluster Community"
+    >
+      <div className="register-content-split">
+        <RegisterStepper activeStep={2} />
 
-        <div className="register-right">
-          <div className="register-header">
-            <h2>Create Account</h2>
-            <p>Join the Permata Cimanggis Topaz Cluster Community</p>
-          </div>
+        <div className="form-box">
+          <div className="form-box-header">Account Info</div>
 
-          <div className="register-content-split">
-            <div className="stepper-box">
-              <div className="step inactive">
-                <div className="step-dot" />
-                <span className="step-label">Personal Data</span>
+          <div className="form-box-body">
+            <form>
+              <div className="form-group">
+                <label htmlFor="email">
+                  Email Address <span className="required-star">*</span>
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  className="form-control"
+                  value={accountData.email}
+                  onChange={handleChange}
+                />
               </div>
-              <div className="step-line" />
-              <div className="step active">
-                <div className="step-dot" />
-                <span className="step-label">Account Info</span>
+
+              <div className="form-group">
+                <label htmlFor="password">
+                  Password <span className="required-star">*</span>
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  name="password"
+                  className="form-control"
+                  value={accountData.password}
+                  onChange={handleChange}
+                />
               </div>
-            </div>
 
-            <div className="form-box">
-              <div className="form-box-header">Account Info</div>
-
-              <div className="form-box-body">
-                <form>
-                  <div className="form-group">
-                    <label htmlFor="email">
-                      Email Address <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="email"
-                      type="email"
-                      name="email"
-                      className="form-control"
-                      value={accountData.email}
-                      onChange={handleChange}
-                    />
-                    {showEmailError && (
-                      <span className="field-error">
-                        Format email tidak valid
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="password">
-                      Password <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="password"
-                      type="password"
-                      name="password"
-                      className="form-control"
-                      value={accountData.password}
-                      onChange={handleChange}
-                    />
-                    {showPasswordError && (
-                      <span className="field-error">
-                        Password minimal 6 karakter
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="confirmPassword">
-                      Confirm Password <span className="required-star">*</span>
-                    </label>
-                    <input
-                      id="confirmPassword"
-                      type="password"
-                      name="confirmPassword"
-                      className="form-control"
-                      value={accountData.confirmPassword}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="form-actions">
-                    <button
-                      type="button"
-                      className="btn-back"
-                      onClick={handleBack}
-                    >
-                      Back
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-next"
-                      onClick={handleFinish}
-                      disabled={isFinishDisabled}
-                    >
-                      Finish
-                    </button>
-                  </div>
-                </form>
+              <div className="form-group">
+                <label htmlFor="confirmPassword">
+                  Confirm Password <span className="required-star">*</span>
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  className="form-control"
+                  value={accountData.confirmPassword}
+                  onChange={handleChange}
+                />
               </div>
-            </div>
+
+              <div className="form-actions">
+                <button type="button" className="btn-back" onClick={handleBack}>
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className="btn-next"
+                  onClick={handleFinish}
+                  disabled={isFinishDisabled || isLoading}
+                >
+                  {isLoading ? "Menyimpan..." : "Finish"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
-    </div>
+    </AuthShell>
   );
 }

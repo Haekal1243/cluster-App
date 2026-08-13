@@ -86,13 +86,15 @@ export default function AccountInfoPage() {
         if (response.status === 409) {
           showMessage(
             "Email Sudah Terdaftar",
-            errorData.message || "Email ini sudah digunakan. Silakan gunakan email lain.",
+            errorData.message ||
+              "Email ini sudah digunakan. Silakan gunakan email lain.",
             "error",
           );
         } else {
           showMessage(
             "Registrasi Gagal",
-            errorData.message || "Terjadi kesalahan saat registrasi. Silakan coba lagi.",
+            errorData.message ||
+              "Terjadi kesalahan saat registrasi. Silakan coba lagi.",
             "error",
           );
         }

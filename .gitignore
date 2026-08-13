@@ -5,5 +5,10 @@ dist/
 .DS_Store
 
 /generated/prisma
+frontend/.next/
+frontend/node_modules/
+.env*
+
+.next
 .next
 frontend/.next

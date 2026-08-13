@@ -1,18 +1,20 @@
+
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Mail, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log("Mencoba login dengan:", { email, password });
-    alert(`Mencoba login dengan email: ${email}.`);
+    router.push("/dashboard");
   };
 
   return (

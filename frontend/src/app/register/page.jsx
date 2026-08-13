@@ -54,16 +54,9 @@ export default function PersonalDataPage() {
     }
   };
 
-  const showFullNameError =
-    formData.fullName.trim() !== "" && !isValidFullName(formData.fullName);
-
-  const showPhoneNumberError =
-    formData.phoneNumber.trim() !== "" &&
-    !isValidPhoneNumber(formData.phoneNumber);
-
   const isNextDisabled =
-    !isValidFullName(formData.fullName) ||
-    !isValidPhoneNumber(formData.phoneNumber) ||
+    !formData.fullName.trim() ||
+    !formData.phoneNumber.trim() ||
     !formData.rt ||
     !formData.blokRumah.trim();
 

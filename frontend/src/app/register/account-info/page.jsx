@@ -6,7 +6,6 @@ import { Mail, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
 import { showMessage } from "@/lib/message";
-import { isValidEmail, isValidPassword } from "@/lib/validators";
 
 export default function AccountInfoPage() {
   const router = useRouter();
@@ -76,7 +75,7 @@ export default function AccountInfoPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:4000/warga", {
+      const response = await fetch("http://localhost:3000/warga", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -87,13 +86,15 @@ export default function AccountInfoPage() {
         if (response.status === 409) {
           showMessage(
             "Email Sudah Terdaftar",
-            errorData.message || "Email ini sudah digunakan. Silakan gunakan email lain.",
+            errorData.message ||
+              "Email ini sudah digunakan. Silakan gunakan email lain.",
             "error",
           );
         } else {
           showMessage(
             "Registrasi Gagal",
-            errorData.message || "Terjadi kesalahan saat registrasi. Silakan coba lagi.",
+            errorData.message ||
+              "Terjadi kesalahan saat registrasi. Silakan coba lagi.",
             "error",
           );
         }
@@ -119,15 +120,9 @@ export default function AccountInfoPage() {
     }
   };
 
-  const showEmailError =
-    accountData.email.trim() !== "" && !isValidEmail(accountData.email);
-
-  const showPasswordError =
-    accountData.password !== "" && !isValidPassword(accountData.password);
-
   const isFinishDisabled =
-    !isValidEmail(accountData.email) ||
-    !isValidPassword(accountData.password) ||
+    !accountData.email.trim() ||
+    !accountData.password.trim() ||
     !accountData.confirmPassword.trim();
 
   if (!personalData) {

@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Mail, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 

@@ -1,0 +1,147 @@
+/* Gaya pendukung landing page Portal Topaz.
+   Import di src/app/globals.css:  @import "./landing.css";
+   Hanya berisi hal yang tidak bisa ditulis sebagai inline style (reset, keyframes, hover). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 68px;
+}
+
+body {
+  font-family: var(--font-jakarta), sans-serif;
+  background: #f8fafc;
+  color: #475569;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes lpFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Navbar */
+.lp-nav-link {
+  color: #64748b;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.lp-nav-link:hover {
+  color: #94a3b8;
+}
+
+/* Tombol */
+.lp-btn-primary {
+  background: #0d9488;
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 13px 28px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.lp-btn-primary:hover {
+  background: #0f766e;
+}
+.lp-btn-sm {
+  font-size: 13px;
+  padding: 9px 20px;
+  letter-spacing: 0.01em;
+}
+
+.lp-btn-ghost {
+  background: transparent;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 13px 28px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  transition: background 0.2s, color 0.2s;
+}
+.lp-btn-ghost:hover {
+  background: #1e293b;
+  color: #fff;
+}
+
+.lp-link-teal {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0d9488;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.lp-link-teal:hover {
+  color: #0f766e;
+}
+
+.lp-footer-link {
+  font-size: 13px;
+  color: #334155;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.lp-footer-link:hover {
+  color: #0d9488;
+}
+
+/* Kartu & baris */
+.lp-card {
+  transition: background 0.2s;
+}
+.lp-card:hover {
+  background: #f8fafc !important;
+}
+
+.lp-row {
+  transition: background 0.15s;
+}
+.lp-row:hover {
+  background: #f8fafc;
+}
+
+/* FAQ */
+.lp-faq-btn {
+  width: 100%;
+  padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 16px;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.lp-faq-btn:hover {
+  background: #fff;
+}
+
+/* Responsif */
+@media (max-width: 1024px) {
+  .lp-nav-link {
+    display: none;
+  }
+}

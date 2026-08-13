@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
 import { showMessage } from "@/lib/message";
+import { isValidEmail, isValidPassword } from "@/lib/validators";
 
 export default function AccountInfoPage() {
   const router = useRouter();
@@ -99,6 +99,8 @@ export default function AccountInfoPage() {
         return;
       }
 
+
+
       sessionStorage.removeItem("registerPersonalData");
       showMessage(
         "Registrasi Berhasil",
@@ -118,9 +120,15 @@ export default function AccountInfoPage() {
     }
   };
 
+  const showEmailError =
+    accountData.email.trim() !== "" && !isValidEmail(accountData.email);
+
+  const showPasswordError =
+    accountData.password !== "" && !isValidPassword(accountData.password);
+
   const isFinishDisabled =
-    !accountData.email.trim() ||
-    !accountData.password.trim() ||
+    !isValidEmail(accountData.email) ||
+    !isValidPassword(accountData.password) ||
     !accountData.confirmPassword.trim();
 
   if (!personalData) {
@@ -155,51 +163,107 @@ export default function AccountInfoPage() {
                 <label htmlFor="email">
                   Email Address <span className="required-star">*</span>
                 </label>
-                <div className="input-wrapper">
-                  <Mail className="input-icon" />
-                  <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    className="form-control with-icon"
-                    value={accountData.email}
-                    onChange={handleChange}
-                  />
-                </div>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  className="form-control"
+                  value={accountData.email}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="form-group">
                 <label htmlFor="password">
                   Password <span className="required-star">*</span>
                 </label>
-                <div className="input-wrapper">
-                  <Lock className="input-icon" />
-                  <input
-                    id="password"
-                    type="password"
-                    name="password"
-                    className="form-control with-icon"
-                    value={accountData.password}
-                    onChange={handleChange}
-                  />
-                </div>
+                <input
+                  id="password"
+                  type="password"
+                  name="password"
+                  className="form-control"
+                  value={accountData.password}
+                  onChange={handleChange}
+                />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="confirmPassword">
-                  Confirm Password <span className="required-star">*</span>
-                </label>
-                <div className="input-wrapper">
-                  <Lock className="input-icon" />
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    name="confirmPassword"
-                    className="form-control with-icon"
-                    value={accountData.confirmPassword}
-                    onChange={handleChange}
-                  />
-                </div>
+            </form>
+
+            <div className="form-box">
+              <div className="form-box-header">Account Info</div>
+
+              <div className="form-box-body">
+                <form>
+                  <div className="form-group">
+                    <label htmlFor="email">
+                      Email Address <span className="required-star">*</span>
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      name="email"
+                      className="form-control"
+                      value={accountData.email}
+                      onChange={handleChange}
+                    />
+                    {showEmailError && (
+                      <span className="field-error">
+                        Format email tidak valid dan salah
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="password">
+                      Password <span className="required-star">*</span>
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      name="password"
+                      className="form-control"
+                      value={accountData.password}
+                      onChange={handleChange}
+                    />
+                    {showPasswordError && (
+                      <span className="field-error">
+                        Panjang password minimal 6 karakter
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="confirmPassword">
+                      Confirm Password <span className="required-star">*</span>
+                    </label>
+                    <input
+                      id="confirmPassword"
+                      type="password"
+                      name="confirmPassword"
+                      className="form-control"
+                      value={accountData.confirmPassword}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      className="btn-back"
+                      onClick={handleBack}
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-next"
+                      onClick={handleFinish}
+                      disabled={isFinishDisabled}
+                    >
+                      Finish
+                    </button>
+                  </div>
+                </form>
               </div>
 
               <div className="form-actions">
@@ -215,7 +279,7 @@ export default function AccountInfoPage() {
                   {isLoading ? "Menyimpan..." : "Finish"}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>

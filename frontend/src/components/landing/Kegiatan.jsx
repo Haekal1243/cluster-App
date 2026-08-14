@@ -56,7 +56,7 @@ export default function Kegiatan({ items = kegiatan }) {
     if (!isSliderActive) return;
     const timer = setInterval(() => {
       handleNext();
-    }, 4000);
+    }, 3000);
     return () => clearInterval(timer);
   }, [isSliderActive, currentIndex]);
 

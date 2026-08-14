@@ -1,8 +1,8 @@
 import "../globals.css";
 
 export const metadata = {
-  title: "Cluster App",
-  description: "Aplikasi warga cluster berbasis Next.js",
+  title: "Cluster App - Register",
+  description: "Daftar akun warga cluster",
 };
 
 export default function RootLayout({ children }) {

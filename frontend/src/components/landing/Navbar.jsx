@@ -57,7 +57,7 @@ export default function Navbar() {
           </a>
         ))}
         <div style={{ width: 1, height: 20, background: "#1E293B" }} />
-        <Link href="/register" className="lp-btn-primary lp-btn-sm">
+        <Link href="/login" className="lp-btn-primary lp-btn-sm">
           Login
         </Link>
       </div>

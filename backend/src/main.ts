@@ -12,6 +12,6 @@ async function bootstrap() {
   // <-- 3. Tambahkan ValidationPipe untuk class-validator
   app.useGlobalPipes(new ValidationPipe()); 
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 4000);
 }
 bootstrap();

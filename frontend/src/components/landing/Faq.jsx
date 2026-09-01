@@ -8,13 +8,13 @@ export default function Faq({ items = faq }) {
   const [active, setActive] = useState(null);
 
   return (
-    <section style={{ padding: "80px 48px", background: "#F8FAFC" }}>
+    <section className="lp-section" style={{ background: "#F8FAFC" }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <Reveal style={{ marginBottom: 40 }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
             Pertanyaan Umum
           </p>
-          <h2 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em" }}>
+          <h2 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em" }}>
             FAQ
           </h2>
         </Reveal>

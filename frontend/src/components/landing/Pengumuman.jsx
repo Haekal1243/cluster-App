@@ -10,7 +10,7 @@ const toneMap = {
 
 export default function Pengumuman({ items = pengumuman }) {
   return (
-    <section id="pengumuman" style={{ padding: "80px 48px", background: "#F8FAFC" }}>
+    <section id="pengumuman" className="lp-section" style={{ background: "#F8FAFC" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Reveal style={{ marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
@@ -18,13 +18,10 @@ export default function Pengumuman({ items = pengumuman }) {
               <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
                 Papan Pengumuman
               </p>
-              <h2 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em" }}>
+              <h2 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em" }}>
                 Pengumuman Terbaru
               </h2>
             </div>
-            <a href="#panduan" className="lp-link-teal">
-              Lihat Semua →
-            </a>
           </div>
         </Reveal>
 
@@ -44,13 +41,8 @@ export default function Pengumuman({ items = pengumuman }) {
               return (
                 <div
                   key={p.id}
-                  className="lp-row"
+                  className="lp-row lp-pengumuman-row"
                   style={{
-                    padding: "22px 28px",
-                    display: "grid",
-                    gridTemplateColumns: "auto 1fr auto",
-                    gap: 20,
-                    alignItems: "start",
                     borderBottom: i === items.length - 1 ? "none" : "1px solid #E2E8F0",
                   }}
                 >
@@ -75,7 +67,7 @@ export default function Pengumuman({ items = pengumuman }) {
                     <h4 style={{ fontSize: 15, fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>{p.judul}</h4>
                     <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{p.isi}</p>
                   </div>
-                  <div style={{ textAlign: "right", whiteSpace: "nowrap", paddingTop: 2 }}>
+                  <div className="lp-pengumuman-tanggal" style={{ textAlign: "right", whiteSpace: "nowrap", paddingTop: 2 }}>
                     <div style={{ fontSize: 12, color: "#94A3B8" }}>{p.tanggal}</div>
                   </div>
                 </div>

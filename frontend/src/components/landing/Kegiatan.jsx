@@ -61,14 +61,14 @@ export default function Kegiatan({ items = kegiatan }) {
   }, [isSliderActive, currentIndex]);
 
   return (
-    <section id="kegiatan" style={{ padding: "80px 48px", background: "white" }}>
+    <section id="kegiatan" className="lp-section" style={{ background: "white" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <Reveal style={{ marginBottom: 40, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <Reveal className="lp-kegiatan-header" style={{ marginBottom: 40 }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
               Dokumentasi Kegiatan
             </p>
-            <h2 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em", margin: 0 }}>
+            <h2 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em", margin: 0 }}>
               Kegiatan Warga RW 21
             </h2>
           </div>
@@ -100,6 +100,7 @@ export default function Kegiatan({ items = kegiatan }) {
           <div style={{ position: "relative", overflow: "hidden" }}>
             {/* Slider Track */}
             <div
+              className="lp-kegiatan-track"
               onTransitionEnd={handleTransitionEnd}
               style={{
                 display: "flex",
@@ -111,7 +112,7 @@ export default function Kegiatan({ items = kegiatan }) {
               {extendedItems.map((k, idx) => {
                 const ls = labelStyles[k.labelStyle] || labelStyles.gelap;
                 return (
-                  <div key={`${k.id}-${idx}`} style={{ flex: "0 0 calc(33.333333% - 13.333333px)", boxSizing: "border-box" }}>
+                  <div key={`${k.id}-${idx}`} className="lp-kegiatan-item" style={{ flex: "0 0 calc(33.333333% - 13.333333px)", boxSizing: "border-box" }}>
                     <div style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>
                       <div
                         style={{
@@ -134,7 +135,7 @@ export default function Kegiatan({ items = kegiatan }) {
                       </div>
                       <div style={{ padding: 20 }}>
                         <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 6 }}>{k.tanggal}</div>
-                        <h4 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 15, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>
+                        <h4 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>
                           {k.judul}
                         </h4>
                         <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, margin: 0 }}>{k.deskripsi}</p>

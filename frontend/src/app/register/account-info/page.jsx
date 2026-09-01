@@ -51,7 +51,7 @@ export default function AccountInfoPage() {
         "Data personal belum ditemukan. Silakan ulangi registrasi.",
         "error",
       ).then(() => {
-        router.push("/register");
+        router.push("/login");
       });
       return;
     }
@@ -76,7 +76,7 @@ export default function AccountInfoPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:3000/warga", {
+      const response = await fetch("http://localhost:4000/warga", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

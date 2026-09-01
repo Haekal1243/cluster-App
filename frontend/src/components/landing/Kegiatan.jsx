@@ -1,0 +1,181 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Reveal from "./Reveal";
+import { PhotoIcon } from "./icons";
+import { kegiatan } from "@/lib/landing-data";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const labelStyles = {
+  teal: { background: "rgba(13,148,136,0.85)", color: "white", border: "none" },
+  merah: { background: "rgba(220,38,38,0.85)", color: "white", border: "none" },
+  gelap: { background: "rgba(30,41,59,0.9)", color: "#94A3B8", border: "1px solid #334155" },
+};
+
+export default function Kegiatan({ items = kegiatan }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+
+  // Slider aktif jika item > 3
+  const isSliderActive = items.length > 3;
+
+  // Clone 3 item pertama untuk infinite loop
+  const extendedItems = isSliderActive ? [...items, ...items.slice(0, 3)] : items;
+
+  const handleNext = () => {
+    if (!isSliderActive) return;
+    if (currentIndex >= items.length) return;
+    setIsTransitioning(true);
+    setCurrentIndex((prev) => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (!isSliderActive) return;
+    if (currentIndex <= 0) {
+      setIsTransitioning(false);
+      setCurrentIndex(items.length);
+      setTimeout(() => {
+        setIsTransitioning(true);
+        setCurrentIndex(items.length - 1);
+      }, 50);
+    } else {
+      setIsTransitioning(true);
+      setCurrentIndex((prev) => prev - 1);
+    }
+  };
+
+  const handleTransitionEnd = () => {
+    if (currentIndex >= items.length) {
+      setIsTransitioning(false);
+      setCurrentIndex(0);
+    }
+  };
+
+  useEffect(() => {
+    if (!isSliderActive) return;
+    const timer = setInterval(() => {
+      handleNext();
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [isSliderActive, currentIndex]);
+
+  return (
+    <section id="kegiatan" style={{ padding: "80px 48px", background: "white" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <Reveal style={{ marginBottom: 40, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
+              Dokumentasi Kegiatan
+            </p>
+            <h2 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em", margin: 0 }}>
+              Kegiatan Warga RW 21
+            </h2>
+          </div>
+          
+          {/* Navigasi Kiri & Kanan */}
+          {isSliderActive && (
+            <div style={{ display: "flex", gap: 12 }}>
+              <button 
+                onClick={handlePrev} 
+                style={{ width: 44, height: 44, borderRadius: "50%", background: "#F1F5F9", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#475569", transition: "all 0.2s" }}
+                onMouseOver={e => e.currentTarget.style.background = "#E2E8F0"} 
+                onMouseOut={e => e.currentTarget.style.background = "#F1F5F9"}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button 
+                onClick={handleNext} 
+                style={{ width: 44, height: 44, borderRadius: "50%", background: "#0D9488", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "white", transition: "all 0.2s" }}
+                onMouseOver={e => e.currentTarget.style.background = "#0F766E"} 
+                onMouseOut={e => e.currentTarget.style.background = "#0D9488"}
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+        </Reveal>
+
+        <Reveal>
+          <div style={{ position: "relative", overflow: "hidden" }}>
+            {/* Slider Track */}
+            <div
+              onTransitionEnd={handleTransitionEnd}
+              style={{
+                display: "flex",
+                gap: 20,
+                transition: isTransitioning ? "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)" : "none",
+                transform: `translateX(calc(-${currentIndex} * (33.333333% + 6.666666px)))`,
+              }}
+            >
+              {extendedItems.map((k, idx) => {
+                const ls = labelStyles[k.labelStyle] || labelStyles.gelap;
+                return (
+                  <div key={`${k.id}-${idx}`} style={{ flex: "0 0 calc(33.333333% - 13.333333px)", boxSizing: "border-box" }}>
+                    <div style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>
+                      <div
+                        style={{
+                          background: k.bg,
+                          height: 250,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          position: "relative",
+                        }}
+                      >
+                        {k.gambar ? (
+                          <Image src={k.gambar} alt={k.judul} fill style={{ objectFit: "cover" }} />
+                        ) : (
+                          <PhotoIcon />
+                        )}
+                        <div style={{ position: "absolute", top: 12, left: 12, borderRadius: 4, padding: "3px 8px", ...ls }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: ls.color }}>{k.label}</span>
+                        </div>
+                      </div>
+                      <div style={{ padding: 20 }}>
+                        <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 6 }}>{k.tanggal}</div>
+                        <h4 style={{ fontFamily: "var(--font-syne), sans-serif", fontSize: 15, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>
+                          {k.judul}
+                        </h4>
+                        <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, margin: 0 }}>{k.deskripsi}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Stepper (Dots) */}
+            {isSliderActive && (
+              <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 32 }}>
+                {items.map((_, idx) => {
+                  const isActive = (currentIndex % items.length) === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setIsTransitioning(true);
+                        setCurrentIndex(idx);
+                      }}
+                      style={{
+                        width: isActive ? 28 : 12,
+                        height: 12,
+                        borderRadius: 12,
+                        background: isActive ? "#0D9488" : "#CBD5E1",
+                        border: "none",
+                        cursor: "pointer",
+                        transition: "all 0.3s ease",
+                        padding: 0
+                      }}
+                      aria-label={`Go to slide page ${idx + 1}`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}

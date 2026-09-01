@@ -50,7 +50,7 @@ export default function PersonalDataPage() {
       "Lanjut isi",
     );
     if (ok) {
-      router.push("/");
+      router.push("/login");
     }
   };
 

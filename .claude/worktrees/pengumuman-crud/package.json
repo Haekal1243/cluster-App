@@ -1,0 +1,12 @@
+{
+  "name": "cluster-app",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "dependencies": {
+    "next": "^16.2.10"
+  }
+}

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { CreateWargaDto } from './dto/create-warga.dto';
 import { UpdateWargaDto } from './dto/update-warga.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,6 +7,32 @@ import { Role } from '@prisma/client';
 @Injectable()
 export class WargaService {
   constructor(private prisma: PrismaService) {}
+
+  // ================= TAMBAHKAN FUNGSI LOGIN DI SINI =================
+  async login(email: string, pass: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { email: email },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Email tidak ditemukan!');
+    }
+
+    if (user.password !== pass) {
+      throw new UnauthorizedException('Password salah!');
+    }
+
+    return {
+      message: 'Login berhasil',
+      user: {
+        id: user.id,
+        nama: user.namaUser, // Menggunakan namaUser sesuai skema Anda
+        email: user.email,
+        role: user.role,
+      },
+    };
+  }
+  // ==================================================================
 
   async create(createWargaDto: CreateWargaDto) {
     try {
@@ -18,8 +44,6 @@ export class WargaService {
           password: createWargaDto.password,
           role: Role.WARGA, 
           
-          // NESTED WRITE: Prisma otomatis memecah data dan memasukkannya ke tabel 'tb_Rumah'
-          // dan langsung menyambungkan 'id_user' di tabel Rumah dengan User ini!
           rumah: {
             create: {
               rt: createWargaDto.rt,
@@ -44,7 +68,7 @@ export class WargaService {
   async findAll() {
     return this.prisma.user.findMany({
       where: { role: Role.WARGA }, 
-      include: { rumah: true } // Akan menarik data User beserta data Rumah-nya
+      include: { rumah: true } 
     });
   }
 
@@ -63,7 +87,6 @@ export class WargaService {
   async update(id: number, updateWargaDto: UpdateWargaDto) {
     await this.findOne(id); 
 
-    // Update pada tabel User (alamat tidak lagi di-update di sini karena beda tabel)
     return this.prisma.user.update({
       where: { id },
       data: {

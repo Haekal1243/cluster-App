@@ -30,14 +30,11 @@ enum RT {
   RT_04
 }
 
-<<<<<<< HEAD
-=======
 enum StatusPengumuman {
   active
   unactived
 }
 
->>>>>>> origin/ojan
 // ==========================================
 // PERMISSIONS
 // ==========================================
@@ -131,11 +128,6 @@ model Kegiatan {
   id           Int      @id @default(autoincrement())
   judul        String
   deskripsi    String   @db.Text
-<<<<<<< HEAD
-  gambarUrl    String   
-  tanggalAcara DateTime
-  createdAt    DateTime @default(now())
-=======
   gambarUrl    String
   tanggalAcara DateTime
   createdAt    DateTime @default(now())
@@ -154,5 +146,4 @@ model Pengumuman {
   isDelete             Boolean          @default(false) @map("is_delete")
 
   @@map("tb_Pengumuman")
->>>>>>> origin/ojan
 }

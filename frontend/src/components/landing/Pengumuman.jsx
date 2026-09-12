@@ -1,14 +1,17 @@
 import Reveal from "./Reveal";
-import { pengumuman } from "@/lib/landing-data";
 
-const toneMap = {
-  teal: { background: "#ECFDF5", color: "#0D9488" },
-  merah: { background: "#FEF2F2", color: "#DC2626" },
-  kuning: { background: "#FFFBEB", color: "#B45309" },
-  netral: { background: "#F1F5F9", color: "#475569" },
-};
+const badgeStyle = { background: "#ECFDF5", color: "#0D9488" };
 
-export default function Pengumuman({ items = pengumuman }) {
+function formatTanggalPengumuman(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export default function Pengumuman({ items = [] }) {
   return (
     <section id="pengumuman" className="lp-section" style={{ background: "#F8FAFC" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -25,6 +28,11 @@ export default function Pengumuman({ items = pengumuman }) {
           </div>
         </Reveal>
 
+        {items.length === 0 ? (
+          <div style={{ padding: "48px 0", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
+            Belum ada pengumuman yang ditampilkan.
+          </div>
+        ) : (
         <Reveal>
           <div
             style={{
@@ -37,7 +45,6 @@ export default function Pengumuman({ items = pengumuman }) {
             }}
           >
             {items.map((p, i) => {
-              const t = toneMap[p.tone] || toneMap.netral;
               return (
                 <div
                   key={p.id}
@@ -50,8 +57,8 @@ export default function Pengumuman({ items = pengumuman }) {
                     <span
                       style={{
                         display: "inline-block",
-                        background: t.background,
-                        color: t.color,
+                        background: badgeStyle.background,
+                        color: badgeStyle.color,
                         fontSize: 10,
                         fontWeight: 700,
                         letterSpacing: "0.06em",
@@ -60,21 +67,22 @@ export default function Pengumuman({ items = pengumuman }) {
                         borderRadius: 4,
                       }}
                     >
-                      {p.kategori}
+                      Pengumuman
                     </span>
                   </div>
                   <div>
                     <h4 style={{ fontSize: 15, fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>{p.judul}</h4>
-                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{p.isi}</p>
+                    <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{p.keteranganPengumuman}</p>
                   </div>
                   <div className="lp-pengumuman-tanggal" style={{ textAlign: "right", whiteSpace: "nowrap", paddingTop: 2 }}>
-                    <div style={{ fontSize: 12, color: "#94A3B8" }}>{p.tanggal}</div>
+                    <div style={{ fontSize: 12, color: "#94A3B8" }}>{formatTanggalPengumuman(p.createDate)}</div>
                   </div>
                 </div>
               );
             })}
           </div>
         </Reveal>
+        )}
       </div>
     </section>
   );

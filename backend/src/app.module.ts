@@ -7,7 +7,7 @@ import { PengumumanModule } from './pengumuman/pengumuman.module';
 import { KegiatanModule } from './kegiatan/kegiatan.module';
 
 @Module({
-  imports: [PrismaModule, WargaModule, PengumumanModule],
+  imports: [PrismaModule, WargaModule, PengumumanModule, KegiatanModule],
   controllers: [AppController],
   providers: [AppService],
 })

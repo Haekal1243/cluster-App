@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Users, Wallet, CalendarCheck, AlertTriangle } from "lucide-react";
 
 const STATS = [
@@ -12,33 +11,20 @@ const STATS = [
 ];
 
 export default function DashboardPage() {
-  const router = useRouter();
+  // Auth guard sudah ditangani di dashboard/layout.jsx untuk semua halaman /dashboard/*
   const [user, setUser] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Cek sesi login saat halaman dimuat
   useEffect(() => {
     const sessionUser = localStorage.getItem("user");
-    if (!sessionUser) {
-      // Jika tidak ada data user, tendang kembali ke halaman login (sesuaikan path-nya, misal "/")
-      router.replace("/"); 
-    } else {
-      setUser(JSON.parse(sessionUser));
-      setIsCheckingAuth(false);
-    }
-  }, [router]);
-
-  // Fungsi untuk Log Out sudah dipindah ke Sidebar
-
-  // Tampilkan loading state kosong sementara mengecek auth agar UI tidak berkedip
-  if (isCheckingAuth) return null; 
+    if (sessionUser) setUser(JSON.parse(sessionUser));
+  }, []);
 
   return (
     <div className="page-stack">
       <section className="welcome-banner">
         <div>
           {/* Menampilkan nama user dinamis berdasarkan data login */}
-          <h2>Selamat datang kembali, {user?.name} 👋</h2>
+          <h2>Selamat datang kembali, {user?.nama ?? "Admin"} 👋</h2>
           <p>Ini ringkasan aktivitas cluster Topaz hari ini.</p>
         </div>
       </section>

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { pengumumanApi } from "@/lib/api";
 import { showConfirm, showMessage } from "@/lib/message";
 import Switch from "@/components/ui/switch";
@@ -10,8 +9,16 @@ import PengumumanFormModal from "@/components/pengumuman/PengumumanFormModal";
 
 const CURRENT_USER = "Admin";
 
+function formatDate(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export default function PengumumanPage() {
-  const router = useRouter();
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -132,10 +139,8 @@ export default function PengumumanPage() {
             <tr>
               <th>No</th>
               <th>Judul</th>
-              <th>Keterangan</th>
-              <th>File</th>
+              <th>Tanggal Pengumuman</th>
               <th>Status</th>
-              <th>Dibuat Oleh</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -145,22 +150,7 @@ export default function PengumumanPage() {
                 <tr key={item.id}>
                   <td>{index + 1}</td>
                   <td className="col-judul">{item.judul}</td>
-                  <td className="col-keterangan">
-                    {item.keteranganPengumuman || "-"}
-                  </td>
-                  <td>
-                    {item.filePengumuman ? (
-                      <a
-                        href={pengumumanApi.fileUrl(item.filePengumuman)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Lihat File
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
+                  <td>{formatDate(item.createDate)}</td>
                   <td>
                     <div className="status-cell">
                       <Switch
@@ -175,26 +165,14 @@ export default function PengumumanPage() {
                       </span>
                     </div>
                   </td>
-                  <td>{item.createBy || "-"}</td>
                   <td>
                     <div className="table-actions">
                       <button
                         type="button"
                         className="btn-icon"
-                        onClick={() =>
-                          router.push(`/dashboard/pengumuman/${item.id}`)
-                        }
-                        aria-label="Lihat detail"
-                        title="Lihat detail"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-icon"
                         onClick={() => openEditModal(item)}
-                        aria-label="Edit"
-                        title="Edit"
+                        aria-label="Update"
+                        title="Update"
                       >
                         <Pencil size={16} />
                       </button>

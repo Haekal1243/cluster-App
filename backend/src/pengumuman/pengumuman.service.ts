@@ -35,11 +35,13 @@ export class PengumumanService {
     return this.prisma.pengumuman.findMany({
       where: { isDelete: false, status: 'active' },
       orderBy: { createDate: 'desc' },
+      take: 5,
       select: {
         id: true,
         judul: true,
         filePengumuman: true,
         keteranganPengumuman: true,
+        createDate: true,
       },
     });
   }

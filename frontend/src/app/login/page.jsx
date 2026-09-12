@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock } from "lucide-react";
+import { ArrowLeft, Mail, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 
 export default function LoginPage() {
@@ -51,11 +51,20 @@ export default function LoginPage() {
   return (
     <AuthShell
       left={
-        <img
-          src="/LogoTopaz.svg"
-          alt="Topaz Cluster Logo"
-          className="auth-logo"
-        />
+        <>
+          <Link
+            href="/landingpage"
+            className="btn-link-back auth-left-back"
+          >
+            <ArrowLeft size={16} />
+            Kembali
+          </Link>
+          <img
+            src="/LogoTopaz.svg"
+            alt="Topaz Cluster Logo"
+            className="auth-logo"
+          />
+        </>
       }
       title="Welcome Back"
       subtitle="Please sign in to your Account to continue"

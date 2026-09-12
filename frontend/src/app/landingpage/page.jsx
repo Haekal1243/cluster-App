@@ -7,6 +7,7 @@ import Pengurus from "@/components/landing/Pengurus";
 import Panduan from "@/components/landing/Panduan";
 import Faq from "@/components/landing/Faq";
 import Footer from "@/components/landing/Footer";
+import { API_BASE_URL } from "@/lib/api";
 
 export const metadata = {
   title: "Portal Warga RW 21 — Cluster Topaz",
@@ -14,17 +15,31 @@ export const metadata = {
     "Portal resmi administrasi warga RW 21 Cluster Topaz, Perumahan Permata Cimanggis, Kota Depok.",
 };
 
-export default function HomePage() {
-  // Ganti dengan data dari database bila sudah siap, mis:
-  // const statistik = await prisma.warga.aggregate(...)
+async function getActiveList(path) {
+  try {
+    const res = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+export default async function HomePage() {
+  const [kegiatanItems, pengumumanItems] = await Promise.all([
+    getActiveList("/kegiatan/active"),
+    getActiveList("/pengumuman/active"),
+  ]);
+
   return (
     <main>
       <Navbar />
       <Hero />
       <Panduan />
       <Layanan />
-      <Kegiatan />
-      <Pengumuman />
+      <Kegiatan items={kegiatanItems} />
+      <Pengumuman items={pengumumanItems} />
       <Pengurus />
       <Faq />
       <Footer />

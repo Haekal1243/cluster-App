@@ -1,19 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Reveal from "./Reveal";
 import { PhotoIcon } from "./icons";
-import { kegiatan } from "@/lib/landing-data";
+import { API_BASE_URL } from "@/lib/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const labelStyles = {
-  teal: { background: "rgba(13,148,136,0.85)", color: "white", border: "none" },
-  merah: { background: "rgba(220,38,38,0.85)", color: "white", border: "none" },
-  gelap: { background: "rgba(30,41,59,0.9)", color: "#94A3B8", border: "1px solid #334155" },
+const labelStyle = {
+  background: "rgba(13,148,136,0.85)",
+  color: "white",
+  border: "none",
 };
 
-export default function Kegiatan({ items = kegiatan }) {
+function formatTanggalAcara(value) {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function imageUrl(filename) {
+  return filename ? `${API_BASE_URL}/uploads/kegiatan/${filename}` : null;
+}
+
+export default function Kegiatan({ items = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
 
@@ -96,6 +108,11 @@ export default function Kegiatan({ items = kegiatan }) {
           )}
         </Reveal>
 
+        {items.length === 0 ? (
+          <div style={{ padding: "48px 0", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
+            Belum ada kegiatan yang ditampilkan.
+          </div>
+        ) : (
         <Reveal>
           <div style={{ position: "relative", overflow: "hidden" }}>
             {/* Slider Track */}
@@ -110,13 +127,13 @@ export default function Kegiatan({ items = kegiatan }) {
               }}
             >
               {extendedItems.map((k, idx) => {
-                const ls = labelStyles[k.labelStyle] || labelStyles.gelap;
+                const img = imageUrl(k.gambarUrl);
                 return (
                   <div key={`${k.id}-${idx}`} className="lp-kegiatan-item" style={{ flex: "0 0 calc(33.333333% - 13.333333px)", boxSizing: "border-box" }}>
                     <div style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>
                       <div
                         style={{
-                          background: k.bg,
+                          background: "#134E4A",
                           height: 250,
                           display: "flex",
                           alignItems: "center",
@@ -124,17 +141,17 @@ export default function Kegiatan({ items = kegiatan }) {
                           position: "relative",
                         }}
                       >
-                        {k.gambar ? (
-                          <Image src={k.gambar} alt={k.judul} fill style={{ objectFit: "cover" }} />
+                        {img ? (
+                          <img src={img} alt={k.judul} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         ) : (
                           <PhotoIcon />
                         )}
-                        <div style={{ position: "absolute", top: 12, left: 12, borderRadius: 4, padding: "3px 8px", ...ls }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: ls.color }}>{k.label}</span>
+                        <div style={{ position: "absolute", top: 12, left: 12, borderRadius: 4, padding: "3px 8px", ...labelStyle }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: labelStyle.color }}>KEGIATAN</span>
                         </div>
                       </div>
                       <div style={{ padding: 20 }}>
-                        <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 6 }}>{k.tanggal}</div>
+                        <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 6 }}>{formatTanggalAcara(k.tanggalAcara)}</div>
                         <h4 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>
                           {k.judul}
                         </h4>
@@ -176,6 +193,7 @@ export default function Kegiatan({ items = kegiatan }) {
             )}
           </div>
         </Reveal>
+        )}
       </div>
     </section>
   );

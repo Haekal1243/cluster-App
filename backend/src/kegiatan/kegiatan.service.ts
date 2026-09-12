@@ -40,6 +40,7 @@ export class KegiatanService {
     return this.prisma.kegiatan.findMany({
       where: { isDelete: false, status: 'active' },
       orderBy: { tanggalAcara: 'desc' },
+      take: 5,
       select: {
         id: true,
         judul: true,

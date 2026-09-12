@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { kegiatanApi } from "@/lib/api";
 import { showConfirm, showMessage } from "@/lib/message";
 import Switch from "@/components/ui/switch";
@@ -20,7 +19,6 @@ function formatDate(value) {
 }
 
 export default function KegiatanPage() {
-  const router = useRouter();
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -142,11 +140,9 @@ export default function KegiatanPage() {
           <thead>
             <tr>
               <th>No</th>
-              <th>Gambar</th>
               <th>Judul</th>
-              <th>Tanggal Acara</th>
+              <th>Acara</th>
               <th>Status</th>
-              <th>Dibuat Oleh</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -155,17 +151,6 @@ export default function KegiatanPage() {
               items.map((item, index) => (
                 <tr key={item.id}>
                   <td>{index + 1}</td>
-                  <td>
-                    {item.gambarUrl ? (
-                      <img
-                        src={kegiatanApi.imageUrl(item.gambarUrl)}
-                        alt={item.judul}
-                        className="table-thumb"
-                      />
-                    ) : (
-                      "-"
-                    )}
-                  </td>
                   <td className="col-judul">{item.judul}</td>
                   <td>{formatDate(item.tanggalAcara)}</td>
                   <td>
@@ -182,26 +167,14 @@ export default function KegiatanPage() {
                       </span>
                     </div>
                   </td>
-                  <td>{item.createBy || "-"}</td>
                   <td>
                     <div className="table-actions">
                       <button
                         type="button"
                         className="btn-icon"
-                        onClick={() =>
-                          router.push(`/dashboard/kegiatan/${item.id}`)
-                        }
-                        aria-label="Lihat detail"
-                        title="Lihat detail"
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-icon"
                         onClick={() => openEditModal(item)}
-                        aria-label="Edit"
-                        title="Edit"
+                        aria-label="Update"
+                        title="Update"
                       >
                         <Pencil size={16} />
                       </button>

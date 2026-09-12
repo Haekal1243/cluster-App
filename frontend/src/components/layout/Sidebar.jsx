@@ -7,6 +7,7 @@ import {
   Users,
   Wallet,
   CalendarDays,
+  Megaphone,
   X,
   ChevronLeft,
   ChevronRight,
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { label: "Data Warga", href: "/dashboard/warga", icon: Users },
   { label: "Tagihan IPL", href: "/dashboard/iuran", icon: Wallet },
   { label: "Kegiatan", href: "/dashboard/kegiatan", icon: CalendarDays },
+  { label: "Pengumuman", href: "/dashboard/pengumuman", icon: Megaphone },
 ];
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }) {

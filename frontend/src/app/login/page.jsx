@@ -29,7 +29,7 @@ export default function LoginPage() {
       title="Welcome Back"
       subtitle="Please sign in to your Account continue"
     >
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <div className="input-wrapper">

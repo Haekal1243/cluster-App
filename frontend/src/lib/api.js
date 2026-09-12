@@ -66,3 +66,36 @@ export const pengumumanApi = {
   fileUrl: (filename) =>
     filename ? `${API_BASE_URL}/uploads/pengumuman/${filename}` : null,
 };
+
+export const kegiatanApi = {
+  getAll: () => request("/kegiatan"),
+  getActive: () => request("/kegiatan/active"),
+  getById: (id) => request(`/kegiatan/${id}`),
+
+  create: (payload) =>
+    request("/kegiatan", {
+      method: "POST",
+      body: buildFormData(payload),
+    }),
+
+  update: (id, payload) =>
+    request(`/kegiatan/${id}`, {
+      method: "PATCH",
+      body: buildFormData(payload),
+    }),
+
+  updateStatus: (id, status, updateBy) =>
+    request(`/kegiatan/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, updateBy }),
+    }),
+
+  remove: (id) =>
+    request(`/kegiatan/${id}`, {
+      method: "DELETE",
+    }),
+
+  imageUrl: (filename) =>
+    filename ? `${API_BASE_URL}/uploads/kegiatan/${filename}` : null,
+};

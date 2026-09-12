@@ -99,3 +99,37 @@ export const kegiatanApi = {
   imageUrl: (filename) =>
     filename ? `${API_BASE_URL}/uploads/kegiatan/${filename}` : null,
 };
+
+export const wargaApi = {
+  // Rumah (Admin)
+  getAllRumah: () => request('/warga/rumah/list'),
+  createRumah: (payload) =>
+    request('/warga/rumah', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  updateRumah: (id, payload) =>
+    request(`/warga/rumah/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+  deleteRumah: (id) => request(`/warga/rumah/${id}`, { method: 'DELETE' }),
+  getAllUsers: () => request('/warga/users'),
+};
+
+export const portalApi = {
+  // Portal Warga endpoints
+  getRumahByUser: (userId) => request(`/warga/portal/rumah/${userId}`),
+  getTagihanByRumah: (rumahId) => request(`/warga/portal/tagihan/${rumahId}`),
+
+  uploadBuktiPembayaran: (payload) => {
+    const formData = buildFormData(payload);
+    return request('/warga/portal/bayar', { method: 'POST', body: formData });
+  },
+
+  buktiUrl: (filename) =>
+    filename ? `${API_BASE_URL}/uploads/bukti-bayar/${filename}` : null,
+};
+

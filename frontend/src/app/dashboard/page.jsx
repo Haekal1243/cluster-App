@@ -20,25 +20,28 @@ export default function DashboardPage() {
   useEffect(() => {
     const sessionUser = localStorage.getItem("user");
     if (!sessionUser) {
-      // Jika tidak ada data user, tendang kembali ke halaman login (sesuaikan path-nya, misal "/")
-      router.replace("/"); 
+      router.replace("/login"); 
     } else {
-      setUser(JSON.parse(sessionUser));
+      try {
+        setUser(JSON.parse(sessionUser));
+      } catch {
+        router.replace("/login");
+      }
       setIsCheckingAuth(false);
     }
   }, [router]);
 
-  // Fungsi untuk Log Out sudah dipindah ke Sidebar
-
   // Tampilkan loading state kosong sementara mengecek auth agar UI tidak berkedip
   if (isCheckingAuth) return null; 
+
+  const userName = user?.nama || user?.name || "Admin";
 
   return (
     <div className="page-stack">
       <section className="welcome-banner">
         <div>
           {/* Menampilkan nama user dinamis berdasarkan data login */}
-          <h2>Selamat datang kembali, {user?.name} 👋</h2>
+          <h2>Selamat datang kembali, {userName} 👋</h2>
           <p>Ini ringkasan aktivitas cluster Topaz hari ini.</p>
         </div>
       </section>

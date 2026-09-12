@@ -32,13 +32,18 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Jika login sukses, simpan data user ke localStorage
+        // Simpan data user ke localStorage
         localStorage.setItem("user", JSON.stringify(data.user));
         
-        // Arahkan ke dashboard
-        router.push("/dashboard");
+        // Role-based redirect
+        const role = data.user?.role;
+        if (role === "ADMIN" || role === "PENGURUS") {
+          router.push("/dashboard");
+        } else {
+          // WARGA → Portal Warga
+          router.push("/portal");
+        }
       } else {
-        // Tampilkan error dari NestJS (UnauthorizedException)
         setErrorMsg(data.message || "Email atau password salah");
       }
     } catch (error) {

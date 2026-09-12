@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Menu, Bell, ChevronDown, LogOut } from "lucide-react";
 import { showConfirm } from "@/lib/message";
@@ -25,6 +25,16 @@ export default function Header({ onMenuClick }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) setCurrentUser(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleLogout = async () => {
     setIsMenuOpen(false);
@@ -36,9 +46,14 @@ export default function Header({ onMenuClick }) {
       "Batal",
     );
     if (ok) {
-      router.push("/");
+      localStorage.removeItem("user");
+      router.push("/login");
     }
   };
+
+  const displayName = currentUser?.nama || currentUser?.name || "Admin";
+  const displayRole = currentUser?.role === "ADMIN" ? "Admin" : currentUser?.role === "PENGURUS" ? "Pengurus" : currentUser?.role || "Staff";
+  const avatarInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="dashboard-header">
@@ -68,10 +83,10 @@ export default function Header({ onMenuClick }) {
           className="header-user"
           onClick={() => setIsMenuOpen((prev) => !prev)}
         >
-          <div className="header-avatar">A</div>
+          <div className="header-avatar">{avatarInitial}</div>
           <div className="header-user-info">
-            <span className="header-user-name">Admin</span>
-            <span className="header-user-role">Pengurus</span>
+            <span className="header-user-name">{displayName}</span>
+            <span className="header-user-role">{displayRole}</span>
           </div>
           <ChevronDown size={16} />
 

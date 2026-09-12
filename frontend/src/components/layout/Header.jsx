@@ -10,7 +10,16 @@ const PAGE_TITLES = {
   "/dashboard/warga": "Data Warga",
   "/dashboard/iuran": "Tagihan IPL",
   "/dashboard/kegiatan": "Kegiatan",
+  "/dashboard/pengumuman": "Pengumuman",
 };
+
+function getPageTitle(pathname) {
+  const match = Object.entries(PAGE_TITLES)
+    .sort((a, b) => b[0].length - a[0].length)
+    .find(([path]) => pathname === path || pathname.startsWith(`${path}/`));
+
+  return match?.[1] ?? "Dashboard";
+}
 
 export default function Header({ onMenuClick }) {
   const router = useRouter();

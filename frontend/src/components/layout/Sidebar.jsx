@@ -22,7 +22,12 @@ const NAV_ITEMS = [
   { label: "Pengumuman", href: "/dashboard/pengumuman", icon: Megaphone },
 ];
 
-export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }) {
+export default function Sidebar({
+  isOpen,
+  onClose,
+  isCollapsed,
+  onToggleCollapse,
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -85,7 +90,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
             type="button"
             className="sidebar-logout-btn"
             onClick={handleLogout}
-            title={isCollapsed ? "Logout" : undefined}
+            title={isCollapsed ? " Logout" : undefined}
           >
             <span className="sidebar-link-icon">
               <LogOut size={17} />

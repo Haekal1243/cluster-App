@@ -35,6 +35,11 @@ enum StatusPengumuman {
   unactived
 }
 
+enum StatusKegiatan {
+  active
+  unactived
+}
+
 // ==========================================
 // PERMISSIONS
 // ==========================================
@@ -125,25 +130,30 @@ model PembayaranIpl {
 // ==========================================
 
 model Kegiatan {
-  id           Int      @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   judul        String
   deskripsi    String   @db.Text
   gambarUrl    String
   tanggalAcara DateTime
-  createdAt    DateTime @default(now())
+  status       StatusKegiatan @default(active)
+  createBy     String?
+  createdAt    DateTime       @default(now())
+  updateBy     String?
+  updatedAt    DateTime?
+  isDelete     Boolean        @default(false)
 }
 
 model Pengumuman {
-  id                   Int              @id @default(autoincrement())
-  judul                String           @map("judul_pengumuman")
-  filePengumuman       String?          @map("file_pengumuman")
-  keteranganPengumuman String?          @db.Text @map("keterangan_pengumuman")
-  status               StatusPengumuman @default(active) @map("status")
-  createBy             String?          @map("create_by")
-  createDate           DateTime         @default(now()) @map("create_date")
-  updateBy             String?          @map("update_by")
-  updateDate           DateTime?        @updatedAt @map("update_date")
-  isDelete             Boolean          @default(false) @map("is_delete")
+  id                    Int              @id @default(autoincrement())
+  judul                 String           @map("judul_pengumuman")
+  filePengumuman        String?          @map("file_pengumuman")
+  keteranganPengumuman  String?          @db.Text @map("keterangan_pengumuman")
+  status                StatusPengumuman @default(active) @map("status")
+  createBy              String?          @map("create_by")
+  createDate            DateTime         @default(now()) @map("create_date")
+  updateBy              String?          @map("update_by")
+  updateDate            DateTime?        @map("update_date")
+  isDelete              Boolean          @default(false) @map("is_delete")
 
   @@map("tb_Pengumuman")
 }

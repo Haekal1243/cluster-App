@@ -35,11 +35,6 @@ enum StatusPengumuman {
   unactived
 }
 
-enum StatusKegiatan {
-  active
-  unactived
-}
-
 // ==========================================
 // PERMISSIONS
 // ==========================================
@@ -132,7 +127,7 @@ model PembayaranIpl {
 model Kegiatan {
   id           Int            @id @default(autoincrement())
   judul        String
-  deskripsi    String         @db.Text
+  deskripsi    String   @db.Text
   gambarUrl    String
   tanggalAcara DateTime
   status       StatusKegiatan @default(active)

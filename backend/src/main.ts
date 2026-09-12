@@ -14,9 +14,9 @@ async function bootstrap() {
   // <-- 3. Tambahkan ValidationPipe untuk class-validator
   app.useGlobalPipes(new ValidationPipe());
 
-  // Serve file upload (mis. lampiran pengumuman) dari folder uploads/
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
+  // Sajikan file yang diupload (mis. file pengumuman) secara statis
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 4000);
 }
 bootstrap();

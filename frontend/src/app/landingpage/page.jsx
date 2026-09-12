@@ -21,11 +21,11 @@ export default function HomePage() {
     <main>
       <Navbar />
       <Hero />
+      <Panduan />
       <Layanan />
       <Kegiatan />
       <Pengumuman />
       <Pengurus />
-      <Panduan />
       <Faq />
       <Footer />
     </main>

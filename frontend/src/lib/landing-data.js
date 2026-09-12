@@ -162,10 +162,11 @@ export const pengumuman = [
 ];
 
 export const pengurus = [
-  { id: 1, inisial: "KR", warna: "#0D9488", jabatan: "Ketua RW 21", nama: "— Nama Ketua RW —", kontak: "— No. WhatsApp —" },
-  { id: 2, inisial: "SK", warna: "#1D4ED8", jabatan: "Sekretaris RW", nama: "— Nama Sekretaris —", kontak: "— No. WhatsApp —" },
-  { id: 3, inisial: "BD", warna: "#7C3AED", jabatan: "Bendahara RW", nama: "— Nama Bendahara —", kontak: "— No. WhatsApp —" },
-  { id: 4, inisial: "RT", warna: "#B45309", jabatan: "Ketua RT 01", nama: "— Nama Ketua RT —", kontak: "— No. WhatsApp —" },
+  { id: 1, foto: "/ketua-rw.jpg",      inisial: "KR", warna: "#0D9488", jabatan: "Ketua RW 21",   nama: "— Nama Ketua RW —",    kontak: "— No. WhatsApp —" },
+  { id: 2, foto: "/sekretaris-rw.jpg", inisial: "SK", warna: "#1D4ED8", jabatan: "Sekretaris RW", nama: "— Nama Sekretaris —",  kontak: "— No. WhatsApp —" },
+  { id: 3, foto: "/bendahara.jpg",     inisial: "BD", warna: "#7C3AED", jabatan: "Bendahara RW",  nama: "— Nama Bendahara —",  kontak: "— No. WhatsApp —" },
+  { id: 4, foto: "/rt1.jpg",           inisial: "RT", warna: "#B45309", jabatan: "Ketua RT 01",   nama: "— Nama Ketua RT —",   kontak: "— No. WhatsApp —" },
+  { id: 5, foto: "/rt2.jpg",           inisial: "RT", warna: "#B45309", jabatan: "Ketua RT 02",   nama: "— Nama Ketua RT —",   kontak: "— No. WhatsApp —" },
 ];
 
 export const panduan = [

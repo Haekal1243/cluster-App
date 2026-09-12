@@ -1,4 +1,4 @@
-
+// File: frontend/app/login/page.jsx (atau sesuaikan dengan struktur Next.js Anda)
 "use client";
 
 import { useState } from "react";
@@ -11,10 +11,41 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    router.push("/dashboard");
+    setErrorMsg("");
+    setIsLoading(true);
+
+    try {
+      // Panggil API NestJS yang berjalan di port 4000
+      const response = await fetch("http://localhost:4000/warga/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Jika login sukses, simpan data user ke localStorage
+        localStorage.setItem("user", JSON.stringify(data.user));
+        
+        // Arahkan ke dashboard
+        router.push("/dashboard");
+      } else {
+        // Tampilkan error dari NestJS (UnauthorizedException)
+        setErrorMsg(data.message || "Email atau password salah");
+      }
+    } catch (error) {
+      setErrorMsg("Gagal terhubung ke server. Pastikan backend NestJS menyala.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -27,9 +58,15 @@ export default function LoginPage() {
         />
       }
       title="Welcome Back"
-      subtitle="Please sign in to your Account continue"
+      subtitle="Please sign in to your Account to continue"
     >
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit}>
+        {errorMsg && (
+          <div style={{ padding: "10px", backgroundColor: "#fee2e2", color: "#dc2626", borderRadius: "6px", marginBottom: "15px", fontSize: "14px" }}>
+            {errorMsg}
+          </div>
+        )}
+
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <div className="input-wrapper">
@@ -72,8 +109,8 @@ export default function LoginPage() {
           </a>
         </div>
 
-        <button type="submit" className="btn-sign-in">
-          Sign In
+        <button type="submit" className="btn-sign-in" disabled={isLoading}>
+          {isLoading ? "Memeriksa..." : "Sign In"}
         </button>
       </form>
 

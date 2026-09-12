@@ -10,16 +10,15 @@
   padding: 0;
 }
 
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 68px;
-}
-
-body {
-  font-family: var(--font-jakarta), sans-serif;
-  background: #f8fafc;
-  color: #475569;
-  -webkit-font-smoothing: antialiased;
 }
 
 @keyframes lpFadeUp {
@@ -31,6 +30,50 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes spinRing {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px currentColor; opacity: 1; }
+  50%       { box-shadow: 0 0 48px currentColor; opacity: 0.85; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* Animasi Logo Topaz */
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25%       { transform: translateY(-12px) rotate(1deg); }
+  75%       { transform: translateY(8px) rotate(-1deg); }
+}
+
+@keyframes logoGlowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 30px rgba(13,148,136,0.35))
+            drop-shadow(0 0 60px rgba(13,148,136,0.15));
+  }
+  50% {
+    filter: drop-shadow(0 0 55px rgba(13,148,136,0.7))
+            drop-shadow(0 0 100px rgba(13,148,136,0.3))
+            drop-shadow(0 0 20px rgba(20,184,166,0.5));
+  }
+}
+
+.logo-topaz {
+  animation:
+    lpFadeUp     0.8s ease both,
+    logoFloat    5s ease-in-out 0.8s infinite,
+    logoGlowPulse 3s ease-in-out 0.8s infinite;
+  transform-origin: center center;
+  will-change: transform, filter;
 }
 
 /* Navbar */
@@ -143,5 +186,169 @@ body {
 @media (max-width: 1024px) {
   .lp-nav-link {
     display: none;
+  }
+}
+
+/* ── Mobile Utility Classes (breakpoint 768px) ─────────────── */
+.lp-section {
+  padding: 80px 48px;
+}
+
+.lp-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 64px;
+}
+
+.lp-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.lp-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.lp-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+
+.lp-footer-bottom {
+  border-top: 1px solid #1E293B;
+  padding-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lp-kegiatan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+/* Pengumuman row */
+.lp-pengumuman-row {
+  padding: 22px 28px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  /* Sections padding */
+  .lp-section {
+    padding: 56px 20px;
+  }
+
+  /* Hero grid → 1 kolom */
+  .lp-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  /* Hero inner container → kurangi padding */
+  .lp-hero-inner {
+    padding: 48px 24px 40px !important;
+  }
+
+  /* Hero logo → tampilkan lebih kecil di bawah teks */
+  .lp-hero-logo {
+    justify-content: center;
+  }
+
+  .lp-hero-logo img {
+    width: 180px !important;
+    height: 180px !important;
+  }
+
+  /* Sembunyikan elemen yang memang harus hilang di mobile */
+  .lp-hide-mobile {
+    display: none !important;
+  }
+
+  /* Grids */
+  .lp-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Panduan: 3 kartu → 1 kolom */
+  .lp-panduan-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Layanan: 3 kartu → 1 kolom */
+  .lp-layanan-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Kegiatan header (judul + nav) → stack */
+  .lp-kegiatan-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  /* Kegiatan slider → 1 kartu full width, disable transform overflow */
+  .lp-kegiatan-track {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .lp-kegiatan-item {
+    flex: 0 0 85% !important;
+    scroll-snap-align: start;
+  }
+
+  /* Pengumuman row → hide tanggal */
+  .lp-pengumuman-row {
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    padding: 16px 20px;
+  }
+
+  .lp-pengumuman-tanggal {
+    display: none;
+  }
+
+  /* Pengurus globe → hanya kurangi tinggi, jangan clip di sini */
+  .lp-pengurus-globe {
+    height: 320px !important;
+  }
+
+  /* Clip di level section agar tidak ada horizontal scroll */
+  .lp-pengurus-section {
+    overflow: hidden;
+  }
+
+  /* Footer */
+  .lp-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+
+  .lp-footer-bottom {
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+
+  /* Navbar: kurangi padding */
+  .lp-navbar {
+    padding: 0 16px !important;
   }
 }

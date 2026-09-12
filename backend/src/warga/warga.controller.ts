@@ -12,6 +12,11 @@ export class WargaController {
     return this.wargaService.create(createWargaDto);
   }
 
+  @Post('login')
+async login(@Body() body: any) {
+  return this.wargaService.login(body.email, body.password);
+}
+
   @Get()
   findAll() {
     return this.wargaService.findAll();

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -11,6 +11,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -23,6 +24,12 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    router.replace("/");
+  };
 
   return (
     <>
@@ -72,6 +79,20 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
             );
           })}
         </nav>
+
+        <div className="sidebar-footer">
+          <button
+            type="button"
+            className="sidebar-logout-btn"
+            onClick={handleLogout}
+            title={isCollapsed ? "Logout" : undefined}
+          >
+            <span className="sidebar-link-icon">
+              <LogOut size={17} />
+            </span>
+            <span className="sidebar-link-label">Logout</span>
+          </button>
+        </div>
       </aside>
     </>
   );

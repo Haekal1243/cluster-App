@@ -18,6 +18,7 @@ export default function Navbar() {
 
   return (
     <nav
+      className="lp-navbar"
       style={{
         position: "fixed",
         top: 0,

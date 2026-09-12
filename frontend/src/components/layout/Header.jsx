@@ -10,7 +10,16 @@ const PAGE_TITLES = {
   "/dashboard/warga": "Data Warga",
   "/dashboard/iuran": "Tagihan IPL",
   "/dashboard/kegiatan": "Kegiatan",
+  "/dashboard/pengumuman": "Pengumuman",
 };
+
+function getPageTitle(pathname) {
+  const match = Object.entries(PAGE_TITLES)
+    .sort((a, b) => b[0].length - a[0].length)
+    .find(([path]) => pathname === path || pathname.startsWith(`${path}/`));
+
+  return match?.[1] ?? "Dashboard";
+}
 
 export default function Header({ onMenuClick }) {
   const router = useRouter();
@@ -42,7 +51,7 @@ export default function Header({ onMenuClick }) {
         >
           <Menu size={20} />
         </button>
-        <h1>{PAGE_TITLES[pathname] ?? "Dashboard"}</h1>
+        <h1>{getPageTitle(pathname)}</h1>
       </div>
 
       <div className="header-actions">

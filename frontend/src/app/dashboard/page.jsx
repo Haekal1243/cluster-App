@@ -1,38 +1,44 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Users, Wallet, CalendarCheck, AlertTriangle } from "lucide-react";
 
 const STATS = [
-  {
-    label: "Total Warga",
-    value: "128",
-    icon: Users,
-    tone: "info",
-  },
-  {
-    label: "Iuran Lunas Bulan Ini",
-    value: "94",
-    icon: Wallet,
-    tone: "success",
-  },
-  {
-    label: "Menunggu Konfirmasi",
-    value: "12",
-    icon: AlertTriangle,
-    tone: "warning",
-  },
-  {
-    label: "Kegiatan Berjalan",
-    value: "3",
-    icon: CalendarCheck,
-    tone: "purple",
-  },
+  { label: "Total Warga", value: "128", icon: Users, tone: "info" },
+  { label: "Iuran Lunas Bulan Ini", value: "94", icon: Wallet, tone: "success" },
+  { label: "Menunggu Konfirmasi", value: "12", icon: AlertTriangle, tone: "warning" },
+  { label: "Kegiatan Berjalan", value: "3", icon: CalendarCheck, tone: "purple" },
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Cek sesi login saat halaman dimuat
+  useEffect(() => {
+    const sessionUser = localStorage.getItem("user");
+    if (!sessionUser) {
+      // Jika tidak ada data user, tendang kembali ke halaman login (sesuaikan path-nya, misal "/")
+      router.replace("/"); 
+    } else {
+      setUser(JSON.parse(sessionUser));
+      setIsCheckingAuth(false);
+    }
+  }, [router]);
+
+  // Fungsi untuk Log Out sudah dipindah ke Sidebar
+
+  // Tampilkan loading state kosong sementara mengecek auth agar UI tidak berkedip
+  if (isCheckingAuth) return null; 
+
   return (
     <div className="page-stack">
       <section className="welcome-banner">
         <div>
-          <h2>Selamat datang kembali 👋</h2>
+          {/* Menampilkan nama user dinamis berdasarkan data login */}
+          <h2>Selamat datang kembali, {user?.name} 👋</h2>
           <p>Ini ringkasan aktivitas cluster Topaz hari ini.</p>
         </div>
       </section>
@@ -52,18 +58,11 @@ export default function DashboardPage() {
       </section>
 
       <section className="content-card">
-        <h3>Lorem ipsum</h3>
+        <h3>Informasi Sistem</h3>
         <p>
-          Lorem Ipsum is simply dummy text of the printing and typesetting
-          industry. Lorem Ipsum has been the industry's standard dummy text ever
-          since 1966, when designers at Letraset and James Mosley, the librarian
-          at St Bride Printing Library in London, took a 1914 Cicero translation
-          and scrambled it to make dummy text for Letraset's Body Type sheets.
-          It has survived not only many decades, but also the leap into
-          electronic typesetting, remaining essentially unchanged. It was
-          popularised thanks to these sheets and more recently with desktop
-          publishing software like Aldus PageMaker and Microsoft Word including
-          versions of Lorem Ipsum.
+          Dashboard ini sekarang sudah dilindungi. Hanya user yang melakukan login melalui
+          halaman sign in yang dapat melihat halaman ini. Jika user melakukan logout,
+          sesi akan dihapus dan akses ke halaman ini akan diblokir kembali.
         </p>
       </section>
     </div>

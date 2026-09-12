@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, Wallet, CalendarCheck, AlertTriangle, LogOut } from "lucide-react";
+import { Users, Wallet, CalendarCheck, AlertTriangle } from "lucide-react";
 
 const STATS = [
   { label: "Total Warga", value: "128", icon: Users, tone: "info" },
@@ -28,30 +28,19 @@ export default function DashboardPage() {
     }
   }, [router]);
 
-  // Fungsi untuk Log Out
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.replace("/");
-  };
+  // Fungsi untuk Log Out sudah dipindah ke Sidebar
 
   // Tampilkan loading state kosong sementara mengecek auth agar UI tidak berkedip
   if (isCheckingAuth) return null; 
 
   return (
     <div className="page-stack">
-      <section className="welcome-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <section className="welcome-banner">
         <div>
           {/* Menampilkan nama user dinamis berdasarkan data login */}
           <h2>Selamat datang kembali, {user?.name} 👋</h2>
           <p>Ini ringkasan aktivitas cluster Topaz hari ini.</p>
         </div>
-        <button 
-          onClick={handleLogout} 
-          className="btn-outline-danger" 
-          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
-          <LogOut size={16} /> Logout
-        </button>
       </section>
 
       <section className="stat-grid">

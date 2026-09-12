@@ -606,6 +606,61 @@ select {
   background: rgba(255, 255, 255, 0.18);
 }
 
+/* Sidebar Footer — Logout */
+.sidebar-footer {
+  padding: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: #f87171;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  text-align: left;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(220, 38, 38, 0.18);
+  color: #ff4444;
+  transform: translateX(2px);
+  box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.35),
+              0 4px 20px rgba(220, 38, 38, 0.22);
+}
+
+.sidebar-logout-btn .sidebar-link-icon {
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+}
+
+.sidebar-logout-btn:hover .sidebar-link-icon {
+  background: rgba(220, 38, 38, 0.25);
+  color: #ff4444;
+}
+
+/* collapsed state: hide text labels in footer */
+.dashboard-sidebar.collapsed .sidebar-footer .sidebar-link-label {
+  display: none;
+}
+
+.dashboard-sidebar.collapsed .sidebar-logout-btn {
+  justify-content: center;
+  padding: 10px 0;
+}
+
 .sidebar-overlay {
   display: none;
 }

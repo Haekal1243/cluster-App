@@ -123,6 +123,13 @@ export const portalApi = {
   // Portal Warga endpoints
   getRumahByUser: (userId) => request(`/warga/portal/rumah/${userId}`),
   getTagihanByRumah: (rumahId) => request(`/warga/portal/tagihan/${rumahId}`),
+  getTagihanByUser: (userId, { bulan, tahun } = {}) => {
+    const params = new URLSearchParams();
+    if (bulan) params.set('bulan', bulan);
+    if (tahun) params.set('tahun', tahun);
+    const qs = params.toString();
+    return request(`/warga/portal/tagihan/user/${userId}${qs ? `?${qs}` : ''}`);
+  },
 
   uploadBuktiPembayaran: (payload) => {
     const formData = buildFormData(payload);
@@ -132,4 +139,37 @@ export const portalApi = {
   buktiUrl: (filename) =>
     filename ? `${API_BASE_URL}/uploads/bukti-bayar/${filename}` : null,
 };
+
+export const iplApi = {
+  // Generate tagihan massal
+  generate: (payload) =>
+    request('/ipl/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+
+  // Ambil daftar tagihan dengan filter opsional
+  getAll: ({ bulan, tahun, status, search } = {}) => {
+    const params = new URLSearchParams();
+    if (bulan) params.set('bulan', bulan);
+    if (tahun) params.set('tahun', tahun);
+    if (status && status !== 'SEMUA') params.set('status', status);
+    if (search) params.set('search', search);
+    const qs = params.toString();
+    return request(`/ipl${qs ? `?${qs}` : ''}`);
+  },
+
+  // Statistik ringkasan untuk dashboard
+  getDashboardStats: () => request('/ipl/dashboard-stats'),
+
+  // Konfirmasi atau tolak pembayaran
+  konfirmasi: (pembayaranId, payload) =>
+    request(`/ipl/konfirmasi/${pembayaranId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }),
+};
+
 

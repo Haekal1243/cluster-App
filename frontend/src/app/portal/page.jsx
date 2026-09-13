@@ -29,7 +29,8 @@ function getMonthLabel(bulan, tahun) {
 export default function PortalDashboardPage() {
   const [user, setUser] = useState(null);
   const [rumahList, setRumahList] = useState([]);
-  const [tagihanBulanIni, setTagihanBulanIni] = useState(null);
+  const [tagihanBulanIniList, setTagihanBulanIniList] = useState([]);
+  const [summaryBulanIni, setSummaryBulanIni] = useState(null);
   const [pengumuman, setPengumuman] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,17 +46,38 @@ export default function PortalDashboardPage() {
 
     async function fetchData() {
       try {
-        // Ambil rumah milik user
-        const rumah = await portalApi.getRumahByUser(u.id);
-        setRumahList(rumah);
-
-        // Ambil tagihan bulan ini dari rumah pertama
-        if (rumah.length > 0) {
-          const { tagihan } = await portalApi.getTagihanByRumah(rumah[0].id);
-          const tagBulanIni = tagihan.find(
-            (t) => t.bulanPeriode === bulanIni && t.tahunPeriode === tahunIni
-          );
-          setTagihanBulanIni(tagBulanIni || null);
+        // Ambil tagihan gabungan semua rumah milik user untuk bulan berjalan
+        try {
+          const res = await portalApi.getTagihanByUser(u.id, { bulan: bulanIni, tahun: tahunIni });
+          setRumahList(res.rumah || []);
+          setTagihanBulanIniList(res.tagihan || []);
+          const key = `${bulanIni}/${tahunIni}`;
+          setSummaryBulanIni(res.summaryByPeriode?.[key] || res.totalSummary || null);
+        } catch (e) {
+          // Fallback ke endpoint lama jika endpoint gabungan belum tersedia
+          console.warn("getTagihanByUser gagal, fallback ke per-rumah:", e);
+          const rumah = await portalApi.getRumahByUser(u.id);
+          setRumahList(rumah);
+          const allTagihan = [];
+          for (const r of rumah) {
+            try {
+              const { tagihan } = await portalApi.getTagihanByRumah(r.id);
+              const filtered = (tagihan || []).filter(
+                (t) => t.bulanPeriode === bulanIni && t.tahunPeriode === tahunIni
+              );
+              allTagihan.push(...filtered.map((t) => ({ ...t, rumah: r })));
+            } catch (rumahErr) {
+              console.warn(`Gagal memuat tagihan rumah ${r.id}:`, rumahErr);
+            }
+          }
+          setTagihanBulanIniList(allTagihan);
+          setSummaryBulanIni({
+            totalNominal: allTagihan.reduce((s, t) => s + (t.nominal || 0), 0),
+            totalTagihan: allTagihan.length,
+            lunas: allTagihan.filter((t) => t.statusPembayaran === "LUNAS").length,
+            belumLunas: allTagihan.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length,
+            menunggu: allTagihan.filter((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI").length,
+          });
         }
 
         // Ambil 3 pengumuman aktif terbaru
@@ -79,7 +101,20 @@ export default function PortalDashboardPage() {
     );
   }
 
-  const statusIpl = tagihanBulanIni?.statusPembayaran || null;
+  const adaBelumLunas = tagihanBulanIniList.some((t) => t.statusPembayaran === "BELUM_LUNAS");
+  const semuaLunas =
+    tagihanBulanIniList.length > 0 &&
+    tagihanBulanIniList.every((t) => t.statusPembayaran === "LUNAS");
+  const adaMenunggu = tagihanBulanIniList.some((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI");
+  // Total nominal yang BELUM dibayar (BELUM_LUNAS + MENUNGGU_KONFIRMASI),
+  // agar warga multi-rumah yang sudah bayar salah satu unitnya melihat sisa tagihan
+  const totalBelumBayar = tagihanBulanIniList
+    .filter((t) => t.statusPembayaran === "BELUM_LUNAS" || t.statusPembayaran === "MENUNGGU_KONFIRMASI")
+    .reduce((s, t) => s + (t.nominal || 0), 0);
+  const tagihanPerRumah = rumahList.map((r) => {
+    const tag = tagihanBulanIniList.find((t) => (t.rumah?.id ?? t.idRumah) === r.id);
+    return { rumah: r, tagihan: tag || null };
+  });
 
   return (
     <div className="page-stack">
@@ -94,19 +129,40 @@ export default function PortalDashboardPage() {
 
       {/* Stat Cards */}
       <section className="portal-stat-row">
-        {/* Status IPL */}
-        <div className={`portal-stat-card ${statusIpl === "LUNAS" ? "card-success" : statusIpl === "MENUNGGU_KONFIRMASI" ? "card-warning" : "card-danger"}`}>
+        {/* Status IPL gabungan semua rumah */}
+        <div className={`portal-stat-card ${semuaLunas ? "card-success" : adaMenunggu ? "card-warning" : "card-danger"}`}>
           <div className="portal-stat-icon">
             <CreditCard size={22} />
           </div>
           <div className="portal-stat-body">
-            <span className="portal-stat-label">Tagihan Bulan Ini</span>
-            {tagihanBulanIni ? (
+            <span className="portal-stat-label">
+              Sisa Tagihan Bulan Ini{rumahList.length > 1 ? ` (${rumahList.length} Rumah)` : ""}
+            </span>
+            {tagihanBulanIniList.length > 0 ? (
               <>
                 <span className="portal-stat-value">
-                  Rp {tagihanBulanIni.nominal.toLocaleString("id-ID")}
+                  Rp {totalBelumBayar.toLocaleString("id-ID")}
                 </span>
-                <StatusBadge status={tagihanBulanIni.statusPembayaran} />
+                <span className="portal-stat-sub">
+                  {summaryBulanIni ? (
+                    <>
+                      {summaryBulanIni.lunas || 0} lunas · {summaryBulanIni.belumLunas || 0} belum lunas
+                      {(summaryBulanIni.menunggu || 0) > 0 ? ` · ${summaryBulanIni.menunggu} menunggu` : ""}
+                    </>
+                  ) : (
+                    <>
+                      {tagihanBulanIniList.filter((t) => t.statusPembayaran === "LUNAS").length} lunas ·{" "}
+                      {tagihanBulanIniList.filter((t) => t.statusPembayaran !== "LUNAS").length} belum lunas
+                    </>
+                  )}
+                </span>
+                {semuaLunas ? (
+                  <StatusBadge status="LUNAS" />
+                ) : adaMenunggu ? (
+                  <StatusBadge status="MENUNGGU_KONFIRMASI" />
+                ) : (
+                  <StatusBadge status="BELUM_LUNAS" />
+                )}
               </>
             ) : (
               <span className="portal-stat-value portal-no-data">Belum ada tagihan</span>
@@ -121,15 +177,53 @@ export default function PortalDashboardPage() {
           </div>
           <div className="portal-stat-body">
             <span className="portal-stat-label">Unit Rumah</span>
-            <span className="portal-stat-value">{rumahList.length}</span>
+            <span className="portal-stat-value">{rumahList.length} Unit</span>
             <span className="portal-stat-sub">
-              {rumahList.length > 0
-                ? rumahList.map((r) => `${r.blokRumah} (${r.rt.replace("_", " ")})`).join(" · ")
-                : "Belum terdaftar"}
+              {rumahList.length > 1
+                ? `Anda memiliki ${rumahList.length} unit rumah`
+                : rumahList.length === 1
+                  ? `${rumahList[0].blokRumah} (${String(rumahList[0].rt || "").replace("_", " ")})`
+                  : "Belum terdaftar"}
             </span>
           </div>
         </div>
       </section>
+
+      {/* Daftar Unit Rumah — ramah untuk multi-rumah */}
+      {rumahList.length > 0 && (
+        <section className="content-card">
+          <div className="card-header-row">
+            <h3><Home size={16} /> Unit Rumah Saya</h3>
+            <Link href="/portal/tagihan" className="link-lihat-semua">Lihat tagihan →</Link>
+          </div>
+          <ul className="portal-pengumuman-list">
+            {tagihanPerRumah.map(({ rumah, tagihan }) => (
+              <li key={rumah.id} className="portal-pengumuman-item">
+                <div className="portal-stat-icon" style={{ width: 36, height: 36 }}>
+                  <Home size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p className="portal-peng-judul">
+                    {rumah.blokRumah} — {String(rumah.rt || "").replace("_", " ")}
+                  </p>
+                  <p className="portal-peng-desc">
+                    {tagihan
+                      ? `Rp ${(tagihan.nominal || 0).toLocaleString("id-ID")} · ${getMonthLabel(tagihan.bulanPeriode, tagihan.tahunPeriode)}`
+                      : "Belum ada tagihan bulan ini"}
+                  </p>
+                </div>
+                <div>
+                  {tagihan ? (
+                    <StatusBadge status={tagihan.statusPembayaran} />
+                  ) : (
+                    <span className="text-muted text-sm">—</span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Rumah Tidak Terdaftar Warning */}
       {rumahList.length === 0 && (
@@ -140,12 +234,15 @@ export default function PortalDashboardPage() {
         </div>
       )}
 
-      {/* Quick Action */}
-      {tagihanBulanIni && tagihanBulanIni.statusPembayaran === "BELUM_LUNAS" && (
+      {/* Quick Action — tampil jika ada tagihan belum lunas di salah satu rumah */}
+      {adaBelumLunas && (
         <section className="portal-action-banner">
           <div className="portal-action-text">
             <AlertTriangle size={18} />
-            <span>Tagihan IPL {getMonthLabel(tagihanBulanIni.bulanPeriode, tagihanBulanIni.tahunPeriode)} belum dibayar</span>
+            <span>
+              Ada {tagihanBulanIniList.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length} tagihan IPL bulan ini belum dibayar
+              {rumahList.length > 1 ? ` (${rumahList.length} unit rumah)` : ""}
+            </span>
           </div>
           <Link href="/portal/tagihan" className="portal-action-btn">
             Bayar Sekarang

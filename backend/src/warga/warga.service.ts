@@ -9,7 +9,27 @@ import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
 import { UpdateRumahDto } from './dto/update-rumah.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { Prisma, Role, RT, StatusPembayaran } from '@prisma/client';
+
+export interface RingkasanRumah {
+  id: number;
+  blokRumah: string;
+  rt: RT;
+  nominal: number;
+  status: StatusPembayaran;
+}
+
+export interface RingkasanPeriode {
+  bulan: string;
+  tahun: string;
+  label: string;
+  totalNominal: number;
+  totalTagihan: number;
+  lunas: number;
+  belumLunas: number;
+  menunggu: number;
+  rumah: RingkasanRumah[];
+}
 
 @Injectable()
 export class WargaService {
@@ -70,6 +90,108 @@ export class WargaService {
     });
 
     return { rumah, tagihan };
+  }
+
+  /** Ambil semua tagihan IPL untuk semua rumah milik user (gabungan), dengan filter periode opsional */
+  async getTagihanByUser(userId: number, bulan?: string, tahun?: string) {
+    const rumah = await this.prisma.rumah.findMany({
+      where: { userId },
+      orderBy: [{ rt: 'asc' }, { blokRumah: 'asc' }],
+    });
+
+    if (rumah.length === 0) {
+      return {
+        rumah: [],
+        tagihan: [],
+        summaryByPeriode: {},
+        totalSummary: null,
+      };
+    }
+
+    const rumahIds = rumah.map((r) => r.id);
+
+    const where: Prisma.IplWhereInput = { idRumah: { in: rumahIds } };
+    if (bulan) where.bulanPeriode = bulan;
+    if (tahun) where.tahunPeriode = tahun;
+
+    const tagihan = await this.prisma.ipl.findMany({
+      where,
+      include: {
+        rumah: { select: { id: true, blokRumah: true, rt: true } },
+        pembayaran: {
+          orderBy: { tanggalBayar: 'desc' },
+          take: 1,
+          select: { buktiTransaksi: true, tanggalBayar: true, nominal: true },
+        },
+      },
+      orderBy: [
+        { tahunPeriode: 'desc' },
+        { bulanPeriode: 'desc' },
+        { rumah: { rt: 'asc' } },
+        { rumah: { blokRumah: 'asc' } },
+      ],
+    });
+
+    const summaryByPeriode: Record<string, RingkasanPeriode> = {};
+    for (const t of tagihan) {
+      const key = `${t.bulanPeriode}/${t.tahunPeriode}`;
+      if (!summaryByPeriode[key]) {
+        const m = parseInt(t.bulanPeriode, 10);
+        const MONTHS = [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'Mei',
+          'Jun',
+          'Jul',
+          'Agu',
+          'Sep',
+          'Okt',
+          'Nov',
+          'Des',
+        ];
+        summaryByPeriode[key] = {
+          bulan: t.bulanPeriode,
+          tahun: t.tahunPeriode,
+          label: `${MONTHS[m - 1] || t.bulanPeriode} ${t.tahunPeriode}`,
+          totalNominal: 0,
+          totalTagihan: 0,
+          lunas: 0,
+          belumLunas: 0,
+          menunggu: 0,
+          rumah: [],
+        };
+      }
+      const s = summaryByPeriode[key];
+      s.totalNominal += t.nominal;
+      s.totalTagihan += 1;
+      if (t.statusPembayaran === 'LUNAS') s.lunas += 1;
+      else if (t.statusPembayaran === 'BELUM_LUNAS') s.belumLunas += 1;
+      else if (t.statusPembayaran === 'MENUNGGU_KONFIRMASI') s.menunggu += 1;
+      s.rumah.push({
+        id: t.rumah.id,
+        blokRumah: t.rumah.blokRumah,
+        rt: t.rumah.rt,
+        nominal: t.nominal,
+        status: t.statusPembayaran,
+      });
+    }
+
+    const totalSummary = {
+      totalRumah: rumah.length,
+      totalTagihan: tagihan.length,
+      totalNominal: tagihan.reduce((sum, t) => sum + t.nominal, 0),
+      totalLunas: tagihan.filter((t) => t.statusPembayaran === 'LUNAS').length,
+      totalBelumLunas: tagihan.filter(
+        (t) => t.statusPembayaran === 'BELUM_LUNAS',
+      ).length,
+      totalMenunggu: tagihan.filter(
+        (t) => t.statusPembayaran === 'MENUNGGU_KONFIRMASI',
+      ).length,
+    };
+
+    return { rumah, tagihan, summaryByPeriode, totalSummary };
   }
 
   /** Submit bukti pembayaran oleh warga */

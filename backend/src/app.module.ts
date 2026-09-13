@@ -5,10 +5,12 @@ import { PrismaModule } from './prisma/prisma.module';
 import { WargaModule } from './warga/warga.module';
 import { PengumumanModule } from './pengumuman/pengumuman.module';
 import { KegiatanModule } from './kegiatan/kegiatan.module';
+import { IplModule } from './ipl/ipl.module';
 
 @Module({
-  imports: [PrismaModule, WargaModule, PengumumanModule, KegiatanModule],
+  imports: [PrismaModule, WargaModule, PengumumanModule, KegiatanModule, IplModule],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+

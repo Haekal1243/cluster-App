@@ -8,6 +8,7 @@ import {
   Delete,
   UploadedFile,
   UseInterceptors,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { WargaService } from './warga.service';
@@ -100,6 +101,16 @@ export class WargaController {
   @Get('portal/tagihan/:rumahId')
   getTagihanByRumah(@Param('rumahId') rumahId: string) {
     return this.wargaService.getTagihanByRumah(+rumahId);
+  }
+
+  /** GET /warga/portal/tagihan/user/:userId — tagihan IPL gabungan semua rumah milik user */
+  @Get('portal/tagihan/user/:userId')
+  getTagihanByUser(
+    @Param('userId') userId: string,
+    @Query('bulan') bulan?: string,
+    @Query('tahun') tahun?: string,
+  ) {
+    return this.wargaService.getTagihanByUser(+userId, bulan, tahun);
   }
 
   /** POST /warga/portal/bayar — upload bukti pembayaran */

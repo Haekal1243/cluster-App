@@ -35,6 +35,11 @@ enum StatusPengumuman {
   unactived
 }
 
+enum StatusKegiatan {
+  active
+  unactived
+}
+
 // ==========================================
 // PERMISSIONS
 // ==========================================
@@ -112,6 +117,7 @@ model PembayaranIpl {
   tanggalBayar    DateTime @default(now()) @map("tanggal_bayar")
   buktiTransaksi  String?  @map("bukti_transaksi")
   nominal         Int      @map("Nominal")
+  catatan         String?  @map("catatan")
 
   // Relasi
   user            User     @relation(fields: [idUser], references: [id])

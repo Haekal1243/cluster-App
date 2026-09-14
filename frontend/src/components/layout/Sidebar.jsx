@@ -33,7 +33,7 @@ export default function Sidebar({
 
   const handleLogout = () => {
     localStorage.removeItem("user");
-    router.replace("/");
+    router.replace("/login");
   };
 
   return (

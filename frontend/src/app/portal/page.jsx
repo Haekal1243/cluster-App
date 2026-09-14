@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, CheckCircle, AlertTriangle, Clock, Megaphone, ArrowRight, Wallet, Calendar, ChevronDown, FileText } from "lucide-react";
-import { portalApi, pengumumanApi } from "@/lib/api";
+import { Home, CheckCircle, AlertTriangle, Clock, Megaphone, ArrowRight, Wallet, Calendar, ChevronDown, FileText, CalendarDays, ImageIcon } from "lucide-react";
+import { portalApi, pengumumanApi, kegiatanApi } from "@/lib/api";
 import Link from "next/link";
 
 function StatusBadge({ status }) {
@@ -35,6 +35,15 @@ function formatTanggalSingkat(dateStr) {
   });
 }
 
+function formatTanggalAcara(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("id-ID", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+}
+
 export default function PortalDashboardPage() {
   const [user, setUser] = useState(null);
   const [rumahList, setRumahList] = useState([]);
@@ -42,6 +51,7 @@ export default function PortalDashboardPage() {
   const [summaryBulanIni, setSummaryBulanIni] = useState(null);
   const [pengumuman, setPengumuman] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
+  const [kegiatan, setKegiatan] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -91,11 +101,25 @@ export default function PortalDashboardPage() {
         }
 
         // Ambil 5 pengumuman aktif terbaru (diurutkan createDate desc)
-        const peng = await pengumumanApi.getActive();
+        // dan 3 kegiatan aktif terbaru (diurutkan tanggalAcara desc)
+        const [peng, keg] = await Promise.all([
+          pengumumanApi.getActive().catch((pengErr) => {
+            console.warn("Gagal memuat pengumuman:", pengErr);
+            return [];
+          }),
+          kegiatanApi.getActive().catch((kegErr) => {
+            console.warn("Gagal memuat kegiatan:", kegErr);
+            return [];
+          }),
+        ]);
         const sorted = [...(peng || [])].sort(
           (a, b) => new Date(b.createDate || 0) - new Date(a.createDate || 0)
         );
         setPengumuman(sorted.slice(0, 5));
+        const sortedKeg = [...(keg || [])].sort(
+          (a, b) => new Date(b.tanggalAcara || 0) - new Date(a.tanggalAcara || 0)
+        );
+        setKegiatan(sortedKeg.slice(0, 3));
       } catch (err) {
         console.error("Gagal memuat data portal:", err);
       } finally {
@@ -308,6 +332,52 @@ export default function PortalDashboardPage() {
           </ul>
         )}
       </section>
+
+      {/* Kegiatan Terbaru — strip foto geser, 3 teratas */}
+      {kegiatan.length > 0 && (
+        <section className="content-card portal-keg-section">
+          <div className="card-header-row">
+            <div>
+              <h3><CalendarDays size={16} /> Kegiatan Terbaru</h3>
+              <p className="portal-section-hint">Geser untuk melihat kegiatan lainnya</p>
+            </div>
+            <Link href="/portal/kegiatan" className="link-lihat-semua">Lihat semua →</Link>
+          </div>
+          <div className="portal-keg-strip">
+            {kegiatan.map((k) => {
+              const img = k.gambarUrl ? kegiatanApi.imageUrl(k.gambarUrl) : null;
+              return (
+                <Link key={k.id} href="/portal/kegiatan" className="portal-keg-card">
+                  <div className="portal-keg-body">
+                    <p className="portal-keg-eyebrow">{formatTanggalAcara(k.tanggalAcara)}</p>
+                    <p className="portal-peng-judul portal-keg-title">{k.judul}</p>
+                  </div>
+                  <div className="portal-keg-img-wrap">
+                    <span className="portal-keg-img-fallback" aria-hidden>
+                      <ImageIcon size={28} />
+                    </span>
+                    {img && (
+                      <img
+                        src={img}
+                        alt={k.judul}
+                        className="portal-keg-img"
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
+                    )}
+                    <span className="portal-keg-badge">KEGIATAN</span>
+                  </div>
+                  {k.deskripsi && (
+                    <div className="portal-keg-body">
+                      <p className="portal-peng-desc portal-keg-desc">{k.deskripsi}</p>
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

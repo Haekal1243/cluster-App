@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, CheckCircle, AlertTriangle, Clock, Megaphone, ArrowRight, Wallet } from "lucide-react";
+import { Home, CheckCircle, AlertTriangle, Clock, Megaphone, ArrowRight, Wallet, Calendar, ChevronDown, FileText } from "lucide-react";
 import { portalApi, pengumumanApi } from "@/lib/api";
 import Link from "next/link";
 
@@ -26,12 +26,22 @@ function getMonthLabel(bulan, tahun) {
   return `${MONTHS[m - 1] || bulan} ${tahun}`;
 }
 
+function formatTanggalSingkat(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric", month: "short", year: "numeric",
+  });
+}
+
 export default function PortalDashboardPage() {
   const [user, setUser] = useState(null);
   const [rumahList, setRumahList] = useState([]);
   const [tagihanBulanIniList, setTagihanBulanIniList] = useState([]);
   const [summaryBulanIni, setSummaryBulanIni] = useState(null);
   const [pengumuman, setPengumuman] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,9 +90,12 @@ export default function PortalDashboardPage() {
           });
         }
 
-        // Ambil 3 pengumuman aktif terbaru
+        // Ambil 5 pengumuman aktif terbaru (diurutkan createDate desc)
         const peng = await pengumumanApi.getActive();
-        setPengumuman(peng?.slice(0, 3) || []);
+        const sorted = [...(peng || [])].sort(
+          (a, b) => new Date(b.createDate || 0) - new Date(a.createDate || 0)
+        );
+        setPengumuman(sorted.slice(0, 5));
       } catch (err) {
         console.error("Gagal memuat data portal:", err);
       } finally {
@@ -235,28 +248,63 @@ export default function PortalDashboardPage() {
         </div>
       )}
 
-      {/* Pengumuman Terbaru */}
+      {/* Pengumuman Terbaru — klik untuk baca selengkapnya langsung di dashboard */}
       <section className="content-card">
         <div className="card-header-row">
-          <h3><Megaphone size={16} /> Pengumuman Terbaru</h3>
+          <div>
+            <h3><Megaphone size={16} /> Pengumuman Terbaru</h3>
+            <p className="portal-section-hint">Klik pengumuman untuk membaca selengkapnya</p>
+          </div>
           <Link href="/portal/pengumuman" className="link-lihat-semua">Lihat semua →</Link>
         </div>
 
         {pengumuman.length === 0 ? (
           <p className="portal-empty-text">Belum ada pengumuman.</p>
         ) : (
-          <ul className="portal-pengumuman-list">
-            {pengumuman.map((p) => (
-              <li key={p.id} className="portal-pengumuman-item">
-                <div className="portal-peng-dot" />
-                <div>
-                  <p className="portal-peng-judul">{p.judul}</p>
-                  {p.keteranganPengumuman && (
-                    <p className="portal-peng-desc">{p.keteranganPengumuman.slice(0, 100)}{p.keteranganPengumuman.length > 100 ? "..." : ""}</p>
+          <ul className="portal-pengumuman-list portal-peng-expandable">
+            {pengumuman.map((p) => {
+              const isOpen = expandedId === p.id;
+              const desc = p.keteranganPengumuman || "";
+              const isLong = desc.length > 100;
+              return (
+                <li key={p.id} className={`portal-peng-item ${isOpen ? "is-open" : ""}`}>
+                  <button
+                    type="button"
+                    className="portal-peng-toggle"
+                    onClick={() => setExpandedId(isOpen ? null : p.id)}
+                    aria-expanded={isOpen}
+                    aria-label={`${isOpen ? "Tutup" : "Baca"} pengumuman: ${p.judul}`}
+                  >
+                    <span className="portal-peng-dot" aria-hidden />
+                    <span className="portal-peng-main">
+                      <span className="portal-peng-top">
+                        <span className="portal-peng-judul">{p.judul}</span>
+                        <span className="portal-peng-date">
+                          <Calendar size={12} /> {formatTanggalSingkat(p.createDate)}
+                        </span>
+                      </span>
+                      {desc && (
+                        <span className={`portal-peng-desc ${isOpen ? "full" : ""}`}>
+                          {isOpen || !isLong ? desc : `${desc.slice(0, 100)}...`}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown size={16} className={`portal-peng-chevron ${isOpen ? "rotated" : ""}`} aria-hidden />
+                  </button>
+                  {isOpen && p.filePengumuman && (
+                    <a
+                      href={pengumumanApi.fileUrl?.(p.filePengumuman) || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="portal-peng-lampiran"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <FileText size={12} /> Lihat Lampiran
+                    </a>
                   )}
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

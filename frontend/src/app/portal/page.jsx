@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, CreditCard, CheckCircle, AlertTriangle, Clock, Megaphone } from "lucide-react";
+import { Home, CheckCircle, AlertTriangle, Clock, Megaphone, ArrowRight, Wallet } from "lucide-react";
 import { portalApi, pengumumanApi } from "@/lib/api";
 import Link from "next/link";
 
@@ -116,93 +116,94 @@ export default function PortalDashboardPage() {
     return { rumah: r, tagihan: tag || null };
   });
 
-  return (
-    <div className="page-stack">
-      {/* Welcome Banner */}
-      <section className="portal-welcome-banner">
-        <div className="portal-welcome-text">
-          <h2>Halo, {user?.nama || user?.name} 👋</h2>
-          <p>Selamat datang di Portal Warga Cluster Topaz</p>
-        </div>
-        <div className="portal-welcome-decoration" aria-hidden />
-      </section>
+  const now = new Date();
+  const periodeLabel = getMonthLabel(
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getFullYear())
+  );
+  const heroStatus = semuaLunas
+    ? "LUNAS"
+    : adaMenunggu
+      ? "MENUNGGU_KONFIRMASI"
+      : adaBelumLunas
+        ? "BELUM_LUNAS"
+        : null;
+  const countLunas = summaryBulanIni?.lunas ?? tagihanBulanIniList.filter((t) => t.statusPembayaran === "LUNAS").length;
+  const countBelum = summaryBulanIni?.belumLunas ?? tagihanBulanIniList.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length;
+  const countMenunggu = summaryBulanIni?.menunggu ?? tagihanBulanIniList.filter((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI").length;
+  const firstName = (user?.nama || user?.name || "Warga").split(" ")[0];
 
-      {/* Stat Cards */}
-      <section className="portal-stat-row">
-        {/* Status IPL gabungan semua rumah */}
-        <div className={`portal-stat-card ${semuaLunas ? "card-success" : adaMenunggu ? "card-warning" : "card-danger"}`}>
-          <div className="portal-stat-icon">
-            <CreditCard size={22} />
+  return (
+    <div className="page-stack portal-dashboard">
+      {/* Hero tunggal: sapaan + sisa tagihan bulan ini + CTA */}
+      <section className={`portal-hero ${semuaLunas ? "is-success" : ""}`}>
+        <div className="portal-hero-accent" aria-hidden />
+        <div className="portal-hero-main">
+          <div className="portal-hero-left">
+            <p className="portal-hero-eyebrow">Portal Warga · RW 21 · Cluster Topaz</p>
+            <h2>Halo, {firstName} 👋</h2>
+            <p className="portal-hero-sub">
+              {rumahList.length > 1
+                ? `Kelola ${rumahList.length} unit rumah Anda dalam satu tempat.`
+                : "Selamat datang di Portal Warga Cluster Topaz."}
+            </p>
+            <div className="portal-hero-meta">
+              <span className="portal-hero-periode">
+                <Wallet size={13} /> IPL {periodeLabel}
+                {rumahList.length > 1 ? ` · ${rumahList.length} unit` : ""}
+              </span>
+              {tagihanBulanIniList.length > 0 && (
+                <span className="portal-hero-summary">
+                  {countLunas} lunas · {countBelum} belum
+                  {countMenunggu > 0 ? ` · ${countMenunggu} menunggu` : ""}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="portal-stat-body">
-            <span className="portal-stat-label">
-              Sisa Tagihan Bulan Ini{rumahList.length > 1 ? ` (${rumahList.length} Rumah)` : ""}
-            </span>
+          <div className="portal-hero-right">
+            <span className="portal-hero-label">Sisa Tagihan Bulan Ini</span>
             {tagihanBulanIniList.length > 0 ? (
               <>
-                <span className="portal-stat-value">
+                <span className="portal-hero-value">
                   Rp {totalBelumBayar.toLocaleString("id-ID")}
                 </span>
-                <span className="portal-stat-sub">
-                  {summaryBulanIni ? (
-                    <>
-                      {summaryBulanIni.lunas || 0} lunas · {summaryBulanIni.belumLunas || 0} belum lunas
-                      {(summaryBulanIni.menunggu || 0) > 0 ? ` · ${summaryBulanIni.menunggu} menunggu` : ""}
-                    </>
-                  ) : (
-                    <>
-                      {tagihanBulanIniList.filter((t) => t.statusPembayaran === "LUNAS").length} lunas ·{" "}
-                      {tagihanBulanIniList.filter((t) => t.statusPembayaran !== "LUNAS").length} belum lunas
-                    </>
-                  )}
-                </span>
-                {semuaLunas ? (
-                  <StatusBadge status="LUNAS" />
-                ) : adaMenunggu ? (
-                  <StatusBadge status="MENUNGGU_KONFIRMASI" />
+                {heroStatus && <StatusBadge status={heroStatus} />}
+                {adaBelumLunas ? (
+                  <Link href="/portal/tagihan" className="portal-hero-btn">
+                    Bayar Sekarang <ArrowRight size={15} />
+                  </Link>
                 ) : (
-                  <StatusBadge status="BELUM_LUNAS" />
+                  <Link href="/portal/tagihan" className="portal-hero-btn ghost">
+                    Lihat Riwayat <ArrowRight size={15} />
+                  </Link>
                 )}
               </>
             ) : (
-              <span className="portal-stat-value portal-no-data">Belum ada tagihan</span>
+              <>
+                <span className="portal-hero-value muted">Belum ada tagihan</span>
+                <span className="portal-hero-summary">Tagihan IPL bulan ini belum diterbitkan.</span>
+              </>
             )}
           </div>
         </div>
-
-        {/* Jumlah Rumah */}
-        <div className="portal-stat-card card-info">
-          <div className="portal-stat-icon">
-            <Home size={22} />
-          </div>
-          <div className="portal-stat-body">
-            <span className="portal-stat-label">Unit Rumah</span>
-            <span className="portal-stat-value">{rumahList.length} Unit</span>
-            <span className="portal-stat-sub">
-              {rumahList.length > 1
-                ? `Anda memiliki ${rumahList.length} unit rumah`
-                : rumahList.length === 1
-                  ? `${rumahList[0].blokRumah} (${String(rumahList[0].rt || "").replace("_", " ")})`
-                  : "Belum terdaftar"}
-            </span>
-          </div>
-        </div>
+        <div className="portal-hero-orb orb-a" aria-hidden />
+        <div className="portal-hero-orb orb-b" aria-hidden />
       </section>
 
-      {/* Daftar Unit Rumah — ramah untuk multi-rumah */}
+      {/* Daftar Unit Rumah — satu-satunya sumber info unit + status */}
       {rumahList.length > 0 && (
-        <section className="content-card">
+        <section className="content-card portal-unit-card">
           <div className="card-header-row">
-            <h3><Home size={16} /> Unit Rumah Saya</h3>
+            <h3><Home size={16} /> Unit Rumah Saya ({rumahList.length})</h3>
             <Link href="/portal/tagihan" className="link-lihat-semua">Lihat tagihan →</Link>
           </div>
-          <ul className="portal-pengumuman-list">
+          <ul className="portal-unit-list">
             {tagihanPerRumah.map(({ rumah, tagihan }) => (
-              <li key={rumah.id} className="portal-pengumuman-item">
-                <div className="portal-stat-icon" style={{ width: 36, height: 36 }}>
+              <li key={rumah.id} className="portal-unit-item">
+                <div className="portal-unit-icon">
                   <Home size={18} />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="portal-unit-body">
                   <p className="portal-peng-judul">
                     {rumah.blokRumah} — {String(rumah.rt || "").replace("_", " ")}
                   </p>
@@ -212,7 +213,7 @@ export default function PortalDashboardPage() {
                       : "Belum ada tagihan bulan ini"}
                   </p>
                 </div>
-                <div>
+                <div className="portal-unit-status">
                   {tagihan ? (
                     <StatusBadge status={tagihan.statusPembayaran} />
                   ) : (
@@ -232,22 +233,6 @@ export default function PortalDashboardPage() {
           <p><strong>Rumah belum terdaftar</strong></p>
           <p>Silakan hubungi pengurus cluster untuk menghubungkan akun Anda dengan data rumah.</p>
         </div>
-      )}
-
-      {/* Quick Action — tampil jika ada tagihan belum lunas di salah satu rumah */}
-      {adaBelumLunas && (
-        <section className="portal-action-banner">
-          <div className="portal-action-text">
-            <AlertTriangle size={18} />
-            <span>
-              Ada {tagihanBulanIniList.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length} tagihan IPL bulan ini belum dibayar
-              {rumahList.length > 1 ? ` (${rumahList.length} unit rumah)` : ""}
-            </span>
-          </div>
-          <Link href="/portal/tagihan" className="portal-action-btn">
-            Bayar Sekarang
-          </Link>
-        </section>
       )}
 
       {/* Pengumuman Terbaru */}

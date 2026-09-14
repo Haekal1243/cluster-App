@@ -1827,7 +1827,7 @@ select {
   left: 0;
   height: 100vh;
   width: var(--sidebar-w);
-  background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+  background: linear-gradient(160deg, #0f172a 0%, #0a1120 100%);
   border-right: 1px solid rgba(255,255,255,0.06);
   display: flex;
   flex-direction: column;
@@ -1853,7 +1853,7 @@ select {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #0d9488, #0f766e);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1879,7 +1879,7 @@ select {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #0d9488, #134e4a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1930,7 +1930,7 @@ select {
 }
 
 .portal-avatar {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+  background: linear-gradient(135deg, #0d9488, #134e4a) !important;
 }
 
 .portal-header-name {
@@ -1954,7 +1954,7 @@ select {
   width: 36px;
   height: 36px;
   border: 3px solid var(--db-border);
-  border-top-color: #6366f1;
+  border-top-color: #0d9488;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1963,7 +1963,7 @@ select {
   width: 20px;
   height: 20px;
   border: 2px solid var(--db-border);
-  border-top-color: #6366f1;
+  border-top-color: #0d9488;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1981,36 +1981,252 @@ select {
   to { transform: rotate(360deg); }
 }
 
-/* ---- Portal Welcome Banner ---- */
-.portal-welcome-banner {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
-  border-radius: 16px;
-  padding: 28px 32px;
+/* ---- Portal Hero (dashboard): sapaan + sisa tagihan + CTA dalam 1 kartu ---- */
+.portal-hero {
   position: relative;
+  border-radius: 20px;
+  padding: 28px 32px;
   overflow: hidden;
-  margin-bottom: 8px;
+  background: linear-gradient(135deg, #0f172a 0%, #134e4a 100%);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.22);
+  color: #fff;
 }
 
-.portal-welcome-text h2 {
+.portal-hero.is-success {
+  background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
+}
+
+.portal-hero-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #0d9488;
+}
+
+.portal-hero-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.portal-hero-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #5eead4;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+}
+
+.portal-hero-left h2 {
   color: #fff;
   font-size: 1.5rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   margin-bottom: 4px;
 }
 
-.portal-welcome-text p {
-  color: rgba(255,255,255,0.8);
-  font-size: 0.95rem;
+.portal-hero-sub {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
 }
 
-.portal-welcome-decoration {
+.portal-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.portal-hero-periode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.portal-hero-summary {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.portal-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 220px;
+}
+
+.portal-hero-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.portal-hero-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.portal-hero-value.muted {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.portal-hero .ipl-status-badge {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.portal-hero .ipl-status-badge.status-lunas {
+  background: rgba(45, 212, 191, 0.18);
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #99f6e4;
+}
+
+.portal-hero .ipl-status-badge.status-belum {
+  background: rgba(248, 113, 113, 0.18);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fecaca;
+}
+
+.portal-hero .ipl-status-badge.status-menunggu {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fde68a;
+}
+
+.portal-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: #0d9488;
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.4);
+  transition: background 0.2s ease, transform 0.15s ease;
+  white-space: nowrap;
+}
+
+.portal-hero-btn:hover {
+  background: #0f766e;
+  transform: translateY(-1px);
+}
+
+.portal-hero-btn.ghost {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+.portal-hero-btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.portal-hero-orb {
   position: absolute;
-  right: -40px;
-  top: -40px;
-  width: 200px;
-  height: 200px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+
+.portal-hero-orb.orb-a {
+  right: -60px;
+  top: -60px;
+  width: 220px;
+  height: 220px;
+  background: rgba(13, 148, 136, 0.22);
+  filter: blur(2px);
+}
+
+.portal-hero-orb.orb-b {
+  right: 140px;
+  bottom: -90px;
+  width: 160px;
+  height: 160px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ---- Portal Unit List (satu-satunya sumber info unit) ---- */
+.portal-unit-card {
+  padding: 22px 24px;
+}
+
+.portal-unit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-unit-item {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.portal-unit-item:last-child {
+  border-bottom: none;
+}
+
+.portal-unit-item:hover {
+  background: #f8fafc;
+}
+
+.portal-unit-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #0d9488;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portal-unit-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-unit-status {
+  flex-shrink: 0;
+}
+
+/* Legacy: welcome banner disembunyikan bertahap — pertahankan agar tidak merusak halaman lain */
+.portal-welcome-banner {
+  display: none;
 }
 
 /* ---- Portal Stat Cards ---- */
@@ -2039,15 +2255,15 @@ select {
 .portal-stat-card.card-success { border-left: 4px solid #22c55e; }
 .portal-stat-card.card-danger  { border-left: 4px solid #ef4444; }
 .portal-stat-card.card-warning { border-left: 4px solid #f59e0b; }
-.portal-stat-card.card-info    { border-left: 4px solid #6366f1; }
+.portal-stat-card.card-info    { border-left: 4px solid #0d9488; }
 
 .portal-stat-icon {
   flex-shrink: 0;
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(99, 102, 241, 0.1);
-  color: #6366f1;
+  background: #ecfdf5;
+  color: #0d9488;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2167,7 +2383,7 @@ select {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #6366f1;
+  background: #0d9488;
   margin-top: 6px;
 }
 
@@ -2584,9 +2800,13 @@ select {
 
 .link-lihat-semua {
   font-size: 0.82rem;
-  color: #6366f1;
+  color: #0d9488;
   text-decoration: none;
   font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .link-lihat-semua:hover { text-decoration: underline; }
@@ -2624,6 +2844,36 @@ select {
   .portal-action-banner {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .portal-hero {
+    padding: 24px 20px;
+  }
+
+  .portal-hero-main {
+    flex-direction: column;
+  }
+
+  .portal-hero-right {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .portal-hero-value {
+    font-size: 1.6rem;
+  }
+
+  .portal-hero-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .portal-unit-item {
+    align-items: flex-start;
+  }
+
+  .portal-unit-status {
+    margin-top: 2px;
   }
 
   .portal-kegiatan-grid {

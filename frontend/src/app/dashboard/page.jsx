@@ -73,7 +73,6 @@ function StatusDot({ status }) {
   return <span className={`db-status-dot ${cls}`}>{label}</span>;
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
   // Auth guard sudah ditangani di dashboard/layout.jsx untuk semua halaman /dashboard/*

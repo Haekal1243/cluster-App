@@ -75,6 +75,7 @@ function StatusDot({ status }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const router = useRouter();
   // Auth guard sudah ditangani di dashboard/layout.jsx untuk semua halaman /dashboard/*
   const [user, setUser] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);

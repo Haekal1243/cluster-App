@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { showMessage } from "@/lib/message";
 
 const EMPTY_FORM = {
   judul: "",
   keteranganPengumuman: "",
-  status: "active",
 };
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export default function PengumumanFormModal({
   open,
@@ -28,7 +30,6 @@ export default function PengumumanFormModal({
       setForm({
         judul: initialData.judul ?? "",
         keteranganPengumuman: initialData.keteranganPengumuman ?? "",
-        status: initialData.status ?? "active",
       });
     } else {
       setForm(EMPTY_FORM);
@@ -44,7 +45,14 @@ export default function PengumumanFormModal({
   };
 
   const handleFileChange = (event) => {
-    setFile(event.target.files?.[0] ?? null);
+    const f = event.target.files?.[0] ?? null;
+    if (f && f.size > MAX_FILE_SIZE) {
+      showMessage("File Terlalu Besar", "Ukuran file maksimal 10 MB.", "warning");
+      event.target.value = "";
+      setFile(null);
+      return;
+    }
+    setFile(f);
   };
 
   const handleSubmit = async (event) => {
@@ -61,7 +69,7 @@ export default function PengumumanFormModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(event) => event.stopPropagation()}>
+      <div className="modal-box pengumuman-modal" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h3>
             {mode === "edit" ? "Edit Pengumuman" : "Tambah Pengumuman"}
@@ -107,20 +115,6 @@ export default function PengumumanFormModal({
             </div>
 
             <div className="form-group">
-              <label htmlFor="status">Status</label>
-              <select
-                id="status"
-                name="status"
-                className="form-control custom-select"
-                value={form.status}
-                onChange={handleChange}
-              >
-                <option value="active">Aktif</option>
-                <option value="unactived">Nonaktif</option>
-              </select>
-            </div>
-
-            <div className="form-group">
               <label>File Pengumuman</label>
               <div className="file-input-wrapper">
                 <label className="file-input-label">
@@ -139,6 +133,7 @@ export default function PengumumanFormModal({
                       : "Belum ada file"}
                 </span>
               </div>
+              <span className="field-hint">PDF / DOC / DOCX / JPG / PNG · Maks. 10 MB</span>
             </div>
           </div>
 

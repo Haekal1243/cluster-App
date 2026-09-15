@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { showMessage } from "@/lib/message";
 
 const EMPTY_FORM = {
   judul: "",
   deskripsi: "",
   tanggalAcara: "",
-  status: "active",
 };
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 function toDateInputValue(value) {
   if (!value) return "";
@@ -35,7 +37,6 @@ export default function KegiatanFormModal({
         judul: initialData.judul ?? "",
         deskripsi: initialData.deskripsi ?? "",
         tanggalAcara: toDateInputValue(initialData.tanggalAcara),
-        status: initialData.status ?? "active",
       });
     } else {
       setForm(EMPTY_FORM);
@@ -51,7 +52,14 @@ export default function KegiatanFormModal({
   };
 
   const handleFileChange = (event) => {
-    setFile(event.target.files?.[0] ?? null);
+    const f = event.target.files?.[0] ?? null;
+    if (f && f.size > MAX_FILE_SIZE) {
+      showMessage("File Terlalu Besar", "Ukuran gambar maksimal 10 MB.", "warning");
+      event.target.value = "";
+      setFile(null);
+      return;
+    }
+    setFile(f);
   };
 
   const handleSubmit = async (event) => {
@@ -69,7 +77,7 @@ export default function KegiatanFormModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(event) => event.stopPropagation()}>
+      <div className="modal-box kegiatan-modal" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h3>{mode === "edit" ? "Edit Kegiatan" : "Tambah Kegiatan"}</h3>
           <button
@@ -131,20 +139,6 @@ export default function KegiatanFormModal({
             </div>
 
             <div className="form-group">
-              <label htmlFor="status">Status</label>
-              <select
-                id="status"
-                name="status"
-                className="form-control custom-select"
-                value={form.status}
-                onChange={handleChange}
-              >
-                <option value="active">Aktif</option>
-                <option value="unactived">Nonaktif</option>
-              </select>
-            </div>
-
-            <div className="form-group">
               <label>
                 Gambar Kegiatan{" "}
                 {mode === "create" && <span className="required-star">*</span>}
@@ -167,6 +161,7 @@ export default function KegiatanFormModal({
                       : "Belum ada gambar"}
                 </span>
               </div>
+              <span className="field-hint">JPG / PNG · Maks. 10 MB</span>
             </div>
           </div>
 

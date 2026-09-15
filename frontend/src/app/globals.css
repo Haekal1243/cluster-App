@@ -438,6 +438,12 @@ select {
   font-size: 13px;
 }
 
+.field-hint {
+  margin-top: 4px;
+  color: var(--db-muted, #94a3b8);
+  font-size: 12px;
+}
+
 .btn-next:disabled {
   background: #e2e8f0;
   color: #94a3b8;
@@ -719,6 +725,9 @@ select {
   font-weight: 700;
   color: var(--db-slate-700);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-menu-btn {
@@ -1209,6 +1218,20 @@ select {
   overflow-x: auto;
 }
 
+/* Cegah teks di tabel/kartu data ke-select/ke-blok pas di-tap atau di-drag,
+   terutama di mobile (kartu-kartu ini sekarang banyak yang bisa diklik). */
+.data-table,
+.ipl-table,
+.pengaduan-grid-card,
+.pengumuman-grid-card,
+.kegiatan-grid-card,
+.portal-kegiatan-card,
+.portal-info-card {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -1320,6 +1343,353 @@ select {
   text-align: center;
   color: var(--db-slate-500);
   font-size: 0.9rem;
+}
+
+/* ==========================================
+   List toolbar: search + filter (generic, dipakai di halaman
+   master data / list manapun — Pengumuman, Pengaduan, dll)
+   ========================================== */
+.list-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.list-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 220px;
+}
+
+.list-search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--db-slate-400);
+  pointer-events: none;
+}
+
+.list-search-input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1px solid var(--db-border);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-family: "Poppins", sans-serif;
+  color: var(--db-slate-700);
+  background: var(--db-surface);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.list-search-input:focus { border-color: var(--db-primary); }
+
+.list-filter-select { min-width: 150px; }
+
+.list-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  border-top: 1px solid var(--db-border);
+}
+
+.list-pagination-info {
+  font-size: 0.8rem;
+  color: var(--db-slate-500);
+}
+
+.list-pagination-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.list-pagination-actions .list-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+}
+
+.list-pagination-actions .list-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.list-pagination-actions .list-pagination-btn:disabled:hover {
+  background: #e2e8f0;
+}
+
+/* Grid kartu Pengumuman — dipakai gantinya tabel di layar mobile (lihat @media max-width:600px) */
+.pengumuman-grid { display: none; }
+
+.pengumuman-grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 12px;
+}
+
+.pengumuman-grid-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--db-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pengumuman-grid-date {
+  font-size: 0.68rem;
+  color: var(--db-muted);
+}
+
+.pengumuman-grid-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--db-border);
+}
+
+.pengumuman-grid-footer .status-cell {
+  gap: 6px;
+}
+
+.pengumuman-grid-footer .status-cell-label {
+  font-size: 0.68rem;
+}
+
+.pengumuman-grid-footer .table-actions {
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.pengumuman-grid-footer .btn-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.pengumuman-grid-footer .ui-switch {
+  width: 32px;
+  height: 18px;
+}
+
+.pengumuman-grid-footer .ui-switch-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.pengumuman-grid-footer .ui-switch.is-checked .ui-switch-thumb {
+  transform: translateX(14px);
+}
+
+/* Grid kartu Kegiatan (admin) — dipakai gantinya tabel di layar mobile */
+.kegiatan-grid { display: none; }
+
+.kegiatan-grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 12px;
+}
+
+.kegiatan-grid-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--db-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kegiatan-grid-date {
+  font-size: 0.68rem;
+  color: var(--db-muted);
+}
+
+.kegiatan-grid-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--db-border);
+}
+
+.kegiatan-grid-footer .status-cell {
+  gap: 6px;
+}
+
+.kegiatan-grid-footer .status-cell-label {
+  font-size: 0.68rem;
+}
+
+.kegiatan-grid-footer .table-actions {
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.kegiatan-grid-footer .btn-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.kegiatan-grid-footer .ui-switch {
+  width: 32px;
+  height: 18px;
+}
+
+.kegiatan-grid-footer .ui-switch-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.kegiatan-grid-footer .ui-switch.is-checked .ui-switch-thumb {
+  transform: translateX(14px);
+}
+
+@media (max-width: 600px) {
+  .list-toolbar-row { flex-direction: column; align-items: stretch; }
+  .list-search-wrap { min-width: unset; }
+  .list-filter-select { width: 100%; }
+
+  /* Tabel Pengumuman: diganti grid kartu 2 kolom, tanpa scroll horizontal */
+  .pengumuman-table-wrapper { display: none; }
+
+  .pengumuman-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .list-pagination {
+    padding: 12px 14px;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .list-pagination-actions { justify-content: center; }
+
+  /* Pop up Tambah/Edit Pengumuman: dikecilin biar gak penuh layar */
+  .pengumuman-modal {
+    max-width: 92vw;
+  }
+  .pengumuman-modal .modal-header {
+    padding: 12px 16px;
+  }
+  .pengumuman-modal .modal-header h3 {
+    font-size: 0.92rem;
+  }
+  .pengumuman-modal .modal-body {
+    padding: 14px 16px;
+    max-height: 70vh;
+  }
+  .pengumuman-modal .form-group {
+    margin-bottom: 12px;
+  }
+  .pengumuman-modal .form-group label {
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+  }
+  .pengumuman-modal .form-control {
+    padding: 9px 12px;
+    font-size: 0.82rem;
+  }
+  .pengumuman-modal .file-input-label {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  .pengumuman-modal .file-current {
+    font-size: 0.76rem;
+  }
+  .pengumuman-modal .field-hint {
+    font-size: 0.7rem;
+  }
+  .pengumuman-modal .modal-footer {
+    padding: 12px 16px;
+  }
+  .pengumuman-modal .btn-outline-neutral,
+  .pengumuman-modal .btn-primary {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+
+  /* Tabel Kegiatan: diganti grid kartu 2 kolom, tanpa scroll horizontal */
+  .kegiatan-table-wrapper { display: none; }
+
+  .kegiatan-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  /* Pop up Tambah/Edit Kegiatan: dikecilin biar gak penuh layar */
+  .kegiatan-modal {
+    max-width: 92vw;
+  }
+  .kegiatan-modal .modal-header {
+    padding: 12px 16px;
+  }
+  .kegiatan-modal .modal-header h3 {
+    font-size: 0.92rem;
+  }
+  .kegiatan-modal .modal-body {
+    padding: 14px 16px;
+    max-height: 70vh;
+  }
+  .kegiatan-modal .form-group {
+    margin-bottom: 12px;
+  }
+  .kegiatan-modal .form-group label {
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+  }
+  .kegiatan-modal .form-control {
+    padding: 9px 12px;
+    font-size: 0.82rem;
+  }
+  .kegiatan-modal .file-input-label {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  .kegiatan-modal .file-current {
+    font-size: 0.76rem;
+  }
+  .kegiatan-modal .field-hint {
+    font-size: 0.7rem;
+  }
+  .kegiatan-modal .modal-footer {
+    padding: 12px 16px;
+  }
+  .kegiatan-modal .btn-outline-neutral,
+  .kegiatan-modal .btn-primary {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
 }
 
 .ui-switch {
@@ -1635,7 +2005,7 @@ select {
   }
 
   .header-left h1 {
-    font-size: 1.05rem;
+    font-size: 0.92rem;
   }
 
   .welcome-banner h2,
@@ -3777,6 +4147,67 @@ select {
 .ipl-table tr:last-child td { border-bottom: none; }
 .ipl-table tr:hover td { background: #f8fafc; }
 
+/* Grid kartu Pengaduan — dipakai gantinya tabel di layar mobile (lihat @media max-width:600px) */
+.pengaduan-grid { display: none; }
+
+.pengaduan-grid-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.pengaduan-grid-card:hover,
+.pengaduan-grid-card:focus-visible {
+  border-color: var(--db-primary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.pengaduan-grid-title {
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--db-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pengaduan-grid-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.7rem;
+  color: var(--db-muted);
+}
+
+.pengaduan-grid-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.pengaduan-grid-footer .ipl-status-badge {
+  padding: 2px 7px;
+  font-size: 0.58rem;
+}
+
+.pengaduan-grid-footer .btn-ipl-review,
+.pengaduan-grid-footer .btn-ipl-view {
+  padding: 4px 9px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
 .ipl-blok {
   display: block;
   font-weight: 600;
@@ -3948,6 +4379,20 @@ select {
 }
 .review-nominal { color: var(--db-primary); font-weight: 700; }
 
+/* Modal Pengaduan (Tanggapi/Detail): 4 info item ditampilkan sebagai kartu masing-masing,
+   bukan menyatu jadi satu kartu besar yang full bleed kiri-kanan. */
+.pengaduan-modal .review-info-grid {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+.pengaduan-modal .review-info-item {
+  background: #f8fafc;
+  border: 1px solid var(--db-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
 .review-bukti-section { display: flex; flex-direction: column; gap: 8px; }
 .review-bukti-label {
   font-size: 0.82rem;
@@ -4011,10 +4456,84 @@ select {
   .ipl-summary-grid { grid-template-columns: 1fr; }
   .ipl-filter-bar { flex-direction: column; align-items: stretch; }
   .ipl-filter-search { min-width: unset; }
+  .ipl-page-title { font-size: 1.1rem; }
+  .ipl-page-subtitle { font-size: 0.78rem; }
   .ipl-page-header { flex-direction: column; }
   .review-info-grid { grid-template-columns: 1fr; }
   .ipl-form-row { grid-template-columns: 1fr; }
   .review-action-row { flex-direction: column; }
+
+  /* Modal Pengaduan (Tanggapi/Detail) di mobile: dikecilin biar gak penuh layar */
+  .pengaduan-modal.ipl-modal-review { max-width: 92vw; }
+
+  .pengaduan-modal .ipl-modal-header {
+    padding: 12px 16px;
+  }
+  .pengaduan-modal .ipl-modal-header h3 {
+    font-size: 0.88rem;
+  }
+  .pengaduan-modal .ipl-modal-body {
+    padding: 16px;
+    gap: 12px;
+    max-height: 75vh;
+    overflow-y: auto;
+    font-size: 0.82rem;
+  }
+  .pengaduan-modal .review-info-grid {
+    gap: 8px;
+  }
+  .pengaduan-modal .review-info-item {
+    padding: 8px 10px;
+  }
+  .pengaduan-modal .review-info-label {
+    font-size: 0.64rem;
+  }
+  .pengaduan-modal .review-info-value {
+    font-size: 0.78rem;
+  }
+  .pengaduan-modal .review-bukti-label {
+    font-size: 0.74rem;
+  }
+  .pengaduan-modal .ipl-form-group label {
+    font-size: 0.74rem;
+  }
+  .pengaduan-modal .ipl-select,
+  .pengaduan-modal .ipl-textarea {
+    font-size: 0.78rem;
+    padding: 7px 10px;
+  }
+  .pengaduan-modal .btn-ipl-secondary,
+  .pengaduan-modal .btn-ipl-success {
+    padding: 7px 14px;
+    font-size: 0.78rem;
+  }
+
+  /* Filter Pengaduan: card abu-abu, 2 kolom (Bulan/Tahun, Kategori/Status) sesuai desain,
+     dipadatkan biar gak makan banyak tempat di layar mobile */
+  .pengaduan-filter-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 8px;
+    padding: 12px;
+    background: var(--db-bg);
+  }
+  .pengaduan-filter-bar .ipl-filter-group { width: 100%; gap: 3px; }
+  .pengaduan-filter-bar .ipl-filter-group label { font-size: 0.66rem; }
+  .pengaduan-filter-bar .ipl-select {
+    width: 100%;
+    padding: 6px 24px 6px 8px;
+    font-size: 0.74rem;
+  }
+
+  /* Tabel Pengaduan: diganti grid kartu 2 kolom, tanpa scroll horizontal */
+  .pengaduan-table-wrapper { display: none; }
+
+  .pengaduan-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
 }
 
 /* ============================================================
@@ -4357,5 +4876,44 @@ select {
 
   .db-metric-sub {
     font-size: 0.66rem;
+  }
+}
+
+/* ============================================================
+   SweetAlert2 (showMessage / showConfirm) — dikecilin di mobile.
+   SweetAlert2 nyuntik CSS-nya sendiri saat runtime, jadi override
+   di sini pakai !important supaya konsisten menang urutan-cascade-nya.
+   ============================================================ */
+@media (max-width: 600px) {
+  .swal2-popup {
+    width: 88vw !important;
+    padding: 1em 0.5em 1.3em !important;
+    border-radius: 14px !important;
+  }
+  .swal2-title {
+    font-size: 1.1em !important;
+    padding: 0.4em 0.6em 0 !important;
+  }
+  .swal2-html-container {
+    font-size: 0.82em !important;
+    margin: 0.6em 1em 0 !important;
+  }
+  .swal2-icon {
+    width: 3.4em !important;
+    height: 3.4em !important;
+    margin: 1.1em auto 0.4em !important;
+  }
+  .swal2-actions {
+    margin: 1.2em auto 0 !important;
+    gap: 8px;
+  }
+  .swal2-styled {
+    padding: 0.5em 1.4em !important;
+    font-size: 0.82em !important;
+  }
+  .swal2-close {
+    font-size: 1.6em !important;
+    width: 1em !important;
+    height: 1em !important;
   }
 }

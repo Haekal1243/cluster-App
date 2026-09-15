@@ -83,6 +83,12 @@ export class PengaduanService {
       throw new NotFoundException(`Pengaduan dengan ID ${id} tidak ditemukan`);
     }
 
+    if (existing.status === 'SELESAI' || existing.status === 'DITOLAK') {
+      throw new ForbiddenException(
+        'Pengaduan yang sudah Selesai atau Ditolak tidak dapat ditanggapi lagi',
+      );
+    }
+
     const data = await this.prisma.pengaduan.update({
       where: { id },
       data: {

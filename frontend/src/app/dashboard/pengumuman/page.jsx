@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Calendar, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { pengumumanApi } from "@/lib/api";
 import { showConfirm, showMessage } from "@/lib/message";
 import Switch from "@/components/ui/switch";
 import PengumumanFormModal from "@/components/pengumuman/PengumumanFormModal";
 
 const CURRENT_USER = "Admin";
+const PAGE_SIZE = 10;
 
 function formatDate(value) {
   if (!value) return "-";
@@ -24,6 +25,9 @@ export default function PengumumanPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("SEMUA");
+  const [page, setPage] = useState(1);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -41,6 +45,10 @@ export default function PengumumanPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus]);
+
   const openCreateModal = () => {
     setModalMode("create");
     setSelected(null);
@@ -53,13 +61,12 @@ export default function PengumumanPage() {
     setModalOpen(true);
   };
 
-  const handleSubmit = async ({ judul, keteranganPengumuman, status, file }) => {
+  const handleSubmit = async ({ judul, keteranganPengumuman, file }) => {
     try {
       if (modalMode === "edit" && selected) {
         await pengumumanApi.update(selected.id, {
           judul,
           keteranganPengumuman,
-          status,
           file,
           updateBy: CURRENT_USER,
         });
@@ -68,7 +75,6 @@ export default function PengumumanPage() {
         await pengumumanApi.create({
           judul,
           keteranganPengumuman,
-          status,
           file,
           createBy: CURRENT_USER,
         });
@@ -120,6 +126,30 @@ export default function PengumumanPage() {
     }
   };
 
+  const sortedItems = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const filtered = items.filter((item) => {
+      const matchStatus = filterStatus === "SEMUA" || item.status === filterStatus;
+      const matchSearch =
+        !query ||
+        item.judul?.toLowerCase().includes(query) ||
+        item.keteranganPengumuman?.toLowerCase().includes(query);
+      return matchStatus && matchSearch;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (a.status !== b.status) return a.status === "active" ? -1 : 1;
+      return new Date(b.createDate) - new Date(a.createDate);
+    });
+  }, [items, search, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedItems.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedItems = sortedItems.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
   return (
     <div className="page-stack">
       <div className="page-toolbar">
@@ -133,68 +163,170 @@ export default function PengumumanPage() {
         </button>
       </div>
 
-      <div className="table-card">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Judul</th>
-              <th>Tanggal Pengumuman</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!isLoading &&
-              items.map((item, index) => (
-                <tr key={item.id}>
-                  <td>{index + 1}</td>
-                  <td className="col-judul">{item.judul}</td>
-                  <td>{formatDate(item.createDate)}</td>
-                  <td>
-                    <div className="status-cell">
-                      <Switch
-                        checked={item.status === "active"}
-                        onCheckedChange={(checked) =>
-                          handleToggleStatus(item, checked)
-                        }
-                        label={`Status ${item.judul}`}
-                      />
-                      <span className="status-cell-label">
-                        {item.status === "active" ? "Aktif" : "Nonaktif"}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="table-actions">
-                      <button
-                        type="button"
-                        className="btn-icon"
-                        onClick={() => openEditModal(item)}
-                        aria-label="Edit"
-                        title="Edit"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-icon danger"
-                        onClick={() => handleDelete(item)}
-                        aria-label="Hapus"
-                        title="Hapus"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+      <div className="list-toolbar-row">
+        <div className="list-search-wrap">
+          <Search size={15} className="list-search-icon" />
+          <input
+            type="text"
+            placeholder="Cari judul atau keterangan..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="list-search-input"
+          />
+        </div>
+        <select
+          className="ipl-select ipl-select-sm list-filter-select"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="SEMUA">Semua Status</option>
+          <option value="active">Aktif</option>
+          <option value="unactived">Nonaktif</option>
+        </select>
+      </div>
+
+      <div className="table-card pengumuman-table-card">
+        <div className="table-wrapper pengumuman-table-wrapper">
+          <table className="data-table pengumuman-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Judul</th>
+                <th>Tanggal Pengumuman</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!isLoading &&
+                paginatedItems.map((item, index) => (
+                  <tr key={item.id}>
+                    <td>{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
+                    <td className="col-judul">{item.judul}</td>
+                    <td>{formatDate(item.createDate)}</td>
+                    <td>
+                      <div className="status-cell">
+                        <Switch
+                          checked={item.status === "active"}
+                          onCheckedChange={(checked) =>
+                            handleToggleStatus(item, checked)
+                          }
+                          label={`Status ${item.judul}`}
+                        />
+                        <span className="status-cell-label">
+                          {item.status === "active" ? "Aktif" : "Nonaktif"}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => openEditModal(item)}
+                          aria-label="Edit"
+                          title="Edit"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-icon danger"
+                          onClick={() => handleDelete(item)}
+                          aria-label="Hapus"
+                          title="Hapus"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="pengumuman-grid">
+          {!isLoading &&
+            paginatedItems.map((item) => (
+              <div key={item.id} className="pengumuman-grid-card">
+                <h3 className="pengumuman-grid-title">{item.judul}</h3>
+                <span className="meta-item pengumuman-grid-date">
+                  <Calendar size={11} /> {formatDate(item.createDate)}
+                </span>
+                <div className="pengumuman-grid-footer">
+                  <div className="table-actions">
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      onClick={() => openEditModal(item)}
+                      aria-label="Edit"
+                      title="Edit"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-icon danger"
+                      onClick={() => handleDelete(item)}
+                      aria-label="Hapus"
+                      title="Hapus"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  <div className="status-cell">
+                    <Switch
+                      checked={item.status === "active"}
+                      onCheckedChange={(checked) => handleToggleStatus(item, checked)}
+                      label={`Status ${item.judul}`}
+                    />
+                    <span className="status-cell-label">
+                      {item.status === "active" ? "Aktif" : "Nonaktif"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+        </div>
 
         {isLoading && <div className="table-loading">Memuat data...</div>}
-        {!isLoading && items.length === 0 && (
-          <div className="table-empty">Belum ada data pengumuman.</div>
+        {!isLoading && sortedItems.length === 0 && (
+          <div className="table-empty">
+            {items.length === 0
+              ? "Belum ada data pengumuman."
+              : "Tidak ada pengumuman yang cocok dengan pencarian/filter."}
+          </div>
+        )}
+
+        {!isLoading && sortedItems.length > 0 && (
+          <div className="list-pagination">
+            <span className="list-pagination-info">
+              Halaman {currentPage} dari {totalPages} · {sortedItems.length} data
+            </span>
+            <div className="list-pagination-actions">
+              <button
+                type="button"
+                className="btn-ipl-secondary list-pagination-btn"
+                disabled={currentPage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label="Halaman sebelumnya"
+                title="Halaman sebelumnya"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                className="btn-ipl-secondary list-pagination-btn"
+                disabled={currentPage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label="Halaman berikutnya"
+                title="Halaman berikutnya"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         )}
       </div>
 

@@ -13,6 +13,8 @@ const KATEGORI_OPTIONS = [
 ];
 
 const EMPTY_FORM = { judul: "", kategori: "KEBERSIHAN", deskripsi: "" };
+const JUDUL_MAX_LENGTH = 50;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export default function PengaduanFormModal({ onClose, onSuccess }) {
   const [form, setForm] = useState(EMPTY_FORM);
@@ -35,13 +37,24 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
 
   const handleFileChange = (e) => {
     const f = e.target.files?.[0];
-    if (f) setFile(f);
+    if (!f) return;
+    if (f.size > MAX_FILE_SIZE) {
+      showMessage("File Terlalu Besar", "Ukuran foto maksimal 10 MB.", "warning");
+      e.target.value = "";
+      return;
+    }
+    setFile(f);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     const f = e.dataTransfer.files?.[0];
-    if (f) setFile(f);
+    if (!f) return;
+    if (f.size > MAX_FILE_SIZE) {
+      showMessage("File Terlalu Besar", "Ukuran foto maksimal 10 MB.", "warning");
+      return;
+    }
+    setFile(f);
   };
 
   const handleSubmit = async (e) => {
@@ -89,8 +102,12 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
                 placeholder="Contoh: Lampu jalan mati"
                 value={form.judul}
                 onChange={handleChange}
+                maxLength={JUDUL_MAX_LENGTH}
                 required
               />
+              <span className="field-hint" style={{ display: "block", textAlign: "right" }}>
+                {form.judul.length}/{JUDUL_MAX_LENGTH}
+              </span>
             </div>
 
             <div className="form-group">
@@ -145,7 +162,7 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
                   <div className="bukti-drop-placeholder">
                     <ImageIcon size={36} strokeWidth={1.2} />
                     <p>Klik atau seret foto ke sini (opsional)</p>
-                    <span>JPG / PNG · Maks. 5 MB</span>
+                    <span>JPG / PNG · Maks. 10 MB</span>
                   </div>
                 )}
               </div>

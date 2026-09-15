@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -8,18 +9,22 @@ import {
   Wallet,
   CalendarDays,
   Megaphone,
+  MessageSquareWarning,
   X,
   ChevronLeft,
   ChevronRight,
   LogOut,
 } from "lucide-react";
+import { showConfirm } from "@/lib/message";
+import { clearSession } from "@/lib/session";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Data Warga", href: "/dashboard/warga", icon: Users },
-  { label: "Tagihan IPL", href: "/dashboard/iuran", icon: Wallet },
-  { label: "Kegiatan", href: "/dashboard/kegiatan", icon: CalendarDays },
-  { label: "Pengumuman", href: "/dashboard/pengumuman", icon: Megaphone },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "PENGURUS", "WARGA"] },
+  { label: "Data Warga", href: "/dashboard/warga", icon: Users, roles: ["ADMIN", "PENGURUS"] },
+  { label: "Tagihan IPL", href: "/dashboard/iuran", icon: Wallet, roles: ["ADMIN", "PENGURUS", "WARGA"] },
+  { label: "Pengaduan", href: "/dashboard/pengaduan", icon: MessageSquareWarning, roles: ["ADMIN", "PENGURUS", "WARGA"] },
+  { label: "Kegiatan", href: "/dashboard/kegiatan", icon: CalendarDays, roles: ["ADMIN", "PENGURUS"] },
+  { label: "Pengumuman", href: "/dashboard/pengumuman", icon: Megaphone, roles: ["ADMIN", "PENGURUS"] },
 ];
 
 export default function Sidebar({
@@ -30,9 +35,29 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [role, setRole] = useState(null);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
+  useEffect(() => {
+    try {
+      const rawUser = localStorage.getItem("user");
+      setRole(rawUser ? JSON.parse(rawUser)?.role : null);
+    } catch {
+      setRole(null);
+    }
+  }, []);
+
+  const navItems = NAV_ITEMS.filter((item) => !role || item.roles.includes(role));
+
+  const handleLogout = async () => {
+    const confirmed = await showConfirm(
+      "Keluar dari akun?",
+      "Kamu akan kembali ke halaman login.",
+      "warning",
+      "Ya, keluar",
+      "Batal"
+    );
+    if (!confirmed) return;
+    clearSession();
     router.replace("/login");
   };
 
@@ -66,7 +91,7 @@ export default function Sidebar({
         </div>
 
         <nav className="sidebar-nav">
-          {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+          {navItems.map(({ label, href, icon: Icon }) => {
             const isActive = pathname === href;
             return (
               <Link

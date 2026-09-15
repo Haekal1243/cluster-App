@@ -15,6 +15,7 @@ import { UpdateKegiatanDto } from './dto/update-kegiatan.dto';
 import { UpdateStatusKegiatanDto } from './dto/update-status-kegiatan.dto';
 import { kegiatanMulterOptions } from './kegiatan.multer';
 import { KegiatanService } from './kegiatan.service';
+import { Public } from '../auth/public.decorator';
 
 @Controller('kegiatan')
 export class KegiatanController {
@@ -34,6 +35,7 @@ export class KegiatanController {
     return this.kegiatanService.findAll();
   }
 
+  @Public()
   @Get('active')
   findActive() {
     return this.kegiatanService.findActive();

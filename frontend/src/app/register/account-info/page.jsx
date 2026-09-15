@@ -58,8 +58,8 @@ export default function AccountInfoPage() {
 
     if (accountData.password !== accountData.confirmPassword) {
       showMessage(
-        "Password Tidak Cocok",
-        "Password dan Confirm Password tidak cocok!",
+        "Kata Sandi Tidak Cocok",
+        "Kata sandi dan konfirmasi kata sandi tidak cocok!",
         "warning",
       );
       return;
@@ -110,7 +110,7 @@ export default function AccountInfoPage() {
         "Akun Anda berhasil dibuat. Silakan login.",
         "success",
       ).then(() => {
-        router.push("/");
+        router.push("/login");
       });
     } catch (error) {
       showMessage(
@@ -151,20 +151,20 @@ export default function AccountInfoPage() {
           className="auth-logo"
         />
       }
-      title="Create Account"
-      subtitle="Join the Permata Cimanggis Topaz Cluster Community"
+      title="Buat Akun"
+      subtitle="Bergabung dengan Komunitas Permata Cimanggis Topaz Cluster"
     >
       <div className="register-content-split">
         <RegisterStepper activeStep={2} />
 
         <div className="form-box">
-          <div className="form-box-header">Account Info</div>
+          <div className="form-box-header">Informasi Akun</div>
 
           <div className="form-box-body">
             <form>
               <div className="form-group">
                 <label htmlFor="email">
-                  Email Address <span className="required-star">*</span>
+                  Alamat Email <span className="required-star">*</span>
                 </label>
                 <input
                   id="email"
@@ -183,7 +183,7 @@ export default function AccountInfoPage() {
 
               <div className="form-group">
                 <label htmlFor="password">
-                  Password <span className="required-star">*</span>
+                  Kata Sandi <span className="required-star">*</span>
                 </label>
                 <input
                   id="password"
@@ -195,14 +195,14 @@ export default function AccountInfoPage() {
                 />
                 {showPasswordError && (
                   <span className="field-error">
-                    Panjang password minimal 6 karakter
+                    Panjang kata sandi minimal 6 karakter
                   </span>
                 )}
               </div>
 
               <div className="form-group">
                 <label htmlFor="confirmPassword">
-                  Confirm Password <span className="required-star">*</span>
+                  Konfirmasi Kata Sandi <span className="required-star">*</span>
                 </label>
                 <input
                   id="confirmPassword"
@@ -216,7 +216,7 @@ export default function AccountInfoPage() {
 
               <div className="form-actions">
                 <button type="button" className="btn-back" onClick={handleBack}>
-                  Back
+                  Kembali
                 </button>
                 <button
                   type="button"
@@ -224,7 +224,7 @@ export default function AccountInfoPage() {
                   onClick={handleFinish}
                   disabled={isFinishDisabled || isLoading}
                 >
-                  {isLoading ? "Menyimpan..." : "Finish"}
+                  {isLoading ? "Menyimpan..." : "Selesai"}
                 </button>
               </div>
             </form>

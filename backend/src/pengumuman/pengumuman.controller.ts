@@ -15,6 +15,7 @@ import { UpdatePengumumanDto } from './dto/update-pengumuman.dto';
 import { UpdateStatusPengumumanDto } from './dto/update-status-pengumuman.dto';
 import { pengumumanMulterOptions } from './pengumuman.multer';
 import { PengumumanService } from './pengumuman.service';
+import { Public } from '../auth/public.decorator';
 
 @Controller('pengumuman')
 export class PengumumanController {
@@ -34,6 +35,7 @@ export class PengumumanController {
     return this.pengumumanService.findAll();
   }
 
+  @Public()
   @Get('active')
   findActive() {
     return this.pengumumanService.findActive();

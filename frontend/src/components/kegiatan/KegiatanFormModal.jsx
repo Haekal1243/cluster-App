@@ -139,8 +139,8 @@ export default function KegiatanFormModal({
                 value={form.status}
                 onChange={handleChange}
               >
-                <option value="active">Active</option>
-                <option value="unactived">Unactived</option>
+                <option value="active">Aktif</option>
+                <option value="unactived">Nonaktif</option>
               </select>
             </div>
 

@@ -4,12 +4,14 @@ import {
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { CreateWargaDto } from './dto/create-warga.dto';
 import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
 import { UpdateRumahDto } from './dto/update-rumah.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Role, RT, StatusPembayaran } from '@prisma/client';
+import { NotifikasiService } from '../notifikasi/notifikasi.service';
 
 export interface RingkasanRumah {
   id: number;
@@ -33,7 +35,11 @@ export interface RingkasanPeriode {
 
 @Injectable()
 export class WargaService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+    private notifikasiService: NotifikasiService,
+  ) {}
 
   // ================================================================
   // AUTH
@@ -47,8 +53,15 @@ export class WargaService {
     if (!user) throw new UnauthorizedException('Email tidak ditemukan!');
     if (user.password !== pass) throw new UnauthorizedException('Password salah!');
 
+    const token = await this.jwtService.signAsync({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
     return {
       message: 'Login berhasil',
+      token,
       user: {
         id: user.id,
         nama: user.namaUser,
@@ -220,6 +233,14 @@ export class WargaService {
       where: { id: data.idIpl },
       data: { statusPembayaran: 'MENUNGGU_KONFIRMASI' },
     });
+
+    await this.notifikasiService.kirimKeRole(
+      ['ADMIN', 'PENGURUS'],
+      'PEMBAYARAN_MASUK',
+      'Bukti Pembayaran Baru',
+      'Ada warga yang mengirim bukti pembayaran IPL, menunggu konfirmasi.',
+      '/dashboard/iuran',
+    );
 
     return { message: 'Bukti pembayaran berhasil dikirim. Menunggu konfirmasi admin.', data: pembayaran };
   }

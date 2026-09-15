@@ -6,10 +6,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
 import { KonfirmasiIplDto } from './dto/konfirmasi-ipl.dto';
+import { NotifikasiService } from '../notifikasi/notifikasi.service';
 
 @Injectable()
 export class IplService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifikasiService: NotifikasiService,
+  ) {}
 
   // ================================================================
   // GENERATE TAGIHAN MASSAL
@@ -21,7 +25,7 @@ export class IplService {
     // Ambil semua rumah yang aktif (dihuni = userId != null)
     const rumahAktif = await this.prisma.rumah.findMany({
       where: { userId: { not: null } },
-      select: { id: true, blokRumah: true, rt: true },
+      select: { id: true, blokRumah: true, rt: true, userId: true },
     });
 
     if (rumahAktif.length === 0) {
@@ -52,6 +56,17 @@ export class IplService {
         nominal,
       })),
     });
+
+    const idUserList = rumahAktif
+      .map((r) => r.userId)
+      .filter((id): id is number => id !== null);
+    await this.notifikasiService.kirimBanyak(
+      idUserList,
+      'TAGIHAN_BARU',
+      'Tagihan IPL Baru',
+      `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${nominal.toLocaleString('id-ID')} telah diterbitkan.`,
+      '/dashboard/iuran',
+    );
 
     return {
       message: `Berhasil generate ${rumahAktif.length} tagihan IPL untuk periode ${bulanPeriode}/${tahunPeriode}.`,
@@ -258,6 +273,14 @@ export class IplService {
         data: { statusPembayaran: 'LUNAS' },
       });
 
+      await this.notifikasiService.kirim(
+        pembayaran.idUser,
+        'PEMBAYARAN_DIKONFIRMASI',
+        'Pembayaran Dikonfirmasi',
+        'Pembayaran IPL kamu sudah dikonfirmasi dan berstatus Lunas.',
+        '/dashboard/iuran',
+      );
+
       return { message: 'Pembayaran berhasil dikonfirmasi. Status menjadi LUNAS.' };
     } else {
       // TOLAK: kembalikan status ke BELUM_LUNAS + simpan catatan
@@ -271,6 +294,14 @@ export class IplService {
           data: { catatan: dto.catatan ?? null },
         }),
       ]);
+
+      await this.notifikasiService.kirim(
+        pembayaran.idUser,
+        'PEMBAYARAN_DITOLAK',
+        'Pembayaran Ditolak',
+        `Pembayaran IPL kamu ditolak.${dto.catatan ? ` Catatan: ${dto.catatan}` : ''}`,
+        '/dashboard/iuran',
+      );
 
       return {
         message: 'Pembayaran ditolak. Status dikembalikan ke BELUM LUNAS.',

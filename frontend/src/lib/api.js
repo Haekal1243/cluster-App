@@ -1,10 +1,16 @@
+import { getToken, clearSession } from "./session";
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 async function request(path, options = {}) {
+  const token = getToken();
+  const headers = { ...options.headers };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, options);
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   } catch (error) {
     throw new Error(
       "Tidak dapat terhubung ke server. Pastikan server backend berjalan.",
@@ -18,6 +24,7 @@ async function request(path, options = {}) {
     : null;
 
   if (!response.ok) {
+    if (response.status === 401) clearSession();
     const message = body?.message || "Terjadi kesalahan pada server.";
     throw new Error(Array.isArray(message) ? message.join(", ") : message);
   }
@@ -170,6 +177,34 @@ export const iplApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
+};
+
+export const pengaduanApi = {
+  getAll: () => request("/pengaduan"),
+  getByUser: (userId) => request(`/pengaduan/user/${userId}`),
+  getById: (id) => request(`/pengaduan/${id}`),
+
+  create: (payload) =>
+    request("/pengaduan", {
+      method: "POST",
+      body: buildFormData(payload),
+    }),
+
+  respond: (id, payload) =>
+    request(`/pengaduan/${id}/respond`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+
+  imageUrl: (filename) =>
+    filename ? `${API_BASE_URL}/uploads/pengaduan/${filename}` : null,
+};
+
+export const notifikasiApi = {
+  getAll: () => request("/notifikasi"),
+  markRead: (id) => request(`/notifikasi/${id}/read`, { method: "PATCH" }),
+  markAllRead: () => request("/notifikasi/read-all", { method: "PATCH" }),
 };
 
 

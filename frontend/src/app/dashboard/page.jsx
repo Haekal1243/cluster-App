@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Users, Wallet, AlertTriangle, CheckCircle,
-  TrendingUp, Clock, ArrowRight,
+  TrendingUp, Clock, ArrowRight, Home, CreditCard, Megaphone, CalendarDays,
+  Calendar, FileText,
 } from "lucide-react";
-import { iplApi } from "@/lib/api";
+import { iplApi, portalApi, kegiatanApi, pengumumanApi } from "@/lib/api";
 import Link from "next/link";
+import KegiatanDetailModal from "@/components/kegiatan/KegiatanDetailModal";
+import PengumumanDetailModal from "@/components/pengumuman/PengumumanDetailModal";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatRupiah(n) {
@@ -22,11 +24,6 @@ function formatRupiahFull(n) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 }
 
-function formatTanggal(d) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-}
-
 const BULAN_NAMES = {
   "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
   "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
@@ -37,7 +34,6 @@ const BULAN_NAMES = {
 function TrenChart({ data }) {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data.map((d) => d.kasMasuk), 1);
-  const W = 100 / data.length;
 
   return (
     <div className="db-chart-wrap">
@@ -73,38 +69,55 @@ function StatusDot({ status }) {
   return <span className={`db-status-dot ${cls}`}>{label}</span>;
 }
 
-export default function DashboardPage() {
-  const router = useRouter();
-  // Auth guard sudah ditangani di dashboard/layout.jsx untuk semua halaman /dashboard/*
-  const [user, setUser] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+function StatusBadge({ status }) {
+  const map = {
+    LUNAS: { label: "Lunas", cls: "status-lunas", icon: CheckCircle },
+    BELUM_LUNAS: { label: "Belum Lunas", cls: "status-belum", icon: AlertTriangle },
+    MENUNGGU_KONFIRMASI: { label: "Menunggu Konfirmasi", cls: "status-menunggu", icon: Clock },
+  };
+  const { label, cls, icon: Icon } = map[status] || map.BELUM_LUNAS;
+  return (
+    <span className={`ipl-status-badge ${cls}`}>
+      <Icon size={12} /> {label}
+    </span>
+  );
+}
+
+const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+
+function getMonthLabel(bulan, tahun) {
+  const m = parseInt(bulan, 10);
+  return `${MONTHS[m - 1] || bulan} ${tahun}`;
+}
+
+function formatKegiatanDate(dateStr) {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+}
+
+function formatPengumumanDate(dateStr) {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+}
+
+// ── Admin/Pengurus: ringkasan seluruh cluster ─────────────────────────────────
+function AdminDashboardView({ user }) {
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    const sessionUser = localStorage.getItem("user");
-    if (!sessionUser) {
-      router.replace("/login");
-    } else {
-      try { setUser(JSON.parse(sessionUser)); }
-      catch { router.replace("/login"); }
-      setIsCheckingAuth(false);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    if (isCheckingAuth) return;
     setLoadingStats(true);
     iplApi.getDashboardStats()
       .then(setStats)
       .catch(() => {})
       .finally(() => setLoadingStats(false));
-  }, [isCheckingAuth]);
-
-  if (isCheckingAuth) return null;
+  }, []);
 
   const userName = user?.nama || user?.name || "Admin";
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   return (
     <div className="page-stack">
@@ -256,4 +269,348 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+// ── Warga: dashboard pribadi (tagihan + kegiatan + pengumuman) ────────────────
+function WargaDashboardView({ user }) {
+  const [rumahList, setRumahList] = useState([]);
+  const [tagihanBulanIniList, setTagihanBulanIniList] = useState([]);
+  const [summaryBulanIni, setSummaryBulanIni] = useState(null);
+  const [kegiatan, setKegiatan] = useState([]);
+  const [pengumuman, setPengumuman] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedKegiatan, setSelectedKegiatan] = useState(null);
+  const [selectedPengumuman, setSelectedPengumuman] = useState(null);
+
+  useEffect(() => {
+    const now = new Date();
+    const bulanIni = String(now.getMonth() + 1).padStart(2, "0");
+    const tahunIni = String(now.getFullYear());
+
+    async function fetchData() {
+      try {
+        try {
+          const res = await portalApi.getTagihanByUser(user.id, { bulan: bulanIni, tahun: tahunIni });
+          setRumahList(res.rumah || []);
+          setTagihanBulanIniList(res.tagihan || []);
+          const key = `${bulanIni}/${tahunIni}`;
+          setSummaryBulanIni(res.summaryByPeriode?.[key] || res.totalSummary || null);
+        } catch (e) {
+          console.warn("getTagihanByUser gagal, fallback ke per-rumah:", e);
+          const rumah = await portalApi.getRumahByUser(user.id);
+          setRumahList(rumah);
+          const allTagihan = [];
+          for (const r of rumah) {
+            try {
+              const { tagihan } = await portalApi.getTagihanByRumah(r.id);
+              const filtered = (tagihan || []).filter(
+                (t) => t.bulanPeriode === bulanIni && t.tahunPeriode === tahunIni
+              );
+              allTagihan.push(...filtered.map((t) => ({ ...t, rumah: r })));
+            } catch (rumahErr) {
+              console.warn(`Gagal memuat tagihan rumah ${r.id}:`, rumahErr);
+            }
+          }
+          setTagihanBulanIniList(allTagihan);
+          setSummaryBulanIni({
+            totalNominal: allTagihan.reduce((s, t) => s + (t.nominal || 0), 0),
+            totalTagihan: allTagihan.length,
+            lunas: allTagihan.filter((t) => t.statusPembayaran === "LUNAS").length,
+            belumLunas: allTagihan.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length,
+            menunggu: allTagihan.filter((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI").length,
+          });
+        }
+
+        const [keg, peng] = await Promise.all([
+          kegiatanApi.getActive().catch(() => []),
+          pengumumanApi.getActive().catch(() => []),
+        ]);
+        setKegiatan(keg || []);
+        setPengumuman(peng || []);
+      } catch (err) {
+        console.error("Gagal memuat data dashboard warga:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [user.id]);
+
+  if (loading) {
+    return (
+      <div className="portal-loading">
+        <div className="portal-spinner" />
+        <p>Memuat data...</p>
+      </div>
+    );
+  }
+
+  const adaBelumLunas = tagihanBulanIniList.some((t) => t.statusPembayaran === "BELUM_LUNAS");
+  const semuaLunas =
+    tagihanBulanIniList.length > 0 &&
+    tagihanBulanIniList.every((t) => t.statusPembayaran === "LUNAS");
+  const adaMenunggu = tagihanBulanIniList.some((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI");
+  const totalBelumBayar = tagihanBulanIniList
+    .filter((t) => t.statusPembayaran === "BELUM_LUNAS" || t.statusPembayaran === "MENUNGGU_KONFIRMASI")
+    .reduce((s, t) => s + (t.nominal || 0), 0);
+  const tagihanPerRumah = rumahList.map((r) => {
+    const tag = tagihanBulanIniList.find((t) => (t.rumah?.id ?? t.idRumah) === r.id);
+    return { rumah: r, tagihan: tag || null };
+  });
+
+  return (
+    <div className="page-stack">
+      {/* Welcome Banner */}
+      <section className="portal-welcome-banner">
+        <div className="portal-welcome-text">
+          <h2>Halo, {user?.nama || user?.name} 👋</h2>
+          <p>Selamat datang di Dashboard Warga Cluster Topaz</p>
+        </div>
+        <div className="portal-welcome-decoration" aria-hidden />
+      </section>
+
+      {/* Stat Cards */}
+      <section className="portal-stat-row">
+        <div className={`portal-stat-card ${semuaLunas ? "card-success" : adaMenunggu ? "card-warning" : "card-danger"}`}>
+          <div className="portal-stat-icon">
+            <CreditCard size={22} />
+          </div>
+          <div className="portal-stat-body">
+            <span className="portal-stat-label">
+              Sisa Tagihan Bulan Ini{rumahList.length > 1 ? ` (${rumahList.length} Rumah)` : ""}
+            </span>
+            {tagihanBulanIniList.length > 0 ? (
+              <>
+                <span className="portal-stat-value">
+                  Rp {totalBelumBayar.toLocaleString("id-ID")}
+                </span>
+                <span className="portal-stat-sub">
+                  {summaryBulanIni ? (
+                    <>
+                      {summaryBulanIni.lunas || 0} lunas · {summaryBulanIni.belumLunas || 0} belum lunas
+                      {(summaryBulanIni.menunggu || 0) > 0 ? ` · ${summaryBulanIni.menunggu} menunggu` : ""}
+                    </>
+                  ) : (
+                    <>
+                      {tagihanBulanIniList.filter((t) => t.statusPembayaran === "LUNAS").length} lunas ·{" "}
+                      {tagihanBulanIniList.filter((t) => t.statusPembayaran !== "LUNAS").length} belum lunas
+                    </>
+                  )}
+                </span>
+                {semuaLunas ? (
+                  <StatusBadge status="LUNAS" />
+                ) : adaMenunggu ? (
+                  <StatusBadge status="MENUNGGU_KONFIRMASI" />
+                ) : (
+                  <StatusBadge status="BELUM_LUNAS" />
+                )}
+              </>
+            ) : (
+              <span className="portal-stat-value portal-no-data">Belum ada tagihan</span>
+            )}
+          </div>
+        </div>
+
+        <div className="portal-stat-card card-info">
+          <div className="portal-stat-icon">
+            <Home size={22} />
+          </div>
+          <div className="portal-stat-body">
+            <span className="portal-stat-label">Unit Rumah</span>
+            <span className="portal-stat-value">{rumahList.length} Unit</span>
+            <span className="portal-stat-sub">
+              {rumahList.length > 1
+                ? `Anda memiliki ${rumahList.length} unit rumah`
+                : rumahList.length === 1
+                  ? `${rumahList[0].blokRumah} (${String(rumahList[0].rt || "").replace("_", " ")})`
+                  : "Belum terdaftar"}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Action — tampil jika ada tagihan belum lunas di salah satu rumah */}
+      {adaBelumLunas && (
+        <section className="portal-action-banner">
+          <div className="portal-action-text">
+            <AlertTriangle size={18} />
+            <span>
+              Ada {tagihanBulanIniList.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length} tagihan IPL bulan ini belum dibayar
+              {rumahList.length > 1 ? ` (${rumahList.length} unit rumah)` : ""}
+            </span>
+          </div>
+          <Link href="/dashboard/iuran" className="portal-action-btn">
+            Bayar Sekarang
+          </Link>
+        </section>
+      )}
+
+      {/* Unit Rumah Saya */}
+      <section className="content-card">
+        <div className="db-section-header">
+          <Home size={17} />
+          <h3>Unit Rumah Saya</h3>
+          {rumahList.length > 0 && (
+            <Link href="/dashboard/iuran" className="db-section-link">
+              Lihat tagihan <ArrowRight size={13} />
+            </Link>
+          )}
+        </div>
+
+        {rumahList.length === 0 ? (
+          <div className="portal-empty-notice">
+            <Home size={32} />
+            <p><strong>Rumah belum terdaftar</strong></p>
+            <p>Silakan hubungi pengurus cluster untuk menghubungkan akun Anda dengan data rumah.</p>
+          </div>
+        ) : (
+          <ul className="portal-pengumuman-list">
+            {tagihanPerRumah.map(({ rumah, tagihan }) => (
+              <li key={rumah.id} className="portal-pengumuman-item">
+                <div className="portal-stat-icon" style={{ width: 36, height: 36 }}>
+                  <Home size={18} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p className="portal-peng-judul">
+                    {rumah.blokRumah} — {String(rumah.rt || "").replace("_", " ")}
+                  </p>
+                  <p className="portal-peng-desc">
+                    {tagihan
+                      ? `Rp ${(tagihan.nominal || 0).toLocaleString("id-ID")} · ${getMonthLabel(tagihan.bulanPeriode, tagihan.tahunPeriode)}`
+                      : "Belum ada tagihan bulan ini"}
+                  </p>
+                </div>
+                <div>
+                  {tagihan ? (
+                    <StatusBadge status={tagihan.statusPembayaran} />
+                  ) : (
+                    <span className="text-muted text-sm">—</span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Kegiatan Cluster */}
+      <section className="content-card">
+        <div className="db-section-header">
+          <CalendarDays size={17} />
+          <h3>Kegiatan Cluster</h3>
+        </div>
+
+        {kegiatan.length === 0 ? (
+          <div className="portal-empty-notice">
+            <CalendarDays size={32} />
+            <p>Belum ada kegiatan aktif saat ini.</p>
+          </div>
+        ) : (
+          <div className="portal-kegiatan-grid">
+            {kegiatan.map((k) => (
+              <div
+                key={k.id}
+                className="portal-kegiatan-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedKegiatan(k)}
+                onKeyDown={(e) => { if (e.key === "Enter") setSelectedKegiatan(k); }}
+              >
+                {k.gambarUrl && (
+                  <div className="portal-kegiatan-img-wrap">
+                    <img
+                      src={kegiatanApi.imageUrl(k.gambarUrl)}
+                      alt={k.judul}
+                      className="portal-kegiatan-img"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  </div>
+                )}
+                <div className="portal-kegiatan-body">
+                  <h3 className="portal-kegiatan-title">{k.judul}</h3>
+                  {k.deskripsi && (
+                    <p className="portal-kegiatan-desc">{k.deskripsi}</p>
+                  )}
+                  <div className="portal-kegiatan-meta">
+                    <span className="meta-item"><Calendar size={13} /> {formatKegiatanDate(k.tanggalAcara)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Pengumuman */}
+      <section className="content-card">
+        <div className="db-section-header">
+          <Megaphone size={17} />
+          <h3>Pengumuman</h3>
+        </div>
+
+        {pengumuman.length === 0 ? (
+          <p className="portal-empty-text">Belum ada pengumuman aktif saat ini.</p>
+        ) : (
+          <div className="portal-card-list">
+            {pengumuman.map((p) => (
+              <div
+                key={p.id}
+                className="portal-info-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedPengumuman(p)}
+                onKeyDown={(e) => { if (e.key === "Enter") setSelectedPengumuman(p); }}
+              >
+                <div className="portal-info-card-icon">
+                  <Megaphone size={18} />
+                </div>
+                <div className="portal-info-card-body">
+                  <h3 className="portal-info-card-title">{p.judul}</h3>
+                  {p.keteranganPengumuman && (
+                    <p className="portal-info-card-desc">{p.keteranganPengumuman}</p>
+                  )}
+                  <div className="portal-info-card-meta">
+                    <span className="meta-item"><Calendar size={12} /> {formatPengumumanDate(p.createDate)}</span>
+                    {p.filePengumuman && (
+                      <span className="portal-download-link">
+                        <FileText size={12} /> Ada lampiran
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {selectedKegiatan && (
+        <KegiatanDetailModal kegiatan={selectedKegiatan} onClose={() => setSelectedKegiatan(null)} />
+      )}
+      {selectedPengumuman && (
+        <PengumumanDetailModal pengumuman={selectedPengumuman} onClose={() => setSelectedPengumuman(null)} />
+      )}
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function DashboardPage() {
+  const [user, setUser] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      setUser(raw ? JSON.parse(raw) : null);
+    } catch {
+      setUser(null);
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  }, []);
+
+  if (isCheckingAuth) return null;
+
+  return user?.role === "WARGA" ? <WargaDashboardView user={user} /> : <AdminDashboardView user={user} />;
 }

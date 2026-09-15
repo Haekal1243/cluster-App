@@ -163,7 +163,7 @@ export default function KegiatanPage() {
                         label={`Status ${item.judul}`}
                       />
                       <span className="status-cell-label">
-                        {item.status === "active" ? "Active" : "Unactived"}
+                        {item.status === "active" ? "Aktif" : "Nonaktif"}
                       </span>
                     </div>
                   </td>
@@ -173,8 +173,8 @@ export default function KegiatanPage() {
                         type="button"
                         className="btn-icon"
                         onClick={() => openEditModal(item)}
-                        aria-label="Update"
-                        title="Update"
+                        aria-label="Edit"
+                        title="Edit"
                       >
                         <Pencil size={16} />
                       </button>

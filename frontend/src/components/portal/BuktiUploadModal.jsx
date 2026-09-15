@@ -65,7 +65,7 @@ export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess 
       <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
         {/* Header */}
         <div className="modal-header">
-          <h2>Upload Bukti Pembayaran</h2>
+          <h2>Unggah Bukti Pembayaran</h2>
           <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Tutup">
             <X size={18} />
           </button>

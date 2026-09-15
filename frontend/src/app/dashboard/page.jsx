@@ -607,15 +607,77 @@ function WargaDashboardView({ user }) {
     return { rumah: r, tagihan: tag || null };
   });
 
+  const firstName = (user?.nama || user?.name || "Warga").split(" ")[0];
+  const nowDate = new Date();
+  const periodeBulanIni = getMonthLabel(
+    String(nowDate.getMonth() + 1).padStart(2, "0"),
+    String(nowDate.getFullYear())
+  );
+  const countLunas = summaryBulanIni?.lunas ?? tagihanBulanIniList.filter((t) => t.statusPembayaran === "LUNAS").length;
+  const countBelum = summaryBulanIni?.belumLunas ?? tagihanBulanIniList.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length;
+  const countMenunggu = summaryBulanIni?.menunggu ?? tagihanBulanIniList.filter((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI").length;
+
   return (
-    <div className="page-stack">
-      {/* Welcome Banner */}
-      <section className="portal-welcome-banner">
-        <div className="portal-welcome-text">
-          <h2>Halo, {user?.nama || user?.name} 👋</h2>
-          <p>Selamat datang di Dashboard Warga Cluster Topaz</p>
+    <div className="page-stack warga-dashboard">
+      {/* Hero: sapaan + sisa tagihan bulan ini + CTA */}
+      <section className={`portal-hero ${semuaLunas ? "is-success" : ""}`}>
+        <div className="portal-hero-accent" aria-hidden />
+        <div className="portal-hero-main">
+          <div className="portal-hero-left">
+            <p className="portal-hero-eyebrow">Dashboard Warga · RW 21 · Cluster Topaz</p>
+            <h2>Halo, {firstName} 👋</h2>
+            <p className="portal-hero-sub">
+              {rumahList.length > 1
+                ? `Kelola ${rumahList.length} unit rumah Anda dalam satu tempat.`
+                : "Selamat datang di Dashboard Warga Cluster Topaz."}
+            </p>
+            <div className="portal-hero-meta">
+              <span className="portal-hero-periode">
+                <Wallet size={13} /> IPL {periodeBulanIni}
+                {rumahList.length > 1 ? ` · ${rumahList.length} unit` : ""}
+              </span>
+              {tagihanBulanIniList.length > 0 && (
+                <span className="portal-hero-summary">
+                  {countLunas} lunas · {countBelum} belum
+                  {countMenunggu > 0 ? ` · ${countMenunggu} menunggu` : ""}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="portal-hero-right">
+            <span className="portal-hero-label">Sisa Tagihan Bulan Ini</span>
+            {tagihanBulanIniList.length > 0 ? (
+              <>
+                <span className="portal-hero-value">
+                  Rp {totalBelumBayar.toLocaleString("id-ID")}
+                </span>
+                {semuaLunas ? (
+                  <StatusBadge status="LUNAS" />
+                ) : adaMenunggu ? (
+                  <StatusBadge status="MENUNGGU_KONFIRMASI" />
+                ) : (
+                  <StatusBadge status="BELUM_LUNAS" />
+                )}
+                {adaBelumLunas ? (
+                  <Link href="/dashboard/iuran" className="portal-hero-btn">
+                    Bayar Sekarang <ArrowRight size={15} />
+                  </Link>
+                ) : (
+                  <Link href="/dashboard/iuran" className="portal-hero-btn ghost">
+                    Lihat Riwayat <ArrowRight size={15} />
+                  </Link>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="portal-hero-value muted">Belum ada tagihan</span>
+                <span className="portal-hero-summary">Tagihan IPL bulan ini belum diterbitkan.</span>
+              </>
+            )}
+          </div>
         </div>
-        <div className="portal-welcome-decoration" aria-hidden />
+        <div className="portal-hero-orb orb-a" aria-hidden />
+        <div className="portal-hero-orb orb-b" aria-hidden />
       </section>
 
       {/* Stat Cards */}
@@ -725,7 +787,12 @@ function WargaDashboardView({ user }) {
                   </p>
                   <p className="portal-peng-desc">
                     {tagihan
-                      ? `Rp ${(tagihan.nominal || 0).toLocaleString("id-ID")} · ${getMonthLabel(tagihan.bulanPeriode, tagihan.tahunPeriode)}`
+                      ? (
+                        <>
+                          <span className="unit-nominal">Rp {(tagihan.nominal || 0).toLocaleString("id-ID")}</span>
+                          {` · ${getMonthLabel(tagihan.bulanPeriode, tagihan.tahunPeriode)}`}
+                        </>
+                      )
                       : "Belum ada tagihan bulan ini"}
                   </p>
                 </div>

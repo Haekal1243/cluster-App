@@ -14,10 +14,7 @@ import {
   FileX,
   CreditCard,
   Home,
-  ChevronDown,
   Upload,
-  Calendar,
-  Building2,
 } from "lucide-react";
 import { iplApi, portalApi } from "@/lib/api";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -631,65 +628,232 @@ function rupiah(n) {
   return `Rp ${(Number(n) || 0).toLocaleString("id-ID")}`;
 }
 
+// ── Modal: Riwayat Transaksi (read-only, untuk tagihan Lunas role Warga) ────
+function RiwayatTransaksiModal({ ipl, onClose }) {
+  const pembayaran = ipl?.pembayaran?.[0];
+  const buktiUrl = pembayaran?.buktiTransaksi
+    ? portalApi.buktiUrl(pembayaran.buktiTransaksi)
+    : null;
+
+  return (
+    <div className="ipl-modal-overlay" onClick={onClose}>
+      <div className="ipl-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ipl-modal-header">
+          <h3>Riwayat Transaksi</h3>
+          <button className="ipl-modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="ipl-modal-body">
+          {/* Info tagihan */}
+          <div className="review-info-grid">
+            <div className="review-info-item">
+              <span className="review-info-label">Unit</span>
+              <span className="review-info-value">
+                {ipl?.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl?.idRumah}`}
+              </span>
+            </div>
+            <div className="review-info-item">
+              <span className="review-info-label">Periode</span>
+              <span className="review-info-value">{getMonthLabel(ipl?.bulanPeriode, ipl?.tahunPeriode)}</span>
+            </div>
+            <div className="review-info-item">
+              <span className="review-info-label">Nominal Tagihan</span>
+              <span className="review-info-value review-nominal">{rupiah(ipl?.nominal)}</span>
+            </div>
+            <div className="review-info-item">
+              <span className="review-info-label">Nominal Dibayar</span>
+              <span className="review-info-value">{pembayaran ? rupiah(pembayaran.nominal) : "—"}</span>
+            </div>
+            <div className="review-info-item">
+              <span className="review-info-label">Tanggal Bayar</span>
+              <span className="review-info-value">{formatTanggal(pembayaran?.tanggalBayar)}</span>
+            </div>
+            <div className="review-info-item">
+              <span className="review-info-label">Status</span>
+              <span className="review-info-value"><WargaStatusBadge status={ipl?.statusPembayaran} /></span>
+            </div>
+          </div>
+
+          {/* Bukti transfer */}
+          <div className="review-bukti-section">
+            <p className="review-bukti-label">Bukti Transfer</p>
+            {buktiUrl ? (
+              <a href={buktiUrl} target="_blank" rel="noopener noreferrer">
+                <img src={buktiUrl} alt="Bukti Transfer" className="review-bukti-img" />
+              </a>
+            ) : (
+              <div className="review-bukti-empty">Tidak ada file bukti.</div>
+            )}
+          </div>
+
+          <div className="ipl-modal-footer">
+            <button type="button" className="btn-ipl-secondary" onClick={onClose}>
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WargaIuranView({ user }) {
-  const now = new Date();
-  const bulanIniDefault = String(now.getMonth() + 1).padStart(2, "0");
-  const tahunIniDefault = String(now.getFullYear());
+  const formatYmPanjang = (ym) => {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    const [y, m] = ym.split("-");
+    return `${BULAN_NAMES[m] || m} ${y}`;
+  };
+  const monthDiffInclusive = (dari, sampai) => {
+    const [y1, m1] = dari.split("-").map(Number);
+    const [y2, m2] = sampai.split("-").map(Number);
+    return (y2 - y1) * 12 + (m2 - m1) + 1;
+  };
 
   const [rumahList, setRumahList] = useState([]);
   const [tagihanGabungan, setTagihanGabungan] = useState([]);
   const [loadingRumah, setLoadingRumah] = useState(true);
   const [loadingTagihan, setLoadingTagihan] = useState(false);
   const [modalIpl, setModalIpl] = useState(null); // IPL yang akan dibayar
+  const [riwayatIpl, setRiwayatIpl] = useState(null); // IPL Lunas yang dilihat riwayatnya
 
-  // Filter periode + filter rumah
-  const [filterBulan, setFilterBulan] = useState(bulanIniDefault);
-  const [filterTahun, setFilterTahun] = useState(tahunIniDefault);
+  // Filter hijau model popover — sama seperti Tagihan IPL admin,
+  // dengan pola draft + Terapkan + Reset ala filter Keuangan:
+  // data baru terfilter setelah tombol Terapkan diklik.
+  // Default WARGA: kosong = Semua Periode (langsung tampil semua data)
+  const [periodeDari, setPeriodeDari] = useState("");
+  const [periodeSampai, setPeriodeSampai] = useState("");
+  const [filterStatus, setFilterStatus] = useState("SEMUA");
   const [selectedRumahId, setSelectedRumahId] = useState("semua");
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
-  const tahunOptions = useMemo(() => {
-    const y = new Date().getFullYear();
-    return [String(y - 2), String(y - 1), String(y), String(y + 1)];
-  }, []);
+  // Draft popover (baru diterapkan saat Terapkan diklik)
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [draftDari, setDraftDari] = useState("");
+  const [draftSampai, setDraftSampai] = useState("");
+  const [draftStatus, setDraftStatus] = useState("SEMUA");
+  const [draftUnit, setDraftUnit] = useState("semua");
 
-  const loadGabungan = async (uid, bulan, tahun) => {
+  // Normalisasi + validasi turunan — kosong = Semua Periode (tanpa filter)
+  const [dari, sampai] = periodeDari && periodeSampai
+    ? periodeDari > periodeSampai
+      ? [periodeSampai, periodeDari]
+      : [periodeDari, periodeSampai]
+    : [periodeDari || "", periodeSampai || ""];
+  const rangeError = dari && sampai && monthDiffInclusive(dari, sampai) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
+
+  // Validasi draft di dalam popover (sebelum diterapkan)
+  const [draftDariN, draftSampaiN] = draftDari && draftSampai
+    ? draftDari > draftSampai
+      ? [draftSampai, draftDari]
+      : [draftDari, draftSampai]
+    : [draftDari || "", draftSampai || ""];
+  const draftError = draftDari && draftSampai && monthDiffInclusive(draftDariN, draftSampaiN) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
+
+  const hasActiveFilter = !!periodeDari || !!periodeSampai || filterStatus !== "SEMUA" || selectedRumahId !== "semua";
+  const periodeLabel = !periodeDari && !periodeSampai
+    ? "Semua Periode"
+    : !periodeDari || !periodeSampai
+      ? formatYmPanjang(periodeDari || periodeSampai)
+      : periodeDari === periodeSampai
+        ? formatYmPanjang(periodeDari)
+        : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+
+  // Sinkronkan draft dari filter yang sedang diterapkan setiap popover dibuka
+  const handleFilterOpenChange = (next) => {
+    if (next) {
+      setDraftDari(periodeDari);
+      setDraftSampai(periodeSampai);
+      setDraftStatus(filterStatus);
+      setDraftUnit(selectedRumahId);
+    }
+    setFilterOpen(next);
+  };
+
+  const applyFilter = () => {
+    if (draftError) return;
+    setPeriodeDari(draftDari || "");
+    setPeriodeSampai(draftSampai || "");
+    setFilterStatus(draftStatus);
+    setSelectedRumahId(draftUnit);
+    setFilterOpen(false);
+  };
+
+  const handleResetFilter = () => {
+    setPeriodeDari("");
+    setPeriodeSampai("");
+    setFilterStatus("SEMUA");
+    setSelectedRumahId("semua");
+    setDraftDari("");
+    setDraftSampai("");
+    setDraftStatus("SEMUA");
+    setDraftUnit("semua");
+    setFilterOpen(false);
+  };
+
+  const loadGabungan = async (uid) => {
+    if (rangeError) return;
     setLoadingTagihan(true);
     try {
-      const res = await portalApi.getTagihanByUser(uid, { bulan, tahun });
+      const res = await portalApi.getTagihanByUser(uid, {
+        dari: dari || undefined,
+        sampai: sampai || undefined,
+        status: filterStatus,
+        search,
+      });
       setRumahList(res.rumah || []);
       setTagihanGabungan(res.tagihan || []);
     } catch (err) {
       console.warn("getTagihanByUser gagal, fallback per-rumah:", err);
-      // Fallback: ambil rumah lalu tagihan per rumah satu-satu
+      // Fallback: ambil rumah lalu tagihan per rumah satu-satu,
+      // lalu filter range + status + search di sisi klien
       const rumah = await portalApi.getRumahByUser(uid);
       setRumahList(rumah || []);
       const all = [];
       for (const r of rumah || []) {
         try {
           const { tagihan } = await portalApi.getTagihanByRumah(r.id);
-          let filtered = tagihan || [];
-          if (bulan) filtered = filtered.filter((t) => t.bulanPeriode === bulan);
-          if (tahun) filtered = filtered.filter((t) => t.tahunPeriode === tahun);
-          all.push(...filtered.map((t) => ({ ...t, rumah: { id: r.id, blokRumah: r.blokRumah, rt: r.rt } })));
+          all.push(...(tagihan || []).map((t) => ({ ...t, rumah: { id: r.id, blokRumah: r.blokRumah, rt: r.rt } })));
         } catch (rumahErr) {
           console.warn(`Gagal memuat tagihan rumah ${r.id}:`, rumahErr);
         }
       }
-      setTagihanGabungan(all);
+      const q = search.trim().toLowerCase();
+      const filtered = all.filter((t) => {
+        const ym = `${t.tahunPeriode}-${t.bulanPeriode}`;
+        if (dari && ym < dari) return false;
+        if (sampai && ym > sampai) return false;
+        if (filterStatus !== "SEMUA" && t.statusPembayaran !== filterStatus) return false;
+        if (q) {
+          const hay = `${t.bulanPeriode} ${t.tahunPeriode} ${t.rumah?.blokRumah || ""} ${t.nominal || ""}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+      setTagihanGabungan(filtered);
     } finally {
       setLoadingTagihan(false);
       setLoadingRumah(false);
     }
   };
 
-  // Load data gabungan on mount & saat filter periode berubah
+  // Load data gabungan on mount & saat filter berubah
   useEffect(() => {
-    loadGabungan(user.id, filterBulan, filterTahun);
+    loadGabungan(user.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterBulan, filterTahun]);
+  }, [dari, sampai, filterStatus, search]);
+
+  // Search debounce (sama seperti filter keuangan admin)
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const handleUploadSuccess = () => {
-    loadGabungan(user.id, filterBulan, filterTahun);
+    loadGabungan(user.id);
   };
 
   // Data tabel: filter по rumah terpilih
@@ -711,10 +875,8 @@ function WargaIuranView({ user }) {
     };
   }, [displayData]);
 
-  // Label periode untuk hero & tabel (mengikuti filter yang dipilih)
-  const heroLabel = filterBulan && filterTahun
-    ? getMonthLabel(filterBulan, filterTahun)
-    : "Semua Periode";
+  // Label periode untuk hero & tabel (mengikuti filter range yang dipilih)
+  const heroLabel = periodeLabel;
 
   const modalRumah = useMemo(() => {
     if (!modalIpl) return null;
@@ -787,55 +949,96 @@ function WargaIuranView({ user }) {
         )}
       </section>
 
-      {/* Filter Periode + Filter Rumah */}
-      <section className="content-card">
-        <div className="card-header-row">
-          <h3><Calendar size={16} /> Filter Periode & Unit</h3>
+      {/* ── Search + Filter (sama seperti Tagihan IPL admin) ── */}
+      <div className="list-toolbar-row">
+        <div className="list-search-wrap">
+          <Search size={15} className="list-search-icon" />
+          <input
+            type="text"
+            placeholder="Unit / periode / nominal..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="list-search-input"
+          />
         </div>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <div className="portal-select-wrap" style={{ minWidth: 150, flex: 1 }}>
-            <label className="portal-selector-label" htmlFor="filter-bulan">
-              <Calendar size={13} /> Bulan
-            </label>
+
+        <FilterPopover
+          active={hasActiveFilter}
+          open={filterOpen}
+          onOpenChange={handleFilterOpenChange}
+        >
+          <FilterField label="Periode Dari">
+            <div style={{ position: "relative" }}>
+              <input
+                type="month"
+                value={draftDari}
+                onChange={(e) => setDraftDari(e.target.value)}
+                className="ipl-input"
+                style={{ width: "100%", color: draftDari ? undefined : "transparent" }}
+              />
+              {!draftDari && (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: 13,
+                    color: "#94a3b8",
+                    pointerEvents: "none",
+                  }}
+                >
+                  Semua Periode
+                </span>
+              )}
+            </div>
+          </FilterField>
+          <FilterField label="Periode Sampai">
+            <div style={{ position: "relative" }}>
+              <input
+                type="month"
+                value={draftSampai}
+                onChange={(e) => setDraftSampai(e.target.value)}
+                className="ipl-input"
+                style={{ width: "100%", color: draftSampai ? undefined : "transparent" }}
+              />
+              {!draftSampai && (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: 13,
+                    color: "#94a3b8",
+                    pointerEvents: "none",
+                  }}
+                >
+                  Semua Periode
+                </span>
+              )}
+            </div>
+          </FilterField>
+          {draftError && (
+            <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>
+          )}
+          <FilterField label="Status">
             <select
-              id="filter-bulan"
-              className="portal-select"
-              value={filterBulan}
-              onChange={(e) => setFilterBulan(e.target.value)}
+              className="ipl-select ipl-select-sm"
+              value={draftStatus}
+              onChange={(e) => setDraftStatus(e.target.value)}
             >
-              <option value="">Semua Bulan</option>
-              {MONTHS.map((m, i) => {
-                const v = String(i + 1).padStart(2, "0");
-                return <option key={v} value={v}>{m}</option>;
-              })}
-            </select>
-          </div>
-          <div className="portal-select-wrap" style={{ minWidth: 130, flex: 1 }}>
-            <label className="portal-selector-label" htmlFor="filter-tahun">
-              <Calendar size={13} /> Tahun
-            </label>
-            <select
-              id="filter-tahun"
-              className="portal-select"
-              value={filterTahun}
-              onChange={(e) => setFilterTahun(e.target.value)}
-            >
-              <option value="">Semua Tahun</option>
-              {tahunOptions.map((y) => (
-                <option key={y} value={y}>{y}</option>
+              {STATUS_FILTER_OPTIONS.map(({ val, label }) => (
+                <option key={val} value={val}>{label}</option>
               ))}
             </select>
-          </div>
+          </FilterField>
           {rumahList.length > 1 && (
-            <div className="portal-select-wrap" style={{ minWidth: 200, flex: 2 }}>
-              <label className="portal-selector-label" htmlFor="rumah-select">
-                <Building2 size={13} /> Unit Rumah
-              </label>
+            <FilterField label="Unit">
               <select
-                id="rumah-select"
-                className="portal-select"
-                value={selectedRumahId}
-                onChange={(e) => setSelectedRumahId(e.target.value)}
+                className="ipl-select ipl-select-sm"
+                value={draftUnit}
+                onChange={(e) => setDraftUnit(e.target.value)}
               >
                 <option value="semua">Semua Unit ({rumahList.length})</option>
                 {rumahList.map((r) => (
@@ -844,49 +1047,36 @@ function WargaIuranView({ user }) {
                   </option>
                 ))}
               </select>
-              <ChevronDown size={16} className="portal-select-icon" />
-            </div>
+            </FilterField>
           )}
-        </div>
-      </section>
-
-      {/* Rincian per Rumah (tampil saat mode gabungan) */}
-      {rumahList.length > 1 && selectedRumahId === "semua" && displayData.length > 0 && (
-        <section className="content-card">
-          <div className="card-header-row">
-            <h3><Home size={16} /> Rincian per Unit</h3>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+            {hasActiveFilter && (
+              <button
+                type="button"
+                onClick={handleResetFilter}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#64748b" }}
+              >
+                Reset
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={applyFilter}
+              disabled={!!draftError}
+              style={{
+                background: draftError ? "#cbd5e1" : "#2563eb", color: "#fff",
+                border: "none", borderRadius: 8, padding: "8px 16px",
+                fontSize: 13, fontWeight: 600, cursor: draftError ? "not-allowed" : "pointer",
+              }}
+            >
+              Terapkan
+            </button>
           </div>
-          <ul className="portal-pengumuman-list">
-            {rumahList.map((r) => {
-              const items = tagihanGabungan.filter((t) => (t.rumah?.id ?? t.idRumah) === r.id);
-              if (items.length === 0) return null;
-              const subtotal = items.reduce((s, t) => s + (t.nominal || 0), 0);
-              const belum = items.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length;
-              return (
-                <li key={r.id} className="portal-pengumuman-item">
-                  <div className="portal-stat-icon" style={{ width: 36, height: 36 }}>
-                    <Home size={18} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p className="portal-peng-judul">{r.blokRumah} — {formatRt(r.rt)}</p>
-                    <p className="portal-peng-desc">
-                      {items.length} tagihan · {rupiah(subtotal)}
-                      {belum > 0 ? ` · ${belum} belum lunas` : " · semua lunas"}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-primary btn-sm"
-                    onClick={() => setSelectedRumahId(String(r.id))}
-                  >
-                    Detail
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+          <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
+            Maksimal 12 bulan
+          </p>
+        </FilterPopover>
+      </div>
 
       {/* Tabel Riwayat Tagihan */}
       <section className="content-card">
@@ -906,7 +1096,7 @@ function WargaIuranView({ user }) {
           </div>
         ) : displayData.length === 0 ? (
           <p className="portal-empty-text">
-            Belum ada riwayat tagihan {filterBulan || filterTahun ? `untuk periode ${heroLabel}` : ""}
+            Belum ada riwayat tagihan untuk periode {heroLabel}
             {selectedRumahId !== "semua" ? " pada unit ini" : " pada semua unit Anda"}.
           </p>
         ) : (
@@ -942,8 +1132,17 @@ function WargaIuranView({ user }) {
                         </button>
                       ) : ipl.statusPembayaran === "MENUNGGU_KONFIRMASI" ? (
                         <span className="text-muted text-sm">Menunggu konfirmasi...</span>
+                      ) : ipl.statusPembayaran === "LUNAS" && ipl.pembayaran?.[0] ? (
+                        <button
+                          type="button"
+                          className="btn-ipl-neutral"
+                          onClick={() => setRiwayatIpl(ipl)}
+                          title="Lihat riwayat transaksi"
+                        >
+                          <Eye size={14} /> Riwayat
+                        </button>
                       ) : (
-                        <span className="text-success text-sm">✓ Lunas</span>
+                        <span className="text-muted">—</span>
                       )}
                     </td>
                   </tr>
@@ -973,6 +1172,15 @@ function WargaIuranView({ user }) {
                     >
                       <Upload size={12} /> Bayar
                     </button>
+                  ) : ipl.statusPembayaran === "LUNAS" && ipl.pembayaran?.[0] ? (
+                    <button
+                      type="button"
+                      className="btn-ipl-neutral"
+                      onClick={() => setRiwayatIpl(ipl)}
+                      title="Lihat riwayat transaksi"
+                    >
+                      <Eye size={12} /> Riwayat
+                    </button>
                   ) : (
                     <span />
                   )}
@@ -993,6 +1201,14 @@ function WargaIuranView({ user }) {
           rumah={modalRumah}
           onClose={() => setModalIpl(null)}
           onSuccess={handleUploadSuccess}
+        />
+      )}
+
+      {/* Modal Riwayat Transaksi */}
+      {riwayatIpl && (
+        <RiwayatTransaksiModal
+          ipl={riwayatIpl}
+          onClose={() => setRiwayatIpl(null)}
         />
       )}
     </div>

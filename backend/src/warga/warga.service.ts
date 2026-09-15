@@ -12,6 +12,7 @@ import { UpdateRumahDto } from './dto/update-rumah.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Role, RT, StatusPembayaran } from '@prisma/client';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
+import { resolvePeriode } from '../common/periode.helper';
 
 export interface RingkasanRumah {
   id: number;
@@ -105,8 +106,30 @@ export class WargaService {
     return { rumah, tagihan };
   }
 
-  /** Ambil semua tagihan IPL untuk semua rumah milik user (gabungan), dengan filter periode opsional */
-  async getTagihanByUser(userId: number, bulan?: string, tahun?: string) {
+  /** Ambil semua tagihan IPL untuk semua rumah milik user (gabungan).
+   * Filter: bulan+tahun tunggal (legacy) atau range dari/sampai YYYY-MM (maks 12 bln),
+   * plus status & search — mirror pola IplService.findAll agar filter warga
+   * konsisten dengan filter keuangan/tagihan admin. */
+  async getTagihanByUser(
+    userId: number,
+    filter:
+      | string
+      | undefined
+      | {
+          bulan?: string;
+          tahun?: string;
+          dari?: string;
+          sampai?: string;
+          status?: string;
+          search?: string;
+        },
+    tahun?: string,
+  ) {
+    const opts =
+      typeof filter === 'object' && filter !== null
+        ? filter
+        : { bulan: filter, tahun };
+    const { bulan, tahun: th, dari, sampai, status, search } = opts;
     const rumah = await this.prisma.rumah.findMany({
       where: { userId },
       orderBy: [{ rt: 'asc' }, { blokRumah: 'asc' }],
@@ -124,8 +147,31 @@ export class WargaService {
     const rumahIds = rumah.map((r) => r.id);
 
     const where: Prisma.IplWhereInput = { idRumah: { in: rumahIds } };
-    if (bulan) where.bulanPeriode = bulan;
-    if (tahun) where.tahunPeriode = tahun;
+    const and: Prisma.IplWhereInput[] = [];
+    // Range diutamakan bila diberikan (validasi format + maks 12 bln via helper)
+    const range = resolvePeriode(dari, sampai);
+    if (range) {
+      and.push({ OR: range.periodeOr });
+    } else {
+      if (bulan) and.push({ bulanPeriode: bulan });
+      if (th) and.push({ tahunPeriode: th });
+    }
+    if (status && status !== 'SEMUA')
+      and.push({ statusPembayaran: status as StatusPembayaran });
+    if (search) {
+      const q = search.trim();
+      if (q) {
+        const num = Number(q.replace(/[^0-9]/g, ''));
+        const or: Prisma.IplWhereInput[] = [
+          { bulanPeriode: { contains: q } },
+          { tahunPeriode: { contains: q } },
+          { rumah: { blokRumah: { contains: q } } },
+        ];
+        if (num) or.push({ nominal: num });
+        and.push({ OR: or });
+      }
+    }
+    if (and.length > 0) where.AND = and;
 
     const tagihan = await this.prisma.ipl.findMany({
       where,

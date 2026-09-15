@@ -1,10 +1,16 @@
+import { getToken, clearSession } from "./session";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 async function request(path, options = {}) {
+  const token = getToken();
+  const headers = { ...options.headers };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, options);
+    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   } catch (error) {
     throw new Error(
       "Tidak dapat terhubung ke server. Pastikan server backend berjalan.",
@@ -18,6 +24,7 @@ async function request(path, options = {}) {
     : null;
 
   if (!response.ok) {
+    if (response.status === 401) clearSession();
     const message = body?.message || "Terjadi kesalahan pada server.";
     throw new Error(Array.isArray(message) ? message.join(", ") : message);
   }

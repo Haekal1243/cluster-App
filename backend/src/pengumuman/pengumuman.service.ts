@@ -5,10 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePengumumanDto } from './dto/create-pengumuman.dto';
 import { UpdatePengumumanDto } from './dto/update-pengumuman.dto';
 import { UpdateStatusPengumumanDto } from './dto/update-status-pengumuman.dto';
+import { NotifikasiService } from '../notifikasi/notifikasi.service';
 
 @Injectable()
 export class PengumumanService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifikasiService: NotifikasiService,
+  ) {}
 
   async create(dto: CreatePengumumanDto, file?: Express.Multer.File) {
     const data = await this.prisma.pengumuman.create({
@@ -20,6 +24,16 @@ export class PengumumanService {
         createBy: dto.createBy,
       },
     });
+
+    if (data.status === 'active') {
+      await this.notifikasiService.kirimKeRole(
+        ['WARGA'],
+        'PENGUMUMAN_BARU',
+        'Pengumuman Baru',
+        data.judul,
+        '/dashboard',
+      );
+    }
 
     return { message: 'Pengumuman berhasil dibuat', data };
   }

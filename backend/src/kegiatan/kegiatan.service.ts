@@ -5,10 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateKegiatanDto } from './dto/create-kegiatan.dto';
 import { UpdateKegiatanDto } from './dto/update-kegiatan.dto';
 import { UpdateStatusKegiatanDto } from './dto/update-status-kegiatan.dto';
+import { NotifikasiService } from '../notifikasi/notifikasi.service';
 
 @Injectable()
 export class KegiatanService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifikasiService: NotifikasiService,
+  ) {}
 
   async create(dto: CreateKegiatanDto, file?: Express.Multer.File) {
     if (!file) {
@@ -25,6 +29,16 @@ export class KegiatanService {
         createBy: dto.createBy,
       },
     });
+
+    if (data.status === 'active') {
+      await this.notifikasiService.kirimKeRole(
+        ['WARGA'],
+        'KEGIATAN_BARU',
+        'Kegiatan Baru',
+        data.judul,
+        '/dashboard',
+      );
+    }
 
     return { message: 'Kegiatan berhasil dibuat', data };
   }

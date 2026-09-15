@@ -8,6 +8,8 @@ const RT_OPTIONS = ["RT_01", "RT_02", "RT_03", "RT_04"];
 
 const EMPTY_FORM = { blokRumah: "", rt: "RT_01", userId: "" };
 
+const BLOK_RUMAH_REGEX = /^E\d{1,2}\/\d{1,2}$/;
+
 export default function RumahFormModal({ open, mode, initialData, onClose, onSubmit }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [users, setUsers] = useState([]);
@@ -42,12 +44,19 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === "blokRumah") {
+      setForm((prev) => ({ ...prev, blokRumah: value.toUpperCase() }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const isBlokValid = BLOK_RUMAH_REGEX.test(form.blokRumah);
+  const showBlokError = form.blokRumah.trim() !== "" && !isBlokValid;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.blokRumah.trim()) return;
+    if (!isBlokValid) return;
     setIsSubmitting(true);
     try {
       await onSubmit({
@@ -84,11 +93,16 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
                 name="blokRumah"
                 type="text"
                 className="form-control"
-                placeholder="Contoh: Blok A No. 05"
+                placeholder="Contoh: E7/15"
                 value={form.blokRumah}
                 onChange={handleChange}
                 required
               />
+              {showBlokError && (
+                <span className="field-error">
+                  Format blok rumah harus seperti E7/15
+                </span>
+              )}
             </div>
 
             {/* RT */}
@@ -151,7 +165,7 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
             >
               Batal
             </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            <button type="submit" className="btn-primary" disabled={isSubmitting || !isBlokValid}>
               {isSubmitting
                 ? "Menyimpan..."
                 : mode === "edit"

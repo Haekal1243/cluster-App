@@ -6,6 +6,8 @@ import { showConfirm } from "@/lib/message";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
 
+const BLOK_RUMAH_REGEX = /^E\d{1,2}\/\d{1,2}$/;
+
 export default function PersonalDataPage() {
   const router = useRouter();
 
@@ -25,6 +27,14 @@ export default function PersonalDataPage() {
       setFormData({
         ...formData,
         [name]: numericValue,
+      });
+      return;
+    }
+
+    if (name === "blokRumah") {
+      setFormData({
+        ...formData,
+        [name]: value.toUpperCase(),
       });
       return;
     }
@@ -54,11 +64,14 @@ export default function PersonalDataPage() {
     }
   };
 
+  const showBlokError =
+    formData.blokRumah.trim() !== "" && !BLOK_RUMAH_REGEX.test(formData.blokRumah);
+
   const isNextDisabled =
     !formData.fullName.trim() ||
     !formData.phoneNumber.trim() ||
     !formData.rt ||
-    !formData.blokRumah.trim();
+    !BLOK_RUMAH_REGEX.test(formData.blokRumah);
 
   return (
     <AuthShell
@@ -69,20 +82,20 @@ export default function PersonalDataPage() {
           className="auth-logo"
         />
       }
-      title="Create Account"
-      subtitle="Join the Permata Cimanggis Topaz Cluster Community"
+      title="Buat Akun"
+      subtitle="Bergabung dengan Komunitas Permata Cimanggis Topaz Cluster"
     >
       <div className="register-content-split">
         <RegisterStepper activeStep={1} />
 
         <div className="form-box">
-          <div className="form-box-header">Personal Data</div>
+          <div className="form-box-header">Data Diri</div>
 
           <div className="form-box-body">
             <form>
               <div className="form-group">
                 <label htmlFor="fullName">
-                  Full Name <span className="required-star">*</span>
+                  Nama Lengkap <span className="required-star">*</span>
                 </label>
                 <input
                   id="fullName"
@@ -96,7 +109,7 @@ export default function PersonalDataPage() {
 
               <div className="form-group">
                 <label htmlFor="phoneNumber">
-                  Phone Number <span className="required-star">*</span>
+                  Nomor Telepon <span className="required-star">*</span>
                 </label>
                 <input
                   id="phoneNumber"
@@ -140,16 +153,21 @@ export default function PersonalDataPage() {
                     type="text"
                     name="blokRumah"
                     className="form-control"
-                    placeholder="Ex: E13/19"
+                    placeholder="Cth: E13/19"
                     value={formData.blokRumah}
                     onChange={handleChange}
                   />
+                  {showBlokError && (
+                    <span className="field-error">
+                      Format blok rumah harus seperti E7/15
+                    </span>
+                  )}
                 </div>
               </div>
 
               <div className="form-actions">
                 <button type="button" className="btn-back" onClick={handleBack}>
-                  Back
+                  Kembali
                 </button>
                 <button
                   type="button"
@@ -157,7 +175,7 @@ export default function PersonalDataPage() {
                   onClick={handleNext}
                   disabled={isNextDisabled}
                 >
-                  Next &rarr;
+                  Lanjut &rarr;
                 </button>
               </div>
             </form>

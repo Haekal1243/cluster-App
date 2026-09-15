@@ -40,6 +40,31 @@ enum StatusKegiatan {
   unactived
 }
 
+enum KategoriPengaduan {
+  KEBERSIHAN
+  KEAMANAN
+  INFRASTRUKTUR
+  LAINNYA
+}
+
+enum StatusPengaduan {
+  MENUNGGU
+  DIPROSES
+  SELESAI
+  DITOLAK
+}
+
+enum TipeNotifikasi {
+  TAGIHAN_BARU
+  PEMBAYARAN_DIKONFIRMASI
+  PEMBAYARAN_DITOLAK
+  PEMBAYARAN_MASUK
+  PENGADUAN_BARU
+  PENGADUAN_DITANGGAPI
+  PENGUMUMAN_BARU
+  KEGIATAN_BARU
+}
+
 // ==========================================
 // PERMISSIONS
 // ==========================================
@@ -70,6 +95,8 @@ model User {
   // Relasi
   rumah      Rumah[]  // 1 User bisa memiliki/menghuni banyak rumah
   pembayaran PembayaranIpl[]
+  pengaduan  Pengaduan[]
+  notifikasi Notifikasi[]
 
   @@map("tb_User")
 }
@@ -157,4 +184,32 @@ model Pengumuman {
   isDelete              Boolean          @default(false) @map("is_delete")
 
   @@map("tb_Pengumuman")
+}
+
+model Pengaduan {
+  id          Int               @id @default(autoincrement())
+  idUser      Int
+  pelapor     User              @relation(fields: [idUser], references: [id])
+  judul       String
+  kategori    KategoriPengaduan
+  deskripsi   String            @db.Text
+  fotoUrl     String?
+  status      StatusPengaduan   @default(MENUNGGU)
+  tanggapan   String?           @db.Text
+  tanggapanBy String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime?
+  isDelete    Boolean           @default(false)
+}
+
+model Notifikasi {
+  id        Int            @id @default(autoincrement())
+  idUser    Int
+  penerima  User           @relation(fields: [idUser], references: [id])
+  tipe      TipeNotifikasi
+  judul     String
+  pesan     String         @db.Text
+  link      String?
+  isRead    Boolean        @default(false)
+  createdAt DateTime       @default(now())
 }

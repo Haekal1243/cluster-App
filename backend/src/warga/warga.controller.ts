@@ -17,6 +17,7 @@ import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
 import { UpdateRumahDto } from './dto/update-rumah.dto';
 import { buktiMulterOptions } from './bukti.multer';
+import { Public } from '../auth/public.decorator';
 
 @Controller('warga')
 export class WargaController {
@@ -25,6 +26,7 @@ export class WargaController {
   // -------------------------------------------------------
   // AUTH
   // -------------------------------------------------------
+  @Public()
   @Post('login')
   login(@Body() body: { email: string; password: string }) {
     return this.wargaService.login(body.email, body.password);
@@ -33,6 +35,7 @@ export class WargaController {
   // -------------------------------------------------------
   // USER / WARGA CRUD
   // -------------------------------------------------------
+  @Public()
   @Post()
   create(@Body() createWargaDto: CreateWargaDto) {
     return this.wargaService.create(createWargaDto);

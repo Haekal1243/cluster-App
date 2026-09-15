@@ -1,5 +1,8 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, Matches } from 'class-validator';
 import {RT } from '@prisma/client';
+
+const BLOK_RUMAH_REGEX = /^E\d{1,2}\/\d{1,2}$/;
+const BLOK_RUMAH_MESSAGE = 'Format blok rumah harus seperti E7/15';
 
 export class CreateWargaDto {
   @IsString()
@@ -16,6 +19,7 @@ export class CreateWargaDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(BLOK_RUMAH_REGEX, { message: BLOK_RUMAH_MESSAGE })
   blokRumah!: string;
 
   @IsEmail()

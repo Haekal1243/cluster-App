@@ -6,11 +6,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Mail, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
+import { API_BASE_URL } from "@/lib/api";
+import { setToken } from "@/lib/session";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,8 +23,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Panggil API NestJS yang berjalan di port 4000
-      const response = await fetch("http://localhost:4000/warga/login", {
+      const response = await fetch(`${API_BASE_URL}/warga/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -32,17 +34,12 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Simpan data user ke localStorage
+        // Simpan data user ke localStorage, token disimpan sesuai "Ingat saya"
         localStorage.setItem("user", JSON.stringify(data.user));
-        
-        // Role-based redirect
-        const role = data.user?.role;
-        if (role === "ADMIN" || role === "PENGURUS") {
-          router.push("/dashboard");
-        } else {
-          // WARGA → Portal Warga
-          router.push("/portal");
-        }
+        setToken(data.token, remember);
+
+        // Semua role masuk ke /dashboard — tampilan dibedakan per-role di dalamnya
+        router.push("/dashboard");
       } else {
         setErrorMsg(data.message || "Email atau password salah");
       }
@@ -71,8 +68,8 @@ export default function LoginPage() {
           />
         </>
       }
-      title="Welcome Back"
-      subtitle="Please sign in to your Account to continue"
+      title="Selamat Datang Kembali"
+      subtitle="Silakan masuk ke akun Anda untuk melanjutkan"
     >
       <form onSubmit={handleSubmit}>
         {errorMsg && (
@@ -98,7 +95,7 @@ export default function LoginPage() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Kata Sandi</label>
           <div className="input-wrapper">
             <Lock className="input-icon" />
             <input
@@ -115,23 +112,28 @@ export default function LoginPage() {
 
         <div className="options-row">
           <div className="remember-me">
-            <input type="checkbox" id="remember" />
-            <label htmlFor="remember">Remember me</label>
+            <input
+              type="checkbox"
+              id="remember"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+            />
+            <label htmlFor="remember">Ingat saya</label>
           </div>
           <a href="#" className="forgot-password">
-            Forgot Password?
+            Lupa Password?
           </a>
         </div>
 
         <button type="submit" className="btn-sign-in" disabled={isLoading}>
-          {isLoading ? "Memeriksa..." : "Sign In"}
+          {isLoading ? "Memeriksa..." : "Masuk"}
         </button>
       </form>
 
       <div className="register-section">
-        Don't have an account?{" "}
+        Belum punya akun?{" "}
         <Link href="/register" className="register-link">
-          Register here
+          Daftar di sini
         </Link>
       </div>
     </AuthShell>

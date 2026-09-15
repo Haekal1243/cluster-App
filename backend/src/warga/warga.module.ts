@@ -2,10 +2,12 @@
 import { Module } from '@nestjs/common';
 import { WargaService } from './warga.service';
 import { WargaController } from './warga.controller';
-import { PrismaModule } from '../prisma/prisma.module'; 
+import { PrismaModule } from '../prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
+import { NotifikasiModule } from '../notifikasi/notifikasi.module';
 
 @Module({
-  imports: [PrismaModule], 
+  imports: [PrismaModule, AuthModule, NotifikasiModule],
   controllers: [WargaController],
   providers: [WargaService],
 })

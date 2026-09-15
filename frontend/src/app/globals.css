@@ -2822,6 +2822,17 @@ select {
   background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
 }
 
+/* Base hero portal/warga: gradient gelap agar teks putih kontras (WCAG AA) */
+.portal-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 28px 32px;
+  background: linear-gradient(135deg, #0f172a 0%, #134e4a 60%, #0f766e 100%);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.22);
+  margin-bottom: 8px;
+}
+
 .portal-hero-accent {
   position: absolute;
   top: 0;
@@ -3187,6 +3198,63 @@ select {
 }
 
 .portal-action-btn:hover { background: #dc2626; }
+
+/* ---- Warga Dashboard: kontras + hierarki (scope .warga-dashboard) ---- */
+.warga-dashboard .portal-hero { margin-bottom: 4px; }
+
+/* Stat cards: aksen lebih tegas + tint latar per status agar tidak kaku */
+.warga-dashboard .portal-stat-card {
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.warga-dashboard .portal-stat-card.card-success { border-left: 5px solid #16a34a; background: #f6fef9; }
+.warga-dashboard .portal-stat-card.card-danger  { border-left: 5px solid #dc2626; background: #fff7f7; }
+.warga-dashboard .portal-stat-card.card-warning { border-left: 5px solid #d97706; background: #fffdf5; }
+.warga-dashboard .portal-stat-card.card-info    { border-left: 5px solid #1d4ed8; background: #f8fbff; }
+
+/* Label & angka: slate-600/900 agar lolos WCAG AA di atas putih */
+.warga-dashboard .portal-stat-label {
+  color: #475569;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.warga-dashboard .portal-stat-value { color: #0f172a; }
+.warga-dashboard .portal-stat-sub { color: #475569; }
+
+/* Ikon solid (putih di atas warna tua) pengganti pastel yang pudar */
+.warga-dashboard .card-success .portal-stat-icon { background: #16a34a; color: #fff; }
+.warga-dashboard .card-danger .portal-stat-icon  { background: #dc2626; color: #fff; }
+.warga-dashboard .card-warning .portal-stat-icon { background: #d97706; color: #fff; }
+.warga-dashboard .card-info .portal-stat-icon    { background: #1d4ed8; color: #fff; }
+
+/* Action banner: teks merah tua di atas pink solid */
+.warga-dashboard .portal-action-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+}
+.warga-dashboard .portal-action-text { color: #991b1b; font-weight: 600; }
+.warga-dashboard .portal-action-btn { background: #dc2626; }
+.warga-dashboard .portal-action-btn:hover { background: #b91c1c; }
+
+/* Unit rumah: judul & nominal tegas, badge status kontras */
+.warga-dashboard .portal-peng-judul { color: #0f172a; }
+.warga-dashboard .portal-peng-desc { color: #475569; }
+.warga-dashboard .unit-nominal { color: #0f172a; font-weight: 700; }
+.warga-dashboard .ipl-status-badge.status-lunas { background: #dcfce7; color: #15803d; }
+.warga-dashboard .ipl-status-badge.status-belum { background: #fee2e2; color: #b91c1c; }
+.warga-dashboard .ipl-status-badge.status-menunggu { background: #fef3c7; color: #b45309; }
+
+/* Section header: icon chip agar berirama, tidak kaku */
+.warga-dashboard .db-section-header > svg:first-child {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 9px;
+  padding: 6px;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
 
 /* ---- Portal Pengumuman List ---- */
 .portal-pengumuman-list {
@@ -4240,6 +4308,23 @@ select {
   transition: all 0.15s;
 }
 .btn-ipl-view:hover { background: #dcfce7; }
+
+.btn-ipl-neutral {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: "Poppins", sans-serif;
+}
+.btn-ipl-neutral:hover { background: #e2e8f0; border-color: #cbd5e1; color: #0f172a; }
 
 .btn-ipl-icon {
   display: inline-flex;

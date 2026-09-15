@@ -130,10 +130,18 @@ export const portalApi = {
   // Portal Warga endpoints
   getRumahByUser: (userId) => request(`/warga/portal/rumah/${userId}`),
   getTagihanByRumah: (rumahId) => request(`/warga/portal/tagihan/${rumahId}`),
-  getTagihanByUser: (userId, { bulan, tahun } = {}) => {
+  getTagihanByUser: (userId, { bulan, tahun, dari, sampai, status, search } = {}) => {
     const params = new URLSearchParams();
-    if (bulan) params.set('bulan', bulan);
-    if (tahun) params.set('tahun', tahun);
+    // Range diutamakan bila diberikan (mirror filter keuangan/tagihan admin)
+    if (dari || sampai) {
+      if (dari) params.set('dari', dari);
+      if (sampai) params.set('sampai', sampai);
+    } else {
+      if (bulan) params.set('bulan', bulan);
+      if (tahun) params.set('tahun', tahun);
+    }
+    if (status && status !== 'SEMUA') params.set('status', status);
+    if (search) params.set('search', search);
     const qs = params.toString();
     return request(`/warga/portal/tagihan/user/${userId}${qs ? `?${qs}` : ''}`);
   },

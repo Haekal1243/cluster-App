@@ -112,8 +112,19 @@ export class WargaController {
     @Param('userId') userId: string,
     @Query('bulan') bulan?: string,
     @Query('tahun') tahun?: string,
+    @Query('dari') dari?: string,
+    @Query('sampai') sampai?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
   ) {
-    return this.wargaService.getTagihanByUser(+userId, bulan, tahun);
+    return this.wargaService.getTagihanByUser(+userId, {
+      bulan,
+      tahun,
+      dari,
+      sampai,
+      status,
+      search,
+    });
   }
 
   /** POST /warga/portal/bayar — upload bukti pembayaran */

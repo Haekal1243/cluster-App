@@ -1,10 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Filter, ChevronDown } from "lucide-react";
 
-export default function FilterPopover({ children, active = false, label = "Filter" }) {
-  const [open, setOpen] = useState(false);
+export default function FilterPopover({
+  children,
+  active = false,
+  label = "Filter",
+  open: controlledOpen,
+  onOpenChange,
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  // Mode controlled (bila prop open diberikan) atau uncontrolled seperti semula.
+  // Pemakaian lama tanpa prop baru tetap berperilaku sama persis.
+  const open = controlledOpen ?? internalOpen;
+
+  // Simpan nilai terbaru di ref agar setOpen tidak perlu open sebagai dependency,
+  // sehingga ukuran deps array useEffect selalu konstan.
+  const openRef = useRef(open);
+  openRef.current = open;
+
+  const controlledOpenRef = useRef(controlledOpen);
+  controlledOpenRef.current = controlledOpen;
+
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+
+  const setOpen = useCallback((value) => {
+    const next = typeof value === "function" ? value(openRef.current) : value;
+    if (controlledOpenRef.current === undefined) setInternalOpen(next);
+    onOpenChangeRef.current?.(next);
+  }, []);
+
   const ref = useRef(null);
 
   useEffect(() => {
@@ -21,7 +48,7 @@ export default function FilterPopover({ children, active = false, label = "Filte
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, setOpen]);
 
   return (
     <div className="filter-popover" ref={ref}>

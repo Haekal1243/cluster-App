@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Users, Wallet, AlertTriangle, CheckCircle,
   TrendingUp, Clock, ArrowRight, Home, CreditCard, Megaphone, CalendarDays,
   Calendar, FileText,
 } from "lucide-react";
-import { iplApi, portalApi, kegiatanApi, pengumumanApi } from "@/lib/api";
+import { iplApi, portalApi, kegiatanApi, pengumumanApi, keuanganApi } from "@/lib/api";
 import Link from "next/link";
 import KegiatanDetailModal from "@/components/kegiatan/KegiatanDetailModal";
 import PengumumanDetailModal from "@/components/pengumuman/PengumumanDetailModal";
@@ -106,27 +106,228 @@ function formatPengumumanDate(dateStr) {
 
 // ── Admin/Pengurus: ringkasan seluruh cluster ─────────────────────────────────
 function AdminDashboardView({ user }) {
+  const getCurrentYm = () => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
+  };
+  const formatYm = (ym) => {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    const [y, m] = ym.split("-");
+    return `${MONTHS[parseInt(m, 10) - 1] || m} ${y}`;
+  };
+  const monthDiffInclusive = (dari, sampai) => {
+    const [y1, m1] = dari.split("-").map(Number);
+    const [y2, m2] = sampai.split("-").map(Number);
+    return (y2 - y1) * 12 + (m2 - m1) + 1;
+  };
+
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
+  const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
+  const [draftDari, setDraftDari] = useState(getCurrentYm);
+  const [draftSampai, setDraftSampai] = useState(getCurrentYm);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef(null);
+
+  // Normalisasi + validasi turunan (tanpa setState di dalam effect)
+  const [dari, sampai] = periodeDari > periodeSampai
+    ? [periodeSampai, periodeDari]
+    : [periodeDari, periodeSampai];
+  const rangeError = monthDiffInclusive(dari, sampai) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
+
+  // Validasi draft di dalam popover (sebelum diterapkan)
+  const [draftDariN, draftSampaiN] = draftDari > draftSampai
+    ? [draftSampai, draftDari]
+    : [draftDari, draftSampai];
+  const draftError = draftDari && draftSampai && monthDiffInclusive(draftDariN, draftSampaiN) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
 
   useEffect(() => {
+    if (rangeError) return;
     setLoadingStats(true);
-    iplApi.getDashboardStats()
+    iplApi.getDashboardStats({ dari, sampai })
       .then(setStats)
       .catch(() => {})
       .finally(() => setLoadingStats(false));
-  }, []);
+  }, [dari, sampai, rangeError]);
+
+  // Ringkasan keuangan mengikuti periode yang sama
+  const [keuangan, setKeuangan] = useState(null);
+  const [loadingKeu, setLoadingKeu] = useState(true);
+
+  useEffect(() => {
+    if (rangeError) return;
+    setLoadingKeu(true);
+    keuanganApi.getRingkasan({ dari, sampai })
+      .then(setKeuangan)
+      .catch(() => {})
+      .finally(() => setLoadingKeu(false));
+  }, [dari, sampai, rangeError]);
+
+  // Tutup popover saat klik di luar / tekan Escape
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onPointerDown = (e) => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setFilterOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filterOpen]);
+
+  const openFilter = () => {
+    setDraftDari(periodeDari);
+    setDraftSampai(periodeSampai);
+    setFilterOpen(true);
+  };
+
+  const applyFilter = () => {
+    if (!draftDari || !draftSampai || draftError) return;
+    setPeriodeDari(draftDari);
+    setPeriodeSampai(draftSampai);
+    setFilterOpen(false);
+  };
+
+  const handleResetPeriode = () => {
+    const cur = getCurrentYm();
+    setPeriodeDari(cur);
+    setPeriodeSampai(cur);
+    setDraftDari(cur);
+    setDraftSampai(cur);
+    setFilterOpen(false);
+  };
+
+  const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
+  const periodeLabel = periodeDari === periodeSampai
+    ? formatYm(periodeDari)
+    : `${formatYm(periodeDari)} – ${formatYm(periodeSampai)}`;
 
   const userName = user?.nama || user?.name || "Admin";
 
   return (
     <div className="page-stack">
 
-      {/* ── Welcome ── */}
-      <section className="welcome-banner">
+      {/* ── Welcome + Filter Periode (satu field) ── */}
+      <section className="welcome-banner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h2>Selamat datang kembali, {userName} 👋</h2>
-          <p>Ini ringkasan aktivitas cluster Topaz bulan ini.</p>
+          <p>Ini ringkasan aktivitas cluster Topaz periode {periodeLabel}.</p>
+        </div>
+        <div ref={filterRef} style={{ position: "relative" }}>
+          <button
+            type="button"
+            onClick={() => (filterOpen ? setFilterOpen(false) : openFilter())}
+            aria-haspopup="dialog"
+            aria-expanded={filterOpen}
+            aria-pressed={!isDefaultPeriode}
+            title={isDefaultPeriode ? "Filter periode" : `Periode: ${periodeLabel} — klik untuk ubah`}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "8px 14px", borderRadius: 999, cursor: "pointer",
+              background: isDefaultPeriode ? "rgba(255,255,255,.14)" : "#fff",
+              border: `1px solid ${isDefaultPeriode ? "rgba(255,255,255,.45)" : "#fff"}`,
+              boxShadow: filterOpen
+                ? "0 0 0 3px rgba(255,255,255,.35)"
+                : isDefaultPeriode ? "none" : "0 4px 12px rgba(0,0,0,.25)",
+              fontSize: 13, fontWeight: 600,
+              color: isDefaultPeriode ? "#fff" : "#1d4ed8",
+              whiteSpace: "nowrap",
+              transition: "background .15s ease, border-color .15s ease, color .15s ease",
+            }}
+            onMouseEnter={(e) => {
+              if (isDefaultPeriode) {
+                e.currentTarget.style.background = "rgba(255,255,255,.24)";
+              } else {
+                e.currentTarget.style.background = "#eff6ff";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (isDefaultPeriode) {
+                e.currentTarget.style.background = "rgba(255,255,255,.14)";
+              } else {
+                e.currentTarget.style.background = "#fff";
+              }
+            }}
+          >
+            <Calendar size={15} />
+            <span>{isDefaultPeriode ? "Filter periode" : periodeLabel}</span>
+          </button>
+          {filterOpen && (
+            <div
+              role="dialog"
+              aria-label="Filter periode"
+              style={{
+                position: "absolute", right: 0, top: "calc(100% + 8px)", zIndex: 30,
+                width: 260, background: "#fff", border: "1px solid #e2e8f0",
+                borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,.12)",
+                padding: 14, display: "flex", flexDirection: "column", gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label htmlFor="periode-dari" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
+                  Dari
+                </label>
+                <input
+                  id="periode-dari"
+                  type="month"
+                  value={draftDari}
+                  onChange={(e) => e.target.value && setDraftDari(e.target.value)}
+                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label htmlFor="periode-sampai" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
+                  Sampai
+                </label>
+                <input
+                  id="periode-sampai"
+                  type="month"
+                  value={draftSampai}
+                  onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
+                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
+                />
+              </div>
+              {draftError && (
+                <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>
+              )}
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                {!isDefaultPeriode && (
+                  <button
+                    type="button"
+                    onClick={handleResetPeriode}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#64748b" }}
+                  >
+                    Reset
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={applyFilter}
+                  disabled={!!draftError}
+                  style={{
+                    background: draftError ? "#cbd5e1" : "#2563eb", color: "#fff",
+                    border: "none", borderRadius: 8, padding: "8px 16px",
+                    fontSize: 13, fontWeight: 600, cursor: draftError ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Terapkan
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
+                Maksimal 12 bulan · Total Warga tidak ikut filter
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -149,7 +350,7 @@ function AdminDashboardView({ user }) {
         <Link href="/dashboard/iuran" className="db-metric-card db-card-primary">
           <div className="db-metric-icon"><Wallet size={22} /></div>
           <div className="db-metric-body">
-            <span className="db-metric-label">Total Kas Masuk Bulan Ini</span>
+            <span className="db-metric-label">Total Kas Masuk Periode</span>
             <span className="db-metric-value">
               {loadingStats ? "—" : formatRupiah(stats?.totalKasMasukBulanIni ?? 0)}
             </span>
@@ -201,6 +402,53 @@ function AdminDashboardView({ user }) {
 
       </section>
 
+      {/* ── Ringkasan Keuangan ── */}
+      <div className="content-card">
+        <div className="db-section-header">
+          <Wallet size={17} />
+          <h3>Keuangan Kas</h3>
+          <span className="db-section-sub">{periodeLabel}</span>
+          <Link href="/dashboard/keuangan" className="db-section-link">
+            Lihat laporan <ArrowRight size={13} />
+          </Link>
+        </div>
+        {loadingKeu ? (
+          <div className="db-chart-loading">Memuat data keuangan...</div>
+        ) : (
+          <div className="db-metric-grid" style={{ marginTop: 4 }}>
+            <div className="db-recent-item" style={{ cursor: "default" }}>
+              <div className="db-metric-body">
+                <span className="db-metric-label">Saldo Kas</span>
+                <span className="db-metric-value">
+                  {formatRupiah(keuangan?.saldoKas ?? 0)}
+                </span>
+                <span className="db-metric-sub">kumulatif</span>
+              </div>
+            </div>
+            <div className="db-recent-item" style={{ cursor: "default" }}>
+              <div className="db-metric-body">
+                <span className="db-metric-label">Pemasukan</span>
+                <span className="db-metric-value">
+                  {formatRupiah(keuangan?.totalPemasukan ?? 0)}
+                </span>
+                <span className="db-metric-sub">
+                  IPL {formatRupiah(keuangan?.pemasukanIpl?.total ?? 0)}
+                </span>
+              </div>
+            </div>
+            <div className="db-recent-item" style={{ cursor: "default" }}>
+              <div className="db-metric-body">
+                <span className="db-metric-label">Pengeluaran</span>
+                <span className="db-metric-value">
+                  {formatRupiah(keuangan?.totalPengeluaran ?? 0)}
+                </span>
+                <span className="db-metric-sub">{periodeLabel}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Chart + Tabel row ── */}
       <div className="db-bottom-row">
 
@@ -209,7 +457,7 @@ function AdminDashboardView({ user }) {
           <div className="db-section-header">
             <TrendingUp size={17} />
             <h3>Tren Kas Masuk IPL</h3>
-            <span className="db-section-sub">6 bulan terakhir</span>
+            <span className="db-section-sub">{periodeLabel}</span>
           </div>
           {loadingStats || !stats?.trenPemasukan ? (
             <div className="db-chart-loading">Memuat grafik...</div>
@@ -234,6 +482,7 @@ function AdminDashboardView({ user }) {
           <div className="db-section-header">
             <Clock size={17} />
             <h3>Pembayaran Terbaru</h3>
+            <span className="db-section-sub">{periodeLabel}</span>
             <Link href="/dashboard/iuran" className="db-section-link">
               Lihat semua <ArrowRight size={13} />
             </Link>
@@ -242,7 +491,7 @@ function AdminDashboardView({ user }) {
           {loadingStats ? (
             <div className="db-chart-loading">Memuat data...</div>
           ) : !stats?.pembayaranTerbaru?.length ? (
-            <div className="db-empty-recent">Belum ada pembayaran yang masuk.</div>
+            <div className="db-empty-recent">Belum ada pembayaran pada periode {periodeLabel}.</div>
           ) : (
             <div className="db-recent-list">
               {stats.pembayaranTerbaru.map((p) => (

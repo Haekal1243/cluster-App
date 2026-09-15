@@ -156,19 +156,30 @@ export const iplApi = {
       body: JSON.stringify(payload),
     }),
 
-  // Ambil daftar tagihan dengan filter opsional
-  getAll: ({ bulan, tahun, status, search } = {}) => {
+  // Ambil daftar tagihan dengan filter opsional (bulan+tahun tunggal atau range dari/sampai YYYY-MM)
+  getAll: ({ bulan, tahun, dari, sampai, status, search } = {}) => {
     const params = new URLSearchParams();
-    if (bulan) params.set('bulan', bulan);
-    if (tahun) params.set('tahun', tahun);
+    if (dari || sampai) {
+      if (dari) params.set('dari', dari);
+      if (sampai) params.set('sampai', sampai);
+    } else {
+      if (bulan) params.set('bulan', bulan);
+      if (tahun) params.set('tahun', tahun);
+    }
     if (status && status !== 'SEMUA') params.set('status', status);
     if (search) params.set('search', search);
     const qs = params.toString();
     return request(`/ipl${qs ? `?${qs}` : ''}`);
   },
 
-  // Statistik ringkasan untuk dashboard
-  getDashboardStats: () => request('/ipl/dashboard-stats'),
+  // Statistik ringkasan untuk dashboard (filter rentang periode YYYY-MM, maks 12 bulan)
+  getDashboardStats: ({ dari, sampai } = {}) => {
+    const params = new URLSearchParams();
+    if (dari) params.set('dari', dari);
+    if (sampai) params.set('sampai', sampai);
+    const qs = params.toString();
+    return request(`/ipl/dashboard-stats${qs ? `?${qs}` : ''}`);
+  },
 
   // Konfirmasi atau tolak pembayaran
   konfirmasi: (pembayaranId, payload) =>
@@ -177,6 +188,51 @@ export const iplApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
+};
+
+export const keuanganApi = {
+  // Riwayat transaksi kas manual dengan filter opsional
+  getAll: ({ dari, sampai, tipe, kategori, search } = {}) => {
+    const params = new URLSearchParams();
+    if (dari) params.set('dari', dari);
+    if (sampai) params.set('sampai', sampai);
+    if (tipe && tipe !== 'SEMUA') params.set('tipe', tipe);
+    if (kategori && kategori !== 'SEMUA') params.set('kategori', kategori);
+    if (search) params.set('search', search);
+    const qs = params.toString();
+    return request(`/keuangan${qs ? `?${qs}` : ''}`);
+  },
+
+  // Ringkasan IPL otomatis + kas manual (filter rentang periode YYYY-MM)
+  getRingkasan: ({ dari, sampai } = {}) => {
+    const params = new URLSearchParams();
+    if (dari) params.set('dari', dari);
+    if (sampai) params.set('sampai', sampai);
+    const qs = params.toString();
+    return request(`/keuangan/ringkasan${qs ? `?${qs}` : ''}`);
+  },
+
+  getById: (id) => request(`/keuangan/${id}`),
+
+  create: (payload) =>
+    request('/keuangan', {
+      method: 'POST',
+      body: buildFormData(payload),
+    }),
+
+  update: (id, payload) =>
+    request(`/keuangan/${id}`, {
+      method: 'PATCH',
+      body: buildFormData(payload),
+    }),
+
+  remove: (id) =>
+    request(`/keuangan/${id}`, {
+      method: 'DELETE',
+    }),
+
+  buktiUrl: (filename) =>
+    filename ? `${API_BASE_URL}/uploads/keuangan/${filename}` : null,
 };
 
 export const pengaduanApi = {

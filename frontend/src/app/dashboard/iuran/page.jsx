@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Plus,
   Search,
-  Filter,
   CheckCircle,
   XCircle,
   Clock,
@@ -13,7 +12,6 @@ import {
   Wallet,
   TrendingUp,
   FileX,
-  RefreshCw,
   CreditCard,
   Home,
   ChevronDown,
@@ -23,6 +21,7 @@ import {
 } from "lucide-react";
 import { iplApi, portalApi } from "@/lib/api";
 import { showMessage, showConfirm } from "@/lib/message";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -303,10 +302,6 @@ function AdminIuranView() {
 
   const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
   const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
-  const [draftDari, setDraftDari] = useState(getCurrentYm);
-  const [draftSampai, setDraftSampai] = useState(getCurrentYm);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef(null);
   const [filterStatus, setFilterStatus] = useState("SEMUA");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -318,55 +313,17 @@ function AdminIuranView() {
   const rangeError = monthDiffInclusive(dari, sampai) > 12
     ? "Rentang periode maksimal 12 bulan."
     : "";
-  const [draftDariN, draftSampaiN] = draftDari > draftSampai
-    ? [draftSampai, draftDari]
-    : [draftDari, draftSampai];
-  const draftError = draftDari && draftSampai && monthDiffInclusive(draftDariN, draftSampaiN) > 12
-    ? "Rentang periode maksimal 12 bulan."
-    : "";
 
   const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
   const periodeLabel = periodeDari === periodeSampai
     ? formatYmPanjang(periodeDari)
     : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
 
-  // Tutup popover saat klik di luar / tekan Escape
-  useEffect(() => {
-    if (!filterOpen) return;
-    const onPointerDown = (e) => {
-      if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
-    };
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") setFilterOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [filterOpen]);
-
-  const openFilter = () => {
-    setDraftDari(periodeDari);
-    setDraftSampai(periodeSampai);
-    setFilterOpen(true);
-  };
-
-  const applyFilter = () => {
-    if (!draftDari || !draftSampai || draftError) return;
-    setPeriodeDari(draftDari);
-    setPeriodeSampai(draftSampai);
-    setFilterOpen(false);
-  };
-
-  const handleResetPeriode = () => {
+  const handleResetFilter = () => {
     const cur = getCurrentYm();
     setPeriodeDari(cur);
     setPeriodeSampai(cur);
-    setDraftDari(cur);
-    setDraftSampai(cur);
-    setFilterOpen(false);
+    setFilterStatus("SEMUA");
   };
 
   // Modal state
@@ -416,138 +373,6 @@ function AdminIuranView() {
               : `Menampilkan data periode ${periodeLabel}`}
           </p>
         </div>
-        <button
-          id="btn-generate-tagihan"
-          className="btn-ipl-primary"
-          onClick={() => setShowGenerate(true)}
-        >
-          <Plus size={16} /> Generate Tagihan Periode
-        </button>
-      </div>
-
-      {/* ── Filter Bar ── */}
-      <div className="ipl-filter-bar">
-        <div className="ipl-filter-group">
-          <label>Periode</label>
-          <div ref={filterRef} style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => (filterOpen ? setFilterOpen(false) : openFilter())}
-              aria-haspopup="dialog"
-              aria-expanded={filterOpen}
-              aria-pressed={!isDefaultPeriode}
-              title={isDefaultPeriode ? "Filter periode" : `Periode: ${periodeLabel} — klik untuk ubah`}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "7px 14px", borderRadius: 999, cursor: "pointer",
-                background: isDefaultPeriode ? "#fff" : "#2563eb",
-                border: `1px solid ${isDefaultPeriode ? "#e2e8f0" : "#2563eb"}`,
-                boxShadow: filterOpen ? "0 0 0 3px rgba(147,197,253,.35)" : "none",
-                fontSize: 13, fontWeight: 600,
-                color: isDefaultPeriode ? "#334155" : "#fff",
-                whiteSpace: "nowrap",
-                transition: "background .15s ease, border-color .15s ease, color .15s ease",
-              }}
-            >
-              <Calendar size={15} />
-              <span>{isDefaultPeriode ? "Filter periode" : periodeLabel}</span>
-            </button>
-            {filterOpen && (
-              <div
-                role="dialog"
-                aria-label="Filter periode"
-                style={{
-                  position: "absolute", left: 0, top: "calc(100% + 8px)", zIndex: 30,
-                  width: 260, background: "#fff", border: "1px solid #e2e8f0",
-                  borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,.12)",
-                  padding: 14, display: "flex", flexDirection: "column", gap: 10,
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label htmlFor="periode-dari" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
-                    Dari
-                  </label>
-                  <input
-                    id="periode-dari"
-                    type="month"
-                    value={draftDari}
-                    onChange={(e) => e.target.value && setDraftDari(e.target.value)}
-                    style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
-                  />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label htmlFor="periode-sampai" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
-                    Sampai
-                  </label>
-                  <input
-                    id="periode-sampai"
-                    type="month"
-                    value={draftSampai}
-                    onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
-                    style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
-                  />
-                </div>
-                {draftError && (
-                  <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>
-                )}
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
-                  {!isDefaultPeriode && (
-                    <button
-                      type="button"
-                      onClick={handleResetPeriode}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#64748b" }}
-                    >
-                      Reset
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={applyFilter}
-                    disabled={!!draftError}
-                    style={{
-                      background: draftError ? "#cbd5e1" : "#2563eb", color: "#fff",
-                      border: "none", borderRadius: 8, padding: "8px 16px",
-                      fontSize: 13, fontWeight: 600, cursor: draftError ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Terapkan
-                  </button>
-                </div>
-                <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
-                  Maksimal 12 bulan
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="ipl-filter-group">
-          <label>Status</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            {STATUS_FILTER_OPTIONS.map(({ val, label }) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="ipl-filter-group ipl-filter-search">
-          <label>Cari</label>
-          <div className="ipl-search-wrapper">
-            <Search size={15} className="ipl-search-icon" />
-            <input
-              type="text"
-              placeholder="Nama warga / blok rumah..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="ipl-input ipl-input-sm"
-            />
-          </div>
-        </div>
-        <button className="btn-ipl-icon" onClick={loadData} title="Refresh data">
-          <RefreshCw size={16} />
-        </button>
       </div>
 
       {/* ── Summary Cards ── */}
@@ -590,6 +415,71 @@ function AdminIuranView() {
         </div>
       )}
 
+      <div className="page-add-row">
+        <button
+          id="btn-generate-tagihan"
+          className="btn-ipl-primary"
+          onClick={() => setShowGenerate(true)}
+        >
+          <Plus size={16} /> Generate Tagihan Periode
+        </button>
+      </div>
+
+      {/* ── Search + Filter ── */}
+      <div className="list-toolbar-row">
+        <div className="list-search-wrap">
+          <Search size={15} className="list-search-icon" />
+          <input
+            type="text"
+            placeholder="Nama warga / blok rumah..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="list-search-input"
+          />
+        </div>
+
+        <FilterPopover active={!isDefaultPeriode || filterStatus !== "SEMUA"}>
+          <FilterField label="Periode Dari">
+            <input
+              type="month"
+              value={periodeDari}
+              onChange={(e) => e.target.value && setPeriodeDari(e.target.value)}
+              className="ipl-input"
+            />
+          </FilterField>
+          <FilterField label="Periode Sampai">
+            <input
+              type="month"
+              value={periodeSampai}
+              onChange={(e) => e.target.value && setPeriodeSampai(e.target.value)}
+              className="ipl-input"
+            />
+          </FilterField>
+          {rangeError && (
+            <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{rangeError}</p>
+          )}
+          <FilterField label="Status">
+            <select
+              className="ipl-select ipl-select-sm"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              {STATUS_FILTER_OPTIONS.map(({ val, label }) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
+          </FilterField>
+          <button
+            type="button"
+            className="filter-popover-reset"
+            onClick={handleResetFilter}
+            disabled={isDefaultPeriode && filterStatus === "SEMUA"}
+          >
+            Reset Filter
+          </button>
+        </FilterPopover>
+      </div>
+
       {/* ── Table ── */}
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
@@ -608,9 +498,6 @@ function AdminIuranView() {
           <div className="ipl-empty">
             <Wallet size={40} strokeWidth={1.2} />
             <p>Belum ada tagihan untuk periode ini.</p>
-            <button className="btn-ipl-primary" onClick={() => setShowGenerate(true)}>
-              <Plus size={15} /> Generate Sekarang
-            </button>
           </div>
         ) : (
           <div className="ipl-table-wrapper">
@@ -811,12 +698,6 @@ function WargaIuranView({ user }) {
     return rumahList.find((r) => r.id === rid) || modalIpl.rumah || null;
   }, [modalIpl, rumahList]);
 
-  const resetFilter = () => {
-    setFilterBulan(bulanIniDefault);
-    setFilterTahun(tahunIniDefault);
-    setSelectedRumahId("semua");
-  };
-
   if (loadingRumah) {
     return (
       <div className="portal-loading">
@@ -886,11 +767,6 @@ function WargaIuranView({ user }) {
       <section className="content-card">
         <div className="card-header-row">
           <h3><Calendar size={16} /> Filter Periode & Unit</h3>
-          {(filterBulan !== bulanIniDefault || filterTahun !== tahunIniDefault || selectedRumahId !== "semua") && (
-            <button type="button" className="link-lihat-semua" onClick={resetFilter}>
-              Reset ke bulan ini
-            </button>
-          )}
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <div className="portal-select-wrap" style={{ minWidth: 150, flex: 1 }}>
@@ -1010,7 +886,8 @@ function WargaIuranView({ user }) {
             {selectedRumahId !== "semua" ? " pada unit ini" : " pada semua unit Anda"}.
           </p>
         ) : (
-          <div className="table-wrapper">
+          <>
+          <div className="table-wrapper iuran-table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
@@ -1050,6 +927,37 @@ function WargaIuranView({ user }) {
               </tbody>
             </table>
           </div>
+
+          <div className="iuran-grid">
+            {displayData.map((ipl) => (
+              <div key={ipl.id} className="iuran-grid-card">
+                <h3 className="iuran-grid-title">
+                  {getMonthLabel(ipl.bulanPeriode, ipl.tahunPeriode)}
+                </h3>
+                <span className="meta-item iuran-grid-nominal">{rupiah(ipl.nominal)}</span>
+                {rumahList.length > 1 && selectedRumahId === "semua" && (
+                  <span className="meta-item iuran-grid-unit">
+                    {ipl.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl.idRumah}`}
+                  </span>
+                )}
+                <div className="iuran-grid-footer">
+                  {ipl.statusPembayaran === "BELUM_LUNAS" ? (
+                    <button
+                      type="button"
+                      className="btn-primary btn-sm"
+                      onClick={() => setModalIpl(ipl)}
+                    >
+                      <Upload size={12} /> Bayar
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  <WargaStatusBadge status={ipl.statusPembayaran} />
+                </div>
+              </div>
+            ))}
+          </div>
+          </>
         )}
       </section>
 

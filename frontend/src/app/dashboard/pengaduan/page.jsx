@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import PengaduanFormModal from "@/components/pengaduan/PengaduanFormModal";
 import PengaduanDetailModal from "@/components/pengaduan/PengaduanDetailModal";
 import PengaduanRespondModal from "@/components/pengaduan/PengaduanRespondModal";
@@ -171,70 +172,75 @@ function AdminPengaduanView({ user }) {
         </div>
       </div>
 
-      <div className="list-search-wrap">
-        <Search size={15} className="list-search-icon" />
-        <input
-          type="text"
-          placeholder="Cari judul, pelapor, atau deskripsi..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="list-search-input"
-        />
-      </div>
+      <div className="list-toolbar-row">
+        <div className="list-search-wrap">
+          <Search size={15} className="list-search-icon" />
+          <input
+            type="text"
+            placeholder="Cari judul, pelapor, atau deskripsi..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="list-search-input"
+          />
+        </div>
 
-      <div className="ipl-filter-bar pengaduan-filter-bar">
-        <div className="ipl-filter-group">
-          <label>Bulan</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterBulan}
-            onChange={(e) => setFilterBulan(e.target.value)}
-          >
-            <option value="SEMUA">Semua Bulan</option>
-            {availableBulan.map(({ val, label }) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="ipl-filter-group">
-          <label>Tahun</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterTahun}
-            onChange={(e) => setFilterTahun(e.target.value)}
-          >
-            <option value="SEMUA">Semua Tahun</option>
-            {availableTahun.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </div>
-        <div className="ipl-filter-group">
-          <label>Kategori</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterKategori}
-            onChange={(e) => setFilterKategori(e.target.value)}
-          >
-            <option value="SEMUA">Semua Kategori</option>
-            {Object.entries(KATEGORI_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="ipl-filter-group">
-          <label>Status</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="SEMUA">Semua Status</option>
-            {Object.entries(STATUS_LABELS).map(([value, { label }]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-        </div>
+        <FilterPopover
+          active={
+            filterBulan !== "SEMUA" ||
+            filterTahun !== "SEMUA" ||
+            filterKategori !== "SEMUA" ||
+            filterStatus !== "SEMUA"
+          }
+        >
+          <FilterField label="Bulan">
+            <select
+              className="ipl-select ipl-select-sm"
+              value={filterBulan}
+              onChange={(e) => setFilterBulan(e.target.value)}
+            >
+              <option value="SEMUA">Semua Bulan</option>
+              {availableBulan.map(({ val, label }) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Tahun">
+            <select
+              className="ipl-select ipl-select-sm"
+              value={filterTahun}
+              onChange={(e) => setFilterTahun(e.target.value)}
+            >
+              <option value="SEMUA">Semua Tahun</option>
+              {availableTahun.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Kategori">
+            <select
+              className="ipl-select ipl-select-sm"
+              value={filterKategori}
+              onChange={(e) => setFilterKategori(e.target.value)}
+            >
+              <option value="SEMUA">Semua Kategori</option>
+              {Object.entries(KATEGORI_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Status">
+            <select
+              className="ipl-select ipl-select-sm"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="SEMUA">Semua Status</option>
+              {Object.entries(STATUS_LABELS).map(([value, { label }]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </FilterField>
+        </FilterPopover>
       </div>
 
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
@@ -374,10 +380,12 @@ function WargaPengaduanView({ user }) {
         <div className="db-section-header">
           <MessageSquareWarning size={17} />
           <h3>Pengaduan Saya</h3>
+        </div>
+
+        <div className="page-add-row" style={{ marginBottom: 16 }}>
           <button
             type="button"
             className="btn-primary btn-sm"
-            style={{ marginLeft: "auto" }}
             onClick={() => setShowForm(true)}
           >
             <Plus size={14} /> Ajukan Pengaduan

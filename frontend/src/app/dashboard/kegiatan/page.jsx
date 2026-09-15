@@ -5,6 +5,7 @@ import { Calendar, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } fro
 import { kegiatanApi } from "@/lib/api";
 import { showConfirm, showMessage } from "@/lib/message";
 import Switch from "@/components/ui/switch";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import KegiatanFormModal from "@/components/kegiatan/KegiatanFormModal";
 
 const CURRENT_USER = "Admin";
@@ -159,6 +160,9 @@ export default function KegiatanPage() {
           <h2>Kegiatan</h2>
           <p>Kelola data kegiatan warga cluster.</p>
         </div>
+      </div>
+
+      <div className="page-add-row">
         <button type="button" className="btn-primary" onClick={openCreateModal}>
           <Plus size={16} />
           Tambah Kegiatan
@@ -176,18 +180,27 @@ export default function KegiatanPage() {
             className="list-search-input"
           />
         </div>
-        <select
-          className="ipl-select ipl-select-sm list-filter-select"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="SEMUA">Semua Status</option>
-          <option value="active">Aktif</option>
-          <option value="unactived">Nonaktif</option>
-        </select>
+        <FilterPopover active={filterStatus !== "SEMUA"}>
+          <FilterField label="Status">
+            <select
+              className="ipl-select ipl-select-sm"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="SEMUA">Semua Status</option>
+              <option value="active">Aktif</option>
+              <option value="unactived">Nonaktif</option>
+            </select>
+          </FilterField>
+        </FilterPopover>
       </div>
 
       <div className="table-card kegiatan-table-card">
+        <div className="ipl-table-header">
+          <span className="ipl-table-title">Daftar Kegiatan</span>
+          <span className="ipl-table-count">{sortedItems.length} data</span>
+        </div>
+
         <div className="table-wrapper kegiatan-table-wrapper">
           <table className="data-table kegiatan-table">
             <thead>
@@ -301,7 +314,7 @@ export default function KegiatanPage() {
           </div>
         )}
 
-        {!isLoading && sortedItems.length > 0 && (
+        {!isLoading && totalPages > 1 && (
           <div className="list-pagination">
             <span className="list-pagination-info">
               Halaman {currentPage} dari {totalPages} · {sortedItems.length} data

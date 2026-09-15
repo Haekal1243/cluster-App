@@ -5,6 +5,7 @@ import { Calendar, ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } fro
 import { pengumumanApi } from "@/lib/api";
 import { showConfirm, showMessage } from "@/lib/message";
 import Switch from "@/components/ui/switch";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import PengumumanFormModal from "@/components/pengumuman/PengumumanFormModal";
 
 const CURRENT_USER = "Admin";
@@ -157,6 +158,9 @@ export default function PengumumanPage() {
           <h2>Pengumuman</h2>
           <p>Kelola data pengumuman untuk warga cluster.</p>
         </div>
+      </div>
+
+      <div className="page-add-row">
         <button type="button" className="btn-primary" onClick={openCreateModal}>
           <Plus size={16} />
           Tambah Pengumuman
@@ -174,18 +178,27 @@ export default function PengumumanPage() {
             className="list-search-input"
           />
         </div>
-        <select
-          className="ipl-select ipl-select-sm list-filter-select"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="SEMUA">Semua Status</option>
-          <option value="active">Aktif</option>
-          <option value="unactived">Nonaktif</option>
-        </select>
+        <FilterPopover active={filterStatus !== "SEMUA"}>
+          <FilterField label="Status">
+            <select
+              className="ipl-select ipl-select-sm"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="SEMUA">Semua Status</option>
+              <option value="active">Aktif</option>
+              <option value="unactived">Nonaktif</option>
+            </select>
+          </FilterField>
+        </FilterPopover>
       </div>
 
       <div className="table-card pengumuman-table-card">
+        <div className="ipl-table-header">
+          <span className="ipl-table-title">Daftar Pengumuman</span>
+          <span className="ipl-table-count">{sortedItems.length} data</span>
+        </div>
+
         <div className="table-wrapper pengumuman-table-wrapper">
           <table className="data-table pengumuman-table">
             <thead>
@@ -299,7 +312,7 @@ export default function PengumumanPage() {
           </div>
         )}
 
-        {!isLoading && sortedItems.length > 0 && (
+        {!isLoading && totalPages > 1 && (
           <div className="list-pagination">
             <span className="list-pagination-info">
               Halaman {currentPage} dari {totalPages} · {sortedItems.length} data

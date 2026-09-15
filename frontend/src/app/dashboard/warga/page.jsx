@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { wargaApi } from "@/lib/warga.api";
 import { showConfirm, showMessage } from "@/lib/message";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import RumahFormModal from "@/components/warga/RumahFormModal";
 
 const RT_OPTIONS = ["Semua RT", "RT_01", "RT_02", "RT_03", "RT_04"];
@@ -138,41 +139,45 @@ export default function WargaPage() {
           <h2>Data Warga &amp; Rumah</h2>
           <p>Kelola unit rumah dan pemilik yang terdaftar di cluster Topaz.</p>
         </div>
-        <button type="button" className="btn-primary" onClick={openCreate}>
-          <Plus size={16} />
-          Tambah Rumah
-        </button>
       </div>
 
       {/* ── Stats cards ─────────────────────────────────────────────── */}
       <div className="warga-stat-row">
         <div className="warga-stat-card tone-info">
-          <span className="warga-stat-icon">
-            <Home size={20} />
-          </span>
-          <div>
+          <div className="warga-stat-top">
+            <span className="warga-stat-icon">
+              <Home size={20} />
+            </span>
             <span className="warga-stat-value">{stats.total}</span>
-            <span className="warga-stat-label">Total Unit Rumah</span>
           </div>
+          <span className="warga-stat-label">Total Unit Rumah</span>
         </div>
         <div className="warga-stat-card tone-success">
-          <span className="warga-stat-icon">
-            <Users size={20} />
-          </span>
-          <div>
+          <div className="warga-stat-top">
+            <span className="warga-stat-icon">
+              <Users size={20} />
+            </span>
             <span className="warga-stat-value">{stats.dihuni}</span>
-            <span className="warga-stat-label">Dihuni</span>
           </div>
+          <span className="warga-stat-label">Dihuni</span>
         </div>
         <div className="warga-stat-card tone-warning">
-          <span className="warga-stat-icon">
-            <Home size={20} />
-          </span>
-          <div>
+          <div className="warga-stat-top">
+            <span className="warga-stat-icon">
+              <Home size={20} />
+            </span>
             <span className="warga-stat-value">{stats.kosong}</span>
-            <span className="warga-stat-label">Kosong</span>
           </div>
+          <span className="warga-stat-label">Kosong</span>
         </div>
+      </div>
+
+      {/* ── Tambah Rumah ───────────────────────────────────────────── */}
+      <div className="warga-add-row">
+        <button type="button" className="btn-primary" onClick={openCreate}>
+          <Plus size={16} />
+          Tambah Rumah
+        </button>
       </div>
 
       {/* ── Filter bar ──────────────────────────────────────────────── */}
@@ -187,32 +192,44 @@ export default function WargaPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="form-control warga-filter-select"
-          value={filterRT}
-          onChange={(e) => setFilterRT(e.target.value)}
-        >
-          {RT_OPTIONS.map((rt) => (
-            <option key={rt} value={rt}>
-              {rt.replace("_", " ")}
-            </option>
-          ))}
-        </select>
-        <select
-          className="form-control warga-filter-select"
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <FilterPopover active={filterRT !== "Semua RT" || filterStatus !== "Semua Status"}>
+          <FilterField label="RT">
+            <select
+              className="form-control warga-filter-select"
+              value={filterRT}
+              onChange={(e) => setFilterRT(e.target.value)}
+            >
+              {RT_OPTIONS.map((rt) => (
+                <option key={rt} value={rt}>
+                  {rt.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Status">
+            <select
+              className="form-control warga-filter-select"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+        </FilterPopover>
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────── */}
       <div className="table-card">
+        <div className="ipl-table-header">
+          <span className="ipl-table-title">Daftar Data Warga</span>
+          <span className="ipl-table-count">{filtered.length} data</span>
+        </div>
+
+        <div className="table-wrapper warga-table-wrapper">
         <table className="data-table">
           <thead>
             <tr>
@@ -327,6 +344,58 @@ export default function WargaPage() {
               })}
           </tbody>
         </table>
+        </div>
+
+        <div className="warga-grid">
+          {!isLoading &&
+            filtered.map((item) => {
+              const penghuni = item.penghuni;
+              const isDihuni = item.userId !== null;
+              const jumlahRumah = penghuni?._count?.rumah ?? 0;
+
+              return (
+                <div key={item.id} className="warga-grid-card">
+                  <h3 className="warga-grid-title">
+                    {item.blokRumah}
+                    <span className="rt-badge">{item.rt.replace("_", " ")}</span>
+                  </h3>
+                  {penghuni ? (
+                    <span className="meta-item warga-grid-penghuni">
+                      {penghuni.namaUser}
+                      {jumlahRumah > 1 ? ` · ${jumlahRumah} rumah` : ""}
+                    </span>
+                  ) : (
+                    <span className="meta-item warga-grid-penghuni">Belum ada penghuni</span>
+                  )}
+                  <div className="warga-grid-footer">
+                    <div className="table-actions">
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        onClick={() => openEdit(item)}
+                        aria-label="Edit rumah"
+                        title="Edit"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon danger"
+                        onClick={() => handleDelete(item)}
+                        aria-label="Hapus rumah"
+                        title="Hapus"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <span className={`status-badge ${isDihuni ? "active" : "unactived"}`}>
+                      {isDihuni ? "Dihuni" : "Kosong"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
 
         {isLoading && (
           <div className="table-loading">Memuat data rumah…</div>

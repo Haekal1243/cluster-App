@@ -58,7 +58,7 @@ export default function PengaduanRespondModal({ pengaduan, currentUserName, onCl
 
   return (
     <div className="ipl-modal-overlay" onClick={onClose}>
-      <div className="ipl-modal ipl-modal-review" onClick={(e) => e.stopPropagation()}>
+      <div className="ipl-modal ipl-modal-review pengaduan-modal" onClick={(e) => e.stopPropagation()}>
         <div className="ipl-modal-header">
           <h3>Tanggapi Pengaduan</h3>
           <button className="ipl-modal-close" onClick={onClose}>✕</button>

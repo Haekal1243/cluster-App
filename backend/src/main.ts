@@ -19,6 +19,6 @@ async function bootstrap() {
   // Sajikan file yang diupload (mis. file pengumuman) secara statis
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
 
-  await app.listen(process.env.PORT ?? 4000);
+await app.listen(process.env.PORT ?? 4000, '0.0.0.0');
 }
 bootstrap();

@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Filter, ChevronDown } from "lucide-react";
 
-export default function FilterPopover({ children, active = false, label = "Filter" }) {
+export default function FilterPopover({
+  children,
+  active = false,
+  label = "Filter",
+  onOpen,
+  onApply,
+  onReset,
+  applyDisabled = false,
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -23,12 +31,30 @@ export default function FilterPopover({ children, active = false, label = "Filte
     };
   }, [open]);
 
+  const handleToggle = () => {
+    setOpen((o) => {
+      const next = !o;
+      if (next) onOpen?.();
+      return next;
+    });
+  };
+
+  const handleApply = () => {
+    onApply?.();
+    setOpen(false);
+  };
+
+  const handleReset = () => {
+    onReset?.();
+    setOpen(false);
+  };
+
   return (
     <div className="filter-popover" ref={ref}>
       <button
         type="button"
         className={`filter-popover-btn ${active ? "is-active" : ""}`}
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleToggle}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
@@ -40,6 +66,19 @@ export default function FilterPopover({ children, active = false, label = "Filte
       {open && (
         <div className="filter-popover-panel" role="dialog" aria-label={label}>
           {children}
+          <div className="filter-popover-footer">
+            <button type="button" className="filter-popover-reset" onClick={handleReset}>
+              Reset
+            </button>
+            <button
+              type="button"
+              className="filter-popover-apply"
+              onClick={handleApply}
+              disabled={applyDisabled}
+            >
+              Terapkan
+            </button>
+          </div>
         </div>
       )}
     </div>

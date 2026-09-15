@@ -104,7 +104,8 @@ export default function Header({ onMenuClick }) {
           type="button"
           className="header-menu-btn"
           onClick={onMenuClick}
-          aria-label="Buka menu"
+          aria-label="Buka/tutup menu"
+          title="Buka/tutup menu"
         >
           <Menu size={20} />
         </button>

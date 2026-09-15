@@ -29,6 +29,23 @@ export default function WargaPage() {
   const [search, setSearch] = useState("");
   const [filterRT, setFilterRT] = useState("Semua RT");
   const [filterStatus, setFilterStatus] = useState("Semua Status");
+  const [draftFilterRT, setDraftFilterRT] = useState("Semua RT");
+  const [draftFilterStatus, setDraftFilterStatus] = useState("Semua Status");
+
+  const handleFilterOpen = () => {
+    setDraftFilterRT(filterRT);
+    setDraftFilterStatus(filterStatus);
+  };
+  const handleFilterApply = () => {
+    setFilterRT(draftFilterRT);
+    setFilterStatus(draftFilterStatus);
+  };
+  const handleFilterReset = () => {
+    setFilterRT("Semua RT");
+    setFilterStatus("Semua Status");
+    setDraftFilterRT("Semua RT");
+    setDraftFilterStatus("Semua Status");
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -172,54 +189,58 @@ export default function WargaPage() {
         </div>
       </div>
 
-      {/* ── Tambah Rumah ───────────────────────────────────────────── */}
-      <div className="warga-add-row">
+      {/* ── Tambah Rumah + Filter bar ─────────────────────────────────── */}
+      <div className="page-toolbar-row">
         <button type="button" className="btn-primary" onClick={openCreate}>
           <Plus size={16} />
           Tambah Rumah
         </button>
-      </div>
 
-      {/* ── Filter bar ──────────────────────────────────────────────── */}
-      <div className="warga-filter-bar">
-        <div className="warga-search-wrap">
-          <Search size={15} className="warga-search-icon" />
-          <input
-            type="text"
-            className="warga-search-input"
-            placeholder="Cari nama warga atau blok rumah…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="warga-filter-bar">
+          <div className="warga-search-wrap">
+            <Search size={15} className="warga-search-icon" />
+            <input
+              type="text"
+              className="warga-search-input"
+              placeholder="Cari nama warga atau blok rumah…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <FilterPopover
+            active={filterRT !== "Semua RT" || filterStatus !== "Semua Status"}
+            onOpen={handleFilterOpen}
+            onApply={handleFilterApply}
+            onReset={handleFilterReset}
+          >
+            <FilterField label="RT">
+              <select
+                className="form-control warga-filter-select"
+                value={draftFilterRT}
+                onChange={(e) => setDraftFilterRT(e.target.value)}
+              >
+                {RT_OPTIONS.map((rt) => (
+                  <option key={rt} value={rt}>
+                    {rt.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+            <FilterField label="Status">
+              <select
+                className="form-control warga-filter-select"
+                value={draftFilterStatus}
+                onChange={(e) => setDraftFilterStatus(e.target.value)}
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+          </FilterPopover>
         </div>
-        <FilterPopover active={filterRT !== "Semua RT" || filterStatus !== "Semua Status"}>
-          <FilterField label="RT">
-            <select
-              className="form-control warga-filter-select"
-              value={filterRT}
-              onChange={(e) => setFilterRT(e.target.value)}
-            >
-              {RT_OPTIONS.map((rt) => (
-                <option key={rt} value={rt}>
-                  {rt.replace("_", " ")}
-                </option>
-              ))}
-            </select>
-          </FilterField>
-          <FilterField label="Status">
-            <select
-              className="form-control warga-filter-select"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </FilterField>
-        </FilterPopover>
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────── */}

@@ -96,17 +96,26 @@ export default function DashboardShell({ children }) {
     return null;
   }
 
+  // Di layar sempit (mobile), tombol hamburger buka/tutup sidebar overlay.
+  // Di layar lebar (desktop), tombol yang sama menciutkan/melebarkan sidebar.
+  const handleMenuClick = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 900) {
+      setIsMobileOpen((prev) => !prev);
+    } else {
+      setIsCollapsed((prev) => !prev);
+    }
+  };
+
   return (
     <div className="dashboard-shell">
       <Sidebar
         isOpen={isMobileOpen}
         onClose={() => setIsMobileOpen(false)}
         isCollapsed={isCollapsed}
-        onToggleCollapse={() => setIsCollapsed((prev) => !prev)}
       />
 
       <div className="dashboard-main">
-        <Header onMenuClick={() => setIsMobileOpen((prev) => !prev)} />
+        <Header onMenuClick={handleMenuClick} />
         <main className="dashboard-content">{children}</main>
         <Footer />
       </div>

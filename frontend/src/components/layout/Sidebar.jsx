@@ -12,8 +12,6 @@ import {
   Megaphone,
   MessageSquareWarning,
   X,
-  ChevronLeft,
-  ChevronRight,
   LogOut,
 } from "lucide-react";
 import { showConfirm } from "@/lib/message";
@@ -33,7 +31,6 @@ export default function Sidebar({
   isOpen,
   onClose,
   isCollapsed,
-  onToggleCollapse,
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -70,15 +67,6 @@ export default function Sidebar({
       <aside
         className={`dashboard-sidebar ${isOpen ? "is-open" : ""} ${isCollapsed ? "collapsed" : ""}`}
       >
-        <button
-          type="button"
-          className="sidebar-toggle-btn"
-          onClick={onToggleCollapse}
-          aria-label={isCollapsed ? "Buka sidebar" : "Ciutkan sidebar"}
-        >
-          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
-
         <div className="sidebar-brand">
           <img src="/LogoTopaz.svg" alt="Topaz Cluster" />
           <span className="sidebar-brand-text">Topaz</span>

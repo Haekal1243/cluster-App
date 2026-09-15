@@ -1,27 +1,26 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Plus,
   Search,
-  Calendar,
   Wallet,
   TrendingUp,
   TrendingDown,
   PiggyBank,
-  RefreshCw,
   Eye,
   Pencil,
   Trash2,
 } from "lucide-react";
 import { keuanganApi } from "@/lib/api";
 import { showMessage, showConfirm } from "@/lib/message";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 
 // ── Helpers & opsi ────────────────────────────────────────────────────────────
 const BULAN_NAMES = {
-  "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
-  "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
-  "09": "September", "10": "Oktober", "11": "November", "12": "Desember",
+  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+  "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
+  "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
 };
 
 const KATEGORI_MASUK = ["Dana Sosial", "Sewa Fasilitas", "Donasi", "Lainnya"];
@@ -265,19 +264,18 @@ function AdminKeuanganView({ user }) {
   const [riwayat, setRiwayat] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter periode (sama seperti dashboard & tagihan IPL)
+  // Filter periode (sama seperti Tagihan IPL)
   const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
   const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
-  const [draftDari, setDraftDari] = useState(getCurrentYm);
-  const [draftSampai, setDraftSampai] = useState(getCurrentYm);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef(null);
-
-  // Filter tabel
   const [filterTipe, setFilterTipe] = useState("SEMUA");
   const [filterKategori, setFilterKategori] = useState("SEMUA");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+
+  const [draftPeriodeDari, setDraftPeriodeDari] = useState(getCurrentYm);
+  const [draftPeriodeSampai, setDraftPeriodeSampai] = useState(getCurrentYm);
+  const [draftFilterTipe, setDraftFilterTipe] = useState("SEMUA");
+  const [draftFilterKategori, setDraftFilterKategori] = useState("SEMUA");
 
   // Modal state
   const [showForm, setShowForm] = useState(false);
@@ -289,10 +287,12 @@ function AdminKeuanganView({ user }) {
   const rangeError = monthDiffInclusive(dari, sampai) > 12
     ? "Rentang periode maksimal 12 bulan."
     : "";
-  const [draftDariN, draftSampaiN] = draftDari > draftSampai
-    ? [draftSampai, draftDari]
-    : [draftDari, draftSampai];
-  const draftError = draftDari && draftSampai && monthDiffInclusive(draftDariN, draftSampaiN) > 12
+
+  const [draftDariN, draftSampaiN] = draftPeriodeDari > draftPeriodeSampai
+    ? [draftPeriodeSampai, draftPeriodeDari]
+    : [draftPeriodeDari, draftPeriodeSampai];
+  const draftRangeError = draftPeriodeDari && draftPeriodeSampai &&
+    monthDiffInclusive(draftDariN, draftSampaiN) > 12
     ? "Rentang periode maksimal 12 bulan."
     : "";
 
@@ -303,29 +303,13 @@ function AdminKeuanganView({ user }) {
 
   const kategoriOptions = [
     ...new Set(
-      filterTipe === "PEMASUKAN"
+      draftFilterTipe === "PEMASUKAN"
         ? KATEGORI_MASUK
-        : filterTipe === "PENGELUARAN"
+        : draftFilterTipe === "PENGELUARAN"
           ? KATEGORI_KELUAR
           : [...KATEGORI_MASUK, ...KATEGORI_KELUAR]
     ),
   ];
-
-  useEffect(() => {
-    if (!filterOpen) return;
-    const onPointerDown = (e) => {
-      if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
-    };
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") setFilterOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [filterOpen]);
 
   const loadData = useCallback(async () => {
     if (rangeError) return;
@@ -353,26 +337,29 @@ function AdminKeuanganView({ user }) {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const openFilter = () => {
-    setDraftDari(periodeDari);
-    setDraftSampai(periodeSampai);
-    setFilterOpen(true);
+  const handleFilterOpen = () => {
+    setDraftPeriodeDari(periodeDari);
+    setDraftPeriodeSampai(periodeSampai);
+    setDraftFilterTipe(filterTipe);
+    setDraftFilterKategori(filterKategori);
   };
-
-  const applyFilter = () => {
-    if (!draftDari || !draftSampai || draftError) return;
-    setPeriodeDari(draftDari);
-    setPeriodeSampai(draftSampai);
-    setFilterOpen(false);
+  const handleFilterApply = () => {
+    if (draftRangeError) return;
+    setPeriodeDari(draftPeriodeDari);
+    setPeriodeSampai(draftPeriodeSampai);
+    setFilterTipe(draftFilterTipe);
+    setFilterKategori(draftFilterKategori);
   };
-
-  const handleResetPeriode = () => {
+  const handleFilterReset = () => {
     const cur = getCurrentYm();
     setPeriodeDari(cur);
     setPeriodeSampai(cur);
-    setDraftDari(cur);
-    setDraftSampai(cur);
-    setFilterOpen(false);
+    setFilterTipe("SEMUA");
+    setFilterKategori("SEMUA");
+    setDraftPeriodeDari(cur);
+    setDraftPeriodeSampai(cur);
+    setDraftFilterTipe("SEMUA");
+    setDraftFilterKategori("SEMUA");
   };
 
   const handleDelete = async (item) => {
@@ -404,150 +391,6 @@ function AdminKeuanganView({ user }) {
               : `Laporan kas periode ${periodeLabel}`}
           </p>
         </div>
-        <button
-          className="btn-ipl-primary"
-          onClick={() => { setEditItem(null); setShowForm(true); }}
-        >
-          <Plus size={16} /> Catat Transaksi
-        </button>
-      </div>
-
-      {/* ── Filter Bar (Periode + Tipe + Kategori + Cari, seperti Tagihan IPL) ── */}
-      <div className="ipl-filter-bar">
-        <div className="ipl-filter-group">
-          <label>Periode</label>
-          <div ref={filterRef} style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => (filterOpen ? setFilterOpen(false) : openFilter())}
-              aria-haspopup="dialog"
-              aria-expanded={filterOpen}
-              aria-pressed={!isDefaultPeriode}
-              title={isDefaultPeriode ? "Filter periode" : `Periode: ${periodeLabel} — klik untuk ubah`}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "7px 14px", borderRadius: 999, cursor: "pointer",
-                background: isDefaultPeriode ? "#fff" : "#2563eb",
-                border: `1px solid ${isDefaultPeriode ? "#e2e8f0" : "#2563eb"}`,
-                boxShadow: filterOpen ? "0 0 0 3px rgba(147,197,253,.35)" : "none",
-                fontSize: 13, fontWeight: 600,
-                color: isDefaultPeriode ? "#334155" : "#fff",
-                whiteSpace: "nowrap",
-                transition: "background .15s ease, border-color .15s ease, color .15s ease",
-              }}
-            >
-              <Calendar size={15} />
-              <span>{isDefaultPeriode ? "Filter periode" : periodeLabel}</span>
-            </button>
-            {filterOpen && (
-              <div
-                role="dialog"
-                aria-label="Filter periode"
-                style={{
-                  position: "absolute", left: 0, top: "calc(100% + 8px)", zIndex: 30,
-                  width: 260, background: "#fff", border: "1px solid #e2e8f0",
-                  borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,.12)",
-                  padding: 14, display: "flex", flexDirection: "column", gap: 10,
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label htmlFor="periode-dari" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
-                    Dari
-                  </label>
-                  <input
-                    id="periode-dari"
-                    type="month"
-                    value={draftDari}
-                    onChange={(e) => e.target.value && setDraftDari(e.target.value)}
-                    style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
-                  />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label htmlFor="periode-sampai" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
-                    Sampai
-                  </label>
-                  <input
-                    id="periode-sampai"
-                    type="month"
-                    value={draftSampai}
-                    onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
-                    style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
-                  />
-                </div>
-                {draftError && (
-                  <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>
-                )}
-                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
-                  {!isDefaultPeriode && (
-                    <button
-                      type="button"
-                      onClick={handleResetPeriode}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#64748b" }}
-                    >
-                      Reset
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={applyFilter}
-                    disabled={!!draftError}
-                    style={{
-                      background: draftError ? "#cbd5e1" : "#2563eb", color: "#fff",
-                      border: "none", borderRadius: 8, padding: "8px 16px",
-                      fontSize: 13, fontWeight: 600, cursor: draftError ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Terapkan
-                  </button>
-                </div>
-                <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
-                  Maksimal 12 bulan
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="ipl-filter-group">
-          <label>Tipe</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterTipe}
-            onChange={(e) => { setFilterTipe(e.target.value); setFilterKategori("SEMUA"); }}
-          >
-            {TIPE_FILTER_OPTIONS.map(({ val, label }) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="ipl-filter-group">
-          <label>Kategori</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterKategori}
-            onChange={(e) => setFilterKategori(e.target.value)}
-          >
-            <option value="SEMUA">Semua Kategori</option>
-            {kategoriOptions.map((k, i) => (
-              <option key={`filter-${i}-${k}`} value={k}>{k}</option>
-            ))}
-          </select>
-        </div>
-        <div className="ipl-filter-group ipl-filter-search">
-          <label>Cari</label>
-          <div className="ipl-search-wrapper">
-            <Search size={15} className="ipl-search-icon" />
-            <input
-              type="text"
-              placeholder="Kategori / keterangan..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="ipl-input ipl-input-sm"
-            />
-          </div>
-        </div>
-        <button className="btn-ipl-icon" onClick={loadData} title="Refresh data">
-          <RefreshCw size={16} />
-        </button>
       </div>
 
       {/* ── Summary Cards ── */}
@@ -587,6 +430,80 @@ function AdminKeuanganView({ user }) {
           </div>
         </div>
       )}
+
+      {/* ── Catat + Search + Filter ── */}
+      <div className="page-toolbar-row">
+        <button
+          className="btn-ipl-primary"
+          onClick={() => { setEditItem(null); setShowForm(true); }}
+        >
+          <Plus size={16} /> Catat Transaksi
+        </button>
+
+        <div className="list-toolbar-row">
+          <div className="list-search-wrap">
+            <Search size={15} className="list-search-icon" />
+            <input
+              type="text"
+              placeholder="Kategori / keterangan..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="list-search-input"
+            />
+          </div>
+
+          <FilterPopover
+            active={!isDefaultPeriode || filterTipe !== "SEMUA" || filterKategori !== "SEMUA"}
+            onOpen={handleFilterOpen}
+            onApply={handleFilterApply}
+            onReset={handleFilterReset}
+            applyDisabled={!!draftRangeError}
+          >
+            <FilterField label="Periode Dari">
+              <input
+                type="month"
+                value={draftPeriodeDari}
+                onChange={(e) => e.target.value && setDraftPeriodeDari(e.target.value)}
+                className="ipl-input"
+              />
+            </FilterField>
+            <FilterField label="Periode Sampai">
+              <input
+                type="month"
+                value={draftPeriodeSampai}
+                onChange={(e) => e.target.value && setDraftPeriodeSampai(e.target.value)}
+                className="ipl-input"
+              />
+            </FilterField>
+            {draftRangeError && (
+              <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftRangeError}</p>
+            )}
+            <FilterField label="Tipe">
+              <select
+                className="ipl-select ipl-select-sm"
+                value={draftFilterTipe}
+                onChange={(e) => { setDraftFilterTipe(e.target.value); setDraftFilterKategori("SEMUA"); }}
+              >
+                {TIPE_FILTER_OPTIONS.map(({ val, label }) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+            </FilterField>
+            <FilterField label="Kategori">
+              <select
+                className="ipl-select ipl-select-sm"
+                value={draftFilterKategori}
+                onChange={(e) => setDraftFilterKategori(e.target.value)}
+              >
+                <option value="SEMUA">Semua Kategori</option>
+                {kategoriOptions.map((k, i) => (
+                  <option key={`filter-${i}-${k}`} value={k}>{k}</option>
+                ))}
+              </select>
+            </FilterField>
+          </FilterPopover>
+        </div>
+      </div>
 
       {/* ── Grafik Arus Kas ── */}
       {ringkasan && (
@@ -632,9 +549,6 @@ function AdminKeuanganView({ user }) {
           <div className="ipl-empty">
             <Wallet size={40} strokeWidth={1.2} />
             <p>Belum ada transaksi manual untuk periode ini.</p>
-            <button className="btn-ipl-primary" onClick={() => { setEditItem(null); setShowForm(true); }}>
-              <Plus size={15} /> Catat Sekarang
-            </button>
           </div>
         ) : (
           <div className="ipl-table-wrapper">

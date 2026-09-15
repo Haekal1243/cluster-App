@@ -504,32 +504,6 @@ select {
   padding: 10px;
 }
 
-.sidebar-toggle-btn {
-  position: absolute;
-  top: 26px;
-  right: -13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--db-border);
-  border-radius: 50%;
-  background: var(--db-surface);
-  color: var(--db-slate-600);
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
-  transition:
-    background-color 0.15s ease,
-    transform 0.15s ease;
-  z-index: 5;
-}
-
-.sidebar-toggle-btn:hover {
-  background: var(--db-bg);
-  transform: scale(1.08);
-}
-
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -731,11 +705,19 @@ select {
 }
 
 .header-menu-btn {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   color: var(--db-slate-600);
   cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+.header-menu-btn:hover {
+  background: var(--db-bg);
 }
 
 .header-actions {
@@ -1117,6 +1099,18 @@ select {
    HALAMAN MASTER DATA (Pengumuman, dll)
    ========================================== */
 
+/* Card judul halaman (bukan Dashboard) — tint teal lembut, sengaja beda
+   dari .welcome-banner (gradient gelap solid) biar nggak ketuker sama Dashboard,
+   tapi tetap ada aksen warna (bukan putih polos) */
+.page-toolbar,
+.ipl-page-header {
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.18) 0%, rgba(13, 148, 136, 0.06) 100%);
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
 .page-toolbar {
   display: flex;
   align-items: center;
@@ -1373,20 +1367,22 @@ select {
   align-items: center;
   gap: 7px;
   padding: 9px 16px;
-  border: none;
+  border: 1px solid var(--db-border);
   border-radius: 10px;
-  background: var(--db-primary);
-  color: #fff;
+  background: var(--db-surface);
+  color: var(--db-slate-600);
   font-family: "Poppins", sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.filter-popover-btn:hover { background: var(--db-primary-hover); }
+.filter-popover-btn:hover { background: var(--db-bg); }
 .filter-popover-btn.is-active {
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25);
+  border-color: var(--db-primary);
+  color: var(--db-primary);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
 }
 
 .filter-popover-chevron {
@@ -1435,8 +1431,13 @@ select {
   width: 100%;
 }
 
+.filter-popover-footer {
+  display: flex;
+  gap: 8px;
+}
+
 .filter-popover-reset {
-  width: 100%;
+  flex: 1;
   padding: 8px 12px;
   border: 1px solid var(--db-border);
   border-radius: 8px;
@@ -1453,6 +1454,27 @@ select {
   color: var(--db-slate-700);
 }
 .filter-popover-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-popover-apply {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.filter-popover-apply:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+.filter-popover-apply:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1793,10 +1815,14 @@ select {
   .list-filter-select { width: 100%; }
 
   .page-add-row .btn-primary,
-  .page-add-row .btn-ipl-primary {
+  .page-add-row .btn-ipl-primary,
+  .page-toolbar-row .btn-primary,
+  .page-toolbar-row .btn-ipl-primary {
     width: 100%;
     justify-content: center;
   }
+
+  .page-toolbar-row { gap: 8px; }
 
   /* Tabel Pengumuman: diganti grid kartu 2 kolom, tanpa scroll horizontal */
   .pengumuman-table-wrapper { display: none; }
@@ -2199,10 +2225,6 @@ select {
     z-index: 30;
   }
 
-  .sidebar-toggle-btn {
-    display: none;
-  }
-
   .dashboard-sidebar.collapsed {
     width: 268px;
   }
@@ -2210,10 +2232,6 @@ select {
   .dashboard-sidebar.collapsed .sidebar-brand-text,
   .dashboard-sidebar.collapsed .sidebar-link-label {
     display: inline;
-  }
-
-  .header-menu-btn {
-    display: block;
   }
 
   .header-user-info {
@@ -2333,6 +2351,21 @@ select {
 .page-add-row {
   display: flex;
   justify-content: flex-end;
+}
+
+/* Toolbar gabungan: tombol Tambah di kiri, search+filter di kanan (desktop).
+   Di mobile, tombol Tambah pindah ke barisnya sendiri (lihat @media). */
+.page-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-toolbar-row > .list-toolbar-row,
+.page-toolbar-row > .warga-filter-bar {
+  flex: 1;
+  min-width: 0;
 }
 
 /* Stats row */
@@ -2549,10 +2582,13 @@ select {
 
 /* Responsive warga stats */
 @media (max-width: 640px) {
-  .warga-add-row .btn-primary {
+  .warga-add-row .btn-primary,
+  .page-toolbar-row .btn-primary {
     width: 100%;
     justify-content: center;
   }
+
+  .page-toolbar-row { gap: 8px; }
 
   .warga-stat-row {
     grid-template-columns: repeat(3, 1fr);
@@ -4424,6 +4460,8 @@ select {
   background: #f1f5f9;
   padding: 3px 10px;
   border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .ipl-table-wrapper { overflow-x: auto; }
@@ -4795,6 +4833,10 @@ select {
   .ipl-page-header { flex-direction: column; }
   .page-toolbar h2 { font-size: 1.1rem; margin-bottom: 2px; }
   .page-toolbar p { font-size: 0.78rem; }
+  .page-toolbar,
+  .ipl-page-header {
+    padding: 14px 16px;
+  }
   .review-info-grid { grid-template-columns: 1fr; }
   .ipl-form-row { grid-template-columns: 1fr; }
   .review-action-row { flex-direction: column; }

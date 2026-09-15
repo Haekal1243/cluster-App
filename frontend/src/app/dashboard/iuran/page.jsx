@@ -78,10 +78,10 @@ function GenerateModal({ onClose, onSuccess }) {
       return;
     }
     const confirmed = await showConfirm(
-      "Generate Tagihan?",
+      "Buat Tagihan?",
       `Akan membuat tagihan IPL periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode} sebesar ${formatRupiah(form.nominal)} untuk semua rumah aktif.`,
       "question",
-      "Ya, Generate!"
+      "Ya, Buat!"
     );
     if (!confirmed) return;
 
@@ -92,7 +92,7 @@ function GenerateModal({ onClose, onSuccess }) {
       onSuccess();
       onClose();
     } catch (err) {
-      showMessage("Gagal Generate", err.message, "error");
+      showMessage("Gagal Membuat Tagihan", err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -102,7 +102,7 @@ function GenerateModal({ onClose, onSuccess }) {
     <div className="ipl-modal-overlay" onClick={onClose}>
       <div className="ipl-modal" onClick={(e) => e.stopPropagation()}>
         <div className="ipl-modal-header">
-          <h3>Generate Tagihan IPL Periode Baru</h3>
+          <h3>Buat Tagihan IPL Periode Baru</h3>
           <button className="ipl-modal-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="ipl-modal-body">
@@ -149,7 +149,7 @@ function GenerateModal({ onClose, onSuccess }) {
               Batal
             </button>
             <button type="submit" className="btn-ipl-primary" disabled={loading}>
-              {loading ? "Memproses..." : "Generate Tagihan"}
+              {loading ? "Memproses..." : "Buat Tagihan"}
             </button>
           </div>
         </form>
@@ -306,6 +306,10 @@ function AdminIuranView() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
+  const [draftPeriodeDari, setDraftPeriodeDari] = useState(getCurrentYm);
+  const [draftPeriodeSampai, setDraftPeriodeSampai] = useState(getCurrentYm);
+  const [draftFilterStatus, setDraftFilterStatus] = useState("SEMUA");
+
   // Normalisasi + validasi turunan
   const [dari, sampai] = periodeDari > periodeSampai
     ? [periodeSampai, periodeDari]
@@ -314,16 +318,38 @@ function AdminIuranView() {
     ? "Rentang periode maksimal 12 bulan."
     : "";
 
+  const [draftDariN, draftSampaiN] = draftPeriodeDari > draftPeriodeSampai
+    ? [draftPeriodeSampai, draftPeriodeDari]
+    : [draftPeriodeDari, draftPeriodeSampai];
+  const draftRangeError = draftPeriodeDari && draftPeriodeSampai &&
+    monthDiffInclusive(draftDariN, draftSampaiN) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
+
   const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
   const periodeLabel = periodeDari === periodeSampai
     ? formatYmPanjang(periodeDari)
     : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
 
-  const handleResetFilter = () => {
+  const handleFilterOpen = () => {
+    setDraftPeriodeDari(periodeDari);
+    setDraftPeriodeSampai(periodeSampai);
+    setDraftFilterStatus(filterStatus);
+  };
+  const handleFilterApply = () => {
+    if (draftRangeError) return;
+    setPeriodeDari(draftPeriodeDari);
+    setPeriodeSampai(draftPeriodeSampai);
+    setFilterStatus(draftFilterStatus);
+  };
+  const handleFilterReset = () => {
     const cur = getCurrentYm();
     setPeriodeDari(cur);
     setPeriodeSampai(cur);
     setFilterStatus("SEMUA");
+    setDraftPeriodeDari(cur);
+    setDraftPeriodeSampai(cur);
+    setDraftFilterStatus("SEMUA");
   };
 
   // Modal state
@@ -415,69 +441,67 @@ function AdminIuranView() {
         </div>
       )}
 
-      <div className="page-add-row">
+      {/* ── Tambah + Search + Filter ── */}
+      <div className="page-toolbar-row">
         <button
           id="btn-generate-tagihan"
           className="btn-ipl-primary"
           onClick={() => setShowGenerate(true)}
         >
-          <Plus size={16} /> Generate Tagihan Periode
+          <Plus size={16} /> Buat Tagihan Periode
         </button>
-      </div>
 
-      {/* ── Search + Filter ── */}
-      <div className="list-toolbar-row">
-        <div className="list-search-wrap">
-          <Search size={15} className="list-search-icon" />
-          <input
-            type="text"
-            placeholder="Nama warga / blok rumah..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="list-search-input"
-          />
-        </div>
+        <div className="list-toolbar-row">
+          <div className="list-search-wrap">
+            <Search size={15} className="list-search-icon" />
+            <input
+              type="text"
+              placeholder="Nama warga / blok rumah..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="list-search-input"
+            />
+          </div>
 
-        <FilterPopover active={!isDefaultPeriode || filterStatus !== "SEMUA"}>
-          <FilterField label="Periode Dari">
-            <input
-              type="month"
-              value={periodeDari}
-              onChange={(e) => e.target.value && setPeriodeDari(e.target.value)}
-              className="ipl-input"
-            />
-          </FilterField>
-          <FilterField label="Periode Sampai">
-            <input
-              type="month"
-              value={periodeSampai}
-              onChange={(e) => e.target.value && setPeriodeSampai(e.target.value)}
-              className="ipl-input"
-            />
-          </FilterField>
-          {rangeError && (
-            <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{rangeError}</p>
-          )}
-          <FilterField label="Status">
-            <select
-              className="ipl-select ipl-select-sm"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              {STATUS_FILTER_OPTIONS.map(({ val, label }) => (
-                <option key={val} value={val}>{label}</option>
-              ))}
-            </select>
-          </FilterField>
-          <button
-            type="button"
-            className="filter-popover-reset"
-            onClick={handleResetFilter}
-            disabled={isDefaultPeriode && filterStatus === "SEMUA"}
+          <FilterPopover
+            active={!isDefaultPeriode || filterStatus !== "SEMUA"}
+            onOpen={handleFilterOpen}
+            onApply={handleFilterApply}
+            onReset={handleFilterReset}
+            applyDisabled={!!draftRangeError}
           >
-            Reset Filter
-          </button>
-        </FilterPopover>
+            <FilterField label="Periode Dari">
+              <input
+                type="month"
+                value={draftPeriodeDari}
+                onChange={(e) => e.target.value && setDraftPeriodeDari(e.target.value)}
+                className="ipl-input"
+              />
+            </FilterField>
+            <FilterField label="Periode Sampai">
+              <input
+                type="month"
+                value={draftPeriodeSampai}
+                onChange={(e) => e.target.value && setDraftPeriodeSampai(e.target.value)}
+                className="ipl-input"
+              />
+            </FilterField>
+            {draftRangeError && (
+              <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftRangeError}</p>
+            )}
+            <FilterField label="Status">
+              <select
+                className="ipl-select ipl-select-sm"
+                value={draftFilterStatus}
+                onChange={(e) => setDraftFilterStatus(e.target.value)}
+              >
+                {STATUS_FILTER_OPTIONS.map(({ val, label }) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
+            </FilterField>
+          </FilterPopover>
+        </div>
       </div>
 
       {/* ── Table ── */}

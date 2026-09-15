@@ -12,7 +12,9 @@ async function bootstrap() {
   app.enableCors();
 
   // <-- 3. Tambahkan ValidationPipe untuk class-validator
-  app.useGlobalPipes(new ValidationPipe());
+  // transform:true agar @Type() pada DTO berjalan (mis. nominal string
+  // dari multipart FormData dikonversi ke number sebelum divalidasi)
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   // Sajikan file yang diupload (mis. file pengumuman) secara statis
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });

@@ -114,11 +114,11 @@ export class KeuanganService {
       // Pemasukan IPL otomatis dalam periode
       this.prisma.ipl.findMany({
         where: { OR: resolved.periodeOr, statusPembayaran: 'LUNAS' },
-        select: { nominal: true },
+        select: { nominal: true, bulanPeriode: true, tahunPeriode: true },
       }),
       this.prisma.kasTransaksi.findMany({
         where: { tanggal: { gte, lt } },
-        select: { tipe: true, kategori: true, nominal: true },
+        select: { tipe: true, kategori: true, nominal: true, tanggal: true },
       }),
       this.prisma.kasTransaksi.findMany({
         select: { tipe: true, nominal: true },
@@ -157,6 +157,26 @@ export class KeuanganService {
       sum(kasSemua.filter((t) => t.tipe === 'PEMASUKAN')) -
       sum(kasSemua.filter((t) => t.tipe === 'PENGELUARAN'));
 
+    // Tren arus kas per bulan dalam rentang (diagregasi dari data di atas)
+    const ymKey = (tanggal: Date) =>
+      `${tanggal.getFullYear()}-${String(tanggal.getMonth() + 1).padStart(2, '0')}`;
+    const tren = resolved.periodeList.map(({ bulan, tahun, label }) => {
+      const key = `${tahun}-${bulan}`;
+      const masukIpl = iplLunas
+        .filter((t) => t.bulanPeriode === bulan && t.tahunPeriode === tahun)
+        .reduce((s, t) => s + t.nominal, 0);
+      const kasBulan = kasPeriode.filter((t) => ymKey(t.tanggal) === key);
+      const pemasukan =
+        masukIpl +
+        kasBulan
+          .filter((t) => t.tipe === 'PEMASUKAN')
+          .reduce((s, t) => s + t.nominal, 0);
+      const pengeluaran = kasBulan
+        .filter((t) => t.tipe === 'PENGELUARAN')
+        .reduce((s, t) => s + t.nominal, 0);
+      return { label, bulan, tahun, pemasukan, pengeluaran };
+    });
+
     return {
       periode: {
         dari: resolved.dariYm,
@@ -170,6 +190,7 @@ export class KeuanganService {
       saldoPeriode: totalPemasukan - totalPengeluaran,
       saldoKas,
       perKategori,
+      tren,
     };
   }
 }

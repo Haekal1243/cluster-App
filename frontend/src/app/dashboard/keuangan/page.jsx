@@ -13,7 +13,6 @@ import {
   Eye,
   Pencil,
   Trash2,
-  ReceiptText,
 } from "lucide-react";
 import { keuanganApi } from "@/lib/api";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -53,6 +52,39 @@ function KasTipeBadge({ tipe }) {
     <span className={`ipl-badge ${tipe === "PEMASUKAN" ? "badge-lunas" : "badge-belum"}`}>
       {tipe === "PEMASUKAN" ? "Pemasukan" : "Pengeluaran"}
     </span>
+  );
+}
+
+// ── Grafik batang grup: pemasukan vs pengeluaran per bulan ────────────────────
+function ArusKasChart({ data }) {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data.flatMap((d) => [d.pemasukan, d.pengeluaran]), 1);
+  const bar = (value, color, title) => (
+    <div
+      title={title}
+      style={{
+        width: 18,
+        height: `${Math.max((value / max) * 100, 3)}%`,
+        background: color,
+        borderRadius: "4px 4px 2px 2px",
+      }}
+    />
+  );
+  return (
+    <div style={{ display: "flex", gap: 10, overflowX: "auto", padding: "12px 4px 0" }}>
+      {data.map((d) => (
+        <div
+          key={`${d.tahun}-${d.bulan}`}
+          style={{ flex: "1 0 44px", minWidth: 44, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
+        >
+          <div style={{ height: 150, display: "flex", alignItems: "flex-end", gap: 4 }}>
+            {bar(d.pemasukan, "#16a34a", `Pemasukan ${d.label}: ${formatRupiah(d.pemasukan)}`)}
+            {bar(d.pengeluaran, "#dc2626", `Pengeluaran ${d.label}: ${formatRupiah(d.pengeluaran)}`)}
+          </div>
+          <span style={{ fontSize: 11, color: "#64748b" }}>{d.label}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -360,9 +392,6 @@ function AdminKeuanganView({ user }) {
     }
   };
 
-  const perKategoriMasuk = ringkasan?.perKategori?.PEMASUKAN || {};
-  const perKategoriKeluar = ringkasan?.perKategori?.PENGELUARAN || {};
-
   return (
     <div className="page-stack">
       {/* ── Header ── */}
@@ -383,109 +412,7 @@ function AdminKeuanganView({ user }) {
         </button>
       </div>
 
-      {/* ── Info IPL otomatis ── */}
-      <div className="ipl-dashboard-alert" style={{ textDecoration: "none", cursor: "default" }}>
-        <ReceiptText size={18} />
-        <span>
-          Pemasukan IPL tercatat <strong>otomatis</strong> dari tagihan berstatus Lunas
-          — cukup catat pemasukan lain dan seluruh pengeluaran di sini.
-        </span>
-      </div>
-
-      {/* ── Summary Cards ── */}
-      {ringkasan && (
-        <div className="ipl-summary-grid">
-          <div className="ipl-summary-card tone-info">
-            <div className="ipl-summary-icon"><PiggyBank size={20} /></div>
-            <div className="ipl-summary-body">
-              <span className="ipl-summary-label">Saldo Kas Saat Ini</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
-              <span className="ipl-summary-sub">kumulatif sepanjang waktu</span>
-            </div>
-          </div>
-          <div className="ipl-summary-card tone-success">
-            <div className="ipl-summary-icon"><TrendingUp size={20} /></div>
-            <div className="ipl-summary-body">
-              <span className="ipl-summary-label">Pemasukan Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
-              <span className="ipl-summary-sub">
-                IPL {formatRupiah(ringkasan.pemasukanIpl?.total)} · Manual {formatRupiah(ringkasan.pemasukanManual)}
-              </span>
-            </div>
-          </div>
-          <div className="ipl-summary-card tone-danger">
-            <div className="ipl-summary-icon"><TrendingDown size={20} /></div>
-            <div className="ipl-summary-body">
-              <span className="ipl-summary-label">Pengeluaran Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
-              <span className="ipl-summary-sub">{periodeLabel}</span>
-            </div>
-          </div>
-          <div className={`ipl-summary-card ${(ringkasan.saldoPeriode ?? 0) >= 0 ? "tone-success" : "tone-warning"}`}>
-            <div className="ipl-summary-icon"><Wallet size={20} /></div>
-            <div className="ipl-summary-body">
-              <span className="ipl-summary-label">Selisih Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
-              <span className="ipl-summary-sub">masuk − keluar {periodeLabel}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Rincian per Kategori ── */}
-      {ringkasan && (
-        <div className="db-bottom-row">
-          <div className="content-card">
-            <div className="db-section-header">
-              <TrendingUp size={17} />
-              <h3>Pemasukan per Kategori</h3>
-              <span className="db-section-sub">{periodeLabel}</span>
-            </div>
-            {Object.keys(perKategoriMasuk).length === 0 ? (
-              <p className="portal-empty-text">Belum ada pemasukan pada periode ini.</p>
-            ) : (
-              <ul className="portal-pengumuman-list">
-                {Object.entries(perKategoriMasuk).map(([kat, total]) => (
-                  <li key={kat} className="portal-pengumuman-item">
-                    <div style={{ flex: 1 }}>
-                      <p className="portal-peng-judul">
-                        {kat}
-                        {kat === "IPL" && (
-                          <span className="db-section-sub" style={{ marginLeft: 6 }}>otomatis</span>
-                        )}
-                      </p>
-                    </div>
-                    <span className="db-recent-nominal">{formatRupiah(total)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div className="content-card">
-            <div className="db-section-header">
-              <TrendingDown size={17} />
-              <h3>Pengeluaran per Kategori</h3>
-              <span className="db-section-sub">{periodeLabel}</span>
-            </div>
-            {Object.keys(perKategoriKeluar).length === 0 ? (
-              <p className="portal-empty-text">Belum ada pengeluaran pada periode ini.</p>
-            ) : (
-              <ul className="portal-pengumuman-list">
-                {Object.entries(perKategoriKeluar).map(([kat, total]) => (
-                  <li key={kat} className="portal-pengumuman-item">
-                    <div style={{ flex: 1 }}>
-                      <p className="portal-peng-judul">{kat}</p>
-                    </div>
-                    <span className="db-recent-nominal">{formatRupiah(total)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Filter Bar ── */}
+      {/* ── Filter Bar (Periode + Tipe + Kategori + Cari, seperti Tagihan IPL) ── */}
       <div className="ipl-filter-bar">
         <div className="ipl-filter-group">
           <label>Periode</label>
@@ -623,6 +550,70 @@ function AdminKeuanganView({ user }) {
         </button>
       </div>
 
+      {/* ── Summary Cards ── */}
+      {ringkasan && (
+        <div className="ipl-summary-grid">
+          <div className="ipl-summary-card tone-info">
+            <div className="ipl-summary-icon"><PiggyBank size={20} /></div>
+            <div className="ipl-summary-body">
+              <span className="ipl-summary-label">Saldo Kas Saat Ini</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
+              <span className="ipl-summary-sub">kumulatif sepanjang waktu</span>
+            </div>
+          </div>
+          <div className="ipl-summary-card tone-success">
+            <div className="ipl-summary-icon"><TrendingUp size={20} /></div>
+            <div className="ipl-summary-body">
+              <span className="ipl-summary-label">Pemasukan Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
+              <span className="ipl-summary-sub">{periodeLabel}</span>
+            </div>
+          </div>
+          <div className="ipl-summary-card tone-danger">
+            <div className="ipl-summary-icon"><TrendingDown size={20} /></div>
+            <div className="ipl-summary-body">
+              <span className="ipl-summary-label">Pengeluaran Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
+              <span className="ipl-summary-sub">{periodeLabel}</span>
+            </div>
+          </div>
+          <div className={`ipl-summary-card ${(ringkasan.saldoPeriode ?? 0) >= 0 ? "tone-success" : "tone-warning"}`}>
+            <div className="ipl-summary-icon"><Wallet size={20} /></div>
+            <div className="ipl-summary-body">
+              <span className="ipl-summary-label">Selisih Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
+              <span className="ipl-summary-sub">masuk − keluar {periodeLabel}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Grafik Arus Kas ── */}
+      {ringkasan && (
+        <div className="content-card">
+          <div className="db-section-header">
+            <TrendingUp size={17} />
+            <h3>Arus Kas per Bulan</h3>
+            <span className="db-section-sub">{periodeLabel}</span>
+          </div>
+          <div style={{ display: "flex", gap: 16, fontSize: 12, color: "#64748b", padding: "0 4px" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: "#16a34a" }} />
+              Pemasukan {formatRupiah(ringkasan.totalPemasukan)}
+            </span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: "#dc2626" }} />
+              Pengeluaran {formatRupiah(ringkasan.totalPengeluaran)}
+            </span>
+          </div>
+          {!ringkasan.tren || ringkasan.tren.every((d) => !d.pemasukan && !d.pengeluaran) ? (
+            <p className="portal-empty-text">Belum ada arus kas pada periode ini.</p>
+          ) : (
+            <ArusKasChart data={ringkasan.tren} />
+          )}
+        </div>
+      )}
+
       {/* ── Tabel Riwayat ── */}
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
@@ -687,21 +678,24 @@ function AdminKeuanganView({ user }) {
                       )}
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div className="table-actions">
                         <button
-                          className="btn-ipl-review"
+                          type="button"
+                          className="btn-icon"
                           onClick={() => { setEditItem(t); setShowForm(true); }}
+                          aria-label="Ubah transaksi"
                           title="Ubah transaksi"
                         >
-                          <Pencil size={14} />
+                          <Pencil size={16} />
                         </button>
                         <button
-                          className="btn-ipl-danger"
+                          type="button"
+                          className="btn-icon danger"
                           onClick={() => handleDelete(t)}
+                          aria-label="Hapus transaksi"
                           title="Hapus transaksi"
-                          style={{ display: "inline-flex", alignItems: "center", padding: "6px 10px", borderRadius: 8 }}
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>

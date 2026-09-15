@@ -673,10 +673,6 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
 }
 
 function WargaIuranView({ user }) {
-  const getCurrentYm = () => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
-  };
   const formatYmPanjang = (ym) => {
     if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
     const [y, m] = ym.split("-");
@@ -698,8 +694,9 @@ function WargaIuranView({ user }) {
   // Filter hijau model popover — sama seperti Tagihan IPL admin,
   // dengan pola draft + Terapkan + Reset ala filter Keuangan:
   // data baru terfilter setelah tombol Terapkan diklik.
-  const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
-  const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
+  // Default WARGA: kosong = Semua Periode (langsung tampil semua data)
+  const [periodeDari, setPeriodeDari] = useState("");
+  const [periodeSampai, setPeriodeSampai] = useState("");
   const [filterStatus, setFilterStatus] = useState("SEMUA");
   const [selectedRumahId, setSelectedRumahId] = useState("semua");
   const [search, setSearch] = useState("");
@@ -707,32 +704,39 @@ function WargaIuranView({ user }) {
 
   // Draft popover (baru diterapkan saat Terapkan diklik)
   const [filterOpen, setFilterOpen] = useState(false);
-  const [draftDari, setDraftDari] = useState(getCurrentYm);
-  const [draftSampai, setDraftSampai] = useState(getCurrentYm);
+  const [draftDari, setDraftDari] = useState("");
+  const [draftSampai, setDraftSampai] = useState("");
   const [draftStatus, setDraftStatus] = useState("SEMUA");
   const [draftUnit, setDraftUnit] = useState("semua");
 
-  // Normalisasi + validasi turunan (sama seperti filter admin)
-  const [dari, sampai] = periodeDari > periodeSampai
-    ? [periodeSampai, periodeDari]
-    : [periodeDari, periodeSampai];
-  const rangeError = monthDiffInclusive(dari, sampai) > 12
+  // Normalisasi + validasi turunan — kosong = Semua Periode (tanpa filter)
+  const [dari, sampai] = periodeDari && periodeSampai
+    ? periodeDari > periodeSampai
+      ? [periodeSampai, periodeDari]
+      : [periodeDari, periodeSampai]
+    : [periodeDari || "", periodeSampai || ""];
+  const rangeError = dari && sampai && monthDiffInclusive(dari, sampai) > 12
     ? "Rentang periode maksimal 12 bulan."
     : "";
 
   // Validasi draft di dalam popover (sebelum diterapkan)
-  const [draftDariN, draftSampaiN] = draftDari > draftSampai
-    ? [draftSampai, draftDari]
-    : [draftDari, draftSampai];
+  const [draftDariN, draftSampaiN] = draftDari && draftSampai
+    ? draftDari > draftSampai
+      ? [draftSampai, draftDari]
+      : [draftDari, draftSampai]
+    : [draftDari || "", draftSampai || ""];
   const draftError = draftDari && draftSampai && monthDiffInclusive(draftDariN, draftSampaiN) > 12
     ? "Rentang periode maksimal 12 bulan."
     : "";
 
-  const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
-  const hasActiveFilter = !isDefaultPeriode || filterStatus !== "SEMUA" || selectedRumahId !== "semua";
-  const periodeLabel = periodeDari === periodeSampai
-    ? formatYmPanjang(periodeDari)
-    : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+  const hasActiveFilter = !!periodeDari || !!periodeSampai || filterStatus !== "SEMUA" || selectedRumahId !== "semua";
+  const periodeLabel = !periodeDari && !periodeSampai
+    ? "Semua Periode"
+    : !periodeDari || !periodeSampai
+      ? formatYmPanjang(periodeDari || periodeSampai)
+      : periodeDari === periodeSampai
+        ? formatYmPanjang(periodeDari)
+        : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
 
   // Sinkronkan draft dari filter yang sedang diterapkan setiap popover dibuka
   const handleFilterOpenChange = (next) => {
@@ -746,22 +750,21 @@ function WargaIuranView({ user }) {
   };
 
   const applyFilter = () => {
-    if (!draftDari || !draftSampai || draftError) return;
-    setPeriodeDari(draftDari);
-    setPeriodeSampai(draftSampai);
+    if (draftError) return;
+    setPeriodeDari(draftDari || "");
+    setPeriodeSampai(draftSampai || "");
     setFilterStatus(draftStatus);
     setSelectedRumahId(draftUnit);
     setFilterOpen(false);
   };
 
   const handleResetFilter = () => {
-    const cur = getCurrentYm();
-    setPeriodeDari(cur);
-    setPeriodeSampai(cur);
+    setPeriodeDari("");
+    setPeriodeSampai("");
     setFilterStatus("SEMUA");
     setSelectedRumahId("semua");
-    setDraftDari(cur);
-    setDraftSampai(cur);
+    setDraftDari("");
+    setDraftSampai("");
     setDraftStatus("SEMUA");
     setDraftUnit("semua");
     setFilterOpen(false);
@@ -772,8 +775,8 @@ function WargaIuranView({ user }) {
     setLoadingTagihan(true);
     try {
       const res = await portalApi.getTagihanByUser(uid, {
-        dari,
-        sampai,
+        dari: dari || undefined,
+        sampai: sampai || undefined,
         status: filterStatus,
         search,
       });
@@ -797,7 +800,8 @@ function WargaIuranView({ user }) {
       const q = search.trim().toLowerCase();
       const filtered = all.filter((t) => {
         const ym = `${t.tahunPeriode}-${t.bulanPeriode}`;
-        if (ym < dari || ym > sampai) return false;
+        if (dari && ym < dari) return false;
+        if (sampai && ym > sampai) return false;
         if (filterStatus !== "SEMUA" && t.statusPembayaran !== filterStatus) return false;
         if (q) {
           const hay = `${t.bulanPeriode} ${t.tahunPeriode} ${t.rumah?.blokRumah || ""} ${t.nominal || ""}`.toLowerCase();
@@ -940,20 +944,56 @@ function WargaIuranView({ user }) {
           onOpenChange={handleFilterOpenChange}
         >
           <FilterField label="Periode Dari">
-            <input
-              type="month"
-              value={draftDari}
-              onChange={(e) => e.target.value && setDraftDari(e.target.value)}
-              className="ipl-input"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type="month"
+                value={draftDari}
+                onChange={(e) => setDraftDari(e.target.value)}
+                className="ipl-input"
+                style={{ width: "100%", color: draftDari ? undefined : "transparent" }}
+              />
+              {!draftDari && (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: 13,
+                    color: "#94a3b8",
+                    pointerEvents: "none",
+                  }}
+                >
+                  Semua Periode
+                </span>
+              )}
+            </div>
           </FilterField>
           <FilterField label="Periode Sampai">
-            <input
-              type="month"
-              value={draftSampai}
-              onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
-              className="ipl-input"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type="month"
+                value={draftSampai}
+                onChange={(e) => setDraftSampai(e.target.value)}
+                className="ipl-input"
+                style={{ width: "100%", color: draftSampai ? undefined : "transparent" }}
+              />
+              {!draftSampai && (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: 13,
+                    color: "#94a3b8",
+                    pointerEvents: "none",
+                  }}
+                >
+                  Semua Periode
+                </span>
+              )}
+            </div>
           </FilterField>
           {draftError && (
             <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>

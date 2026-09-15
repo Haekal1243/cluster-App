@@ -24,8 +24,11 @@ export class IplController {
 
   /** GET /ipl/dashboard-stats — Statistik ringkasan untuk widget dashboard */
   @Get('dashboard-stats')
-  getDashboardStats() {
-    return this.iplService.getDashboardStats();
+  getDashboardStats(
+    @Query('dari') dari?: string,
+    @Query('sampai') sampai?: string,
+  ) {
+    return this.iplService.getDashboardStats({ dari, sampai });
   }
 
   /** GET /ipl — Daftar tagihan IPL dengan filter opsional */
@@ -33,10 +36,12 @@ export class IplController {
   findAll(
     @Query('bulan') bulan?: string,
     @Query('tahun') tahun?: string,
+    @Query('dari') dari?: string,
+    @Query('sampai') sampai?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
   ) {
-    return this.iplService.findAll({ bulan, tahun, status, search });
+    return this.iplService.findAll({ bulan, tahun, dari, sampai, status, search });
   }
 
   /** PATCH /ipl/konfirmasi/:pembayaranId — Konfirmasi atau tolak bukti pembayaran */

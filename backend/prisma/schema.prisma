@@ -54,6 +54,11 @@ enum StatusPengaduan {
   DITOLAK
 }
 
+enum TipeKas {
+  PEMASUKAN
+  PENGELUARAN
+}
+
 enum TipeNotifikasi {
   TAGIHAN_BARU
   PEMBAYARAN_DIKONFIRMASI
@@ -212,4 +217,21 @@ model Notifikasi {
   link      String?
   isRead    Boolean        @default(false)
   createdAt DateTime       @default(now())
+}
+
+// Transaksi kas manual (pemasukan non-IPL & seluruh pengeluaran).
+// Pemasukan IPL dihitung otomatis dari tagihan LUNAS, tidak disimpan di sini.
+model KasTransaksi {
+  id         Int      @id @default(autoincrement())
+  tipe       TipeKas
+  kategori   String
+  nominal    Int
+  tanggal    DateTime @default(now())
+  keterangan String?  @db.Text
+  buktiFile  String?  @map("bukti_file")
+  createBy   String?  @map("create_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime? @map("updated_at")
+
+  @@map("trx_kas")
 }

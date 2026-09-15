@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
 import { KonfirmasiIplDto } from './dto/konfirmasi-ipl.dto';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
+import { resolvePeriode } from '../common/periode.helper';
 
 @Injectable()
 export class IplService {
@@ -83,21 +84,32 @@ export class IplService {
   async findAll(params: {
     bulan?: string;
     tahun?: string;
+    dari?: string;
+    sampai?: string;
     status?: string;
     search?: string;
   }) {
-    const { bulan, tahun, status, search } = params;
+    const { bulan, tahun, dari, sampai, status, search } = params;
 
-    const where: any = {};
-    if (bulan) where.bulanPeriode = bulan;
-    if (tahun) where.tahunPeriode = tahun;
-    if (status && status !== 'SEMUA') where.statusPembayaran = status;
-    if (search) {
-      where.OR = [
-        { rumah: { blokRumah: { contains: search } } },
-        { rumah: { penghuni: { namaUser: { contains: search } } } },
-      ];
+    const and: any[] = [];
+    const range = resolvePeriode(dari, sampai);
+    if (range) {
+      // Range diutamakan bila diberikan
+      and.push({ OR: range.periodeOr });
+    } else {
+      if (bulan) and.push({ bulanPeriode: bulan });
+      if (tahun) and.push({ tahunPeriode: tahun });
     }
+    if (status && status !== 'SEMUA') and.push({ statusPembayaran: status });
+    if (search) {
+      and.push({
+        OR: [
+          { rumah: { blokRumah: { contains: search } } },
+          { rumah: { penghuni: { namaUser: { contains: search } } } },
+        ],
+      });
+    }
+    const where = and.length > 0 ? { AND: and } : {};
 
     const tagihan = await this.prisma.ipl.findMany({
       where,
@@ -151,36 +163,47 @@ export class IplService {
   }
 
   // ================================================================
-  // DASHBOARD STATS — ringkasan bulan berjalan
+  // DASHBOARD STATS — ringkasan per rentang periode (maks 12 bulan)
+  // Query: ?dari=YYYY-MM&sampai=YYYY-MM. Tanpa param = bulan berjalan.
   // ================================================================
 
-  async getDashboardStats() {
+  async getDashboardStats(params?: { dari?: string; sampai?: string }) {
     const now = new Date();
     const bulanIni = String(now.getMonth() + 1).padStart(2, '0');
     const tahunIni = String(now.getFullYear());
 
-    // Bangun data 6 bulan terakhir untuk tren chart
-    const bulan6 = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-      return {
-        bulan: String(d.getMonth() + 1).padStart(2, '0'),
-        tahun: String(d.getFullYear()),
-        label: d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' }),
-      };
-    });
+    const resolved = resolvePeriode(params?.dari, params?.sampai);
+    // Default: bulan berjalan (backward-compatible)
+    const periodeList = resolved?.periodeList ?? [
+      {
+        bulan: bulanIni,
+        tahun: tahunIni,
+        label: new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString(
+          'id-ID',
+          { month: 'short', year: '2-digit' },
+        ),
+      },
+    ];
 
-    const [tagihanBulanIni, totalWarga, menungguKonfirmasi, pembayaranTerbaru] =
+    const periodeOr = resolved?.periodeOr ??
+      periodeList.map((p) => ({
+        bulanPeriode: p.bulan,
+        tahunPeriode: p.tahun,
+      }));
+
+    const [tagihanPeriode, totalWarga, menungguKonfirmasi, pembayaranTerbaru] =
       await Promise.all([
         this.prisma.ipl.findMany({
-          where: { bulanPeriode: bulanIni, tahunPeriode: tahunIni },
+          where: { OR: periodeOr },
           select: { statusPembayaran: true, nominal: true },
         }),
         this.prisma.user.count({ where: { role: 'WARGA' } }),
         this.prisma.ipl.count({
-          where: { statusPembayaran: 'MENUNGGU_KONFIRMASI' },
+          where: { statusPembayaran: 'MENUNGGU_KONFIRMASI', OR: periodeOr },
         }),
-        // 5 pembayaran terbaru yang di-upload warga
+        // 5 pembayaran terbaru yang tagihannya masuk rentang periode
         this.prisma.pembayaranIpl.findMany({
+          where: { ipl: { OR: periodeOr } },
           orderBy: { tanggalBayar: 'desc' },
           take: 5,
           select: {
@@ -201,19 +224,20 @@ export class IplService {
         }),
       ]);
 
-    // Hitung kas masuk & ringkasan bulan ini
-    const lunasBulanIni = tagihanBulanIni.filter(
+    // Hitung kas masuk & ringkasan periode
+    const lunasBulanIni = tagihanPeriode.filter(
       (t) => t.statusPembayaran === 'LUNAS',
     ).length;
-    const belumLunasBulanIni = tagihanBulanIni.filter(
+    const belumLunasBulanIni = tagihanPeriode.filter(
       (t) => t.statusPembayaran !== 'LUNAS',
-    ).length;     const totalKasMasukBulanIni = tagihanBulanIni
+    ).length;
+    const totalKasMasukBulanIni = tagihanPeriode
       .filter((t) => t.statusPembayaran === 'LUNAS')
       .reduce((sum, t) => sum + t.nominal, 0);
 
-    // Hitung tren kas masuk 6 bulan terakhir
+    // Tren kas masuk mengikuti rentang periode yang dipilih
     const trenData = await Promise.all(
-      bulan6.map(async ({ bulan, tahun, label }) => {
+      periodeList.map(async ({ bulan, tahun, label }) => {
         const rows = await this.prisma.ipl.findMany({
           where: { bulanPeriode: bulan, tahunPeriode: tahun, statusPembayaran: 'LUNAS' },
           select: { nominal: true },
@@ -228,15 +252,19 @@ export class IplService {
       }),
     );
 
+    const dariYm = `${periodeList[0].tahun}-${periodeList[0].bulan}`;
+    const sampaiYm = `${periodeList[periodeList.length - 1].tahun}-${periodeList[periodeList.length - 1].bulan}`;
+
     return {
       totalWarga,
       lunasBulanIni,
       belumLunasBulanIni,
       menungguKonfirmasi,
-      totalTagihanBulanIni: tagihanBulanIni.length,
+      totalTagihanBulanIni: tagihanPeriode.length,
       totalKasMasukBulanIni,
       bulanIni,
       tahunIni,
+      periode: { dari: dariYm, sampai: sampaiYm, jumlahBulan: periodeList.length },
       trenPemasukan: trenData,
       pembayaranTerbaru,
     };

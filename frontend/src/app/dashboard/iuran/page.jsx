@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   Plus,
   Search,
@@ -281,17 +281,93 @@ function ReviewModal({ tagihan, onClose, onSuccess, buktiBaseUrl }) {
 
 // ── Admin/Pengurus: kelola tagihan semua warga ────────────────────────────────
 function AdminIuranView() {
-  const now = new Date();
   const [tagihan, setTagihan] = useState([]);
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter state — default ke bulan & tahun sekarang
-  const [filterBulan, setFilterBulan] = useState(String(now.getMonth() + 1).padStart(2, "0"));
-  const [filterTahun, setFilterTahun] = useState(String(now.getFullYear()));
+  // Filter state — range periode, default bulan berjalan
+  const getCurrentYm = () => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
+  };
+  const formatYmPanjang = (ym) => {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    const [y, m] = ym.split("-");
+    return `${BULAN_NAMES[m] || m} ${y}`;
+  };
+  const monthDiffInclusive = (dari, sampai) => {
+    const [y1, m1] = dari.split("-").map(Number);
+    const [y2, m2] = sampai.split("-").map(Number);
+    return (y2 - y1) * 12 + (m2 - m1) + 1;
+  };
+
+  const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
+  const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
+  const [draftDari, setDraftDari] = useState(getCurrentYm);
+  const [draftSampai, setDraftSampai] = useState(getCurrentYm);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef(null);
   const [filterStatus, setFilterStatus] = useState("SEMUA");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+
+  // Normalisasi + validasi turunan
+  const [dari, sampai] = periodeDari > periodeSampai
+    ? [periodeSampai, periodeDari]
+    : [periodeDari, periodeSampai];
+  const rangeError = monthDiffInclusive(dari, sampai) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
+  const [draftDariN, draftSampaiN] = draftDari > draftSampai
+    ? [draftSampai, draftDari]
+    : [draftDari, draftSampai];
+  const draftError = draftDari && draftSampai && monthDiffInclusive(draftDariN, draftSampaiN) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
+
+  const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
+  const periodeLabel = periodeDari === periodeSampai
+    ? formatYmPanjang(periodeDari)
+    : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+
+  // Tutup popover saat klik di luar / tekan Escape
+  useEffect(() => {
+    if (!filterOpen) return;
+    const onPointerDown = (e) => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setFilterOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filterOpen]);
+
+  const openFilter = () => {
+    setDraftDari(periodeDari);
+    setDraftSampai(periodeSampai);
+    setFilterOpen(true);
+  };
+
+  const applyFilter = () => {
+    if (!draftDari || !draftSampai || draftError) return;
+    setPeriodeDari(draftDari);
+    setPeriodeSampai(draftSampai);
+    setFilterOpen(false);
+  };
+
+  const handleResetPeriode = () => {
+    const cur = getCurrentYm();
+    setPeriodeDari(cur);
+    setPeriodeSampai(cur);
+    setDraftDari(cur);
+    setDraftSampai(cur);
+    setFilterOpen(false);
+  };
 
   // Modal state
   const [showGenerate, setShowGenerate] = useState(false);
@@ -300,11 +376,12 @@ function AdminIuranView() {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   const loadData = useCallback(async () => {
+    if (rangeError) return;
     setIsLoading(true);
     try {
       const res = await iplApi.getAll({
-        bulan: filterBulan,
-        tahun: filterTahun,
+        dari,
+        sampai,
         status: filterStatus,
         search,
       });
@@ -315,7 +392,7 @@ function AdminIuranView() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterBulan, filterTahun, filterStatus, search]);
+  }, [dari, sampai, rangeError, filterStatus, search]);
 
   useEffect(() => {
     loadData();
@@ -334,7 +411,9 @@ function AdminIuranView() {
         <div>
           <h2 className="ipl-page-title">Tagihan IPL</h2>
           <p className="ipl-page-subtitle">
-            Kelola tagihan Iuran Pengelolaan Lingkungan warga cluster
+            {rangeError
+              ? "Kelola tagihan Iuran Pengelolaan Lingkungan warga cluster"
+              : `Menampilkan data periode ${periodeLabel}`}
           </p>
         </div>
         <button
@@ -349,28 +428,97 @@ function AdminIuranView() {
       {/* ── Filter Bar ── */}
       <div className="ipl-filter-bar">
         <div className="ipl-filter-group">
-          <label>Bulan</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterBulan}
-            onChange={(e) => setFilterBulan(e.target.value)}
-          >
-            {BULAN_OPTIONS.map(({ val, label }) => (
-              <option key={val} value={val}>{label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="ipl-filter-group">
-          <label>Tahun</label>
-          <select
-            className="ipl-select ipl-select-sm"
-            value={filterTahun}
-            onChange={(e) => setFilterTahun(e.target.value)}
-          >
-            {TAHUN_OPTIONS.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+          <label>Periode</label>
+          <div ref={filterRef} style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => (filterOpen ? setFilterOpen(false) : openFilter())}
+              aria-haspopup="dialog"
+              aria-expanded={filterOpen}
+              aria-pressed={!isDefaultPeriode}
+              title={isDefaultPeriode ? "Filter periode" : `Periode: ${periodeLabel} — klik untuk ubah`}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "7px 14px", borderRadius: 999, cursor: "pointer",
+                background: isDefaultPeriode ? "#fff" : "#2563eb",
+                border: `1px solid ${isDefaultPeriode ? "#e2e8f0" : "#2563eb"}`,
+                boxShadow: filterOpen ? "0 0 0 3px rgba(147,197,253,.35)" : "none",
+                fontSize: 13, fontWeight: 600,
+                color: isDefaultPeriode ? "#334155" : "#fff",
+                whiteSpace: "nowrap",
+                transition: "background .15s ease, border-color .15s ease, color .15s ease",
+              }}
+            >
+              <Calendar size={15} />
+              <span>{isDefaultPeriode ? "Filter periode" : periodeLabel}</span>
+            </button>
+            {filterOpen && (
+              <div
+                role="dialog"
+                aria-label="Filter periode"
+                style={{
+                  position: "absolute", left: 0, top: "calc(100% + 8px)", zIndex: 30,
+                  width: 260, background: "#fff", border: "1px solid #e2e8f0",
+                  borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,.12)",
+                  padding: 14, display: "flex", flexDirection: "column", gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <label htmlFor="periode-dari" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
+                    Dari
+                  </label>
+                  <input
+                    id="periode-dari"
+                    type="month"
+                    value={draftDari}
+                    onChange={(e) => e.target.value && setDraftDari(e.target.value)}
+                    style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <label htmlFor="periode-sampai" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
+                    Sampai
+                  </label>
+                  <input
+                    id="periode-sampai"
+                    type="month"
+                    value={draftSampai}
+                    onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
+                    style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
+                  />
+                </div>
+                {draftError && (
+                  <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>
+                )}
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                  {!isDefaultPeriode && (
+                    <button
+                      type="button"
+                      onClick={handleResetPeriode}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#64748b" }}
+                    >
+                      Reset
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={applyFilter}
+                    disabled={!!draftError}
+                    style={{
+                      background: draftError ? "#cbd5e1" : "#2563eb", color: "#fff",
+                      border: "none", borderRadius: 8, padding: "8px 16px",
+                      fontSize: 13, fontWeight: 600, cursor: draftError ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Terapkan
+                  </button>
+                </div>
+                <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
+                  Maksimal 12 bulan
+                </p>
+              </div>
+            )}
+          </div>
         </div>
         <div className="ipl-filter-group">
           <label>Status</label>
@@ -446,9 +594,7 @@ function AdminIuranView() {
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
           <span className="ipl-table-title">
-            Data Tagihan —{" "}
-            {filterBulan ? BULAN_NAMES[filterBulan] : "Semua Bulan"}{" "}
-            {filterTahun}
+            Data Tagihan — {periodeLabel}
           </span>
           <span className="ipl-table-count">{tagihan.length} data</span>
         </div>

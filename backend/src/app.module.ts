@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { PengaduanModule } from './pengaduan/pengaduan.module';
 import { NotifikasiModule } from './notifikasi/notifikasi.module';
+import { KeuanganModule } from './keuangan/keuangan.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { NotifikasiModule } from './notifikasi/notifikasi.module';
     KegiatanModule,
     IplModule,
     PengaduanModule,
+    KeuanganModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],

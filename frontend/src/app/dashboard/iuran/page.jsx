@@ -575,7 +575,7 @@ function AdminIuranView() {
 }
 
 // ── Warga: lihat & bayar tagihan milik sendiri ────────────────────────────────
-const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
 function getMonthLabel(bulan, tahun) {
   const m = parseInt(bulan, 10);
@@ -894,9 +894,9 @@ function WargaIuranView({ user }) {
               {selectedRumahId === "semua"
                 ? `Semua Unit (${rumahList.length} Rumah)`
                 : (() => {
-                    const r = rumahList.find((x) => x.id === Number(selectedRumahId));
-                    return r ? `${r.blokRumah} · ${formatRt(r.rt)}` : "";
-                  })()}
+                  const r = rumahList.find((x) => x.id === Number(selectedRumahId));
+                  return r ? `${r.blokRumah} · ${formatRt(r.rt)}` : "";
+                })()}
             </p>
             <h3 className="portal-tagihan-month">
               Total Tagihan {heroLabel}
@@ -1077,94 +1077,94 @@ function WargaIuranView({ user }) {
           </p>
         ) : (
           <>
-          <div className="table-wrapper iuran-table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {rumahList.length > 1 && selectedRumahId === "semua" && <th>Unit</th>}
-                  <th>Periode</th>
-                  <th>Nominal</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayData.map((ipl) => (
-                  <tr key={ipl.id}>
-                    {rumahList.length > 1 && selectedRumahId === "semua" && (
-                      <td>{ipl.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl.idRumah}`}</td>
-                    )}
-                    <td>{getMonthLabel(ipl.bulanPeriode, ipl.tahunPeriode)}</td>
-                    <td>{rupiah(ipl.nominal)}</td>
-                    <td><WargaStatusBadge status={ipl.statusPembayaran} /></td>
-                    <td>
-                      {ipl.statusPembayaran === "BELUM_LUNAS" ? (
-                        <button
-                          type="button"
-                          className="btn-primary btn-sm"
-                          onClick={() => setModalIpl(ipl)}
-                        >
-                          <Upload size={13} /> Bayar
-                        </button>
-                      ) : ipl.statusPembayaran === "MENUNGGU_KONFIRMASI" ? (
-                        <span className="text-muted text-sm">Menunggu konfirmasi...</span>
-                      ) : ipl.statusPembayaran === "LUNAS" && ipl.pembayaran?.[0] ? (
-                        <button
-                          type="button"
-                          className="btn-ipl-neutral"
-                          onClick={() => setRiwayatIpl(ipl)}
-                          title="Lihat riwayat transaksi"
-                        >
-                          <Eye size={14} /> Riwayat
-                        </button>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </td>
+            <div className="table-wrapper iuran-table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    {rumahList.length > 1 && selectedRumahId === "semua" && <th>Unit</th>}
+                    <th>Periode</th>
+                    <th>Nominal</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {displayData.map((ipl) => (
+                    <tr key={ipl.id}>
+                      {rumahList.length > 1 && selectedRumahId === "semua" && (
+                        <td>{ipl.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl.idRumah}`}</td>
+                      )}
+                      <td>{getMonthLabel(ipl.bulanPeriode, ipl.tahunPeriode)}</td>
+                      <td>{rupiah(ipl.nominal)}</td>
+                      <td><WargaStatusBadge status={ipl.statusPembayaran} /></td>
+                      <td>
+                        {ipl.statusPembayaran === "BELUM_LUNAS" ? (
+                          <button
+                            type="button"
+                            className="btn-primary btn-sm"
+                            onClick={() => setModalIpl(ipl)}
+                          >
+                            <Upload size={13} /> Bayar
+                          </button>
+                        ) : ipl.statusPembayaran === "MENUNGGU_KONFIRMASI" ? (
+                          <span className="text-muted text-sm">Menunggu konfirmasi...</span>
+                        ) : ipl.statusPembayaran === "LUNAS" && ipl.pembayaran?.[0] ? (
+                          <button
+                            type="button"
+                            className="btn-ipl-neutral"
+                            onClick={() => setRiwayatIpl(ipl)}
+                            title="Lihat riwayat transaksi"
+                          >
+                            <Eye size={14} /> Riwayat
+                          </button>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="iuran-grid">
-            {displayData.map((ipl) => (
-              <div key={ipl.id} className="iuran-grid-card">
-                <h3 className="iuran-grid-title">
-                  {getMonthLabel(ipl.bulanPeriode, ipl.tahunPeriode)}
-                </h3>
-                <span className="meta-item iuran-grid-nominal">{rupiah(ipl.nominal)}</span>
-                {rumahList.length > 1 && selectedRumahId === "semua" && (
-                  <span className="meta-item iuran-grid-unit">
-                    {ipl.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl.idRumah}`}
-                  </span>
-                )}
-                <div className="iuran-grid-footer">
-                  {ipl.statusPembayaran === "BELUM_LUNAS" ? (
-                    <button
-                      type="button"
-                      className="btn-primary btn-sm"
-                      onClick={() => setModalIpl(ipl)}
-                    >
-                      <Upload size={12} /> Bayar
-                    </button>
-                  ) : ipl.statusPembayaran === "LUNAS" && ipl.pembayaran?.[0] ? (
-                    <button
-                      type="button"
-                      className="btn-ipl-neutral"
-                      onClick={() => setRiwayatIpl(ipl)}
-                      title="Lihat riwayat transaksi"
-                    >
-                      <Eye size={12} /> Riwayat
-                    </button>
-                  ) : (
-                    <span />
+            <div className="iuran-grid">
+              {displayData.map((ipl) => (
+                <div key={ipl.id} className="iuran-grid-card">
+                  <h3 className="iuran-grid-title">
+                    {getMonthLabel(ipl.bulanPeriode, ipl.tahunPeriode)}
+                  </h3>
+                  <span className="meta-item iuran-grid-nominal">{rupiah(ipl.nominal)}</span>
+                  {rumahList.length > 1 && selectedRumahId === "semua" && (
+                    <span className="meta-item iuran-grid-unit">
+                      {ipl.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl.idRumah}`}
+                    </span>
                   )}
-                  <WargaStatusBadge status={ipl.statusPembayaran} />
+                  <div className="iuran-grid-footer">
+                    {ipl.statusPembayaran === "BELUM_LUNAS" ? (
+                      <button
+                        type="button"
+                        className="btn-primary btn-sm"
+                        onClick={() => setModalIpl(ipl)}
+                      >
+                        <Upload size={12} /> Bayar
+                      </button>
+                    ) : ipl.statusPembayaran === "LUNAS" && ipl.pembayaran?.[0] ? (
+                      <button
+                        type="button"
+                        className="btn-ipl-neutral"
+                        onClick={() => setRiwayatIpl(ipl)}
+                        title="Lihat riwayat transaksi"
+                      >
+                        <Eye size={12} /> Riwayat
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+                    <WargaStatusBadge status={ipl.statusPembayaran} />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           </>
         )}
       </section>

@@ -89,7 +89,34 @@ function AdminPengaduanView({ user }) {
   const [filterStatus, setFilterStatus] = useState("SEMUA");
   const [filterBulan, setFilterBulan] = useState("SEMUA");
   const [filterTahun, setFilterTahun] = useState("SEMUA");
+  const [draftFilterKategori, setDraftFilterKategori] = useState("SEMUA");
+  const [draftFilterStatus, setDraftFilterStatus] = useState("SEMUA");
+  const [draftFilterBulan, setDraftFilterBulan] = useState("SEMUA");
+  const [draftFilterTahun, setDraftFilterTahun] = useState("SEMUA");
   const [search, setSearch] = useState("");
+
+  const handleFilterOpen = () => {
+    setDraftFilterKategori(filterKategori);
+    setDraftFilterStatus(filterStatus);
+    setDraftFilterBulan(filterBulan);
+    setDraftFilterTahun(filterTahun);
+  };
+  const handleFilterApply = () => {
+    setFilterKategori(draftFilterKategori);
+    setFilterStatus(draftFilterStatus);
+    setFilterBulan(draftFilterBulan);
+    setFilterTahun(draftFilterTahun);
+  };
+  const handleFilterReset = () => {
+    setFilterKategori("SEMUA");
+    setFilterStatus("SEMUA");
+    setFilterBulan("SEMUA");
+    setFilterTahun("SEMUA");
+    setDraftFilterKategori("SEMUA");
+    setDraftFilterStatus("SEMUA");
+    setDraftFilterBulan("SEMUA");
+    setDraftFilterTahun("SEMUA");
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -191,12 +218,15 @@ function AdminPengaduanView({ user }) {
             filterKategori !== "SEMUA" ||
             filterStatus !== "SEMUA"
           }
+          onOpen={handleFilterOpen}
+          onApply={handleFilterApply}
+          onReset={handleFilterReset}
         >
           <FilterField label="Bulan">
             <select
               className="ipl-select ipl-select-sm"
-              value={filterBulan}
-              onChange={(e) => setFilterBulan(e.target.value)}
+              value={draftFilterBulan}
+              onChange={(e) => setDraftFilterBulan(e.target.value)}
             >
               <option value="SEMUA">Semua Bulan</option>
               {availableBulan.map(({ val, label }) => (
@@ -207,8 +237,8 @@ function AdminPengaduanView({ user }) {
           <FilterField label="Tahun">
             <select
               className="ipl-select ipl-select-sm"
-              value={filterTahun}
-              onChange={(e) => setFilterTahun(e.target.value)}
+              value={draftFilterTahun}
+              onChange={(e) => setDraftFilterTahun(e.target.value)}
             >
               <option value="SEMUA">Semua Tahun</option>
               {availableTahun.map((y) => (
@@ -219,8 +249,8 @@ function AdminPengaduanView({ user }) {
           <FilterField label="Kategori">
             <select
               className="ipl-select ipl-select-sm"
-              value={filterKategori}
-              onChange={(e) => setFilterKategori(e.target.value)}
+              value={draftFilterKategori}
+              onChange={(e) => setDraftFilterKategori(e.target.value)}
             >
               <option value="SEMUA">Semua Kategori</option>
               {Object.entries(KATEGORI_LABELS).map(([value, label]) => (
@@ -231,8 +261,8 @@ function AdminPengaduanView({ user }) {
           <FilterField label="Status">
             <select
               className="ipl-select ipl-select-sm"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              value={draftFilterStatus}
+              onChange={(e) => setDraftFilterStatus(e.target.value)}
             >
               <option value="SEMUA">Semua Status</option>
               {Object.entries(STATUS_LABELS).map(([value, { label }]) => (

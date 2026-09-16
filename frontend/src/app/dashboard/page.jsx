@@ -778,9 +778,6 @@ function WargaDashboardView({ user }) {
           <ul className="portal-pengumuman-list">
             {tagihanPerRumah.map(({ rumah, tagihan }) => (
               <li key={rumah.id} className="portal-pengumuman-item">
-                <div className="portal-stat-icon" style={{ width: 36, height: 36 }}>
-                  <Home size={18} />
-                </div>
                 <div style={{ flex: 1 }}>
                   <p className="portal-peng-judul">
                     {rumah.blokRumah} — {String(rumah.rt || "").replace("_", " ")}

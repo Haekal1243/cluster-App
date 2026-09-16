@@ -28,7 +28,15 @@ export default function PengumumanPage() {
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("SEMUA");
+  const [draftFilterStatus, setDraftFilterStatus] = useState("SEMUA");
   const [page, setPage] = useState(1);
+
+  const handleFilterOpen = () => setDraftFilterStatus(filterStatus);
+  const handleFilterApply = () => setFilterStatus(draftFilterStatus);
+  const handleFilterReset = () => {
+    setFilterStatus("SEMUA");
+    setDraftFilterStatus("SEMUA");
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -160,37 +168,42 @@ export default function PengumumanPage() {
         </div>
       </div>
 
-      <div className="page-add-row">
+      <div className="page-toolbar-row">
         <button type="button" className="btn-primary" onClick={openCreateModal}>
           <Plus size={16} />
           Tambah Pengumuman
         </button>
-      </div>
 
-      <div className="list-toolbar-row">
-        <div className="list-search-wrap">
-          <Search size={15} className="list-search-icon" />
-          <input
-            type="text"
-            placeholder="Cari judul atau keterangan..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="list-search-input"
-          />
+        <div className="list-toolbar-row">
+          <div className="list-search-wrap">
+            <Search size={15} className="list-search-icon" />
+            <input
+              type="text"
+              placeholder="Cari judul atau keterangan..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="list-search-input"
+            />
+          </div>
+          <FilterPopover
+            active={filterStatus !== "SEMUA"}
+            onOpen={handleFilterOpen}
+            onApply={handleFilterApply}
+            onReset={handleFilterReset}
+          >
+            <FilterField label="Status">
+              <select
+                className="ipl-select ipl-select-sm"
+                value={draftFilterStatus}
+                onChange={(e) => setDraftFilterStatus(e.target.value)}
+              >
+                <option value="SEMUA">Semua Status</option>
+                <option value="active">Aktif</option>
+                <option value="unactived">Nonaktif</option>
+              </select>
+            </FilterField>
+          </FilterPopover>
         </div>
-        <FilterPopover active={filterStatus !== "SEMUA"}>
-          <FilterField label="Status">
-            <select
-              className="ipl-select ipl-select-sm"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="SEMUA">Semua Status</option>
-              <option value="active">Aktif</option>
-              <option value="unactived">Nonaktif</option>
-            </select>
-          </FilterField>
-        </FilterPopover>
       </div>
 
       <div className="table-card pengumuman-table-card">

@@ -7,8 +7,13 @@ export default function FilterPopover({
   children,
   active = false,
   label = "Filter",
+  hint,
   open: controlledOpen,
   onOpenChange,
+  onOpen,
+  onApply,
+  onReset,
+  applyDisabled = false,
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   // Mode controlled (bila prop open diberikan) atau uncontrolled seperti semula.
@@ -50,12 +55,30 @@ export default function FilterPopover({
     };
   }, [open, setOpen]);
 
+  const handleToggle = () => {
+    setOpen((o) => {
+      const next = !o;
+      if (next) onOpen?.();
+      return next;
+    });
+  };
+
+  const handleApply = () => {
+    onApply?.();
+    setOpen(false);
+  };
+
+  const handleReset = () => {
+    onReset?.();
+    setOpen(false);
+  };
+
   return (
     <div className="filter-popover" ref={ref}>
       <button
         type="button"
         className={`filter-popover-btn ${active ? "is-active" : ""}`}
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleToggle}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
@@ -67,6 +90,22 @@ export default function FilterPopover({
       {open && (
         <div className="filter-popover-panel" role="dialog" aria-label={label}>
           {children}
+          <div className="filter-popover-footer">
+            {active && (
+              <button type="button" className="filter-popover-reset" onClick={handleReset}>
+                Reset
+              </button>
+            )}
+            <button
+              type="button"
+              className="filter-popover-apply"
+              onClick={handleApply}
+              disabled={applyDisabled}
+            >
+              Terapkan
+            </button>
+          </div>
+          {hint && <p className="filter-popover-hint">{hint}</p>}
         </div>
       )}
     </div>

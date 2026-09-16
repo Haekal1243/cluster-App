@@ -966,9 +966,17 @@ function WargaIuranView({ user }) {
           active={hasActiveFilter}
           open={filterOpen}
           onOpenChange={handleFilterOpenChange}
+          onApply={applyFilter}
+          onReset={handleResetFilter}
+          applyDisabled={!!draftError}
+          hint="Maksimal 12 bulan"
         >
           <FilterField label="Periode Dari">
-            <div style={{ position: "relative" }}>
+            <div
+              className="ipl-month-input-wrap"
+              data-placeholder={draftDari ? undefined : "Semua Periode"}
+              style={{ position: "relative" }}
+            >
               <input
                 type="month"
                 value={draftDari}
@@ -976,25 +984,14 @@ function WargaIuranView({ user }) {
                 className="ipl-input"
                 style={{ width: "100%", color: draftDari ? undefined : "transparent" }}
               />
-              {!draftDari && (
-                <span
-                  style={{
-                    position: "absolute",
-                    left: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    fontSize: 13,
-                    color: "#94a3b8",
-                    pointerEvents: "none",
-                  }}
-                >
-                  Semua Periode
-                </span>
-              )}
             </div>
           </FilterField>
           <FilterField label="Periode Sampai">
-            <div style={{ position: "relative" }}>
+            <div
+              className="ipl-month-input-wrap"
+              data-placeholder={draftSampai ? undefined : "Semua Periode"}
+              style={{ position: "relative" }}
+            >
               <input
                 type="month"
                 value={draftSampai}
@@ -1002,21 +999,6 @@ function WargaIuranView({ user }) {
                 className="ipl-input"
                 style={{ width: "100%", color: draftSampai ? undefined : "transparent" }}
               />
-              {!draftSampai && (
-                <span
-                  style={{
-                    position: "absolute",
-                    left: 12,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    fontSize: 13,
-                    color: "#94a3b8",
-                    pointerEvents: "none",
-                  }}
-                >
-                  Semua Periode
-                </span>
-              )}
             </div>
           </FilterField>
           {draftError && (
@@ -1049,32 +1031,6 @@ function WargaIuranView({ user }) {
               </select>
             </FilterField>
           )}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
-            {hasActiveFilter && (
-              <button
-                type="button"
-                onClick={handleResetFilter}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#64748b" }}
-              >
-                Reset
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={applyFilter}
-              disabled={!!draftError}
-              style={{
-                background: draftError ? "#cbd5e1" : "#2563eb", color: "#fff",
-                border: "none", borderRadius: 8, padding: "8px 16px",
-                fontSize: 13, fontWeight: 600, cursor: draftError ? "not-allowed" : "pointer",
-              }}
-            >
-              Terapkan
-            </button>
-          </div>
-          <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
-            Maksimal 12 bulan
-          </p>
         </FilterPopover>
       </div>
 

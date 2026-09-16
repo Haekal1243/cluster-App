@@ -63,9 +63,9 @@ export default function PengaduanDetailModal({ pengaduan, onClose }) {
             </div>
           </div>
 
-          <div>
+          <div className="review-desc-card">
             <p className="review-bukti-label">Deskripsi</p>
-            <p style={{ whiteSpace: "pre-wrap" }}>{pengaduan.deskripsi}</p>
+            <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{pengaduan.deskripsi}</p>
           </div>
 
           {pengaduan.tanggapan && (

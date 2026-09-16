@@ -1367,22 +1367,24 @@ select {
   align-items: center;
   gap: 7px;
   padding: 9px 16px;
-  border: 1px solid var(--db-border);
+  border: none;
   border-radius: 10px;
-  background: var(--db-surface);
-  color: var(--db-slate-600);
+  background: linear-gradient(135deg, var(--db-primary) 0%, var(--db-primary-hover) 100%);
+  color: #fff;
   font-family: "Poppins", sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.filter-popover-btn:hover { background: var(--db-bg); }
+.filter-popover-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(13, 148, 136, 0.35);
+}
 .filter-popover-btn.is-active {
-  border-color: var(--db-primary);
-  color: var(--db-primary);
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.35), 0 8px 18px rgba(13, 148, 136, 0.28);
 }
 
 .filter-popover-chevron {
@@ -1413,6 +1415,8 @@ select {
   flex-direction: column;
   gap: 14px;
   animation: dropdown-pop 0.15s ease-out;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .filter-popover-field {
@@ -1431,9 +1435,46 @@ select {
   width: 100%;
 }
 
+/* Placeholder "Semua Periode" pakai generated content (::before), bukan
+   <span> biasa, karena teks di ::before nggak pernah bisa di-select/di-blok
+   user sama sekali — beda sama <span> yang masih bisa ke-select meski
+   pointer-events:none & user-select:none (drag seleksi dari input di
+   belakangnya masih bisa "nembus"). */
+.ipl-month-input-wrap[data-placeholder]::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Input mm/yyyy bawaan browser di dalam .ipl-month-input-wrap disembunyiin
+   pakai color:transparent di elemen <input>-nya sendiri, tapi Chrome masih
+   ngegambar kotak highlight biru di belakang segmen mm/yyyy itu pas di-klik
+   atau di-drag (highlight ini terpisah dari `color`, jadi nggak ketutup sama
+   color:transparent di parent). Kotak biru itu numpuk persis di atas teks
+   placeholder ::before di atas, jadi keliatan kayak teksnya ke-select/blok
+   padahal itu murni UI bawaan field tanggal Chrome. Matiin lewat pseudo-
+   element internal webkit-nya biar nggak nongol sama sekali. */
+.ipl-month-input-wrap input[type="month"]::-webkit-datetime-edit-month-field,
+.ipl-month-input-wrap input[type="month"]::-webkit-datetime-edit-year-field {
+  color: transparent;
+  background-color: transparent;
+}
+
 .filter-popover-footer {
   display: flex;
   gap: 8px;
+}
+
+.filter-popover-hint {
+  font-size: 0.72rem;
+  color: var(--db-slate-400);
+  text-align: center;
 }
 
 .filter-popover-reset {
@@ -3673,6 +3714,16 @@ select {
   color: var(--db-muted);
 }
 
+/* Card kegiatan sempit (grid 2 kolom di mobile) bikin tanggal sering turun
+   2 baris — ikon kalender disejajarkan ke baris pertama, bukan ke tengah,
+   biar nggak numpuk/dempet sama baris keduanya. */
+.portal-kegiatan-meta .meta-item {
+  align-items: flex-start;
+}
+.portal-kegiatan-meta .meta-item svg {
+  margin-top: 2px;
+}
+
 /* Baris ikon + teks (mis. ikon kalender + tanggal) di dalam meta row manapun —
    pakai di setiap <span>/<a> yang membungkus sebuah ikon lucide + teks singkat,
    supaya ikon dan teks selalu sejajar vertikal. */
@@ -3680,7 +3731,7 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  line-height: 1;
+  line-height: 1.35;
 }
 
 .meta-item svg {
@@ -4173,8 +4224,11 @@ select {
     overflow: hidden;
   }
 
-  /* Deskripsi disembunyikan di grid mobile — cukup judul + tanggal */
-  .portal-kegiatan-desc {
+  /* Deskripsi disembunyikan di grid mobile — cukup judul + tanggal.
+     Discope ke .portal-kegiatan-card aja (card compact di grid), soalnya
+     class yang sama juga dipakai buat isi Detail Kegiatan modal — kalau
+     nggak discope, deskripsi di modal ikut ke-hide di mobile. */
+  .portal-kegiatan-card .portal-kegiatan-desc {
     display: none;
   }
 
@@ -4206,7 +4260,11 @@ select {
     margin-bottom: 4px;
   }
 
-  .portal-info-card-desc {
+  /* Deskripsi dipotong 2 baris cuma di card list (.portal-info-card) —
+     class yang sama dipakai juga di Detail Pengumuman modal, jadi discope
+     biar deskripsi lengkap di modal nggak ikut kepotong (lihat kasus sama
+     di .portal-kegiatan-desc). */
+  .portal-info-card .portal-info-card-desc {
     font-size: 0.78rem;
     line-height: 1.45;
     margin-bottom: 6px;
@@ -4752,6 +4810,9 @@ select {
   border-bottom: 1px solid var(--db-border);
 }
 .ipl-modal-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 1rem;
   font-weight: 700;
   color: var(--db-slate-700);
@@ -4833,6 +4894,13 @@ select {
   border: 1px solid var(--db-border);
   border-radius: 10px;
   padding: 10px 12px;
+}
+
+.review-desc-card {
+  background: #f8fafc;
+  border: 1px solid var(--db-border);
+  border-radius: 10px;
+  padding: 12px 14px;
 }
 
 .review-bukti-section { display: flex; flex-direction: column; gap: 8px; }

@@ -13,6 +13,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Role, RT, StatusPembayaran } from '@prisma/client';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
 import { resolvePeriode } from '../common/periode.helper';
+import * as bcrypt from 'bcryptjs';
+
+const SALT_ROUNDS = 10;
 
 export interface RingkasanRumah {
   id: number;
@@ -51,8 +54,12 @@ export class WargaService {
       where: { email },
     });
 
-    if (!user) throw new UnauthorizedException('Email tidak ditemukan!');
-    if (user.password !== pass) throw new UnauthorizedException('Password salah!');
+    const INVALID_CREDENTIALS_MSG = 'Email atau password salah.';
+
+    if (!user) throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
+
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    if (!isPasswordValid) throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
 
     const token = await this.jwtService.signAsync({
       sub: user.id,
@@ -297,12 +304,14 @@ export class WargaService {
 
   async create(createWargaDto: CreateWargaDto) {
     try {
+      const hashedPassword = await bcrypt.hash(createWargaDto.password, SALT_ROUNDS);
+
       const newUser = await this.prisma.user.create({
         data: {
           namaUser: createWargaDto.nama,
           noTelp: createWargaDto.no_hp,
           email: createWargaDto.email,
-          password: createWargaDto.password,
+          password: hashedPassword,
           role: Role.WARGA,
           rumah: {
             create: {
@@ -354,13 +363,19 @@ export class WargaService {
 
   async update(id: number, updateWargaDto: UpdateWargaDto) {
     await this.findOne(id);
+
+    // Hash password baru jika diberikan, jika tidak biarkan undefined (tidak diupdate)
+    const hashedPassword = updateWargaDto.password
+      ? await bcrypt.hash(updateWargaDto.password, SALT_ROUNDS)
+      : undefined;
+
     return this.prisma.user.update({
       where: { id },
       data: {
         namaUser: updateWargaDto.nama,
         noTelp: updateWargaDto.no_hp,
         email: updateWargaDto.email,
-        password: updateWargaDto.password,
+        ...(hashedPassword !== undefined && { password: hashedPassword }),
       },
     });
   }

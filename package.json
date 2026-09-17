@@ -7,9 +7,11 @@
     "frontend"
   ],
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "next": "^16.2.10"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/multer": "^2.2.0"
   }
 }

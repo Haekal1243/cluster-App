@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -37,8 +38,8 @@ export class PengumumanController {
 
   @Public()
   @Get('active')
-  findActive() {
-    return this.pengumumanService.findActive();
+  findActive(@Query('scope') scope?: string) {
+    return this.pengumumanService.findActive(scope as 'aktif' | 'arsip' | undefined);
   }
 
   @Get(':id')

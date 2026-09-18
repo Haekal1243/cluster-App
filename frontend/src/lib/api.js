@@ -43,7 +43,7 @@ function buildFormData(payload) {
 
 export const pengumumanApi = {
   getAll: () => request("/pengumuman"),
-  getActive: () => request("/pengumuman/active"),
+  getActive: ({ scope } = {}) => request(`/pengumuman/active${scope ? `?scope=${scope}` : ""}`),
   getById: (id) => request(`/pengumuman/${id}`),
 
   create: (payload) =>
@@ -76,7 +76,7 @@ export const pengumumanApi = {
 
 export const kegiatanApi = {
   getAll: () => request("/kegiatan"),
-  getActive: () => request("/kegiatan/active"),
+  getActive: ({ scope } = {}) => request(`/kegiatan/active${scope ? `?scope=${scope}` : ""}`),
   getById: (id) => request(`/kegiatan/${id}`),
 
   create: (payload) =>

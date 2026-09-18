@@ -50,10 +50,27 @@ export class KegiatanService {
     });
   }
 
-  findActive() {
+  findActive(scope?: 'aktif' | 'arsip') {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (scope === 'arsip') {
+      return this.prisma.kegiatan.findMany({
+        where: { isDelete: false, tanggalAcara: { lt: today } },
+        orderBy: { tanggalAcara: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          judul: true,
+          deskripsi: true,
+          gambarUrl: true,
+          tanggalAcara: true,
+        },
+      });
+    }
+    // default aktif: akan datang/berlangsung (tanggalAcara >= hari ini) + status active
     return this.prisma.kegiatan.findMany({
-      where: { isDelete: false, status: 'active' },
-      orderBy: { tanggalAcara: 'desc' },
+      where: { isDelete: false, status: 'active', tanggalAcara: { gte: today } },
+      orderBy: { tanggalAcara: 'asc' },
       take: 5,
       select: {
         id: true,

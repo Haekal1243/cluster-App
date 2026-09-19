@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Users, Wallet, AlertTriangle, CheckCircle,
   TrendingUp, Clock, ArrowRight, Home, CreditCard, Megaphone, CalendarDays,
-  Calendar, FileText,
+  Calendar, FileText, ChevronDown, Check,
 } from "lucide-react";
 import { iplApi, portalApi, kegiatanApi, pengumumanApi } from "@/lib/api";
 import Link from "next/link";
@@ -473,6 +473,8 @@ function WargaDashboardView({ user }) {
   const [loading, setLoading] = useState(true);
   const [selectedKegiatan, setSelectedKegiatan] = useState(null);
   const [selectedPengumuman, setSelectedPengumuman] = useState(null);
+  const [expandedKeys, setExpandedKeys] = useState(() => new Set());
+  const [expandInitDone, setExpandInitDone] = useState(false);
 
   const now = new Date();
   const bulanIni = String(now.getMonth() + 1).padStart(2, "0");
@@ -586,16 +588,7 @@ function WargaDashboardView({ user }) {
     return () => { cancelled = true; };
   }, [pengumumanScope]);
 
-  if (loading) {
-    return (
-      <div className="portal-loading">
-        <div className="portal-spinner" />
-        <p>Memuat data...</p>
-      </div>
-    );
-  }
-
-  // ── Derived untuk hero & breakdown — Task 1 & 2 ──
+  // ── Derived untuk hero & breakdown — sebelum early return agar hooks tidak berubah urutan
   const isBulanIni = (t) => t.bulanPeriode === bulanIni && t.tahunPeriode === tahunIni;
   const tunggakanList = tagihanAllList.filter(
     (t) => t.statusPembayaran === "BELUM_LUNAS" || t.statusPembayaran === "MENUNGGU_KONFIRMASI"
@@ -605,7 +598,7 @@ function WargaDashboardView({ user }) {
   const isLunasSemua = !adaTunggakan && tagihanAllList.length > 0;
   const totalTunggakanNominal = tunggakanList.reduce((s, t) => s + (t.nominal || 0), 0);
 
-  // Breakdown per periode untuk hero
+  // Breakdown per periode — grouped by BULAN, tiap grup simpan list tagihan (untuk nested unit rows)
   const breakdownMap = {};
   for (const t of tunggakanList) {
     const key = `${t.bulanPeriode}-${t.tahunPeriode}`;
@@ -617,55 +610,44 @@ function WargaDashboardView({ user }) {
         nominal: 0,
         count: 0,
         isBulanIni: isBulanIni(t),
+        tagihans: [],
       };
     }
     breakdownMap[key].nominal += t.nominal || 0;
     breakdownMap[key].count += 1;
+    // simpan tagihan lengkap dengan rumah untuk nested row
+    const rid = t.rumah?.id ?? t.idRumah;
+    const rumah = rumahList.find((r) => r.id === rid) || t.rumah || { id: rid, blokRumah: `Rumah #${rid}`, rt: "" };
+    breakdownMap[key].tagihans.push({ ...t, _rumah: rumah });
   }
   const breakdownList = Object.values(breakdownMap).sort((a, b) => {
     const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
     const vb = parseInt(b.tahunPeriode, 10) * 12 + parseInt(b.bulanPeriode, 10);
     return va - vb; // tertua dulu
   });
-  const tertunggakNominal = breakdownList.filter((b) => !b.isBulanIni).reduce((s, b) => s + b.nominal, 0);
-  const tertunggakCount = breakdownList.filter((b) => !b.isBulanIni).reduce((s, b) => s + b.count, 0);
 
-  // Unit Rumah Saya: semua periode belum lunas sorted tertua dulu, atau 1 terbaru per rumah saat lunas
-  let unitRows = [];
-  if (isLunasSemua) {
-    // 1 baris terbaru per rumah (lunas)
-    const latestPerRumah = new Map();
-    for (const r of rumahList) {
-      const list = tagihanAllList
-        .filter((t) => (t.rumah?.id ?? t.idRumah) === r.id)
-        .sort((a, b) => {
-          const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
-          const vb = parseInt(b.tahunPeriode, 10) * 12 + parseInt(b.bulanPeriode, 10);
-          return vb - va; // terbaru dulu
-        });
-      const latest = list[0] || null;
-      latestPerRumah.set(r.id, { rumah: r, tagihan: latest });
+  // Expand/collapse per grup bulan — default expanded jika ≤3 periode (effect harus sebelum early return)
+  useEffect(() => {
+    if (expandInitDone || breakdownList.length === 0) return;
+    if (breakdownList.length <= 3) {
+      setExpandedKeys(new Set(breakdownList.map((b) => `${b.bulanPeriode}-${b.tahunPeriode}`)));
     }
-    unitRows = rumahList.map((r) => latestPerRumah.get(r.id));
-  } else {
-    unitRows = tunggakanList
-      .slice()
-      .sort((a, b) => {
-        const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
-        const vb = parseInt(b.tahunPeriode, 10) * 12 + parseInt(b.bulanPeriode, 10);
-        return va - vb; // tertua dulu — Acceptance: terurut dari tertua
-      })
-      .map((t) => {
-        const rid = t.rumah?.id ?? t.idRumah;
-        const rumah = rumahList.find((r) => r.id === rid) || t.rumah || { id: rid, blokRumah: `Rumah #${rid}`, rt: "" };
-        return { rumah, tagihan: t, key: `tagihan-${t.id}` };
-      });
-    // fallback jika belum ada tunggakan tapi ada rumah tanpa tagihan sama sekali
-    if (unitRows.length === 0 && rumahList.length > 0) {
-      // tampilkan rumah tanpa tagihan sebagai placeholder (tetap konsisten struktur)
-      unitRows = rumahList.map((r) => ({ rumah: r, tagihan: null, key: `rumah-${r.id}` }));
-    }
-  }
+    setExpandInitDone(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [breakdownList.length, expandInitDone]);
+  // reset init flag saat tunggakan berubah total (user ganti akun)
+  useEffect(() => {
+    setExpandInitDone(false);
+    setExpandedKeys(new Set());
+  }, [tunggakanList.length]);
+  const toggleGroup = (key) => {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const firstName = (user?.nama || user?.name || "Warga").split(" ")[0];
   const periodeBulanIni = getMonthLabel(bulanIni, tahunIni);
@@ -688,6 +670,15 @@ function WargaDashboardView({ user }) {
     const d = new Date(now.getFullYear(), now.getMonth() + 1, 10);
     return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   })();
+
+  if (loading) {
+    return (
+      <div className="portal-loading">
+        <div className="portal-spinner" />
+        <p>Memuat data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="page-stack warga-dashboard">
@@ -758,25 +749,54 @@ function WargaDashboardView({ user }) {
         <div className="portal-hero-orb orb-b" aria-hidden />
       </section>
 
-      {/* Blok 2: Card terpisah — Rincian Tunggakan / Riwayat Pembayaran */}
+      {/* Rincian Tunggakan — grouped by BULAN, nested unit rows, single CTA */}
       {adaTunggakan ? (
         <section className="content-card warga-detail-card">
-          <div className="warga-detail-header">
-            <h3>Rincian Tunggakan</h3>
-            <span className="warga-detail-sub">{periodeBulanIni} · {breakdownList.length} periode · {tunggakanList.length} tagihan</span>
+          <div className="warga-tunggakan-header">
+            <div className="warga-tunggakan-header-left">
+              <h3>Rincian Tunggakan</h3>
+              <span className="warga-detail-sub">{breakdownList.length} periode · {tunggakanList.length} tagihan · {rumahList.length} unit rumah</span>
+            </div>
+            <span className="warga-tunggakan-total">Rp {totalTunggakanNominal.toLocaleString("id-ID")}</span>
           </div>
-          <ul className="warga-detail-list">
-            {breakdownList.map((b) => (
-              <li key={`${b.bulanPeriode}-${b.tahunPeriode}`} className="warga-detail-row">
-                <span className="warga-detail-left">
-                  {b.label} <small>({b.count} tagihan)</small>
-                </span>
-                <span className="warga-detail-right">
-                  <strong>Rp {b.nominal.toLocaleString("id-ID")}</strong>
-                  <span className={`portal-badge-mini ${b.isBulanIni ? "badge-bulan-ini" : "badge-tertunggak"}`}>{b.isBulanIni ? "Bulan ini" : "Tertunggak"}</span>
-                </span>
-              </li>
-            ))}
+          <ul className="warga-tunggakan-groups">
+            {breakdownList.map((b) => {
+              const key = `${b.bulanPeriode}-${b.tahunPeriode}`;
+              const isExpanded = expandedKeys.has(key);
+              return (
+                <li key={key} className="warga-tunggakan-group">
+                  <button
+                    type="button"
+                    className="warga-tunggakan-group-header"
+                    onClick={() => toggleGroup(key)}
+                    aria-expanded={isExpanded}
+                    aria-label={`${isExpanded ? "Tutup" : "Buka"} rincian ${b.label}`}
+                  >
+                    <span className="warga-tunggakan-group-left">
+                      <span className="warga-tunggakan-group-title">{b.label}</span>
+                      <span className="warga-tunggakan-group-sub">{b.count} unit belum lunas</span>
+                    </span>
+                    <span className="warga-tunggakan-group-right">
+                      <strong>Rp {b.nominal.toLocaleString("id-ID")}</strong>
+                      <span className={`portal-badge-mini ${b.isBulanIni ? "badge-bulan-ini" : "badge-tertunggak"}`}>{b.isBulanIni ? "Bulan ini" : "Tertunggak"}</span>
+                      <ChevronDown size={16} className={`warga-tunggakan-chevron ${isExpanded ? "is-open" : ""}`} aria-hidden />
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <ul className="warga-tunggakan-unit-list">
+                      {b.tagihans.map((t) => (
+                        <li key={t.id} className="warga-tunggakan-unit-row">
+                          <span className="warga-tunggakan-unit-left">
+                            {t._rumah.blokRumah} <small>· {String(t._rumah.rt || "").replace("_", " ")}</small>
+                          </span>
+                          <span className="warga-tunggakan-unit-right">Rp {(t.nominal || 0).toLocaleString("id-ID")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
           </ul>
           <div className="warga-detail-cta-wrap">
             <Link href="/dashboard/iuran" className="warga-detail-cta">
@@ -785,176 +805,86 @@ function WargaDashboardView({ user }) {
           </div>
         </section>
       ) : isLunasSemua ? (
-        (() => {
-          const riwayat = [...tagihanLunasList]
-            .sort((a, b) => {
-              const da = a.pembayaran?.[0]?.tanggalBayar ? new Date(a.pembayaran[0].tanggalBayar).getTime() : 0;
-              const db = b.pembayaran?.[0]?.tanggalBayar ? new Date(b.pembayaran[0].tanggalBayar).getTime() : 0;
-              if (da && db) return db - da;
-              const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
-              const vb = parseInt(b.tahunPeriode, 10) * 12 + parseInt(b.bulanPeriode, 10);
-              return vb - va;
-            })
-            .slice(0, 2);
-          if (riwayat.length === 0) return null;
-          return (
-            <section className="content-card warga-detail-card">
-              <div className="warga-detail-header">
-                <h3>Riwayat Pembayaran</h3>
-                <span className="warga-detail-sub">2 pembayaran terakhir</span>
-              </div>
-              <ul className="warga-detail-list">
-                {riwayat.map((t) => (
-                  <li key={t.id} className="warga-detail-row">
-                    <span className="warga-detail-left">
-                      {getMonthLabel(t.bulanPeriode, t.tahunPeriode)} · Rp {(t.nominal || 0).toLocaleString("id-ID")}
-                    </span>
-                    <span className="warga-detail-right">
-                      <StatusBadge status="LUNAS" />
-                      <span className="warga-detail-date">
-                        {t.pembayaran?.[0]?.tanggalBayar
-                          ? new Date(t.pembayaran[0].tanggalBayar).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
-                          : ""}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })()
-      ) : null}
-
-      {/* Stat Cards — Task 1 label updated */}
-      <section className="portal-stat-row">
-        <div className={`portal-stat-card ${isLunasSemua ? "card-success" : tunggakanList.some((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI") ? "card-warning" : adaTunggakan ? "card-danger" : "card-success"}`}>
-          <div className="portal-stat-icon">
-            <CreditCard size={22} />
+        <section className="content-card warga-detail-card">
+          <div className="warga-lunas-headline">
+            <span className="warga-lunas-icon" aria-hidden><Check size={14} strokeWidth={3} /></span>
+            <div className="warga-lunas-text">
+              <span className="warga-lunas-title">Semua Tagihan Lunas</span>
+              <span className="warga-detail-sub">{rumahList.length} unit rumah · tidak ada tunggakan</span>
+            </div>
           </div>
-          <div className="portal-stat-body">
-            <span className="portal-stat-label">
-              Total Tagihan Belum Lunas{rumahList.length > 1 ? ` (${rumahList.length} Rumah)` : ""}
-            </span>
-            {tagihanAllList.length > 0 ? (
+          <div className="warga-lunas-divider" />
+          {(() => {
+            const riwayat = [...tagihanLunasList]
+              .sort((a, b) => {
+                const da = a.pembayaran?.[0]?.tanggalBayar ? new Date(a.pembayaran[0].tanggalBayar).getTime() : 0;
+                const db = b.pembayaran?.[0]?.tanggalBayar ? new Date(b.pembayaran[0].tanggalBayar).getTime() : 0;
+                if (da && db) return db - da;
+                const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
+                const vb = parseInt(b.tahunPeriode, 10) * 12 + parseInt(b.bulanPeriode, 10);
+                return vb - va;
+              })
+              .slice(0, 2);
+            if (riwayat.length === 0) {
+              return (
+                <>
+                  <p className="warga-detail-sub" style={{ textAlign: "left", marginTop: 12 }}>Tidak ada tunggakan. Terima kasih!</p>
+                  <div className="warga-lunas-footer">Tagihan berikutnya diterbitkan {nextInvoiceDate}</div>
+                </>
+              );
+            }
+            return (
               <>
-                {isLunasSemua ? (
-                  <>
-                    <span className="portal-stat-value success">✓ Lunas Semua</span>
-                    <span className="portal-stat-sub">Tidak ada tunggakan</span>
-                    <StatusBadge status="LUNAS" />
-                  </>
-                ) : (
-                  <>
-                    <span className="portal-stat-value">
-                      Rp {totalTunggakanNominal.toLocaleString("id-ID")}
-                    </span>
-                    <span className="portal-stat-sub">
-                      {countLunas} lunas · {countBelum} belum lunas
-                      {countMenunggu > 0 ? ` · ${countMenunggu} menunggu` : ""}
-                    </span>
-                    {tunggakanList.some((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI") ? (
-                      <StatusBadge status="MENUNGGU_KONFIRMASI" />
-                    ) : (
-                      <StatusBadge status="BELUM_LUNAS" />
-                    )}
-                  </>
-                )}
+                <ul className="warga-detail-list">
+                  {riwayat.map((t) => (
+                    <li key={t.id} className="warga-detail-row">
+                      <span className="warga-detail-left">{getMonthLabel(t.bulanPeriode, t.tahunPeriode)}</span>
+                      <span className="warga-detail-right">
+                        <strong>Rp {(t.nominal || 0).toLocaleString("id-ID")}</strong>
+                        <span className="warga-detail-date">
+                          {t.pembayaran?.[0]?.tanggalBayar
+                            ? new Date(t.pembayaran[0].tanggalBayar).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+                            : ""}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="warga-lunas-footer">Tagihan berikutnya diterbitkan {nextInvoiceDate}</div>
               </>
-            ) : (
-              <span className="portal-stat-value portal-no-data">Belum ada tagihan</span>
-            )}
-          </div>
-        </div>
-
-        <div className="portal-stat-card card-info">
-          <div className="portal-stat-icon">
-            <Home size={22} />
-          </div>
-          <div className="portal-stat-body">
-            <span className="portal-stat-label">Unit Rumah</span>
-            <span className="portal-stat-value">{rumahList.length} Unit</span>
-            <span className="portal-stat-sub">
-              {rumahList.length > 1
-                ? `Anda memiliki ${rumahList.length} unit rumah`
-                : rumahList.length === 1
-                  ? `${rumahList[0].blokRumah} (${String(rumahList[0].rt || "").replace("_", " ")})`
-                  : "Belum terdaftar"}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Banner — hanya jika ada tunggakan lintas periode, hilang total saat lunas (Task 2) */}
-      {adaTunggakan && (
-        <section className="portal-action-banner">
-          <div className="portal-action-text">
-            <AlertTriangle size={18} />
-            <span>
-              Ada {tunggakanList.length} tagihan IPL belum dibayar
-              {rumahList.length > 1 ? ` (${rumahList.length} unit rumah)` : ""}
-              {tertunggakCount > 0 ? ` — termasuk ${tertunggakCount} tertunggak` : ""}
-            </span>
-          </div>
-          <Link href="/dashboard/iuran" className="portal-action-btn">
-            Bayar Sekarang
-          </Link>
+            );
+          })()}
         </section>
-      )}
-
-      {/* Unit Rumah Saya — Task 1: semua periode belum lunas sorted tertua, Task 2: 1 terbaru per rumah saat lunas */}
-      <section className="content-card">
-        <div className="db-section-header">
-          <Home size={17} />
-          <h3>Unit Rumah Saya</h3>
-          {rumahList.length > 0 && (
-            <Link href="/dashboard/iuran" className="db-section-link">
-              Lihat tagihan <ArrowRight size={13} />
-            </Link>
-          )}
-        </div>
-
-        {rumahList.length === 0 ? (
+      ) : rumahList.length === 0 ? (
+        <section className="content-card warga-detail-card">
+          <div className="warga-tunggakan-header">
+            <div className="warga-tunggakan-header-left">
+              <h3>Rincian Tunggakan</h3>
+              <span className="warga-detail-sub">Belum ada data rumah</span>
+            </div>
+            <span className="warga-tunggakan-total muted">—</span>
+          </div>
           <div className="portal-empty-notice">
             <Home size={32} />
             <p><strong>Rumah belum terdaftar</strong></p>
             <p>Silakan hubungi pengurus cluster untuk menghubungkan akun Anda dengan data rumah.</p>
           </div>
-        ) : (
-          <ul className="portal-pengumuman-list">
-            {unitRows.map(({ rumah, tagihan, key }) => (
-              <li key={key || `${rumah.id}-${tagihan?.id || "empty"}`} className="portal-pengumuman-item">
-                <div style={{ flex: 1 }}>
-                  <p className="portal-peng-judul">
-                    {rumah.blokRumah} — {String(rumah.rt || "").replace("_", " ")}
-                  </p>
-                  <p className="portal-peng-desc">
-                    {tagihan
-                      ? (
-                        <>
-                          <span className="unit-nominal">Rp {(tagihan.nominal || 0).toLocaleString("id-ID")}</span>
-                          {` · ${getMonthLabel(tagihan.bulanPeriode, tagihan.tahunPeriode)}`}
-                          {!isLunasSemua && tagihan.statusPembayaran !== "LUNAS" && (
-                            <span className={`portal-badge-mini inline ${isBulanIni(tagihan) ? "badge-bulan-ini" : "badge-tertunggak"}`} style={{ marginLeft: 8 }}>
-                              {isBulanIni(tagihan) ? "Bulan ini" : "Tertunggak"}
-                            </span>
-                          )}
-                        </>
-                      )
-                      : "Belum ada tagihan"}
-                  </p>
-                </div>
-                <div>
-                  {tagihan ? (
-                    <StatusBadge status={tagihan.statusPembayaran} />
-                  ) : (
-                    <span className="text-muted text-sm">—</span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        </section>
+      ) : (
+        <section className="content-card warga-detail-card">
+          <div className="warga-tunggakan-header">
+            <div className="warga-tunggakan-header-left">
+              <h3>Rincian Tunggakan</h3>
+              <span className="warga-detail-sub">{rumahList.length} unit rumah · belum ada tagihan</span>
+            </div>
+            <span className="warga-tunggakan-total muted" style={{ fontSize: "1rem", color: "#64748b" }}>—</span>
+          </div>
+          <div className="warga-tunggakan-success">
+            <p>Tagihan IPL belum diterbitkan.</p>
+            <p className="warga-detail-sub">Tagihan berikutnya diterbitkan {nextInvoiceDate}</p>
+          </div>
+        </section>
+      )}
 
       {/* Kegiatan Cluster — Task 3: toggle Aktif/Arsip independen dari filter tagihan */}
       <section className="content-card">

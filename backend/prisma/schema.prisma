@@ -143,17 +143,18 @@ model Ipl {
 
 // Ini merepresentasikan trx_pembayaran_ipl (Riwayat saat user membayar tagihan)
 model PembayaranIpl {
-  idPembayaran    Int      @id @default(autoincrement()) @map("id_pembayaran")
-  idUser          Int      @map("id_user")
-  idIpl           Int      @map("Id_IPL")
-  tanggalBayar    DateTime @default(now()) @map("tanggal_bayar")
-  buktiTransaksi  String?  @map("bukti_transaksi")
-  nominal         Int      @map("Nominal")
-  catatan         String?  @map("catatan")
+  idPembayaran      Int       @id @default(autoincrement()) @map("id_pembayaran")
+  idUser            Int       @map("id_user")
+  idIpl             Int       @map("Id_IPL")
+  tanggalBayar      DateTime  @default(now()) @map("tanggal_bayar") // tanggal transaksi/transfer asli (paid_at)
+  tanggalKonfirmasi DateTime? @map("tanggal_konfirmasi") // tanggal admin konfirmasi, terpisah dari tanggal transaksi
+  buktiTransaksi    String?   @map("bukti_transaksi")
+  nominal           Int       @map("Nominal")
+  catatan           String?   @map("catatan")
 
   // Relasi
-  user            User     @relation(fields: [idUser], references: [id])
-  ipl             Ipl      @relation(fields: [idIpl], references: [id])
+  user              User      @relation(fields: [idUser], references: [id])
+  ipl               Ipl       @relation(fields: [idIpl], references: [id])
 
   @@map("trx_pembayaran_ipl")
 }

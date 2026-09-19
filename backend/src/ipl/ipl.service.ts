@@ -128,6 +128,7 @@ export class IplService {
             idPembayaran: true,
             buktiTransaksi: true,
             tanggalBayar: true,
+            tanggalKonfirmasi: true,
             nominal: true,
             catatan: true,
           },
@@ -209,6 +210,7 @@ export class IplService {
           select: {
             idPembayaran: true,
             tanggalBayar: true,
+            tanggalKonfirmasi: true,
             nominal: true,
             buktiTransaksi: true,
             user: { select: { namaUser: true } },
@@ -295,11 +297,17 @@ export class IplService {
     }
 
     if (dto.action === 'TERIMA') {
-      // Update status IPL ke LUNAS
-      await this.prisma.ipl.update({
-        where: { id: pembayaran.idIpl },
-        data: { statusPembayaran: 'LUNAS' },
-      });
+      // Update status IPL ke LUNAS + catat tanggal konfirmasi terpisah dari tanggal transaksi
+      await Promise.all([
+        this.prisma.ipl.update({
+          where: { id: pembayaran.idIpl },
+          data: { statusPembayaran: 'LUNAS' },
+        }),
+        this.prisma.pembayaranIpl.update({
+          where: { idPembayaran: pembayaranId },
+          data: { tanggalKonfirmasi: new Date() },
+        }),
+      ]);
 
       await this.notifikasiService.kirim(
         pembayaran.idUser,

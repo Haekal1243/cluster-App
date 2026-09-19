@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Home, CheckCircle, AlertTriangle, Clock, Megaphone, ArrowRight, Wallet, Calendar, ChevronDown, FileText, CalendarDays, ImageIcon } from "lucide-react";
+import { Home, CheckCircle, AlertTriangle, Clock, Megaphone, ArrowRight, Wallet, Calendar, ChevronDown, FileText, CalendarDays, ImageIcon, Check } from "lucide-react";
 import { portalApi, pengumumanApi, kegiatanApi } from "@/lib/api";
 import Link from "next/link";
 
@@ -374,51 +374,54 @@ export default function PortalDashboardPage() {
         </section>
       ) : isLunasSemua ? (
         <section className="content-card warga-detail-card">
-          <div className="warga-tunggakan-header">
-            <div className="warga-tunggakan-header-left">
-              <h3>Rincian Tunggakan</h3>
-              <span className="warga-detail-sub">{rumahList.length} unit rumah · semua tagihan lunas</span>
+          <div className="warga-lunas-headline">
+            <span className="warga-lunas-icon" aria-hidden><Check size={14} strokeWidth={3} /></span>
+            <div className="warga-lunas-text">
+              <span className="warga-lunas-title">Semua Tagihan Lunas</span>
+              <span className="warga-detail-sub">{rumahList.length} unit rumah · tidak ada tunggakan</span>
             </div>
-            <span className="warga-tunggakan-total success">✓ Lunas Semua</span>
           </div>
-          <div className="warga-tunggakan-success">
-            <StatusBadge status="LUNAS" />
-            {(() => {
-              const riwayat = [...tagihanLunasList]
-                .sort((a, b) => {
-                  const da = a.pembayaran?.[0]?.tanggalBayar ? new Date(a.pembayaran[0].tanggalBayar).getTime() : 0;
-                  const db = b.pembayaran?.[0]?.tanggalBayar ? new Date(b.pembayaran[0].tanggalBayar).getTime() : 0;
-                  if (da && db) return db - da;
-                  const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
-                  const vb = parseInt(b.tahunPeriode, 10) * 12 + parseInt(b.bulanPeriode, 10);
-                  return vb - va;
-                })
-                .slice(0, 2);
-              if (riwayat.length === 0) return <p>Tidak ada tunggakan. Terima kasih!</p>;
+          <div className="warga-lunas-divider" />
+          {(() => {
+            const riwayat = [...tagihanLunasList]
+              .sort((a, b) => {
+                const da = a.pembayaran?.[0]?.tanggalBayar ? new Date(a.pembayaran[0].tanggalBayar).getTime() : 0;
+                const db = b.pembayaran?.[0]?.tanggalBayar ? new Date(b.pembayaran[0].tanggalBayar).getTime() : 0;
+                if (da && db) return db - da;
+                const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
+                const vb = parseInt(b.tahunPeriode, 10) * 12 + parseInt(b.bulanPeriode, 10);
+                return vb - va;
+              })
+              .slice(0, 2);
+            if (riwayat.length === 0) {
               return (
                 <>
-                  <p><strong>Riwayat Pembayaran</strong> — 2 terakhir</p>
-                  <ul className="warga-detail-list" style={{ width: "100%", textAlign: "left" }}>
-                    {riwayat.map((t) => (
-                      <li key={t.id} className="warga-detail-row">
-                        <span className="warga-detail-left">
-                          {getMonthLabel(t.bulanPeriode, t.tahunPeriode)} · Rp {(t.nominal || 0).toLocaleString("id-ID")}
-                        </span>
-                        <span className="warga-detail-right">
-                          <span className="warga-detail-date">
-                            {t.pembayaran?.[0]?.tanggalBayar
-                              ? new Date(t.pembayaran[0].tanggalBayar).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
-                              : ""}
-                          </span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="warga-detail-sub">Tagihan berikutnya diterbitkan {nextInvoiceDate}</p>
+                  <p className="warga-detail-sub" style={{ textAlign: "left", marginTop: 12 }}>Tidak ada tunggakan. Terima kasih!</p>
+                  <div className="warga-lunas-footer">Tagihan berikutnya diterbitkan {nextInvoiceDate}</div>
                 </>
               );
-            })()}
-          </div>
+            }
+            return (
+              <>
+                <ul className="warga-detail-list">
+                  {riwayat.map((t) => (
+                    <li key={t.id} className="warga-detail-row">
+                      <span className="warga-detail-left">{getMonthLabel(t.bulanPeriode, t.tahunPeriode)}</span>
+                      <span className="warga-detail-right">
+                        <strong>Rp {(t.nominal || 0).toLocaleString("id-ID")}</strong>
+                        <span className="warga-detail-date">
+                          {t.pembayaran?.[0]?.tanggalBayar
+                            ? new Date(t.pembayaran[0].tanggalBayar).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+                            : ""}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="warga-lunas-footer">Tagihan berikutnya diterbitkan {nextInvoiceDate}</div>
+              </>
+            );
+          })()}
         </section>
       ) : rumahList.length === 0 ? (
         <section className="content-card warga-detail-card">

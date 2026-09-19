@@ -3375,6 +3375,60 @@ select {
   font-size: 0.95rem;
 }
 
+/* Lunas Semua — headline tunggal left-aligned, icon di kolom sendiri */
+.warga-lunas-headline {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.warga-lunas-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+.warga-lunas-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.warga-lunas-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  text-align: left;
+}
+.warga-lunas-section-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 14px 0 8px;
+  text-align: left;
+}
+.warga-lunas-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 12px 0 0;
+}
+.warga-lunas-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.78rem;
+  color: #64748b;
+  text-align: left;
+}
+
 /* Toggle Aktif/Arsip — Task 3: independen dari filter periode */
 .db-section-header {
   display: flex;

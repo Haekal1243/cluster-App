@@ -3215,6 +3215,166 @@ select {
   color: #16a34a;
 }
 
+/* === Redesign Rincian Tunggakan: grouped by bulan expand/collapse === */
+.warga-tunggakan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.warga-tunggakan-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.warga-tunggakan-header-left h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+.warga-tunggakan-total {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+.warga-tunggakan-total.success {
+  color: #16a34a;
+  font-size: 1.15rem;
+}
+.warga-tunggakan-groups {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.warga-tunggakan-group {
+  border-bottom: 1px solid #f1f5f9;
+}
+.warga-tunggakan-group:last-child {
+  border-bottom: none;
+}
+.warga-tunggakan-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 8px;
+  transition: background 0.12s ease;
+}
+.warga-tunggakan-group-header:hover {
+  background: #f8fafc;
+}
+.warga-tunggakan-group-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.warga-tunggakan-group-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.warga-tunggakan-group-sub {
+  font-size: 0.76rem;
+  color: #64748b;
+  font-weight: 400;
+}
+.warga-tunggakan-group-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.warga-tunggakan-group-right strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.warga-tunggakan-chevron {
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.warga-tunggakan-chevron.is-open {
+  transform: rotate(180deg);
+}
+.warga-tunggakan-unit-list {
+  list-style: none;
+  margin: 0 0 10px 8px;
+  padding: 4px 0 4px 16px;
+  border-left: 2px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+.warga-tunggakan-unit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  transition: background 0.12s ease;
+}
+.warga-tunggakan-unit-row:hover {
+  background: #f8fafc;
+}
+.warga-tunggakan-unit-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: #334155;
+  min-width: 0;
+}
+.warga-tunggakan-unit-left small {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+.warga-tunggakan-unit-right {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.warga-tunggakan-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 20px 12px 8px;
+  color: #475569;
+}
+.warga-tunggakan-success p {
+  margin: 0;
+  font-size: 0.86rem;
+}
+.warga-tunggakan-success strong {
+  color: #16a34a;
+  font-size: 0.95rem;
+}
+
 /* Toggle Aktif/Arsip — Task 3: independen dari filter periode */
 .db-section-header {
   display: flex;

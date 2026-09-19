@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -37,8 +38,8 @@ export class KegiatanController {
 
   @Public()
   @Get('active')
-  findActive() {
-    return this.kegiatanService.findActive();
+  findActive(@Query('scope') scope?: string) {
+    return this.kegiatanService.findActive(scope as 'aktif' | 'arsip' | undefined);
   }
 
   @Get(':id')

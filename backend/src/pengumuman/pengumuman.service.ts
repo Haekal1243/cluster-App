@@ -45,7 +45,23 @@ export class PengumumanService {
     });
   }
 
-  findActive() {
+  findActive(scope?: 'aktif' | 'arsip') {
+    if (scope === 'arsip') {
+      return this.prisma.pengumuman.findMany({
+        where: { isDelete: false, status: 'unactived' },
+        orderBy: { createDate: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          judul: true,
+          filePengumuman: true,
+          keteranganPengumuman: true,
+          createDate: true,
+          status: true,
+        },
+      });
+    }
+    // aktif: masih aktif (status active, tidak deleted) — berbasis status, tidak terfilter tanggal upload
     return this.prisma.pengumuman.findMany({
       where: { isDelete: false, status: 'active' },
       orderBy: { createDate: 'desc' },
@@ -56,6 +72,7 @@ export class PengumumanService {
         filePengumuman: true,
         keteranganPengumuman: true,
         createDate: true,
+        status: true,
       },
     });
   }

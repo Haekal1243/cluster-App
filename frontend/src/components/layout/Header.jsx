@@ -2,17 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Bell, CheckCheck, Inbox } from "lucide-react";
+import { Menu, Bell, CheckCheck, Inbox, KeyRound } from "lucide-react";
 import { notifikasiApi } from "@/lib/api";
-
-const PAGE_TITLES = {
-  "/dashboard": "Dashboard",
-  "/dashboard/warga": "Data Warga",
-  "/dashboard/iuran": "Tagihan IPL",
-  "/dashboard/pengaduan": "Pengaduan Lingkungan",
-  "/dashboard/kegiatan": "Kegiatan",
-  "/dashboard/pengumuman": "Pengumuman",
-};
+import { areaLabel } from "@/lib/session";
+import { pageTitle } from "@/lib/nav";
+import { useUser } from "@/lib/useUser";
+import GantiPasswordModal from "@/components/auth/GantiPasswordModal";
 
 const POLL_INTERVAL_MS = 45 * 1000;
 
@@ -32,19 +27,11 @@ function formatRelativeTime(dateStr) {
 export default function Header({ onMenuClick }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser } = useUser();
+  const [showGantiPassword, setShowGantiPassword] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const panelRef = useRef(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("user");
-      if (raw) setCurrentUser(JSON.parse(raw));
-    } catch {
-      // ignore
-    }
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,9 +79,11 @@ export default function Header({ onMenuClick }) {
     }
   };
 
-  const displayName = currentUser?.nama || currentUser?.name || "Admin";
-  const ROLE_LABELS = { ADMIN: "Admin", PENGURUS: "Pengurus", WARGA: "Warga" };
-  const displayRole = ROLE_LABELS[currentUser?.role] || currentUser?.role || "Staff";
+  const displayName = currentUser?.nama || currentUser?.name || "Pengguna";
+  // Nama jabatan dari tabel role, ditambah wilayahnya (mis. "Ketua RT · RT 02")
+  const displayRole = currentUser?.roleNama
+    ? `${currentUser.roleNama}${currentUser.area ? ` · ${areaLabel(currentUser.area)}` : ""}`
+    : "Pengguna";
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -109,7 +98,7 @@ export default function Header({ onMenuClick }) {
         >
           <Menu size={20} />
         </button>
-        <h1>{PAGE_TITLES[pathname] ?? "Dashboard"}</h1>
+        <h1>{pageTitle(pathname)}</h1>
       </div>
 
       <div className="header-actions">
@@ -167,6 +156,16 @@ export default function Header({ onMenuClick }) {
           )}
         </div>
 
+        <button
+          type="button"
+          className="header-icon-btn"
+          aria-label="Ganti kata sandi"
+          title="Ganti kata sandi"
+          onClick={() => setShowGantiPassword(true)}
+        >
+          <KeyRound size={18} />
+        </button>
+
         <div className="header-user">
           <div className="header-avatar">{avatarInitial}</div>
           <div className="header-user-info">
@@ -175,6 +174,7 @@ export default function Header({ onMenuClick }) {
           </div>
         </div>
       </div>
+      {showGantiPassword && <GantiPasswordModal onClose={() => setShowGantiPassword(false)} />}
     </header>
   );
 }

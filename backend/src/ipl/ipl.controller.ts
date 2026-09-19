@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -10,46 +11,87 @@ import {
 } from '@nestjs/common';
 import { IplService } from './ipl.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
+import { UpdateIplDto } from './dto/update-ipl.dto';
 import { KonfirmasiIplDto } from './dto/konfirmasi-ipl.dto';
+import { Access, RequirePermission } from '../auth/permission.decorators';
+import type { AccessContext } from '../auth/auth.types';
 
 @Controller('ipl')
 export class IplController {
   constructor(private readonly iplService: IplService) {}
 
-  /** POST /ipl/generate — Generate tagihan massal untuk semua rumah aktif */
+  /** POST /ipl/generate — Generate tagihan massal untuk rumah aktif di RT pembuat */
   @Post('generate')
-  generateTagihan(@Body() dto: GenerateIplDto) {
-    return this.iplService.generateTagihan(dto);
+  @RequirePermission('ipl', 'generate')
+  generateTagihan(@Access() ctx: AccessContext, @Body() dto: GenerateIplDto) {
+    return this.iplService.generateTagihan(ctx, dto);
   }
 
   /** GET /ipl/dashboard-stats — Statistik ringkasan untuk widget dashboard */
   @Get('dashboard-stats')
+  @RequirePermission('ipl', 'read')
   getDashboardStats(
+    @Access() ctx: AccessContext,
+    @Query('dari') dari?: string,
+    @Query('sampai') sampai?: string,
+    @Query('rt') rt?: string,
+  ) {
+    return this.iplService.getDashboardStats(ctx, { dari, sampai, rt });
+  }
+
+  /** GET /ipl/rekap-rt — Rekap terkumpul & disetor per RT (tampilan RW) */
+  @Get('rekap-rt')
+  @RequirePermission('ipl', 'read')
+  rekapPerRt(
+    @Access() ctx: AccessContext,
     @Query('dari') dari?: string,
     @Query('sampai') sampai?: string,
   ) {
-    return this.iplService.getDashboardStats({ dari, sampai });
+    return this.iplService.rekapPerRt(ctx, { dari, sampai });
   }
 
   /** GET /ipl — Daftar tagihan IPL dengan filter opsional */
   @Get()
+  @RequirePermission('ipl', 'read')
   findAll(
+    @Access() ctx: AccessContext,
     @Query('bulan') bulan?: string,
     @Query('tahun') tahun?: string,
     @Query('dari') dari?: string,
     @Query('sampai') sampai?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('rt') rt?: string,
   ) {
-    return this.iplService.findAll({ bulan, tahun, dari, sampai, status, search });
+    return this.iplService.findAll(ctx, { bulan, tahun, dari, sampai, status, search, rt });
   }
 
   /** PATCH /ipl/konfirmasi/:pembayaranId — Konfirmasi atau tolak bukti pembayaran */
   @Patch('konfirmasi/:pembayaranId')
+  @RequirePermission('ipl', 'konfirmasi')
   konfirmasiPembayaran(
+    @Access() ctx: AccessContext,
     @Param('pembayaranId', ParseIntPipe) pembayaranId: number,
     @Body() dto: KonfirmasiIplDto,
   ) {
-    return this.iplService.konfirmasiPembayaran(pembayaranId, dto);
+    return this.iplService.konfirmasiPembayaran(ctx, pembayaranId, dto);
+  }
+
+  /** PATCH /ipl/:id — Koreksi nominal satu tagihan (hanya yang belum lunas) */
+  @Patch(':id')
+  @RequirePermission('ipl', 'update')
+  update(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateIplDto,
+  ) {
+    return this.iplService.update(ctx, id, dto);
+  }
+
+  /** DELETE /ipl/:id — Hapus satu tagihan yang belum ada pembayarannya */
+  @Delete(':id')
+  @RequirePermission('ipl', 'delete')
+  remove(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.iplService.remove(ctx, id);
   }
 }

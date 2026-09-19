@@ -7,6 +7,7 @@ import { showMessage } from "@/lib/message";
 const EMPTY_FORM = {
   judul: "",
   keteranganPengumuman: "",
+  durasiHari: "",
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -15,6 +16,7 @@ export default function PengumumanFormModal({
   open,
   mode = "create",
   initialData,
+  canApprove = false,
   onClose,
   onSubmit,
 }) {
@@ -30,6 +32,7 @@ export default function PengumumanFormModal({
       setForm({
         judul: initialData.judul ?? "",
         keteranganPengumuman: initialData.keteranganPengumuman ?? "",
+        durasiHari: "",
       });
     } else {
       setForm(EMPTY_FORM);
@@ -61,7 +64,9 @@ export default function PengumumanFormModal({
 
     setIsSaving(true);
     try {
-      await onSubmit({ ...form, file });
+      // Batas tampil hanya boleh diatur pengurus yang berhak menyetujui (ketua/sekre RW).
+      const { durasiHari, ...dasar } = form;
+      await onSubmit({ ...dasar, ...(canApprove ? { durasiHari } : {}), file });
     } finally {
       setIsSaving(false);
     }
@@ -72,7 +77,7 @@ export default function PengumumanFormModal({
       <div className="modal-box pengumuman-modal" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h3>
-            {mode === "edit" ? "Edit Pengumuman" : "Tambah Pengumuman"}
+            {mode === "edit" ? "Ubah Pengumuman" : "Tambah Pengumuman"}
           </h3>
           <button
             type="button"
@@ -113,6 +118,22 @@ export default function PengumumanFormModal({
                 placeholder="Masukkan keterangan pengumuman"
               />
             </div>
+
+            {canApprove && (
+              <div className="form-group">
+                <label htmlFor="durasiHari">Tampil di beranda warga selama (hari)</label>
+                <input
+                  id="durasiHari"
+                  name="durasiHari"
+                  type="number"
+                  min="0"
+                  className="form-control"
+                  placeholder={mode === "edit" ? "Kosong = tidak diubah, 0 = tanpa batas" : "Kosong / 0 = tanpa batas"}
+                  value={form.durasiHari}
+                  onChange={handleChange}
+                />
+              </div>
+            )}
 
             <div className="form-group">
               <label>File Pengumuman</label>

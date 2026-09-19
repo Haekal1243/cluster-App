@@ -15,8 +15,12 @@ import {
   CreditCard,
   Home,
   Upload,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { iplApi, portalApi } from "@/lib/api";
+import { areaLabel, can, isWargaView, scopeOf } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
@@ -58,25 +62,33 @@ function AdminStatusBadge({ status }) {
   return <span className={`ipl-badge ${cls}`}>{label}</span>;
 }
 
-// ── Modal: Generate Tagihan ────────────────────────────────────────────────────
-function GenerateModal({ onClose, onSuccess }) {
+// ── Modal: Generate Tagihan (2 input: IPL + kas RT) ───────────────────────────
+function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
   const now = new Date();
   const [form, setForm] = useState({
     bulanPeriode: String(now.getMonth() + 1).padStart(2, "0"),
     tahunPeriode: String(now.getFullYear()),
-    nominal: "",
+    nominalIpl: "",
+    nominalKas: "",
+    rt: "RT_01",
   });
   const [loading, setLoading] = useState(false);
 
+  const total = (Number(form.nominalIpl) || 0) + (Number(form.nominalKas) || 0);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.nominal || Number(form.nominal) <= 0) {
-      showMessage("Validasi", "Nominal harus lebih dari 0.", "warning");
+    if (!form.nominalIpl || Number(form.nominalIpl) <= 0) {
+      showMessage("Validasi", "Nominal IPL harus lebih dari 0.", "warning");
+      return;
+    }
+    if (Number(form.nominalKas) < 0) {
+      showMessage("Validasi", "Nominal kas tidak boleh negatif.", "warning");
       return;
     }
     const confirmed = await showConfirm(
       "Buat Tagihan?",
-      `Akan membuat tagihan IPL periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode} sebesar ${formatRupiah(form.nominal)} untuk semua rumah aktif.`,
+      `Tagihan periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode}: IPL ${formatRupiah(form.nominalIpl)} + kas ${formatRupiah(form.nominalKas || 0)} = ${formatRupiah(total)} per rumah aktif.`,
       "question",
       "Ya, Buat!"
     );
@@ -84,7 +96,13 @@ function GenerateModal({ onClose, onSuccess }) {
 
     setLoading(true);
     try {
-      const res = await iplApi.generate({ ...form, nominal: Number(form.nominal) });
+      const res = await iplApi.generate({
+        bulanPeriode: form.bulanPeriode,
+        tahunPeriode: form.tahunPeriode,
+        nominalIpl: Number(form.nominalIpl),
+        nominalKas: Number(form.nominalKas || 0),
+        ...(pilihRt ? { rt: form.rt } : {}),
+      });
       showMessage("Berhasil!", res.message, "success");
       onSuccess();
       onClose();
@@ -103,6 +121,16 @@ function GenerateModal({ onClose, onSuccess }) {
           <button className="ipl-modal-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="ipl-modal-body">
+          {pilihRt && (
+            <div className="ipl-form-group">
+              <label>RT</label>
+              <select value={form.rt} onChange={(e) => setForm({ ...form, rt: e.target.value })} className="ipl-select">
+                {["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => (
+                  <option key={rt} value={rt}>{areaLabel(rt)}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="ipl-form-row">
             <div className="ipl-form-group">
               <label>Bulan</label>
@@ -129,17 +157,34 @@ function GenerateModal({ onClose, onSuccess }) {
               </select>
             </div>
           </div>
-          <div className="ipl-form-group">
-            <label>Nominal IPL (Rp)</label>
-            <input
-              type="number"
-              min="1"
-              placeholder="Contoh: 150000"
-              value={form.nominal}
-              onChange={(e) => setForm({ ...form, nominal: e.target.value })}
-              className="ipl-input"
-              required
-            />
+          <div className="ipl-form-row">
+            <div className="ipl-form-group">
+              <label>IPL (Rp) <span className="label-optional">disetor ke RW</span></label>
+              <input
+                type="number"
+                min="1"
+                placeholder="Contoh: 130000"
+                value={form.nominalIpl}
+                onChange={(e) => setForm({ ...form, nominalIpl: e.target.value })}
+                className="ipl-input"
+                required
+              />
+            </div>
+            <div className="ipl-form-group">
+              <label>Kas RT (Rp) <span className="label-optional">masuk kas RT</span></label>
+              <input
+                type="number"
+                min="0"
+                placeholder="Contoh: 20000"
+                value={form.nominalKas}
+                onChange={(e) => setForm({ ...form, nominalKas: e.target.value })}
+                className="ipl-input"
+              />
+            </div>
+          </div>
+          <div className="ipl-total-box">
+            <span>Total yang dibayar warga</span>
+            <strong>{formatRupiah(total)}</strong>
           </div>
           <div className="ipl-modal-footer">
             <button type="button" className="btn-ipl-secondary" onClick={onClose} disabled={loading}>
@@ -150,6 +195,128 @@ function GenerateModal({ onClose, onSuccess }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal: Koreksi nominal satu tagihan ───────────────────────────────────────
+function EditTagihanModal({ tagihan, onClose, onSuccess }) {
+  const [form, setForm] = useState({
+    nominalIpl: String(tagihan.nominalIpl),
+    nominalKas: String(tagihan.nominalKas),
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await iplApi.update(tagihan.id, {
+        nominalIpl: Number(form.nominalIpl),
+        nominalKas: Number(form.nominalKas || 0),
+      });
+      showMessage("Berhasil", "Tagihan berhasil diperbarui.", "success");
+      onSuccess();
+      onClose();
+    } catch (err) {
+      showMessage("Gagal Memperbarui", err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="ipl-modal-overlay" onClick={onClose}>
+      <div className="ipl-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="ipl-modal-header">
+          <h3>Koreksi Tagihan {tagihan.rumah?.blokRumah}</h3>
+          <button className="ipl-modal-close" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="ipl-modal-body">
+          <p className="field-hint">
+            {BULAN_NAMES[tagihan.bulanPeriode]} {tagihan.tahunPeriode} · {tagihan.rumah?.penghuni?.namaUser || "—"}
+          </p>
+          <div className="ipl-form-row">
+            <div className="ipl-form-group">
+              <label>IPL (Rp)</label>
+              <input type="number" min="1" className="ipl-input" required value={form.nominalIpl}
+                onChange={(e) => setForm({ ...form, nominalIpl: e.target.value })} />
+            </div>
+            <div className="ipl-form-group">
+              <label>Kas RT (Rp)</label>
+              <input type="number" min="0" className="ipl-input" value={form.nominalKas}
+                onChange={(e) => setForm({ ...form, nominalKas: e.target.value })} />
+            </div>
+          </div>
+          <div className="ipl-modal-footer">
+            <button type="button" className="btn-ipl-secondary" onClick={onClose} disabled={loading}>Batal</button>
+            <button type="submit" className="btn-ipl-primary" disabled={loading}>{loading ? "Menyimpan..." : "Simpan"}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Rekap per RT (tampilan RW): terkumpul & sudah disetor tiap RT ─────────────
+function RekapRtPanel({ dari, sampai, refreshKey }) {
+  const [rekap, setRekap] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    iplApi
+      .getRekapRt({ dari, sampai })
+      .then((r) => { if (!cancelled) setRekap(r); })
+      .catch(() => { if (!cancelled) setRekap(null); });
+    return () => { cancelled = true; };
+  }, [dari, sampai, refreshKey]);
+
+  if (!rekap) return null;
+
+  return (
+    <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
+      <div className="ipl-table-header">
+        <span className="ipl-table-title">Rekap per RT</span>
+        <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
+      </div>
+      <div className="ipl-table-wrapper">
+        <table className="ipl-table">
+          <thead>
+            <tr>
+              <th>RT</th>
+              <th>Lunas / Tagihan</th>
+              <th>IPL Terkumpul</th>
+              <th>Kas RT</th>
+              <th>Sudah Disetor</th>
+              <th>Belum Disetor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rekap.perRt.map((r) => (
+              <tr key={r.rt}>
+                <td><span className="rt-badge">{areaLabel(r.rt)}</span></td>
+                <td>{r.lunas} / {r.totalTagihan}</td>
+                <td className="ipl-nominal">{formatRupiah(r.terkumpulIpl)}</td>
+                <td>{formatRupiah(r.terkumpulKas)}</td>
+                <td>{formatRupiah(r.sudahDisetor)}</td>
+                <td>
+                  <span className={r.belumDisetor > 0 ? "ipl-badge badge-menunggu" : ""}>
+                    {formatRupiah(r.belumDisetor)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            <tr className="ipl-total-row">
+              <td><strong>Total</strong></td>
+              <td><strong>{rekap.total.lunas} / {rekap.total.totalTagihan}</strong></td>
+              <td className="ipl-nominal"><strong>{formatRupiah(rekap.total.terkumpulIpl)}</strong></td>
+              <td><strong>{formatRupiah(rekap.total.terkumpulKas)}</strong></td>
+              <td><strong>{formatRupiah(rekap.total.sudahDisetor)}</strong></td>
+              <td><strong>{formatRupiah(rekap.total.belumDisetor)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -276,7 +443,13 @@ function ReviewModal({ tagihan, onClose, onSuccess, buktiBaseUrl }) {
 }
 
 // ── Admin/Pengurus: kelola tagihan semua warga ────────────────────────────────
-function AdminIuranView() {
+function AdminIuranView({ user }) {
+  const bolehGenerate = can(user, "ipl.generate");
+  const bolehKonfirmasi = can(user, "ipl.konfirmasi");
+  const bolehUbah = can(user, "ipl.update");
+  const bolehHapus = can(user, "ipl.delete");
+  // Scope ALL (ketua/bendahara/sekre RW, admin) melihat semua RT; scope AREA hanya RT sendiri.
+  const semuaRt = scopeOf(user, "ipl.read") === "ALL";
   const [tagihan, setTagihan] = useState([]);
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -306,6 +479,9 @@ function AdminIuranView() {
   const [draftPeriodeDari, setDraftPeriodeDari] = useState(getCurrentYm);
   const [draftPeriodeSampai, setDraftPeriodeSampai] = useState(getCurrentYm);
   const [draftFilterStatus, setDraftFilterStatus] = useState("SEMUA");
+  const [filterRt, setFilterRt] = useState("SEMUA");
+  const [draftFilterRt, setDraftFilterRt] = useState("SEMUA");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Normalisasi + validasi turunan
   const [dari, sampai] = periodeDari > periodeSampai
@@ -332,12 +508,14 @@ function AdminIuranView() {
     setDraftPeriodeDari(periodeDari);
     setDraftPeriodeSampai(periodeSampai);
     setDraftFilterStatus(filterStatus);
+    setDraftFilterRt(filterRt);
   };
   const handleFilterApply = () => {
     if (draftRangeError) return;
     setPeriodeDari(draftPeriodeDari);
     setPeriodeSampai(draftPeriodeSampai);
     setFilterStatus(draftFilterStatus);
+    setFilterRt(draftFilterRt);
   };
   const handleFilterReset = () => {
     const cur = getCurrentYm();
@@ -347,11 +525,14 @@ function AdminIuranView() {
     setDraftPeriodeDari(cur);
     setDraftPeriodeSampai(cur);
     setDraftFilterStatus("SEMUA");
+    setFilterRt("SEMUA");
+    setDraftFilterRt("SEMUA");
   };
 
   // Modal state
   const [showGenerate, setShowGenerate] = useState(false);
   const [reviewItem, setReviewItem] = useState(null);
+  const [editItem, setEditItem] = useState(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -364,15 +545,17 @@ function AdminIuranView() {
         sampai,
         status: filterStatus,
         search,
+        rt: filterRt,
       });
       setTagihan(res.tagihan || []);
       setSummary(res.summary || null);
+      setRefreshKey((k) => k + 1);
     } catch (err) {
       showMessage("Gagal Memuat Data", err.message, "error");
     } finally {
       setIsLoading(false);
     }
-  }, [dari, sampai, rangeError, filterStatus, search]);
+  }, [dari, sampai, rangeError, filterStatus, search, filterRt]);
 
   useEffect(() => {
     loadData();
@@ -383,6 +566,23 @@ function AdminIuranView() {
     const t = setTimeout(() => setSearch(searchInput), 400);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  const handleHapus = async (t) => {
+    const ok = await showConfirm(
+      "Hapus tagihan?",
+      `Tagihan ${t.rumah?.blokRumah} periode ${BULAN_NAMES[t.bulanPeriode]} ${t.tahunPeriode} akan dihapus.`,
+      "warning",
+      "Ya, hapus"
+    );
+    if (!ok) return;
+    try {
+      await iplApi.remove(t.id);
+      showMessage("Berhasil", "Tagihan berhasil dihapus.", "success");
+      loadData();
+    } catch (err) {
+      showMessage("Gagal Menghapus", err.message, "error");
+    }
+  };
 
   return (
     <div className="page-stack">
@@ -414,7 +614,7 @@ function AdminIuranView() {
             <div className="ipl-summary-body">
               <span className="ipl-summary-label">Terkumpul</span>
               <span className="ipl-summary-value">{formatRupiah(summary.totalTerkumpul)}</span>
-              <span className="ipl-summary-sub">{summary.lunas} rumah lunas</span>
+              <span className="ipl-summary-sub">{summary.lunas} lunas · IPL {formatRupiah(summary.terkumpulIpl)} · kas {formatRupiah(summary.terkumpulKas)}</span>
             </div>
           </div>
           <div className={`ipl-summary-card ${summary.menungguKonfirmasi > 0 ? "tone-warning" : "tone-muted"}`}>
@@ -440,13 +640,15 @@ function AdminIuranView() {
 
       {/* ── Tambah + Search + Filter ── */}
       <div className="page-toolbar-row">
-        <button
-          id="btn-generate-tagihan"
-          className="btn-ipl-primary"
-          onClick={() => setShowGenerate(true)}
-        >
-          <Plus size={16} /> Buat Tagihan Periode
-        </button>
+        {bolehGenerate && (
+          <button
+            id="btn-generate-tagihan"
+            className="btn-ipl-primary"
+            onClick={() => setShowGenerate(true)}
+          >
+            <Plus size={16} /> Buat Tagihan Periode
+          </button>
+        )}
 
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
@@ -461,7 +663,7 @@ function AdminIuranView() {
           </div>
 
           <FilterPopover
-            active={!isDefaultPeriode || filterStatus !== "SEMUA"}
+            active={!isDefaultPeriode || filterStatus !== "SEMUA" || filterRt !== "SEMUA"}
             onOpen={handleFilterOpen}
             onApply={handleFilterApply}
             onReset={handleFilterReset}
@@ -497,9 +699,26 @@ function AdminIuranView() {
                 ))}
               </select>
             </FilterField>
+            {semuaRt && (
+              <FilterField label="RT">
+                <select
+                  className="ipl-select ipl-select-sm"
+                  value={draftFilterRt}
+                  onChange={(e) => setDraftFilterRt(e.target.value)}
+                >
+                  <option value="SEMUA">Semua RT</option>
+                  {["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => (
+                    <option key={rt} value={rt}>{areaLabel(rt)}</option>
+                  ))}
+                </select>
+              </FilterField>
+            )}
           </FilterPopover>
         </div>
       </div>
+
+      {/* Tampilan RW: rekap terkumpul & disetor per RT */}
+      {semuaRt && !rangeError && <RekapRtPanel dari={dari} sampai={sampai} refreshKey={refreshKey} />}
 
       {/* ── Table ── */}
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
@@ -528,7 +747,7 @@ function AdminIuranView() {
                   <th>Blok / RT</th>
                   <th>Penghuni</th>
                   <th>Periode</th>
-                  <th>Nominal</th>
+                  <th>Total</th>
                   <th>Status</th>
                   <th>Tanggal Bayar</th>
                   <th>Aksi</th>
@@ -545,30 +764,51 @@ function AdminIuranView() {
                       </td>
                       <td>{t.rumah?.penghuni?.namaUser || <em className="text-muted">Kosong</em>}</td>
                       <td>{BULAN_NAMES[t.bulanPeriode]} {t.tahunPeriode}</td>
-                      <td className="ipl-nominal">{formatRupiah(t.nominal)}</td>
+                      <td className="ipl-nominal">
+                        {formatRupiah(t.nominal)}
+                        <span className="ipl-nominal-split">IPL {formatRupiah(t.nominalIpl)} + kas {formatRupiah(t.nominalKas)}</span>
+                        {t.statusPembayaran === "LUNAS" && (
+                          <span className="ipl-nominal-split">
+                            {t.setoran ? (t.setoran.status === "DIKONFIRMASI" ? "IPL sudah disetor" : "IPL dalam setoran") : "IPL belum disetor"}
+                          </span>
+                        )}
+                      </td>
                       <td><AdminStatusBadge status={t.statusPembayaran} /></td>
                       <td>{formatTanggal(pembayaran?.tanggalBayar)}</td>
                       <td>
-                        {t.statusPembayaran === "MENUNGGU_KONFIRMASI" ? (
-                          <button
-                            className="btn-ipl-review"
-                            onClick={() => setReviewItem(t)}
-                            title="Review bukti pembayaran"
-                          >
-                            <Eye size={14} /> Review
-                          </button>
-                        ) : t.statusPembayaran === "LUNAS" && pembayaran?.buktiTransaksi ? (
-                          <a
-                            href={`${API_BASE}/uploads/bukti-bayar/${pembayaran.buktiTransaksi}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-ipl-view"
-                          >
-                            <Eye size={14} /> Lihat Bukti
-                          </a>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
+                        <div className="table-actions">
+                          {t.statusPembayaran === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? (
+                            <button
+                              className="btn-ipl-review"
+                              onClick={() => setReviewItem(t)}
+                              title="Review bukti pembayaran"
+                            >
+                              <Eye size={14} /> Review
+                            </button>
+                          ) : pembayaran?.buktiTransaksi && t.statusPembayaran !== "BELUM_LUNAS" ? (
+                            <a
+                              href={`${API_BASE}/uploads/bukti-bayar/${pembayaran.buktiTransaksi}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-ipl-view"
+                            >
+                              <Eye size={14} /> Lihat Bukti
+                            </a>
+                          ) : null}
+                          {t.statusPembayaran === "BELUM_LUNAS" && bolehUbah && (
+                            <button type="button" className="btn-icon" title="Koreksi nominal" aria-label="Koreksi nominal" onClick={() => setEditItem(t)}>
+                              <Pencil size={15} />
+                            </button>
+                          )}
+                          {t.statusPembayaran === "BELUM_LUNAS" && bolehHapus && !pembayaran && (
+                            <button type="button" className="btn-icon danger" title="Hapus tagihan" aria-label="Hapus tagihan" onClick={() => handleHapus(t)}>
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                          {t.statusPembayaran === "BELUM_LUNAS" && !bolehUbah && !bolehHapus && (
+                            <span className="text-muted">—</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -582,9 +822,13 @@ function AdminIuranView() {
       {/* ── Modals ── */}
       {showGenerate && (
         <GenerateModal
+          pilihRt={semuaRt}
           onClose={() => setShowGenerate(false)}
           onSuccess={loadData}
         />
+      )}
+      {editItem && (
+        <EditTagihanModal tagihan={editItem} onClose={() => setEditItem(null)} onSuccess={loadData} />
       )}
       {reviewItem && (
         <ReviewModal
@@ -1173,21 +1417,10 @@ function WargaIuranView({ user }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function IuranPage() {
-  const [user, setUser] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { user, ready } = useUser();
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("user");
-      setUser(raw ? JSON.parse(raw) : null);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  }, []);
+  if (!ready || !user) return null;
 
-  if (isCheckingAuth) return null;
-
-  return user?.role === "WARGA" ? <WargaIuranView user={user} /> : <AdminIuranView />;
+  // Tampilan warga (portal: bayar tagihan sendiri) vs tampilan pengurus (kelola per RT / RW)
+  return isWargaView(user) ? <WargaIuranView user={user} /> : <AdminIuranView user={user} />;
 }

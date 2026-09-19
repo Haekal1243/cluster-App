@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  ParseIntPipe,
   Delete,
   UploadedFile,
   UseInterceptors,
@@ -17,99 +18,87 @@ import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
 import { UpdateRumahDto } from './dto/update-rumah.dto';
 import { buktiMulterOptions } from './bukti.multer';
-import { Public } from '../auth/public.decorator';
+import { Access, RequirePermission } from '../auth/permission.decorators';
+import type { AccessContext } from '../auth/auth.types';
 
 @Controller('warga')
 export class WargaController {
   constructor(private readonly wargaService: WargaService) {}
 
   // -------------------------------------------------------
-  // AUTH
+  // USER / WARGA CRUD — pengurus RT untuk RT-nya, RW/admin sesuai scope
   // -------------------------------------------------------
-  @Public()
-  @Post('login')
-  login(@Body() body: { email: string; password: string }) {
-    return this.wargaService.login(body.email, body.password);
-  }
-
-  // -------------------------------------------------------
-  // USER / WARGA CRUD
-  // -------------------------------------------------------
-  @Public()
   @Post()
-  create(@Body() createWargaDto: CreateWargaDto) {
-    return this.wargaService.create(createWargaDto);
+  @RequirePermission('warga', 'create')
+  create(@Access() ctx: AccessContext, @Body() dto: CreateWargaDto) {
+    return this.wargaService.create(ctx, dto);
   }
 
   @Get()
-  findAll() {
-    return this.wargaService.findAll();
+  @RequirePermission('warga', 'read')
+  findAll(
+    @Access() ctx: AccessContext,
+    @Query('search') search?: string,
+    @Query('rt') rt?: string,
+  ) {
+    return this.wargaService.findAll(ctx, { search, rt });
   }
 
-  /** Dropdown: semua user WARGA untuk form Tambah/Edit Rumah */
+  /** Dropdown: semua warga (sesuai scope) untuk form Tambah/Edit Rumah */
   @Get('users')
-  findAllUsers() {
-    return this.wargaService.findAllUsers();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.wargaService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWargaDto: UpdateWargaDto) {
-    return this.wargaService.update(+id, updateWargaDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.wargaService.remove(+id);
+  @RequirePermission('warga', 'read')
+  findAllUsers(@Access() ctx: AccessContext) {
+    return this.wargaService.findAllUsers(ctx);
   }
 
   // -------------------------------------------------------
-  // RUMAH CRUD (Admin)
+  // RUMAH / BLOK RUMAH
   // -------------------------------------------------------
   @Get('rumah/list')
-  findAllRumah() {
-    return this.wargaService.findAllRumah();
+  @RequirePermission('warga', 'read')
+  findAllRumah(@Access() ctx: AccessContext) {
+    return this.wargaService.findAllRumah(ctx);
   }
 
   @Post('rumah')
-  createRumah(@Body() dto: CreateRumahDto) {
-    return this.wargaService.createRumah(dto);
+  @RequirePermission('warga', 'create')
+  createRumah(@Access() ctx: AccessContext, @Body() dto: CreateRumahDto) {
+    return this.wargaService.createRumah(ctx, dto);
   }
 
   @Patch('rumah/:id')
-  updateRumah(@Param('id') id: string, @Body() dto: UpdateRumahDto) {
-    return this.wargaService.updateRumah(+id, dto);
+  @RequirePermission('warga', 'update')
+  updateRumah(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRumahDto,
+  ) {
+    return this.wargaService.updateRumah(ctx, id, dto);
   }
 
   @Delete('rumah/:id')
-  removeRumah(@Param('id') id: string) {
-    return this.wargaService.removeRumah(+id);
+  @RequirePermission('warga', 'delete')
+  removeRumah(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.wargaService.removeRumah(ctx, id);
   }
 
   // -------------------------------------------------------
-  // PORTAL WARGA — endpoint untuk akun WARGA
+  // PORTAL WARGA — tagihan & pembayaran (scope OWN untuk warga)
   // -------------------------------------------------------
 
   /** GET /warga/portal/rumah/:userId — daftar rumah milik user */
   @Get('portal/rumah/:userId')
-  getRumahByUser(@Param('userId') userId: string) {
-    return this.wargaService.getRumahByUser(+userId);
-  }
-
-  /** GET /warga/portal/tagihan/:rumahId — tagihan IPL per rumah */
-  @Get('portal/tagihan/:rumahId')
-  getTagihanByRumah(@Param('rumahId') rumahId: string) {
-    return this.wargaService.getTagihanByRumah(+rumahId);
+  @RequirePermission('ipl', 'read')
+  getRumahByUser(@Access() ctx: AccessContext, @Param('userId', ParseIntPipe) userId: number) {
+    return this.wargaService.getRumahByUser(ctx, userId);
   }
 
   /** GET /warga/portal/tagihan/user/:userId — tagihan IPL gabungan semua rumah milik user */
   @Get('portal/tagihan/user/:userId')
+  @RequirePermission('ipl', 'read')
   getTagihanByUser(
-    @Param('userId') userId: string,
+    @Access() ctx: AccessContext,
+    @Param('userId', ParseIntPipe) userId: number,
     @Query('bulan') bulan?: string,
     @Query('tahun') tahun?: string,
     @Query('dari') dari?: string,
@@ -117,7 +106,7 @@ export class WargaController {
     @Query('status') status?: string,
     @Query('search') search?: string,
   ) {
-    return this.wargaService.getTagihanByUser(+userId, {
+    return this.wargaService.getTagihanByUser(ctx, userId, {
       bulan,
       tahun,
       dari,
@@ -127,18 +116,58 @@ export class WargaController {
     });
   }
 
-  /** POST /warga/portal/bayar — upload bukti pembayaran */
+  /** GET /warga/portal/tagihan/:rumahId — tagihan IPL per rumah */
+  @Get('portal/tagihan/:rumahId')
+  @RequirePermission('ipl', 'read')
+  getTagihanByRumah(@Access() ctx: AccessContext, @Param('rumahId', ParseIntPipe) rumahId: number) {
+    return this.wargaService.getTagihanByRumah(ctx, rumahId);
+  }
+
+  /** POST /warga/portal/bayar — upload bukti pembayaran (selalu atas nama user yang login) */
   @Post('portal/bayar')
+  @RequirePermission('ipl', 'bayar')
   @UseInterceptors(FileInterceptor('file', buktiMulterOptions))
   uploadBuktiPembayaran(
-    @Body() body: { idUser: string; idIpl: string; nominal: string },
+    @Access() ctx: AccessContext,
+    @Body() body: { idIpl: string; nominal?: string },
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.wargaService.uploadBuktiPembayaran({
-      idUser: +body.idUser,
+    return this.wargaService.uploadBuktiPembayaran(ctx, {
       idIpl: +body.idIpl,
-      nominal: +body.nominal,
+      nominal: body.nominal ? +body.nominal : undefined,
       buktiTransaksi: file?.filename ?? '',
     });
+  }
+
+  // -------------------------------------------------------
+  // Dengan :id — ditaruh paling bawah agar tidak menimpa route statis di atas
+  // -------------------------------------------------------
+  @Get(':id')
+  @RequirePermission('warga', 'read')
+  findOne(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.wargaService.findOne(ctx, id);
+  }
+
+  @Patch(':id')
+  @RequirePermission('warga', 'update')
+  update(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateWargaDto,
+  ) {
+    return this.wargaService.update(ctx, id, dto);
+  }
+
+  @Delete(':id')
+  @RequirePermission('warga', 'delete')
+  remove(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.wargaService.remove(ctx, id);
+  }
+
+  /** Pengurus RT membuatkan password sementara untuk warga yang lupa password. */
+  @Post(':id/reset-password')
+  @RequirePermission('warga', 'reset_password')
+  resetPassword(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.wargaService.resetPassword(ctx, id);
   }
 }

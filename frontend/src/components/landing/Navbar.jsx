@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import LogoTopaz from "@/assets/LogoTopaz.svg";
 import { navLinks } from "@/lib/landing-data";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  // Di halaman lain (mis. Portofolio) tautan #bagian harus kembali ke beranda dulu.
+  const pathname = usePathname();
+  const base = pathname === "/landingpage" ? "" : "/landingpage";
+  const resolveHref = (href) => (href.startsWith("#") ? `${base}${href}` : href);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -37,7 +42,7 @@ export default function Navbar() {
       }}
     >
       <Link
-        href="#beranda"
+        href={resolveHref("#beranda")}
         style={{ display: "flex", alignItems: "center", gap: 14, textDecoration: "none", flexShrink: 0 }}
       >
         <Image src={LogoTopaz} alt="Cluster Topaz" height={44} style={{ height: 44, width: "auto", display: "block" }} priority />
@@ -53,7 +58,7 @@ export default function Navbar() {
 
       <div style={{ display: "flex", alignItems: "center", gap: 18, minWidth: 0, flexShrink: 1 }}>
         {navLinks.map((l) => (
-          <a key={l.href} href={l.href} className="lp-nav-link">
+          <a key={l.href} href={resolveHref(l.href)} className="lp-nav-link">
             {l.label}
           </a>
         ))}

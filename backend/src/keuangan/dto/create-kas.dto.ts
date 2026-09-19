@@ -8,7 +8,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TipeKas } from '@prisma/client';
+import { Area, TipeKas } from '@prisma/client';
 
 export class CreateKasDto {
   @IsEnum(TipeKas, { message: 'tipe harus PEMASUKAN atau PENGELUARAN' })
@@ -30,7 +30,8 @@ export class CreateKasDto {
   @IsString()
   keterangan?: string;
 
+  /** Hanya untuk user ber-scope ALL (mis. admin). Selain itu area otomatis dari jabatan. */
   @IsOptional()
-  @IsString()
-  createBy?: string;
+  @IsEnum(Area)
+  area?: Area;
 }

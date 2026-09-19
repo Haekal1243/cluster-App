@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -15,6 +16,8 @@ import { KeuanganService } from './keuangan.service';
 import { CreateKasDto } from './dto/create-kas.dto';
 import { UpdateKasDto } from './dto/update-kas.dto';
 import { keuanganMulterOptions } from './keuangan.multer';
+import { Access, RequirePermission } from '../auth/permission.decorators';
+import type { AccessContext } from '../auth/auth.types';
 
 @Controller('keuangan')
 export class KeuanganController {
@@ -22,55 +25,67 @@ export class KeuanganController {
 
   /** POST /keuangan — Catat transaksi kas manual (bukti opsional) */
   @Post()
+  @RequirePermission('keuangan', 'create')
   @UseInterceptors(FileInterceptor('bukti', keuanganMulterOptions))
   create(
+    @Access() ctx: AccessContext,
     @Body() dto: CreateKasDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.keuanganService.create(dto, file);
+    return this.keuanganService.create(ctx, dto, file);
   }
 
-  /** GET /keuangan/ringkasan — Ringkasan IPL otomatis + kas manual */
+  /** GET /keuangan/ringkasan — Ringkasan pemasukan otomatis + kas manual */
   @Get('ringkasan')
+  @RequirePermission('keuangan', 'read')
   getRingkasan(
+    @Access() ctx: AccessContext,
     @Query('dari') dari?: string,
     @Query('sampai') sampai?: string,
+    @Query('area') area?: string,
   ) {
-    return this.keuanganService.getRingkasan({ dari, sampai });
+    return this.keuanganService.getRingkasan(ctx, { dari, sampai, area });
   }
 
   /** GET /keuangan — Riwayat transaksi kas manual dengan filter opsional */
   @Get()
+  @RequirePermission('keuangan', 'read')
   findAll(
+    @Access() ctx: AccessContext,
     @Query('dari') dari?: string,
     @Query('sampai') sampai?: string,
     @Query('tipe') tipe?: string,
     @Query('kategori') kategori?: string,
     @Query('search') search?: string,
+    @Query('area') area?: string,
   ) {
-    return this.keuanganService.findAll({ dari, sampai, tipe, kategori, search });
+    return this.keuanganService.findAll(ctx, { dari, sampai, tipe, kategori, search, area });
   }
 
   /** GET /keuangan/:id — Detail satu transaksi */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.keuanganService.findOne(+id);
+  @RequirePermission('keuangan', 'read')
+  findOne(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.keuanganService.findOne(ctx, id);
   }
 
   /** PATCH /keuangan/:id — Perbarui transaksi */
   @Patch(':id')
+  @RequirePermission('keuangan', 'update')
   @UseInterceptors(FileInterceptor('bukti', keuanganMulterOptions))
   update(
-    @Param('id') id: string,
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateKasDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.keuanganService.update(+id, dto, file);
+    return this.keuanganService.update(ctx, id, dto, file);
   }
 
   /** DELETE /keuangan/:id — Hapus transaksi */
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.keuanganService.remove(+id);
+  @RequirePermission('keuangan', 'delete')
+  remove(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.keuanganService.remove(ctx, id);
   }
 }

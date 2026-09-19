@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Role, TipeNotifikasi } from '@prisma/client';
+import { Area, ScopeAkses, TipeNotifikasi } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -26,15 +26,38 @@ export class NotifikasiService {
     });
   }
 
-  async kirimKeRole(
-    roles: Role[],
+  /**
+   * Kirim ke semua user yang role-nya punya permission `kode` di tb_Role_permission,
+   * sesuai jangkauannya:
+   *   - scope ALL  : selalu ikut
+   *   - scope AREA : hanya bila area user sama dengan `area`
+   * `area` kosong atau RW berarti berlaku untuk seluruh RW, jadi semua pemegang
+   * permission (apa pun area-nya) ikut menerima.
+   * `kecualiUserId` dipakai supaya pembuat aksi tidak menotifikasi dirinya sendiri.
+   */
+  async kirimKePermission(
+    kode: string,
+    area: Area | null | undefined,
     tipe: TipeNotifikasi,
     judul: string,
     pesan: string,
     link?: string,
+    kecualiUserId?: number,
   ) {
+    const punyaPermission = (scope: ScopeAkses[]) => ({
+      role: {
+        permissions: { some: { permission: { kode }, scope: { in: scope } } },
+      },
+    });
+
+    const seluruhRw = !area || area === 'RW';
     const users = await this.prisma.user.findMany({
-      where: { role: { in: roles } },
+      where: {
+        ...(kecualiUserId !== undefined && { id: { not: kecualiUserId } }),
+        OR: seluruhRw
+          ? [punyaPermission(['ALL', 'AREA', 'OWN'])]
+          : [punyaPermission(['ALL']), { area, ...punyaPermission(['AREA', 'OWN']) }],
+      },
       select: { id: true },
     });
     return this.kirimBanyak(users.map((u) => u.id), tipe, judul, pesan, link);

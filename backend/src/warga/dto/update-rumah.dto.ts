@@ -1,9 +1,7 @@
 import { IsOptional, IsString, IsEnum, IsInt, Matches } from 'class-validator';
-import { RT } from '@prisma/client';
+import { RT, StatusRumah } from '@prisma/client';
 import { Type } from 'class-transformer';
-
-const BLOK_RUMAH_REGEX = /^E\d{1,2}\/\d{1,2}$/;
-const BLOK_RUMAH_MESSAGE = 'Format blok rumah harus seperti E7/15';
+import { BLOK_RUMAH_MESSAGE, BLOK_RUMAH_REGEX } from '../../common/helpers';
 
 export class UpdateRumahDto {
   @IsOptional()
@@ -15,6 +13,11 @@ export class UpdateRumahDto {
   @IsEnum(RT)
   rt?: RT;
 
+  @IsOptional()
+  @IsEnum(StatusRumah)
+  status?: StatusRumah;
+
+  /** null = kosongkan rumah. */
   @IsOptional()
   @IsInt()
   @Type(() => Number)

@@ -1,17 +1,16 @@
-// File: frontend/app/login/page.jsx (atau sesuaikan dengan struktur Next.js Anda)
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Mail, Lock } from "lucide-react";
+import { ArrowLeft, User, Lock } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
-import { API_BASE_URL } from "@/lib/api";
-import { setToken } from "@/lib/session";
+import { authApi } from "@/lib/api";
+import { saveUser, setToken } from "@/lib/session";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -23,28 +22,17 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/warga/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      // Login pakai username (default no HP) dan password; akun dibuatkan pengurus RT.
+      const data = await authApi.login({ username: username.trim(), password });
 
-      const data = await response.json();
+      // Simpan data user (termasuk hak akses) dan token sesuai "Ingat saya"
+      saveUser(data.user);
+      setToken(data.token, remember);
 
-      if (response.ok) {
-        // Simpan data user ke localStorage, token disimpan sesuai "Ingat saya"
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setToken(data.token, remember);
-
-        // Semua role masuk ke /dashboard — tampilan dibedakan per-role di dalamnya
-        router.push("/dashboard");
-      } else {
-        setErrorMsg(data.message || "Email atau password salah");
-      }
+      // Semua role masuk ke /dashboard — menu dan tampilan menyesuaikan hak akses
+      router.push("/dashboard");
     } catch (error) {
-      setErrorMsg("Gagal terhubung ke server. Pastikan backend NestJS menyala.");
+      setErrorMsg(error.message || "Nama pengguna atau kata sandi salah");
     } finally {
       setIsLoading(false);
     }
@@ -79,16 +67,17 @@ export default function LoginPage() {
         )}
 
         <div className="form-group">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="username">Nama Pengguna / No. HP</label>
           <div className="input-wrapper">
-            <Mail className="input-icon" />
+            <User className="input-icon" />
             <input
-              type="email"
-              id="email"
+              type="text"
+              id="username"
               className="form-control with-icon"
-              placeholder="Email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Nama pengguna atau nomor HP"
+              autoComplete="username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
               required
             />
           </div>
@@ -103,6 +92,7 @@ export default function LoginPage() {
               id="password"
               className="form-control with-icon"
               placeholder="*********"
+              autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
@@ -120,9 +110,6 @@ export default function LoginPage() {
             />
             <label htmlFor="remember">Ingat saya</label>
           </div>
-          <a href="#" className="forgot-password">
-            Lupa Password?
-          </a>
         </div>
 
         <button type="submit" className="btn-sign-in" disabled={isLoading}>
@@ -131,10 +118,7 @@ export default function LoginPage() {
       </form>
 
       <div className="register-section">
-        Belum punya akun?{" "}
-        <Link href="/register" className="register-link">
-          Daftar di sini
-        </Link>
+        Belum punya akun atau lupa password? Hubungi sekretaris / ketua RT Anda.
       </div>
     </AuthShell>
   );

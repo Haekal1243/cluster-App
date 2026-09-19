@@ -8,6 +8,8 @@ const EMPTY_FORM = {
   judul: "",
   deskripsi: "",
   tanggalAcara: "",
+  tampilDiLanding: false,
+  durasiHari: "",
 };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -21,6 +23,7 @@ export default function KegiatanFormModal({
   open,
   mode = "create",
   initialData,
+  canApprove = false,
   onClose,
   onSubmit,
 }) {
@@ -37,6 +40,8 @@ export default function KegiatanFormModal({
         judul: initialData.judul ?? "",
         deskripsi: initialData.deskripsi ?? "",
         tanggalAcara: toDateInputValue(initialData.tanggalAcara),
+        tampilDiLanding: !!initialData.tampilDiLanding,
+        durasiHari: "",
       });
     } else {
       setForm(EMPTY_FORM);
@@ -47,8 +52,8 @@ export default function KegiatanFormModal({
   if (!open) return null;
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = event.target;
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
   const handleFileChange = (event) => {
@@ -69,7 +74,13 @@ export default function KegiatanFormModal({
 
     setIsSaving(true);
     try {
-      await onSubmit({ ...form, file });
+      // Portofolio landing & batas tampil hanya boleh diatur pengurus yang berhak menyetujui (ketua/sekre RW).
+      const { tampilDiLanding, durasiHari, ...dasar } = form;
+      await onSubmit({
+        ...dasar,
+        ...(canApprove ? { tampilDiLanding, durasiHari } : {}),
+        file,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -79,7 +90,7 @@ export default function KegiatanFormModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box kegiatan-modal" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
-          <h3>{mode === "edit" ? "Edit Kegiatan" : "Tambah Kegiatan"}</h3>
+          <h3>{mode === "edit" ? "Ubah Kegiatan" : "Tambah Kegiatan"}</h3>
           <button
             type="button"
             className="modal-close"
@@ -137,6 +148,35 @@ export default function KegiatanFormModal({
                 required
               />
             </div>
+
+            {canApprove && (
+              <>
+                <div className="form-group">
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      name="tampilDiLanding"
+                      checked={form.tampilDiLanding}
+                      onChange={handleChange}
+                    />
+                    Tampilkan di portofolio landing page (5 tahun)
+                  </label>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="durasiHari">Tampil di beranda warga selama (hari)</label>
+                  <input
+                    id="durasiHari"
+                    name="durasiHari"
+                    type="number"
+                    min="0"
+                    className="form-control"
+                    placeholder={mode === "edit" ? "Kosong = tidak diubah, 0 = tanpa batas" : "Kosong / 0 = tanpa batas"}
+                    value={form.durasiHari}
+                    onChange={handleChange}
+                  />
+                </div>
+              </>
+            )}
 
             <div className="form-group">
               <label>

@@ -13,6 +13,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { keuanganApi } from "@/lib/api";
+import { areaLabel, can, isWargaView, scopeOf } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 
@@ -88,7 +90,7 @@ function ArusKasChart({ data }) {
 }
 
 // ── Modal: Catat / Ubah Transaksi ─────────────────────────────────────────────
-function KasFormModal({ initial, user, onClose, onSuccess }) {
+function KasFormModal({ initial, pilihArea = false, onClose, onSuccess }) {
   const isEdit = !!initial;
   const [form, setForm] = useState({
     tipe: initial?.tipe || "PENGELUARAN",
@@ -96,6 +98,7 @@ function KasFormModal({ initial, user, onClose, onSuccess }) {
     nominal: initial?.nominal || "",
     tanggal: toDateInput(initial?.tanggal) || new Date().toISOString().slice(0, 10),
     keterangan: initial?.keterangan || "",
+    area: initial?.area || "RW",
   });
   const [bukti, setBukti] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -124,7 +127,8 @@ function KasFormModal({ initial, user, onClose, onSuccess }) {
         nominal: Number(form.nominal),
         tanggal: new Date(form.tanggal).toISOString(),
         keterangan: form.keterangan || undefined,
-        createBy: user?.nama || user?.name || undefined,
+        // Pengurus otomatis menulis ke kas wilayahnya sendiri; hanya scope ALL (admin) boleh memilih.
+        ...(pilihArea ? { area: form.area } : {}),
       };
       if (bukti) payload.bukti = bukti;
       const res = isEdit
@@ -148,6 +152,20 @@ function KasFormModal({ initial, user, onClose, onSuccess }) {
           <button className="ipl-modal-close" onClick={onClose}>✕</button>
         </div>
         <form onSubmit={handleSubmit} className="ipl-modal-body">
+          {pilihArea && (
+            <div className="ipl-form-group">
+              <label>Wilayah kas</label>
+              <select
+                value={form.area}
+                onChange={(e) => setForm({ ...form, area: e.target.value })}
+                className="ipl-select"
+              >
+                {["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => (
+                  <option key={a} value={a}>{areaLabel(a)}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="ipl-form-row">
             <div className="ipl-form-group">
               <label>Tipe</label>
@@ -245,6 +263,12 @@ function KasFormModal({ initial, user, onClose, onSuccess }) {
 
 // ── Admin/Pengurus: laporan keuangan ──────────────────────────────────────────
 function AdminKeuanganView({ user }) {
+  const bolehTambah = can(user, "keuangan.create");
+  const bolehUbah = can(user, "keuangan.update");
+  const bolehHapus = can(user, "keuangan.delete");
+  // Scope ALL (ketua/bendahara RW, admin) melihat RW + semua RT; scope AREA hanya wilayahnya.
+  const semuaArea = scopeOf(user, "keuangan.read") === "ALL";
+  const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL";
   const getCurrentYm = () => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
@@ -276,6 +300,8 @@ function AdminKeuanganView({ user }) {
   const [draftPeriodeSampai, setDraftPeriodeSampai] = useState(getCurrentYm);
   const [draftFilterTipe, setDraftFilterTipe] = useState("SEMUA");
   const [draftFilterKategori, setDraftFilterKategori] = useState("SEMUA");
+  const [filterArea, setFilterArea] = useState("SEMUA");
+  const [draftFilterArea, setDraftFilterArea] = useState("SEMUA");
 
   // Modal state
   const [showForm, setShowForm] = useState(false);
@@ -316,8 +342,8 @@ function AdminKeuanganView({ user }) {
     setIsLoading(true);
     try {
       const [ring, riw] = await Promise.all([
-        keuanganApi.getRingkasan({ dari, sampai }),
-        keuanganApi.getAll({ dari, sampai, tipe: filterTipe, kategori: filterKategori, search }),
+        keuanganApi.getRingkasan({ dari, sampai, area: filterArea }),
+        keuanganApi.getAll({ dari, sampai, tipe: filterTipe, kategori: filterKategori, search, area: filterArea }),
       ]);
       setRingkasan(ring);
       setRiwayat(riw.riwayat || []);
@@ -326,7 +352,7 @@ function AdminKeuanganView({ user }) {
     } finally {
       setIsLoading(false);
     }
-  }, [dari, sampai, rangeError, filterTipe, filterKategori, search]);
+  }, [dari, sampai, rangeError, filterTipe, filterKategori, search, filterArea]);
 
   useEffect(() => {
     loadData();
@@ -342,6 +368,7 @@ function AdminKeuanganView({ user }) {
     setDraftPeriodeSampai(periodeSampai);
     setDraftFilterTipe(filterTipe);
     setDraftFilterKategori(filterKategori);
+    setDraftFilterArea(filterArea);
   };
   const handleFilterApply = () => {
     if (draftRangeError) return;
@@ -349,6 +376,7 @@ function AdminKeuanganView({ user }) {
     setPeriodeSampai(draftPeriodeSampai);
     setFilterTipe(draftFilterTipe);
     setFilterKategori(draftFilterKategori);
+    setFilterArea(draftFilterArea);
   };
   const handleFilterReset = () => {
     const cur = getCurrentYm();
@@ -360,6 +388,8 @@ function AdminKeuanganView({ user }) {
     setDraftPeriodeSampai(cur);
     setDraftFilterTipe("SEMUA");
     setDraftFilterKategori("SEMUA");
+    setFilterArea("SEMUA");
+    setDraftFilterArea("SEMUA");
   };
 
   const handleDelete = async (item) => {
@@ -431,14 +461,67 @@ function AdminKeuanganView({ user }) {
         </div>
       )}
 
+      {/* ── Rincian pemasukan otomatis & per wilayah ── */}
+      {ringkasan && (
+        <div className="content-card keu-rincian">
+          <div className="db-section-header">
+            <PiggyBank size={17} />
+            <h3>Sumber Pemasukan &amp; Wilayah</h3>
+            <span className="db-section-sub">{periodeLabel}</span>
+          </div>
+          <div className="keu-rincian-grid">
+            <div>
+              <p className="keu-rincian-title">Pemasukan otomatis</p>
+              <ul className="keu-rincian-list">
+                {ringkasan.pemasukanOtomatis.kasRt > 0 || ringkasan.areas.some((a) => a !== "RW") ? (
+                  <li><span>Kas RT (dari tagihan warga yang lunas)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.kasRt)}</strong></li>
+                ) : null}
+                {ringkasan.areas.includes("RW") && (
+                  <li><span>Setoran IPL dari RT (sudah dikonfirmasi)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.setoranIpl)}</strong></li>
+                )}
+                <li><span>Kas manual (pemasukan lain)</span><strong>{formatRupiah(ringkasan.pemasukanManual)}</strong></li>
+              </ul>
+              {ringkasan.titipanIpl > 0 && (
+                <p className="keu-rincian-note">
+                  Porsi IPL {formatRupiah(ringkasan.titipanIpl)} masih dipegang RT (belum disetor / belum dikonfirmasi RW)
+                  dan belum dihitung sebagai saldo kas.
+                </p>
+              )}
+            </div>
+            {ringkasan.perArea?.length > 1 && (
+              <div>
+                <p className="keu-rincian-title">Per wilayah</p>
+                <table className="ipl-table keu-area-table">
+                  <thead>
+                    <tr><th>Wilayah</th><th>Masuk</th><th>Keluar</th><th>Selisih</th></tr>
+                  </thead>
+                  <tbody>
+                    {ringkasan.perArea.map((a) => (
+                      <tr key={a.area}>
+                        <td><span className="rt-badge">{areaLabel(a.area)}</span></td>
+                        <td>{formatRupiah(a.pemasukan)}</td>
+                        <td>{formatRupiah(a.pengeluaran)}</td>
+                        <td style={{ color: a.saldo >= 0 ? "#15803d" : "#dc2626" }}>{formatRupiah(a.saldo)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Catat + Search + Filter ── */}
       <div className="page-toolbar-row">
-        <button
-          className="btn-ipl-primary"
-          onClick={() => { setEditItem(null); setShowForm(true); }}
-        >
-          <Plus size={16} /> Catat Transaksi
-        </button>
+        {bolehTambah && (
+          <button
+            className="btn-ipl-primary"
+            onClick={() => { setEditItem(null); setShowForm(true); }}
+          >
+            <Plus size={16} /> Catat Transaksi
+          </button>
+        )}
 
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
@@ -453,7 +536,7 @@ function AdminKeuanganView({ user }) {
           </div>
 
           <FilterPopover
-            active={!isDefaultPeriode || filterTipe !== "SEMUA" || filterKategori !== "SEMUA"}
+            active={!isDefaultPeriode || filterTipe !== "SEMUA" || filterKategori !== "SEMUA" || filterArea !== "SEMUA"}
             onOpen={handleFilterOpen}
             onApply={handleFilterApply}
             onReset={handleFilterReset}
@@ -501,6 +584,20 @@ function AdminKeuanganView({ user }) {
                 ))}
               </select>
             </FilterField>
+            {semuaArea && (
+              <FilterField label="Wilayah">
+                <select
+                  className="ipl-select ipl-select-sm"
+                  value={draftFilterArea}
+                  onChange={(e) => setDraftFilterArea(e.target.value)}
+                >
+                  <option value="SEMUA">Semua Wilayah</option>
+                  {["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => (
+                    <option key={a} value={a}>{areaLabel(a)}</option>
+                  ))}
+                </select>
+              </FilterField>
+            )}
           </FilterPopover>
         </div>
       </div>
@@ -556,18 +653,20 @@ function AdminKeuanganView({ user }) {
               <thead>
                 <tr>
                   <th>Tanggal</th>
+                  {semuaArea && <th>Wilayah</th>}
                   <th>Kategori</th>
                   <th>Keterangan</th>
                   <th>Tipe</th>
                   <th>Nominal</th>
                   <th>Bukti</th>
-                  <th>Aksi</th>
+                  {(bolehUbah || bolehHapus) && <th>Aksi</th>}
                 </tr>
               </thead>
               <tbody>
                 {riwayat.map((t) => (
                   <tr key={t.id}>
                     <td>{formatTanggal(t.tanggal)}</td>
+                    {semuaArea && <td><span className="rt-badge">{areaLabel(t.area)}</span></td>}
                     <td>{t.kategori}</td>
                     <td>{t.keterangan || <em className="text-muted">—</em>}</td>
                     <td><KasTipeBadge tipe={t.tipe} /></td>
@@ -591,28 +690,34 @@ function AdminKeuanganView({ user }) {
                         <span className="text-muted">—</span>
                       )}
                     </td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          type="button"
-                          className="btn-icon"
-                          onClick={() => { setEditItem(t); setShowForm(true); }}
-                          aria-label="Ubah transaksi"
-                          title="Ubah transaksi"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-icon danger"
-                          onClick={() => handleDelete(t)}
-                          aria-label="Hapus transaksi"
-                          title="Hapus transaksi"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+                    {(bolehUbah || bolehHapus) && (
+                      <td>
+                        <div className="table-actions">
+                          {bolehUbah && (
+                            <button
+                              type="button"
+                              className="btn-icon"
+                              onClick={() => { setEditItem(t); setShowForm(true); }}
+                              aria-label="Ubah transaksi"
+                              title="Ubah transaksi"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                          )}
+                          {bolehHapus && (
+                            <button
+                              type="button"
+                              className="btn-icon danger"
+                              onClick={() => handleDelete(t)}
+                              aria-label="Hapus transaksi"
+                              title="Hapus transaksi"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -625,7 +730,7 @@ function AdminKeuanganView({ user }) {
       {showForm && (
         <KasFormModal
           initial={editItem}
-          user={user}
+          pilihArea={pilihAreaTulis}
           onClose={() => { setShowForm(false); setEditItem(null); }}
           onSuccess={loadData}
         />
@@ -636,23 +741,11 @@ function AdminKeuanganView({ user }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function KeuanganPage() {
-  const [user, setUser] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { user, ready } = useUser();
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("user");
-      setUser(raw ? JSON.parse(raw) : null);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  }, []);
-
-  if (isCheckingAuth) return null;
+  if (!ready || !user) return null;
   // Warga tidak diizinkan: DashboardShell otomatis mengarahkan ke /dashboard.
-  if (user?.role === "WARGA") return null;
+  if (isWargaView(user)) return null;
 
   return <AdminKeuanganView user={user} />;
 }

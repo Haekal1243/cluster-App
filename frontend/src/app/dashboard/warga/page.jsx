@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Pencil,
@@ -9,49 +9,63 @@ import {
   Users,
   Search,
   PhoneCall,
+  KeyRound,
 } from "lucide-react";
-import { wargaApi } from "@/lib/warga.api";
-import { showConfirm, showMessage } from "@/lib/message";
+import { wargaApi } from "@/lib/api";
+import { areaLabel, can, scopeOf } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
+import { showConfirm, showCredentials, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import RumahFormModal from "@/components/warga/RumahFormModal";
+import WargaFormModal from "@/components/warga/WargaFormModal";
 
-const RT_OPTIONS = ["Semua RT", "RT_01", "RT_02", "RT_03", "RT_04"];
-const STATUS_OPTIONS = ["Semua Status", "Dihuni", "Kosong"];
+const ALL_RT = ["RT_01", "RT_02", "RT_03", "RT_04"];
+const STATUS_RUMAH = {
+  KOSONG: { label: "Kosong", cls: "unactived" },
+  DIHUNI_TETAP: { label: "Tetap", cls: "active" },
+  DIHUNI_KONTRAK: { label: "Kontrak", cls: "kontrak" },
+};
+
+const waLink = (noTelp) => {
+  if (!noTelp) return null;
+  const clean = noTelp.replace(/\D/g, "");
+  return `https://wa.me/${clean.startsWith("0") ? `62${clean.slice(1)}` : clean}`;
+};
+
+/** Pengurus RT yang hak tulisnya berjangkauan AREA hanya boleh memilih RT-nya sendiri. */
+function rtYangBoleh(user, kode) {
+  if (scopeOf(user, kode) === "AREA" && user?.area && user.area !== "RW") return [user.area];
+  return ALL_RT;
+}
 
 export default function WargaPage() {
-  const [items, setItems] = useState([]);
+  const { user } = useUser();
+  const [tab, setTab] = useState("warga");
+  const [warga, setWarga] = useState([]);
+  const [rumah, setRumah] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("create");
-  const [selected, setSelected] = useState(null);
 
-  // Filter state
   const [search, setSearch] = useState("");
-  const [filterRT, setFilterRT] = useState("Semua RT");
-  const [filterStatus, setFilterStatus] = useState("Semua Status");
-  const [draftFilterRT, setDraftFilterRT] = useState("Semua RT");
-  const [draftFilterStatus, setDraftFilterStatus] = useState("Semua Status");
+  const [filterRT, setFilterRT] = useState("SEMUA");
+  const [filterStatus, setFilterStatus] = useState("SEMUA");
+  const [draftRT, setDraftRT] = useState("SEMUA");
+  const [draftStatus, setDraftStatus] = useState("SEMUA");
 
-  const handleFilterOpen = () => {
-    setDraftFilterRT(filterRT);
-    setDraftFilterStatus(filterStatus);
-  };
-  const handleFilterApply = () => {
-    setFilterRT(draftFilterRT);
-    setFilterStatus(draftFilterStatus);
-  };
-  const handleFilterReset = () => {
-    setFilterRT("Semua RT");
-    setFilterStatus("Semua Status");
-    setDraftFilterRT("Semua RT");
-    setDraftFilterStatus("Semua Status");
-  };
+  const [wargaModal, setWargaModal] = useState({ open: false, mode: "create", data: null });
+  const [rumahModal, setRumahModal] = useState({ open: false, mode: "create", data: null });
+
+  const bolehTambah = can(user, "warga.create");
+  const bolehUbah = can(user, "warga.update");
+  const bolehHapus = can(user, "warga.delete");
+  const bolehReset = can(user, "warga.reset_password");
+  const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await wargaApi.getAllRumah();
-      setItems(Array.isArray(data) ? data : []);
+      const [w, r] = await Promise.all([wargaApi.getAll(), wargaApi.getAllRumah()]);
+      setWarga(Array.isArray(w) ? w : []);
+      setRumah(Array.isArray(r) ? r : []);
     } catch (error) {
       showMessage("Gagal Memuat Data", error.message, "error");
     } finally {
@@ -63,76 +77,147 @@ export default function WargaPage() {
     loadData();
   }, []);
 
-  // ── Stats ──────────────────────────────────────────────────────────
   const stats = useMemo(() => {
-    const total = items.length;
-    const dihuni = items.filter((r) => r.userId !== null).length;
-    const kosong = total - dihuni;
-    return { total, dihuni, kosong };
-  }, [items]);
+    const dihuni = rumah.filter((r) => r.userId !== null);
+    return {
+      total: rumah.length,
+      tetap: dihuni.filter((r) => r.status === "DIHUNI_TETAP").length,
+      kontrak: dihuni.filter((r) => r.status === "DIHUNI_KONTRAK").length,
+      kosong: rumah.length - dihuni.length,
+      warga: warga.length,
+    };
+  }, [rumah, warga]);
 
-  // ── Filtered list ──────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    return items.filter((r) => {
-      const q = search.toLowerCase();
-      const matchSearch =
-        !q ||
-        r.blokRumah.toLowerCase().includes(q) ||
-        (r.penghuni?.namaUser ?? "").toLowerCase().includes(q) ||
-        (r.penghuni?.email ?? "").toLowerCase().includes(q);
+  const rumahKosong = useMemo(() => rumah.filter((r) => r.userId === null), [rumah]);
 
-      const matchRT = filterRT === "Semua RT" || r.rt === filterRT;
+  const q = search.trim().toLowerCase();
 
-      const matchStatus =
-        filterStatus === "Semua Status" ||
-        (filterStatus === "Dihuni" && r.userId !== null) ||
-        (filterStatus === "Kosong" && r.userId === null);
+  const wargaFiltered = useMemo(
+    () =>
+      warga.filter((w) => {
+        const matchSearch =
+          !q ||
+          w.namaUser.toLowerCase().includes(q) ||
+          (w.username ?? "").toLowerCase().includes(q) ||
+          (w.noTelp ?? "").toLowerCase().includes(q) ||
+          w.rumah.some((r) => r.blokRumah.toLowerCase().includes(q));
+        const matchRT = filterRT === "SEMUA" || w.rumah.some((r) => r.rt === filterRT) || w.area === filterRT;
+        return matchSearch && matchRT;
+      }),
+    [warga, q, filterRT],
+  );
 
-      return matchSearch && matchRT && matchStatus;
-    });
-  }, [items, search, filterRT, filterStatus]);
+  const rumahFiltered = useMemo(
+    () =>
+      rumah.filter((r) => {
+        const matchSearch =
+          !q ||
+          r.blokRumah.toLowerCase().includes(q) ||
+          (r.penghuni?.namaUser ?? "").toLowerCase().includes(q);
+        const matchRT = filterRT === "SEMUA" || r.rt === filterRT;
+        const matchStatus = filterStatus === "SEMUA" || r.status === filterStatus;
+        return matchSearch && matchRT && matchStatus;
+      }),
+    [rumah, q, filterRT, filterStatus],
+  );
 
-  // ── Handlers ───────────────────────────────────────────────────────
-  const openCreate = () => {
-    setModalMode("create");
-    setSelected(null);
-    setModalOpen(true);
-  };
-
-  const openEdit = (item) => {
-    setModalMode("edit");
-    setSelected(item);
-    setModalOpen(true);
-  };
-
-  const handleSubmit = async (payload) => {
+  // ── Warga ──────────────────────────────────────────────────────────
+  const handleSubmitWarga = async (payload) => {
     try {
-      if (modalMode === "edit" && selected) {
-        await wargaApi.updateRumah(selected.id, payload);
-        showMessage("Berhasil", "Data rumah berhasil diperbarui.", "success");
+      if (wargaModal.mode === "edit" && wargaModal.data) {
+        await wargaApi.update(wargaModal.data.id, payload);
+        showMessage("Berhasil", "Data warga berhasil diperbarui.", "success");
       } else {
-        await wargaApi.createRumah(payload);
-        showMessage("Berhasil", "Rumah baru berhasil ditambahkan.", "success");
+        const res = await wargaApi.create(payload);
+        setWargaModal({ open: false, mode: "create", data: null });
+        await loadData();
+        if (res.passwordAwal) {
+          await showCredentials({
+            title: "Akun warga dibuat",
+            nama: res.data?.namaUser,
+            username: res.data?.username,
+            password: res.passwordAwal,
+          });
+        } else {
+          showMessage("Berhasil", "Akun warga dan data rumah berhasil dibuat.", "success");
+        }
+        return;
       }
-      setModalOpen(false);
+      setWargaModal({ open: false, mode: "create", data: null });
       loadData();
     } catch (error) {
       showMessage("Gagal Menyimpan", error.message, "error");
     }
   };
 
-  const handleDelete = async (item) => {
-    const confirmed = await showConfirm(
-      "Hapus Data Rumah?",
-      `Rumah ${item.blokRumah} akan dihapus permanen.`,
+  const handleResetPassword = async (w) => {
+    const ok = await showConfirm(
+      "Atur ulang kata sandi?",
+      `Kata sandi ${w.namaUser} akan diganti dengan kata sandi sementara. Warga wajib menggantinya saat masuk.`,
+      "warning",
+      "Ya, atur ulang",
+      "Batal",
+    );
+    if (!ok) return;
+    try {
+      const res = await wargaApi.resetPassword(w.id);
+      await showCredentials({
+        title: "Kata sandi diatur ulang",
+        nama: w.namaUser,
+        username: w.username,
+        password: res.passwordSementara,
+      });
+    } catch (error) {
+      showMessage("Gagal Mengatur Ulang Kata Sandi", error.message, "error");
+    }
+  };
+
+  const handleDeleteWarga = async (w) => {
+    const ok = await showConfirm(
+      "Hapus warga?",
+      `Akun ${w.namaUser} akan dihapus dan rumahnya dikosongkan.`,
       "warning",
       "Ya, hapus",
       "Batal",
     );
-    if (!confirmed) return;
-
+    if (!ok) return;
     try {
-      await wargaApi.removeRumah(item.id);
+      await wargaApi.remove(w.id);
+      showMessage("Berhasil", "Warga berhasil dihapus.", "success");
+      loadData();
+    } catch (error) {
+      showMessage("Gagal Menghapus", error.message, "error");
+    }
+  };
+
+  // ── Rumah ──────────────────────────────────────────────────────────
+  const handleSubmitRumah = async (payload) => {
+    try {
+      if (rumahModal.mode === "edit" && rumahModal.data) {
+        await wargaApi.updateRumah(rumahModal.data.id, payload);
+        showMessage("Berhasil", "Data rumah berhasil diperbarui.", "success");
+      } else {
+        await wargaApi.createRumah(payload);
+        showMessage("Berhasil", "Rumah baru berhasil ditambahkan.", "success");
+      }
+      setRumahModal({ open: false, mode: "create", data: null });
+      loadData();
+    } catch (error) {
+      showMessage("Gagal Menyimpan", error.message, "error");
+    }
+  };
+
+  const handleDeleteRumah = async (item) => {
+    const ok = await showConfirm(
+      "Hapus data rumah?",
+      `Rumah ${item.blokRumah} akan dihapus.`,
+      "warning",
+      "Ya, hapus",
+      "Batal",
+    );
+    if (!ok) return;
+    try {
+      await wargaApi.deleteRumah(item.id);
       showMessage("Berhasil", "Data rumah berhasil dihapus.", "success");
       loadData();
     } catch (error) {
@@ -140,61 +225,72 @@ export default function WargaPage() {
     }
   };
 
-  // WhatsApp link
-  const waLink = (noTelp) => {
-    if (!noTelp) return null;
-    const clean = noTelp.replace(/\D/g, "");
-    const number = clean.startsWith("0") ? `62${clean.slice(1)}` : clean;
-    return `https://wa.me/${number}`;
-  };
+  const filterAktif = filterRT !== "SEMUA" || filterStatus !== "SEMUA";
 
   return (
     <div className="page-stack">
-      {/* ── Toolbar ─────────────────────────────────────────────────── */}
       <div className="page-toolbar">
         <div>
           <h2>Data Warga &amp; Rumah</h2>
-          <p>Kelola unit rumah dan pemilik yang terdaftar di cluster Topaz.</p>
+          <p>
+            Kelola warga dan unit rumah cluster Topaz
+            {user?.area && user.area !== "RW" ? ` (${areaLabel(user.area)})` : ""}.
+          </p>
         </div>
       </div>
 
-      {/* ── Stats cards ─────────────────────────────────────────────── */}
       <div className="warga-stat-row">
         <div className="warga-stat-card tone-info">
           <div className="warga-stat-top">
-            <span className="warga-stat-icon">
-              <Home size={20} />
-            </span>
-            <span className="warga-stat-value">{stats.total}</span>
+            <span className="warga-stat-icon"><Users size={20} /></span>
+            <span className="warga-stat-value">{stats.warga}</span>
           </div>
-          <span className="warga-stat-label">Total Unit Rumah</span>
+          <span className="warga-stat-label">Penghuni Terdaftar</span>
         </div>
         <div className="warga-stat-card tone-success">
           <div className="warga-stat-top">
-            <span className="warga-stat-icon">
-              <Users size={20} />
-            </span>
-            <span className="warga-stat-value">{stats.dihuni}</span>
+            <span className="warga-stat-icon"><Home size={20} /></span>
+            <span className="warga-stat-value">{stats.tetap}</span>
           </div>
-          <span className="warga-stat-label">Dihuni</span>
+          <span className="warga-stat-label">Rumah Tetap</span>
+        </div>
+        <div className="warga-stat-card tone-purple">
+          <div className="warga-stat-top">
+            <span className="warga-stat-icon"><Home size={20} /></span>
+            <span className="warga-stat-value">{stats.kontrak}</span>
+          </div>
+          <span className="warga-stat-label">Rumah Kontrak</span>
         </div>
         <div className="warga-stat-card tone-warning">
           <div className="warga-stat-top">
-            <span className="warga-stat-icon">
-              <Home size={20} />
-            </span>
+            <span className="warga-stat-icon"><Home size={20} /></span>
             <span className="warga-stat-value">{stats.kosong}</span>
           </div>
-          <span className="warga-stat-label">Kosong</span>
+          <span className="warga-stat-label">Rumah Kosong</span>
         </div>
       </div>
 
-      {/* ── Tambah Rumah + Filter bar ─────────────────────────────────── */}
       <div className="page-toolbar-row">
-        <button type="button" className="btn-primary" onClick={openCreate}>
-          <Plus size={16} />
-          Tambah Rumah
-        </button>
+        <div className="db-section-toggle" role="tablist" aria-label="Data warga atau blok rumah">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "warga"}
+            className={`db-toggle-btn ${tab === "warga" ? "is-active" : ""}`}
+            onClick={() => setTab("warga")}
+          >
+            Data Warga
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "rumah"}
+            className={`db-toggle-btn ${tab === "rumah" ? "is-active" : ""}`}
+            onClick={() => setTab("rumah")}
+          >
+            Blok Rumah
+          </button>
+        </div>
 
         <div className="warga-filter-bar">
           <div className="warga-search-wrap">
@@ -202,241 +298,328 @@ export default function WargaPage() {
             <input
               type="text"
               className="warga-search-input"
-              placeholder="Cari nama warga atau blok rumah…"
+              placeholder={tab === "warga" ? "Cari nama, no. HP, atau blok…" : "Cari blok rumah atau penghuni…"}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <FilterPopover
-            active={filterRT !== "Semua RT" || filterStatus !== "Semua Status"}
-            onOpen={handleFilterOpen}
-            onApply={handleFilterApply}
-            onReset={handleFilterReset}
+            active={filterAktif}
+            onOpen={() => {
+              setDraftRT(filterRT);
+              setDraftStatus(filterStatus);
+            }}
+            onApply={() => {
+              setFilterRT(draftRT);
+              setFilterStatus(draftStatus);
+            }}
+            onReset={() => {
+              setFilterRT("SEMUA");
+              setFilterStatus("SEMUA");
+              setDraftRT("SEMUA");
+              setDraftStatus("SEMUA");
+            }}
           >
             <FilterField label="RT">
-              <select
-                className="form-control warga-filter-select"
-                value={draftFilterRT}
-                onChange={(e) => setDraftFilterRT(e.target.value)}
-              >
-                {RT_OPTIONS.map((rt) => (
-                  <option key={rt} value={rt}>
-                    {rt.replace("_", " ")}
-                  </option>
+              <select className="form-control warga-filter-select" value={draftRT} onChange={(e) => setDraftRT(e.target.value)}>
+                <option value="SEMUA">Semua RT</option>
+                {ALL_RT.map((rt) => (
+                  <option key={rt} value={rt}>{areaLabel(rt)}</option>
                 ))}
               </select>
             </FilterField>
-            <FilterField label="Status">
-              <select
-                className="form-control warga-filter-select"
-                value={draftFilterStatus}
-                onChange={(e) => setDraftFilterStatus(e.target.value)}
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </FilterField>
+            {tab === "rumah" && (
+              <FilterField label="Status rumah">
+                <select className="form-control warga-filter-select" value={draftStatus} onChange={(e) => setDraftStatus(e.target.value)}>
+                  <option value="SEMUA">Semua Status</option>
+                  <option value="DIHUNI_TETAP">Dihuni (tetap)</option>
+                  <option value="DIHUNI_KONTRAK">Dihuni (kontrak)</option>
+                  <option value="KOSONG">Kosong</option>
+                </select>
+              </FilterField>
+            )}
           </FilterPopover>
         </div>
+
+        {tab === "warga" && bolehTambah && (
+          <button type="button" className="btn-primary" onClick={() => setWargaModal({ open: true, mode: "create", data: null })}>
+            <Plus size={16} /> Tambah Warga
+          </button>
+        )}
+        {tab === "rumah" && bolehTambah && (
+          <button type="button" className="btn-primary" onClick={() => setRumahModal({ open: true, mode: "create", data: null })}>
+            <Plus size={16} /> Tambah Rumah
+          </button>
+        )}
       </div>
 
-      {/* ── Table ───────────────────────────────────────────────────── */}
-      <div className="table-card">
-        <div className="ipl-table-header">
-          <span className="ipl-table-title">Daftar Data Warga</span>
-          <span className="ipl-table-count">{filtered.length} data</span>
-        </div>
-
-        <div className="table-wrapper warga-table-wrapper">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Blok Rumah</th>
-              <th>RT</th>
-              <th>Pemilik / Penanggung Jawab</th>
-              <th>Kontak</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!isLoading &&
-              filtered.map((item, index) => {
-                const penghuni = item.penghuni;
-                const isDihuni = item.userId !== null;
-                const jumlahRumah = penghuni?._count?.rumah ?? 0;
-
-                return (
-                  <tr key={item.id}>
-                    <td>{index + 1}</td>
-
-                    {/* Blok Rumah */}
-                    <td className="col-judul">{item.blokRumah}</td>
-
-                    {/* RT */}
-                    <td>
-                      <span className="rt-badge">
-                        {item.rt.replace("_", " ")}
-                      </span>
-                    </td>
-
-                    {/* Pemilik */}
-                    <td>
-                      {penghuni ? (
-                        <div className="penghuni-cell">
-                          <span className="penghuni-avatar">
-                            {penghuni.namaUser?.charAt(0).toUpperCase()}
-                          </span>
-                          <div>
-                            <span className="penghuni-name">
-                              {penghuni.namaUser}
-                            </span>
-                            {jumlahRumah > 1 && (
-                              <span className="penghuni-multi-badge">
-                                {jumlahRumah} rumah
-                              </span>
-                            )}
-                            <span className="penghuni-email">
-                              {penghuni.email}
-                            </span>
+      {/* ── Tab: Data Warga ─────────────────────────────────────────── */}
+      {tab === "warga" && (
+        <div className="table-card">
+          <div className="ipl-table-header">
+            <span className="ipl-table-title">Daftar Warga</span>
+            <span className="ipl-table-count">{wargaFiltered.length} data</span>
+          </div>
+          <div className="table-wrapper warga-table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama</th>
+                  <th>Akun Masuk</th>
+                  <th>Rumah</th>
+                  <th>Kontak</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!isLoading &&
+                  wargaFiltered.map((w, index) => {
+                    // Warga biasa boleh diubah; pengurus yang kebetulan tinggal di RT ini hanya bisa dilihat.
+                    const bisaDiubah = w.role?.level === 3;
+                    return (
+                      <tr key={w.id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <div className="penghuni-cell">
+                            <span className="penghuni-avatar">{w.namaUser.charAt(0).toUpperCase()}</span>
+                            <div>
+                              <span className="penghuni-name">{w.namaUser}</span>
+                              {!bisaDiubah && <span className="penghuni-multi-badge">{w.role?.nama}</span>}
+                              {w.rumah.length > 1 && <span className="penghuni-multi-badge">{w.rumah.length} rumah</span>}
+                              <span className="penghuni-email">{w.email || "—"}</span>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <span className="penghuni-empty">—</span>
-                      )}
-                    </td>
+                        </td>
+                        <td>
+                          <span className="penghuni-name">{w.username}</span>
+                          {w.wajibGantiPassword && <span className="penghuni-email">Belum ganti kata sandi</span>}
+                        </td>
+                        <td>
+                          <div className="rumah-chip-list">
+                            {w.rumah.length === 0 && <span className="penghuni-empty">—</span>}
+                            {w.rumah.map((r) => (
+                              <span key={r.id} className={`rumah-chip ${STATUS_RUMAH[r.status]?.cls}`} title={`${areaLabel(r.rt)} · ${STATUS_RUMAH[r.status]?.label}`}>
+                                {r.blokRumah}
+                                <em>{STATUS_RUMAH[r.status]?.label}</em>
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td>
+                          {w.noTelp ? (
+                            <a href={waLink(w.noTelp)} target="_blank" rel="noopener noreferrer" className="wa-link" title={`Chat WhatsApp ${w.namaUser}`}>
+                              <PhoneCall size={13} />
+                              {w.noTelp}
+                            </a>
+                          ) : (
+                            <span style={{ color: "var(--db-slate-400)" }}>—</span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="table-actions">
+                            {bisaDiubah && bolehUbah && (
+                              <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah warga" onClick={() => setWargaModal({ open: true, mode: "edit", data: w })}>
+                                <Pencil size={15} />
+                              </button>
+                            )}
+                            {bisaDiubah && bolehReset && (
+                              <button type="button" className="btn-icon" title="Atur ulang kata sandi" aria-label="Atur ulang kata sandi" onClick={() => handleResetPassword(w)}>
+                                <KeyRound size={15} />
+                              </button>
+                            )}
+                            {bisaDiubah && bolehHapus && (
+                              <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus warga" onClick={() => handleDeleteWarga(w)}>
+                                <Trash2 size={15} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
 
-                    {/* Kontak */}
-                    <td>
-                      {penghuni?.noTelp ? (
-                        <a
-                          href={waLink(penghuni.noTelp)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="wa-link"
-                          title={`Chat WhatsApp ${penghuni.namaUser}`}
-                        >
-                          <PhoneCall size={13} />
-                          {penghuni.noTelp}
-                        </a>
-                      ) : (
-                        <span style={{ color: "var(--db-slate-400)" }}>—</span>
-                      )}
-                    </td>
-
-                    {/* Status */}
-                    <td>
-                      <span
-                        className={`status-badge ${isDihuni ? "active" : "unactived"}`}
-                      >
-                        {isDihuni ? "Dihuni" : "Kosong"}
+          <div className="warga-grid">
+            {!isLoading &&
+              wargaFiltered.map((w) => (
+                <div key={w.id} className="warga-grid-card">
+                  <h3 className="warga-grid-title">{w.namaUser}</h3>
+                  <div className="rumah-chip-list">
+                    {w.rumah.map((r) => (
+                      <span key={r.id} className={`rumah-chip ${STATUS_RUMAH[r.status]?.cls}`}>
+                        {r.blokRumah}
+                        <em>{STATUS_RUMAH[r.status]?.label}</em>
                       </span>
-                    </td>
-
-                    {/* Aksi */}
-                    <td>
+                    ))}
+                  </div>
+                  <span className="meta-item warga-grid-penghuni">{w.username}</span>
+                  {w.role?.level === 3 && (
+                    <div className="warga-grid-footer">
                       <div className="table-actions">
-                        <button
-                          type="button"
-                          className="btn-icon"
-                          onClick={() => openEdit(item)}
-                          aria-label="Edit rumah"
-                          title="Edit"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-icon danger"
-                          onClick={() => handleDelete(item)}
-                          aria-label="Hapus rumah"
-                          title="Hapus"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {bolehUbah && (
+                          <button type="button" className="btn-icon" aria-label="Ubah warga" onClick={() => setWargaModal({ open: true, mode: "edit", data: w })}>
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                        {bolehReset && (
+                          <button type="button" className="btn-icon" aria-label="Atur ulang kata sandi" onClick={() => handleResetPassword(w)}>
+                            <KeyRound size={14} />
+                          </button>
+                        )}
+                        {bolehHapus && (
+                          <button type="button" className="btn-icon danger" aria-label="Hapus warga" onClick={() => handleDeleteWarga(w)}>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+
+          {isLoading && <div className="table-loading">Memuat data warga…</div>}
+          {!isLoading && wargaFiltered.length === 0 && (
+            <div className="table-empty">
+              {warga.length === 0
+                ? bolehTambah
+                  ? 'Belum ada warga. Klik "+ Tambah Warga" untuk membuatkan akun.'
+                  : "Belum ada data warga."
+                : "Tidak ada warga yang sesuai pencarian/filter."}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Blok Rumah ─────────────────────────────────────────── */}
+      {tab === "rumah" && (
+        <div className="table-card">
+          <div className="ipl-table-header">
+            <span className="ipl-table-title">Daftar Blok Rumah</span>
+            <span className="ipl-table-count">{rumahFiltered.length} data</span>
+          </div>
+          <div className="table-wrapper warga-table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Blok Rumah</th>
+                  <th>RT</th>
+                  <th>Penghuni</th>
+                  <th>Status</th>
+                  {(bolehUbah || bolehHapus) && <th>Aksi</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {!isLoading &&
+                  rumahFiltered.map((item, index) => {
+                    const st = STATUS_RUMAH[item.status] ?? STATUS_RUMAH.KOSONG;
+                    return (
+                      <tr key={item.id}>
+                        <td>{index + 1}</td>
+                        <td className="col-judul">{item.blokRumah}</td>
+                        <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>
+                        <td>
+                          {item.penghuni ? (
+                            <div className="penghuni-cell">
+                              <span className="penghuni-avatar">{item.penghuni.namaUser?.charAt(0).toUpperCase()}</span>
+                              <div>
+                                <span className="penghuni-name">{item.penghuni.namaUser}</span>
+                                {item.penghuni._count?.rumah > 1 && (
+                                  <span className="penghuni-multi-badge">{item.penghuni._count.rumah} rumah</span>
+                                )}
+                                <span className="penghuni-email">{item.penghuni.username}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="penghuni-empty">—</span>
+                          )}
+                        </td>
+                        <td><span className={`status-badge ${st.cls}`}>{item.userId ? `Dihuni (${st.label.toLowerCase()})` : "Kosong"}</span></td>
+                        {(bolehUbah || bolehHapus) && (
+                          <td>
+                            <div className="table-actions">
+                              {bolehUbah && (
+                                <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
+                                  <Pencil size={15} />
+                                </button>
+                              )}
+                              {bolehHapus && (
+                                <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
+                                  <Trash2 size={15} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="warga-grid">
+            {!isLoading &&
+              rumahFiltered.map((item) => {
+                const st = STATUS_RUMAH[item.status] ?? STATUS_RUMAH.KOSONG;
+                return (
+                  <div key={item.id} className="warga-grid-card">
+                    <h3 className="warga-grid-title">
+                      {item.blokRumah}
+                      <span className="rt-badge">{areaLabel(item.rt)}</span>
+                    </h3>
+                    <span className="meta-item warga-grid-penghuni">
+                      {item.penghuni ? item.penghuni.namaUser : "Belum ada penghuni"}
+                    </span>
+                    <div className="warga-grid-footer">
+                      <div className="table-actions">
+                        {bolehUbah && (
+                          <button type="button" className="btn-icon" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                        {bolehHapus && (
+                          <button type="button" className="btn-icon danger" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <span className={`status-badge ${st.cls}`}>{item.userId ? st.label : "Kosong"}</span>
+                    </div>
+                  </div>
                 );
               })}
-          </tbody>
-        </table>
-        </div>
-
-        <div className="warga-grid">
-          {!isLoading &&
-            filtered.map((item) => {
-              const penghuni = item.penghuni;
-              const isDihuni = item.userId !== null;
-              const jumlahRumah = penghuni?._count?.rumah ?? 0;
-
-              return (
-                <div key={item.id} className="warga-grid-card">
-                  <h3 className="warga-grid-title">
-                    {item.blokRumah}
-                    <span className="rt-badge">{item.rt.replace("_", " ")}</span>
-                  </h3>
-                  {penghuni ? (
-                    <span className="meta-item warga-grid-penghuni">
-                      {penghuni.namaUser}
-                      {jumlahRumah > 1 ? ` · ${jumlahRumah} rumah` : ""}
-                    </span>
-                  ) : (
-                    <span className="meta-item warga-grid-penghuni">Belum ada penghuni</span>
-                  )}
-                  <div className="warga-grid-footer">
-                    <div className="table-actions">
-                      <button
-                        type="button"
-                        className="btn-icon"
-                        onClick={() => openEdit(item)}
-                        aria-label="Edit rumah"
-                        title="Edit"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-icon danger"
-                        onClick={() => handleDelete(item)}
-                        aria-label="Hapus rumah"
-                        title="Hapus"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <span className={`status-badge ${isDihuni ? "active" : "unactived"}`}>
-                      {isDihuni ? "Dihuni" : "Kosong"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-
-        {isLoading && (
-          <div className="table-loading">Memuat data rumah…</div>
-        )}
-        {!isLoading && filtered.length === 0 && (
-          <div className="table-empty">
-            {items.length === 0
-              ? "Belum ada data rumah. Klik \"+ Tambah Rumah\" untuk memulai."
-              : "Tidak ada rumah yang sesuai filter."}
           </div>
-        )}
-      </div>
 
-      {/* ── Modal ───────────────────────────────────────────────────── */}
+          {isLoading && <div className="table-loading">Memuat data rumah…</div>}
+          {!isLoading && rumahFiltered.length === 0 && (
+            <div className="table-empty">
+              {rumah.length === 0 ? "Belum ada data rumah." : "Tidak ada rumah yang sesuai filter."}
+            </div>
+          )}
+        </div>
+      )}
+
+      <WargaFormModal
+        open={wargaModal.open}
+        mode={wargaModal.mode}
+        initialData={wargaModal.data}
+        allowedRts={rtTulis}
+        rumahKosong={rumahKosong}
+        onClose={() => setWargaModal({ open: false, mode: "create", data: null })}
+        onSubmit={handleSubmitWarga}
+      />
       <RumahFormModal
-        open={modalOpen}
-        mode={modalMode}
-        initialData={selected}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmit}
+        open={rumahModal.open}
+        mode={rumahModal.mode}
+        initialData={rumahModal.data}
+        allowedRts={rtTulis}
+        onClose={() => setRumahModal({ open: false, mode: "create", data: null })}
+        onSubmit={handleSubmitRumah}
       />
     </div>
   );

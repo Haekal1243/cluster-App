@@ -5901,3 +5901,209 @@ select {
     height: 1em !important;
   }
 }
+/* =========================================================================
+   RBAC, area RW/RT, setoran IPL, catatan rapat, pengajuan ke RW
+   ========================================================================= */
+
+/* ── Umum ── */
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 560px) { .form-row-2 { grid-template-columns: 1fr; } }
+.form-alert-error {
+  background: #fef2f2; color: var(--db-danger); border: 1px solid #fecaca;
+  border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; margin-bottom: 12px;
+}
+.checkbox-row { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
+.checkbox-row input { width: 16px; height: 16px; accent-color: var(--db-primary); }
+.danger-text { color: var(--db-danger); border-color: #fecaca; }
+.danger-text:hover { background: #fef2f2; }
+.badge-muted { background: #f1f5f9; color: var(--db-slate-500); }
+
+/* ── Data warga: chip rumah tetap / kontrak ── */
+.status-badge.kontrak { background: #f5f3ff; color: var(--db-purple); }
+.warga-stat-card.tone-purple .warga-stat-icon { background: #f5f3ff; color: var(--db-purple); }
+.warga-stat-card.tone-purple { border-left: 4px solid var(--db-purple); }
+.rumah-chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.rumah-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 999px; font-size: 0.78rem; font-weight: 600; white-space: nowrap;
+  border: 1px solid transparent;
+}
+.rumah-chip em { font-style: normal; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.85; }
+.rumah-chip.active { background: var(--db-success-bg); color: var(--db-primary); border-color: #99f6e4; }
+.rumah-chip.kontrak { background: #f5f3ff; color: var(--db-purple); border-color: #ddd6fe; }
+.rumah-chip.unactived { background: #f1f5f9; color: var(--db-slate-500); }
+
+/* ── Tagihan IPL: total dan rincian IPL + kas ── */
+.ipl-total-box {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: #f0fdfa; border: 1px solid #99f6e4; color: var(--db-primary-active);
+  border-radius: 10px; padding: 10px 14px; margin: 4px 0 12px; font-size: 0.9rem;
+}
+.ipl-total-box strong { font-size: 1.1rem; }
+.ipl-nominal-split { display: block; font-size: 0.72rem; font-weight: 500; color: var(--db-slate-400); margin-top: 2px; }
+.ipl-total-row td { background: #f8fafc; border-top: 2px solid var(--db-border); }
+.setoran-cta .ipl-summary-body { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; justify-content: center; }
+.setoran-tagihan-list { margin-top: 12px; max-height: 220px; overflow: auto; }
+.keu-rincian .db-section-header { margin-bottom: 10px; }
+.keu-rincian-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 800px) { .keu-rincian-grid { grid-template-columns: 1fr; } }
+.keu-rincian-title { font-size: 0.78rem; font-weight: 700; color: var(--db-slate-500); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 8px; }
+.keu-rincian-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.keu-rincian-list li { display: flex; justify-content: space-between; gap: 12px; font-size: 0.88rem; color: var(--db-text); border-bottom: 1px dashed var(--db-border); padding-bottom: 6px; }
+.keu-rincian-note { margin: 10px 0 0; font-size: 0.8rem; color: var(--db-warning); background: #fffbeb; border-radius: 8px; padding: 8px 10px; }
+.keu-area-table td, .keu-area-table th { padding: 8px 10px; }
+
+/* ── Kegiatan / pengumuman: pengajuan ke RW ── */
+.pengajuan-cell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.pengajuan-alasan { font-size: 0.72rem; color: var(--db-slate-400); max-width: 220px; line-height: 1.35; }
+.pengajuan-banner {
+  display: flex; align-items: center; gap: 10px; background: #fffbeb; border: 1px solid #fde68a;
+  color: var(--db-warning); border-radius: 12px; padding: 10px 14px; font-size: 0.88rem;
+}
+.pengajuan-banner .btn-outline-neutral { margin-left: auto; padding: 6px 12px; font-size: 0.8rem; }
+.keputusan-judul { font-weight: 700; color: var(--db-text); margin: 0 0 12px; }
+.keputusan-pilihan { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.keputusan-opsi {
+  display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px;
+  border: 1px solid var(--db-border); border-radius: 10px; font-weight: 600; cursor: pointer; color: var(--db-slate-600);
+}
+.keputusan-opsi input { accent-color: var(--db-primary); }
+.keputusan-opsi.is-active.setuju { background: var(--db-success-bg); border-color: #99f6e4; color: var(--db-primary-active); }
+.keputusan-opsi.is-active.tolak { background: #fef2f2; border-color: #fecaca; color: var(--db-danger); }
+
+/* ── Catatan rapat ── */
+.catatan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.catatan-card {
+  background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 14px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px;
+}
+.catatan-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.catatan-card-head h3 { margin: 0; font-size: 0.98rem; color: var(--db-text); line-height: 1.35; }
+.catatan-excerpt {
+  margin: 0; font-size: 0.85rem; color: var(--db-slate-500); line-height: 1.55;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line;
+}
+.catatan-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; }
+.catatan-meta-small { font-size: 0.76rem; color: var(--db-slate-400); }
+.catatan-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 0.82rem; color: var(--db-slate-500); margin-bottom: 12px; }
+.catatan-isi { white-space: pre-wrap; line-height: 1.7; color: var(--db-text); font-size: 0.92rem; max-height: 52vh; overflow: auto; }
+.catatan-area-info {
+  background: #f0fdfa; border: 1px solid #99f6e4; color: var(--db-primary-active);
+  border-radius: 10px; padding: 10px 12px; font-size: 0.84rem; margin-bottom: 14px; line-height: 1.5;
+}
+
+/* ── Admin: role & permission ── */
+.rbac-layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .rbac-layout { grid-template-columns: 1fr; } }
+.rbac-roles { position: sticky; top: 76px; }
+@media (max-width: 900px) { .rbac-roles { position: static; } }
+.rbac-role-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rbac-role-item {
+  width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px;
+  border: 1px solid var(--db-border); border-radius: 10px; background: var(--db-surface); cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.rbac-role-item:hover { background: var(--db-bg); }
+.rbac-role-item.is-active { background: var(--db-success-bg); border-color: #5eead4; }
+.rbac-role-name { font-weight: 700; color: var(--db-text); font-size: 0.9rem; }
+.rbac-role-meta { font-size: 0.72rem; color: var(--db-slate-400); }
+.rbac-add { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.rbac-editor { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.rbac-role-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+.rbac-role-title { display: flex; flex-direction: column; gap: 4px; }
+.rbac-nama-input { font-weight: 700; font-size: 1.05rem; max-width: 280px; }
+.rbac-kode { font-size: 0.75rem; color: var(--db-slate-400); font-family: ui-monospace, monospace; }
+.rbac-role-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.rbac-role-actions button { display: inline-flex; align-items: center; gap: 6px; }
+.rbac-lock-note {
+  display: flex; align-items: center; gap: 8px; background: #f1f5f9; border-radius: 10px;
+  padding: 10px 14px; font-size: 0.85rem; color: var(--db-slate-600);
+}
+.rbac-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.78rem; color: var(--db-slate-500); }
+.rbac-count { margin-left: auto; font-weight: 700; color: var(--db-primary-active); }
+.rbac-menu { padding: 14px 16px; }
+.rbac-menu-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.rbac-menu-head h4 { margin: 0; font-size: 0.95rem; color: var(--db-text); }
+.rbac-quick { display: flex; gap: 6px; flex-wrap: wrap; }
+.rbac-quick button {
+  border: 1px solid var(--db-border); background: var(--db-surface); color: var(--db-slate-500);
+  border-radius: 999px; padding: 3px 10px; font-size: 0.72rem; cursor: pointer;
+}
+.rbac-quick button:hover { background: var(--db-bg); }
+.rbac-table { width: 100%; border-collapse: collapse; }
+.rbac-table td { padding: 8px 4px; border-top: 1px solid var(--db-border); vertical-align: middle; }
+.rbac-table tr.is-changed td { background: #fffbeb; }
+.rbac-perm-name { display: block; font-size: 0.88rem; color: var(--db-text); }
+.rbac-perm-kode { font-size: 0.7rem; color: var(--db-slate-400); }
+.rbac-perm-scope { width: 210px; }
+.rbac-scope { width: 100%; }
+.rbac-scope.scope-none { color: var(--db-slate-400); }
+.rbac-scope.scope-ALL { border-color: #99f6e4; background-color: #f0fdfa; }
+.rbac-scope.scope-AREA { border-color: #bfdbfe; background-color: #eff6ff; }
+.rbac-scope.scope-OWN { border-color: #ddd6fe; background-color: #f5f3ff; }
+@media (max-width: 560px) { .rbac-perm-scope { width: 150px; } }
+
+/* ── Admin: pengurus ── */
+.pengurus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.pengurus-card .db-section-header { margin-bottom: 8px; }
+.pengurus-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.pengurus-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--db-border); }
+.pengurus-item:first-child { border-top: none; }
+.pengurus-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pengurus-role { font-size: 0.72rem; font-weight: 700; color: var(--db-primary); text-transform: uppercase; letter-spacing: 0.05em; }
+.pengurus-nama { font-weight: 600; color: var(--db-text); }
+.pengurus-sub { font-size: 0.75rem; color: var(--db-slate-400); }
+.pengurus-kosong { font-size: 0.85rem; color: var(--db-slate-400); font-style: italic; }
+
+/* =========================================================================
+   Perbaikan responsif (mobile) untuk komponen RBAC / setoran / pengajuan
+   ========================================================================= */
+.rt-badge { white-space: nowrap; }
+.content-card .ipl-table-header { flex-wrap: wrap; gap: 6px; }
+.pengumuman-grid-card, .warga-grid-card, .catatan-card { min-width: 0; }
+.pengajuan-cell .ipl-badge { white-space: normal; }
+.keu-rincian-grid > div { min-width: 0; }
+.keu-rincian-list li span { min-width: 0; }
+
+@media (max-width: 900px) {
+  /* Daftar role jadi baris yang bisa digeser, editor hak akses langsung terlihat di bawahnya */
+  .rbac-role-list { flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 6px; }
+  .rbac-role-item { min-width: 168px; flex: 0 0 auto; }
+  .rbac-add { width: auto; }
+}
+
+@media (max-width: 720px) {
+  /* Tab + pencarian + tombol tidak berebut satu baris */
+  .page-toolbar-row .db-section-toggle { flex: 1 1 100%; }
+  .page-toolbar-row > .warga-filter-bar,
+  .page-toolbar-row > .list-toolbar-row { flex: 1 1 100%; }
+  .keu-rincian-grid { grid-template-columns: minmax(0, 1fr); }
+  .keu-area-table { display: block; overflow-x: auto; }
+  .rbac-nama-input { max-width: 100%; }
+  .rbac-role-head { align-items: stretch; }
+  .rbac-role-actions { width: 100%; }
+  .rbac-role-actions button { flex: 1 1 auto; justify-content: center; }
+}
+
+@media (max-width: 640px) {
+  /* Kartu kegiatan/pengumuman memuat lebih banyak info (wilayah, status ACC): satu kolom */
+  .pengumuman-grid { grid-template-columns: minmax(0, 1fr); }
+  .pengajuan-banner { flex-wrap: wrap; }
+  .pengajuan-banner .btn-outline-neutral { margin-left: 0; }
+}
+
+/* Layout matriks role: kolom grid tidak boleh melebar mengikuti isi yang bisa digeser */
+.rbac-layout { grid-template-columns: 280px minmax(0, 1fr); }
+.rbac-roles { min-width: 0; }
+@media (max-width: 900px) { .rbac-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Dashboard pengelola sistem (Admin) */
+.panel-sistem-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+.panel-sistem-link {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; text-decoration: none;
+  border: 1px solid var(--db-border); border-radius: 12px; color: var(--db-text); font-weight: 600;
+  background: var(--db-surface); transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.panel-sistem-link:hover { border-color: #5eead4; background: var(--db-success-bg); }
+.panel-sistem-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: var(--db-success-bg); color: var(--db-primary); }
+.panel-sistem-arrow { margin-left: auto; color: var(--db-slate-400); }

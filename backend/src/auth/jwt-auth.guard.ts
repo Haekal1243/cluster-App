@@ -8,12 +8,15 @@ import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import { PrismaService } from '../prisma/prisma.service';
+import { AuthedRequest } from './auth.types';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -23,19 +26,45 @@ export class JwtAuthGuard implements CanActivate {
     );
     if (isPublic) return true;
 
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<AuthedRequest>();
     const token = this.extractToken(request);
     if (!token) {
       throw new UnauthorizedException('Token tidak ditemukan.');
     }
 
+    let sub: number;
     try {
-      const payload = await this.jwtService.verifyAsync(token);
-      (request as Request & { user: unknown }).user = payload;
+      const payload = await this.jwtService.verifyAsync<{ sub: number }>(token);
+      sub = payload.sub;
     } catch {
       throw new UnauthorizedException('Token tidak valid atau sudah kedaluwarsa.');
     }
 
+    // Role dan area dibaca dari DB tiap request, bukan dari token, supaya
+    // perubahan jabatan oleh admin langsung berlaku tanpa menunggu token habis.
+    const user = await this.prisma.user.findUnique({
+      where: { id: sub },
+      select: {
+        id: true,
+        username: true,
+        namaUser: true,
+        area: true,
+        roleId: true,
+        role: { select: { kode: true } },
+      },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Akun tidak ditemukan.');
+    }
+
+    request.user = {
+      sub: user.id,
+      username: user.username,
+      nama: user.namaUser,
+      role: user.role.kode,
+      roleId: user.roleId,
+      area: user.area,
+    };
     return true;
   }
 

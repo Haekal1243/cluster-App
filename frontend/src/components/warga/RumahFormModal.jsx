@@ -2,15 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { wargaApi } from "@/lib/warga.api";
+import { wargaApi } from "@/lib/api";
 
-const RT_OPTIONS = ["RT_01", "RT_02", "RT_03", "RT_04"];
+const ALL_RT = ["RT_01", "RT_02", "RT_03", "RT_04"];
 
-const EMPTY_FORM = { blokRumah: "", rt: "RT_01", userId: "" };
+const STATUS_LABELS = {
+  KOSONG: "Kosong",
+  DIHUNI_TETAP: "Dihuni (tetap)",
+  DIHUNI_KONTRAK: "Dihuni (kontrak)",
+};
+
+const EMPTY_FORM = { blokRumah: "", rt: "RT_01", userId: "", status: "" };
 
 const BLOK_RUMAH_REGEX = /^E\d{1,2}\/\d{1,2}$/;
 
-export default function RumahFormModal({ open, mode, initialData, onClose, onSubmit }) {
+// `allowedRts`: RT yang boleh dipilih (pengurus RT hanya RT-nya sendiri).
+export default function RumahFormModal({ open, mode, initialData, onClose, onSubmit, allowedRts = ALL_RT }) {
+  const RT_OPTIONS = allowedRts;
   const [form, setForm] = useState(EMPTY_FORM);
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -34,11 +42,12 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
         blokRumah: initialData.blokRumah ?? "",
         rt: initialData.rt ?? "RT_01",
         userId: initialData.userId ?? "",
+        status: initialData.status ?? "",
       });
     } else {
-      setForm(EMPTY_FORM);
+      setForm({ ...EMPTY_FORM, rt: allowedRts[0] ?? "RT_01" });
     }
-  }, [mode, initialData, open]);
+  }, [mode, initialData, open, allowedRts]);
 
   if (!open) return null;
 
@@ -63,6 +72,8 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
         blokRumah: form.blokRumah.trim(),
         rt: form.rt,
         userId: form.userId ? Number(form.userId) : null,
+        // Kosong = ikut penghuni (ada penghuni -> tetap, tanpa penghuni -> kosong)
+        ...(form.status ? { status: form.status } : {}),
       });
     } finally {
       setIsSubmitting(false);
@@ -74,7 +85,7 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
-          <h3>{mode === "edit" ? "Edit Data Rumah" : "Tambah Rumah Baru"}</h3>
+          <h3>{mode === "edit" ? "Ubah Data Rumah" : "Tambah Rumah Baru"}</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">
             <X size={18} />
           </button>
@@ -142,7 +153,7 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
                 <option value="">— Kosong (Rumah Belum Dihuni) —</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.namaUser} ({u.email})
+                    {u.namaUser} ({u.username})
                     {u._count?.rumah > 0
                       ? ` · ${u._count.rumah} rumah`
                       : ""}
@@ -151,6 +162,26 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
               </select>
               <p className="form-hint">
                 Pilih warga yang bertanggung jawab membayar IPL untuk rumah ini.
+              </p>
+            </div>
+
+            {/* Status rumah */}
+            <div className="form-group">
+              <label className="form-label" htmlFor="status">Status Rumah</label>
+              <select
+                id="status"
+                name="status"
+                className="form-control"
+                value={form.status}
+                onChange={handleChange}
+              >
+                <option value="">Otomatis (ikut penghuni)</option>
+                {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <p className="form-hint">
+                Tandai rumah yang dikontrakkan supaya terlihat berbeda dari rumah tetap.
               </p>
             </div>
           </div>

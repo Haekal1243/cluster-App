@@ -352,3 +352,8 @@ html {
     padding: 0 16px !important;
   }
 }
+
+/* Portofolio: linimasa per tahun jadi satu kolom di layar sempit */
+@media (max-width: 720px) {
+  .lp-porto-row { grid-template-columns: 1fr !important; gap: 8px !important; }
+}

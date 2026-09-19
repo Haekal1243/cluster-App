@@ -1,13 +1,21 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma, RT } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
+import { UpdateIplDto } from './dto/update-ipl.dto';
 import { KonfirmasiIplDto } from './dto/konfirmasi-ipl.dto';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
+import { AccessContext } from '../auth/auth.types';
 import { resolvePeriode } from '../common/periode.helper';
+import { areaFilter, assertInArea, rtFilter, wargaBacaWhere } from '../common/scope.helper';
+import { totalTagihan, withTotal } from '../common/helpers';
+
+const SEMUA_RT: RT[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
 @Injectable()
 export class IplService {
@@ -16,63 +24,76 @@ export class IplService {
     private notifikasiService: NotifikasiService,
   ) {}
 
+  /** Batasan data tagihan sesuai scope: OWN = rumah sendiri, AREA = RT sendiri, ALL = semua. */
+  private scopeWhere(ctx: AccessContext, rt?: string): Prisma.IplWhereInput {
+    if (ctx.scope === 'OWN') return { rumah: { userId: ctx.user.sub } };
+    const area = areaFilter(ctx);
+    if (area === null) return rt ? { rumah: { rt: rt as RT } } : {};
+    return { rumah: rtFilter(area) };
+  }
+
   // ================================================================
-  // GENERATE TAGIHAN MASSAL
+  // GENERATE TAGIHAN MASSAL — dikerjakan bendahara RT untuk RT-nya
   // ================================================================
 
-  async generateTagihan(dto: GenerateIplDto) {
-    const { bulanPeriode, tahunPeriode, nominal } = dto;
+  async generateTagihan(ctx: AccessContext, dto: GenerateIplDto) {
+    const { bulanPeriode, tahunPeriode, nominalIpl, nominalKas } = dto;
 
-    // Ambil semua rumah yang aktif (dihuni = userId != null)
-    const rumahAktif = await this.prisma.rumah.findMany({
-      where: { userId: { not: null } },
-      select: { id: true, blokRumah: true, rt: true, userId: true },
-    });
-
-    if (rumahAktif.length === 0) {
-      throw new BadRequestException('Tidak ada rumah aktif yang ditemukan.');
+    const area = areaFilter(ctx);
+    let rt: RT;
+    if (area === null) {
+      if (!dto.rt) throw new BadRequestException('Pilih RT yang akan digenerate tagihannya.');
+      rt = dto.rt;
+    } else if (area === 'RW') {
+      throw new ForbiddenException('Tagihan IPL digenerate oleh bendahara RT, bukan RW.');
+    } else {
+      rt = area;
     }
 
-    // Cek apakah tagihan periode ini sudah ada untuk salah satu rumah
-    const existing = await this.prisma.ipl.findFirst({
-      where: {
-        bulanPeriode,
-        tahunPeriode,
-        idRumah: { in: rumahAktif.map((r) => r.id) },
-      },
+    // Rumah aktif = berpenghuni
+    const rumahAktif = await this.prisma.rumah.findMany({
+      where: { rt, isDelete: false, userId: { not: null } },
+      select: { id: true, userId: true },
     });
+    if (rumahAktif.length === 0) {
+      throw new BadRequestException(`Tidak ada rumah aktif di ${rt.replace('_', ' ')}.`);
+    }
 
+    const existing = await this.prisma.ipl.findFirst({
+      where: { bulanPeriode, tahunPeriode, idRumah: { in: rumahAktif.map((r) => r.id) } },
+    });
     if (existing) {
       throw new BadRequestException(
-        `Tagihan untuk periode ${bulanPeriode}/${tahunPeriode} sudah pernah digenerate.`,
+        `Tagihan ${rt.replace('_', ' ')} untuk periode ${bulanPeriode}/${tahunPeriode} sudah pernah digenerate.`,
       );
     }
 
-    // Batch create tagihan untuk semua rumah aktif
     await this.prisma.ipl.createMany({
-      data: rumahAktif.map((rumah) => ({
-        idRumah: rumah.id,
+      data: rumahAktif.map((r) => ({
+        idRumah: r.id,
         bulanPeriode,
         tahunPeriode,
-        nominal,
+        nominalIpl,
+        nominalKas,
       })),
     });
 
-    const idUserList = rumahAktif
-      .map((r) => r.userId)
-      .filter((id): id is number => id !== null);
+    const total = nominalIpl + nominalKas;
     await this.notifikasiService.kirimBanyak(
-      idUserList,
+      rumahAktif.map((r) => r.userId).filter((id): id is number => id !== null),
       'TAGIHAN_BARU',
       'Tagihan IPL Baru',
-      `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${nominal.toLocaleString('id-ID')} telah diterbitkan.`,
+      `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${total.toLocaleString('id-ID')} telah diterbitkan.`,
       '/dashboard/iuran',
     );
 
     return {
-      message: `Berhasil generate ${rumahAktif.length} tagihan IPL untuk periode ${bulanPeriode}/${tahunPeriode}.`,
+      message: `Berhasil generate ${rumahAktif.length} tagihan IPL ${rt.replace('_', ' ')} untuk periode ${bulanPeriode}/${tahunPeriode}.`,
       jumlahTagihan: rumahAktif.length,
-      nominal,
+      rt,
+      nominalIpl,
+      nominalKas,
+      nominal: total,
       periode: `${bulanPeriode}/${tahunPeriode}`,
     };
   }
@@ -81,17 +102,21 @@ export class IplService {
   // GET ALL TAGIHAN (dengan filter)
   // ================================================================
 
-  async findAll(params: {
-    bulan?: string;
-    tahun?: string;
-    dari?: string;
-    sampai?: string;
-    status?: string;
-    search?: string;
-  }) {
-    const { bulan, tahun, dari, sampai, status, search } = params;
+  async findAll(
+    ctx: AccessContext,
+    params: {
+      bulan?: string;
+      tahun?: string;
+      dari?: string;
+      sampai?: string;
+      status?: string;
+      search?: string;
+      rt?: string;
+    },
+  ) {
+    const { bulan, tahun, dari, sampai, status, search, rt } = params;
 
-    const and: any[] = [];
+    const and: Prisma.IplWhereInput[] = [this.scopeWhere(ctx, rt)];
     const range = resolvePeriode(dari, sampai);
     if (range) {
       // Range diutamakan bila diberikan
@@ -100,7 +125,7 @@ export class IplService {
       if (bulan) and.push({ bulanPeriode: bulan });
       if (tahun) and.push({ tahunPeriode: tahun });
     }
-    if (status && status !== 'SEMUA') and.push({ statusPembayaran: status });
+    if (status && status !== 'SEMUA') and.push({ statusPembayaran: status as any });
     if (search) {
       and.push({
         OR: [
@@ -109,10 +134,9 @@ export class IplService {
         ],
       });
     }
-    const where = and.length > 0 ? { AND: and } : {};
 
-    const tagihan = await this.prisma.ipl.findMany({
-      where,
+    const rows = await this.prisma.ipl.findMany({
+      where: { AND: and },
       include: {
         rumah: {
           include: {
@@ -121,6 +145,7 @@ export class IplService {
             },
           },
         },
+        setoran: { select: { id: true, status: true } },
         pembayaran: {
           orderBy: { tanggalBayar: 'desc' },
           take: 1,
@@ -141,26 +166,151 @@ export class IplService {
         { rumah: { blokRumah: 'asc' } },
       ],
     });
+    const tagihan = rows.map(withTotal);
 
-    // Hitung summary metrics
+    const lunas = tagihan.filter((t) => t.statusPembayaran === 'LUNAS');
+    const sum = (list: typeof tagihan, pick: (t: (typeof tagihan)[number]) => number) =>
+      list.reduce((s, t) => s + pick(t), 0);
+
     const summary = {
       total: tagihan.length,
-      lunas: tagihan.filter((t) => t.statusPembayaran === 'LUNAS').length,
-      belumLunas: tagihan.filter((t) => t.statusPembayaran === 'BELUM_LUNAS')
-        .length,
-      menungguKonfirmasi: tagihan.filter(
-        (t) => t.statusPembayaran === 'MENUNGGU_KONFIRMASI',
-      ).length,
-      totalNominal: tagihan.reduce((sum, t) => sum + t.nominal, 0),
-      totalTerkumpul: tagihan
-        .filter((t) => t.statusPembayaran === 'LUNAS')
-        .reduce((sum, t) => sum + t.nominal, 0),
-      totalTertunggak: tagihan
-        .filter((t) => t.statusPembayaran !== 'LUNAS')
-        .reduce((sum, t) => sum + t.nominal, 0),
+      lunas: lunas.length,
+      belumLunas: tagihan.filter((t) => t.statusPembayaran === 'BELUM_LUNAS').length,
+      menungguKonfirmasi: tagihan.filter((t) => t.statusPembayaran === 'MENUNGGU_KONFIRMASI').length,
+      totalNominal: sum(tagihan, (t) => t.nominal),
+      totalTerkumpul: sum(lunas, (t) => t.nominal),
+      totalTertunggak: sum(
+        tagihan.filter((t) => t.statusPembayaran !== 'LUNAS'),
+        (t) => t.nominal,
+      ),
+      // Pecahan dari yang sudah terkumpul: porsi RW vs kas RT
+      terkumpulIpl: sum(lunas, (t) => t.nominalIpl),
+      terkumpulKas: sum(lunas, (t) => t.nominalKas),
     };
 
     return { tagihan, summary };
+  }
+
+  // ================================================================
+  // REKAP PER RT — tampilan RW: berapa yang terkumpul & sudah disetor tiap RT
+  // ================================================================
+
+  async rekapPerRt(ctx: AccessContext, params: { dari?: string; sampai?: string }) {
+    if (ctx.scope === 'OWN') throw new ForbiddenException('Rekap per RT tidak tersedia untuk akun ini.');
+    const range = resolvePeriode(params.dari, params.sampai);
+    const now = new Date();
+    const periodeOr =
+      range?.periodeOr ?? [
+        {
+          bulanPeriode: String(now.getMonth() + 1).padStart(2, '0'),
+          tahunPeriode: String(now.getFullYear()),
+        },
+      ];
+
+    const rows = await this.prisma.ipl.findMany({
+      where: { AND: [this.scopeWhere(ctx), { OR: periodeOr }] },
+      select: {
+        nominalIpl: true,
+        nominalKas: true,
+        statusPembayaran: true,
+        setoranId: true,
+        setoran: { select: { status: true } },
+        rumah: { select: { rt: true } },
+      },
+    });
+
+    const area = areaFilter(ctx);
+    const daftarRt = area === null ? SEMUA_RT : SEMUA_RT.filter((r) => r === area);
+
+    const perRt = daftarRt.map((rt) => {
+      const list = rows.filter((r) => r.rumah.rt === rt);
+      const lunas = list.filter((r) => r.statusPembayaran === 'LUNAS');
+      const disetor = lunas.filter((r) => r.setoranId !== null && r.setoran?.status !== 'DITOLAK');
+      const sum = (l: typeof list, f: (r: (typeof list)[number]) => number) =>
+        l.reduce((s, r) => s + f(r), 0);
+      return {
+        rt,
+        totalTagihan: list.length,
+        lunas: lunas.length,
+        belumLunas: list.length - lunas.length,
+        nominalTagihan: sum(list, totalTagihan),
+        terkumpulIpl: sum(lunas, (r) => r.nominalIpl),
+        terkumpulKas: sum(lunas, (r) => r.nominalKas),
+        sudahDisetor: sum(disetor, (r) => r.nominalIpl),
+        belumDisetor: sum(lunas, (r) => r.nominalIpl) - sum(disetor, (r) => r.nominalIpl),
+      };
+    });
+
+    const total = perRt.reduce(
+      (t, r) => ({
+        totalTagihan: t.totalTagihan + r.totalTagihan,
+        lunas: t.lunas + r.lunas,
+        belumLunas: t.belumLunas + r.belumLunas,
+        nominalTagihan: t.nominalTagihan + r.nominalTagihan,
+        terkumpulIpl: t.terkumpulIpl + r.terkumpulIpl,
+        terkumpulKas: t.terkumpulKas + r.terkumpulKas,
+        sudahDisetor: t.sudahDisetor + r.sudahDisetor,
+        belumDisetor: t.belumDisetor + r.belumDisetor,
+      }),
+      {
+        totalTagihan: 0,
+        lunas: 0,
+        belumLunas: 0,
+        nominalTagihan: 0,
+        terkumpulIpl: 0,
+        terkumpulKas: 0,
+        sudahDisetor: 0,
+        belumDisetor: 0,
+      },
+    );
+
+    return {
+      periode: range
+        ? { dari: range.dariYm, sampai: range.sampaiYm }
+        : { dari: `${periodeOr[0].tahunPeriode}-${periodeOr[0].bulanPeriode}`, sampai: `${periodeOr[0].tahunPeriode}-${periodeOr[0].bulanPeriode}` },
+      perRt,
+      total,
+    };
+  }
+
+  // ================================================================
+  // UBAH / HAPUS SATU TAGIHAN (koreksi oleh bendahara RT)
+  // ================================================================
+
+  private async findTagihanScoped(ctx: AccessContext, id: number) {
+    const ipl = await this.prisma.ipl.findUnique({
+      where: { id },
+      include: { rumah: { select: { rt: true } }, _count: { select: { pembayaran: true } } },
+    });
+    if (!ipl) throw new NotFoundException(`Tagihan dengan ID ${id} tidak ditemukan.`);
+    assertInArea(ctx, ipl.rumah.rt);
+    return ipl;
+  }
+
+  async update(ctx: AccessContext, id: number, dto: UpdateIplDto) {
+    const ipl = await this.findTagihanScoped(ctx, id);
+    if (ipl.statusPembayaran !== 'BELUM_LUNAS') {
+      throw new BadRequestException('Hanya tagihan berstatus BELUM LUNAS yang bisa diubah.');
+    }
+    const data = await this.prisma.ipl.update({
+      where: { id },
+      data: {
+        ...(dto.nominalIpl !== undefined && { nominalIpl: dto.nominalIpl }),
+        ...(dto.nominalKas !== undefined && { nominalKas: dto.nominalKas }),
+      },
+    });
+    return { message: 'Tagihan berhasil diperbarui.', data: withTotal(data) };
+  }
+
+  async remove(ctx: AccessContext, id: number) {
+    const ipl = await this.findTagihanScoped(ctx, id);
+    if (ipl.statusPembayaran !== 'BELUM_LUNAS' || ipl._count.pembayaran > 0) {
+      throw new BadRequestException(
+        'Tagihan yang sudah ada pembayarannya tidak bisa dihapus.',
+      );
+    }
+    await this.prisma.ipl.delete({ where: { id } });
+    return { message: 'Tagihan berhasil dihapus.' };
   }
 
   // ================================================================
@@ -168,94 +318,89 @@ export class IplService {
   // Query: ?dari=YYYY-MM&sampai=YYYY-MM. Tanpa param = bulan berjalan.
   // ================================================================
 
-  async getDashboardStats(params?: { dari?: string; sampai?: string }) {
+  async getDashboardStats(ctx: AccessContext, params?: { dari?: string; sampai?: string; rt?: string }) {
     const now = new Date();
     const bulanIni = String(now.getMonth() + 1).padStart(2, '0');
     const tahunIni = String(now.getFullYear());
 
     const resolved = resolvePeriode(params?.dari, params?.sampai);
-    // Default: bulan berjalan (backward-compatible)
     const periodeList = resolved?.periodeList ?? [
       {
         bulan: bulanIni,
         tahun: tahunIni,
-        label: new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString(
-          'id-ID',
-          { month: 'short', year: '2-digit' },
-        ),
+        label: new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('id-ID', {
+          month: 'short',
+          year: '2-digit',
+        }),
       },
     ];
+    const periodeOr =
+      resolved?.periodeOr ??
+      periodeList.map((p) => ({ bulanPeriode: p.bulan, tahunPeriode: p.tahun }));
 
-    const periodeOr = resolved?.periodeOr ??
-      periodeList.map((p) => ({
-        bulanPeriode: p.bulan,
-        tahunPeriode: p.tahun,
-      }));
+    const scope = this.scopeWhere(ctx, params?.rt);
+    const area = ctx.scope === 'OWN' ? null : areaFilter(ctx);
+    const wargaWhere = wargaBacaWhere(area ?? (params?.rt ? (params.rt as RT) : null));
 
-    const [tagihanPeriode, totalWarga, menungguKonfirmasi, pembayaranTerbaru] =
-      await Promise.all([
-        this.prisma.ipl.findMany({
-          where: { OR: periodeOr },
-          select: { statusPembayaran: true, nominal: true },
-        }),
-        this.prisma.user.count({ where: { role: 'WARGA' } }),
-        this.prisma.ipl.count({
-          where: { statusPembayaran: 'MENUNGGU_KONFIRMASI', OR: periodeOr },
-        }),
-        // 5 pembayaran terbaru yang tagihannya masuk rentang periode
-        this.prisma.pembayaranIpl.findMany({
-          where: { ipl: { OR: periodeOr } },
-          orderBy: { tanggalBayar: 'desc' },
-          take: 5,
-          select: {
-            idPembayaran: true,
-            tanggalBayar: true,
-            tanggalKonfirmasi: true,
-            nominal: true,
-            buktiTransaksi: true,
-            user: { select: { namaUser: true } },
-            ipl: {
-              select: {
-                bulanPeriode: true,
-                tahunPeriode: true,
-                statusPembayaran: true,
-                rumah: { select: { blokRumah: true, rt: true } },
-              },
+    const [tagihanPeriode, totalWarga, menungguKonfirmasi, pembayaranTerbaru] = await Promise.all([
+      this.prisma.ipl.findMany({
+        where: { AND: [scope, { OR: periodeOr }] },
+        select: { statusPembayaran: true, nominalIpl: true, nominalKas: true },
+      }),
+      ctx.scope === 'OWN' ? Promise.resolve(1) : this.prisma.user.count({ where: wargaWhere }),
+      this.prisma.ipl.count({
+        where: { AND: [scope, { statusPembayaran: 'MENUNGGU_KONFIRMASI' }, { OR: periodeOr }] },
+      }),
+      // 5 pembayaran terbaru yang tagihannya masuk rentang periode
+      this.prisma.pembayaranIpl.findMany({
+        where: { ipl: { AND: [scope, { OR: periodeOr }] } },
+        orderBy: { tanggalBayar: 'desc' },
+        take: 5,
+        select: {
+          idPembayaran: true,
+          tanggalBayar: true,
+          tanggalKonfirmasi: true,
+          nominal: true,
+          buktiTransaksi: true,
+          user: { select: { namaUser: true } },
+          ipl: {
+            select: {
+              bulanPeriode: true,
+              tahunPeriode: true,
+              statusPembayaran: true,
+              rumah: { select: { blokRumah: true, rt: true } },
             },
           },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
-    // Hitung kas masuk & ringkasan periode
-    const lunasBulanIni = tagihanPeriode.filter(
-      (t) => t.statusPembayaran === 'LUNAS',
-    ).length;
-    const belumLunasBulanIni = tagihanPeriode.filter(
-      (t) => t.statusPembayaran !== 'LUNAS',
-    ).length;
-    const totalKasMasukBulanIni = tagihanPeriode
-      .filter((t) => t.statusPembayaran === 'LUNAS')
-      .reduce((sum, t) => sum + t.nominal, 0);
+    const lunasRows = tagihanPeriode.filter((t) => t.statusPembayaran === 'LUNAS');
+    const lunasBulanIni = lunasRows.length;
+    const belumLunasBulanIni = tagihanPeriode.length - lunasBulanIni;
+    const totalKasMasukBulanIni = lunasRows.reduce((s, t) => s + totalTagihan(t), 0);
 
     // Tren kas masuk mengikuti rentang periode yang dipilih
     const trenData = await Promise.all(
       periodeList.map(async ({ bulan, tahun, label }) => {
         const rows = await this.prisma.ipl.findMany({
-          where: { bulanPeriode: bulan, tahunPeriode: tahun, statusPembayaran: 'LUNAS' },
-          select: { nominal: true },
+          where: {
+            AND: [scope, { bulanPeriode: bulan, tahunPeriode: tahun, statusPembayaran: 'LUNAS' }],
+          },
+          select: { nominalIpl: true, nominalKas: true },
         });
         return {
           label,
           bulan,
           tahun,
-          kasMasuk: rows.reduce((sum, r) => sum + r.nominal, 0),
+          kasMasuk: rows.reduce((s, r) => s + totalTagihan(r), 0),
           jumlahLunas: rows.length,
         };
       }),
     );
 
-    const dariYm = `${periodeList[0].tahun}-${periodeList[0].bulan}`;
-    const sampaiYm = `${periodeList[periodeList.length - 1].tahun}-${periodeList[periodeList.length - 1].bulan}`;
+    const first = periodeList[0];
+    const last = periodeList[periodeList.length - 1];
 
     return {
       totalWarga,
@@ -266,39 +411,37 @@ export class IplService {
       totalKasMasukBulanIni,
       bulanIni,
       tahunIni,
-      periode: { dari: dariYm, sampai: sampaiYm, jumlahBulan: periodeList.length },
+      periode: {
+        dari: `${first.tahun}-${first.bulan}`,
+        sampai: `${last.tahun}-${last.bulan}`,
+        jumlahBulan: periodeList.length,
+      },
       trenPemasukan: trenData,
       pembayaranTerbaru,
     };
   }
 
-
   // ================================================================
   // KONFIRMASI / TOLAK PEMBAYARAN
   // ================================================================
 
-  async konfirmasiPembayaran(pembayaranId: number, dto: KonfirmasiIplDto) {
-    // Cari record pembayaran
+  async konfirmasiPembayaran(ctx: AccessContext, pembayaranId: number, dto: KonfirmasiIplDto) {
     const pembayaran = await this.prisma.pembayaranIpl.findUnique({
       where: { idPembayaran: pembayaranId },
-      include: { ipl: true },
+      include: { ipl: { include: { rumah: { select: { rt: true } } } } },
     });
 
     if (!pembayaran) {
-      throw new NotFoundException(
-        `Pembayaran dengan ID ${pembayaranId} tidak ditemukan.`,
-      );
+      throw new NotFoundException(`Pembayaran dengan ID ${pembayaranId} tidak ditemukan.`);
     }
+    assertInArea(ctx, pembayaran.ipl.rumah.rt);
 
     if (pembayaran.ipl.statusPembayaran !== 'MENUNGGU_KONFIRMASI') {
-      throw new BadRequestException(
-        'Pembayaran ini tidak dalam status "Menunggu Konfirmasi".',
-      );
+      throw new BadRequestException('Pembayaran ini tidak dalam status "Menunggu Konfirmasi".');
     }
 
     if (dto.action === 'TERIMA') {
-      // Update status IPL ke LUNAS + catat tanggal konfirmasi terpisah dari tanggal transaksi
-      await Promise.all([
+      await this.prisma.$transaction([
         this.prisma.ipl.update({
           where: { id: pembayaran.idIpl },
           data: { statusPembayaran: 'LUNAS' },
@@ -318,31 +461,31 @@ export class IplService {
       );
 
       return { message: 'Pembayaran berhasil dikonfirmasi. Status menjadi LUNAS.' };
-    } else {
-      // TOLAK: kembalikan status ke BELUM_LUNAS + simpan catatan
-      await Promise.all([
-        this.prisma.ipl.update({
-          where: { id: pembayaran.idIpl },
-          data: { statusPembayaran: 'BELUM_LUNAS' },
-        }),
-        this.prisma.pembayaranIpl.update({
-          where: { idPembayaran: pembayaranId },
-          data: { catatan: dto.catatan ?? null },
-        }),
-      ]);
-
-      await this.notifikasiService.kirim(
-        pembayaran.idUser,
-        'PEMBAYARAN_DITOLAK',
-        'Pembayaran Ditolak',
-        `Pembayaran IPL kamu ditolak.${dto.catatan ? ` Catatan: ${dto.catatan}` : ''}`,
-        '/dashboard/iuran',
-      );
-
-      return {
-        message: 'Pembayaran ditolak. Status dikembalikan ke BELUM LUNAS.',
-        catatan: dto.catatan ?? null,
-      };
     }
+
+    // TOLAK: kembalikan status ke BELUM_LUNAS + simpan catatan
+    await this.prisma.$transaction([
+      this.prisma.ipl.update({
+        where: { id: pembayaran.idIpl },
+        data: { statusPembayaran: 'BELUM_LUNAS' },
+      }),
+      this.prisma.pembayaranIpl.update({
+        where: { idPembayaran: pembayaranId },
+        data: { catatan: dto.catatan ?? null },
+      }),
+    ]);
+
+    await this.notifikasiService.kirim(
+      pembayaran.idUser,
+      'PEMBAYARAN_DITOLAK',
+      'Pembayaran Ditolak',
+      `Pembayaran IPL kamu ditolak.${dto.catatan ? ` Catatan: ${dto.catatan}` : ''}`,
+      '/dashboard/iuran',
+    );
+
+    return {
+      message: 'Pembayaran ditolak. Status dikembalikan ke BELUM LUNAS.',
+      catatan: dto.catatan ?? null,
+    };
   }
 }

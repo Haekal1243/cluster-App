@@ -7,6 +7,9 @@ import {
   Calendar, FileText, ChevronDown, Check,
 } from "lucide-react";
 import { iplApi, portalApi, kegiatanApi, pengumumanApi } from "@/lib/api";
+import { can, isWargaView } from "@/lib/session";
+import PanelSistem from "@/components/dashboard/PanelSistem";
+import { useUser } from "@/lib/useUser";
 import Link from "next/link";
 import KegiatanDetailModal from "@/components/kegiatan/KegiatanDetailModal";
 import PengumumanDetailModal from "@/components/pengumuman/PengumumanDetailModal";
@@ -521,12 +524,15 @@ function WargaDashboardView({ user }) {
         // coba pakai scope query, fallback ke getActive tanpa scope jika backend lama
         let data = [];
         try {
-          data = await kegiatanApi.getActive({ scope: kegiatanScope }).catch(() => null);
+          data = await (kegiatanScope === "aktif" ? kegiatanApi.getFeed() : kegiatanApi.getActive({ scope: kegiatanScope })).catch(() => null);
           if (!Array.isArray(data)) data = await kegiatanApi.getActive().catch(() => []);
         } catch {
           data = await kegiatanApi.getActive().catch(() => []);
         }
         if (cancelled) return;
+        if (kegiatanScope === "aktif" && Array.isArray(data)) {
+          data = [...data].sort((a, b) => new Date(a.tanggalAcara) - new Date(b.tanggalAcara));
+        }
         // Client-side filter sebagai safety net jika backend belum support scope
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const filtered = (data || []).filter((k) => {
@@ -567,7 +573,7 @@ function WargaDashboardView({ user }) {
       try {
         let data = [];
         try {
-          data = await pengumumanApi.getActive({ scope: pengumumanScope }).catch(() => null);
+          data = await (pengumumanScope === "aktif" ? pengumumanApi.getFeed() : pengumumanApi.getActive({ scope: pengumumanScope })).catch(() => null);
           if (!Array.isArray(data)) data = await pengumumanApi.getActive().catch(() => []);
         } catch {
           data = await pengumumanApi.getActive().catch(() => []);
@@ -687,12 +693,12 @@ function WargaDashboardView({ user }) {
         <div className="portal-hero-accent" aria-hidden />
         <div className="portal-hero-main">
           <div className="portal-hero-left">
-            <p className="portal-hero-eyebrow">Dashboard Warga · RW 21 · Cluster Topaz</p>
+            <p className="portal-hero-eyebrow">Beranda Warga · RW 21 · Cluster Topaz</p>
             <h2>Halo, {firstName} 👋</h2>
             <p className="portal-hero-sub">
               {rumahList.length > 1
                 ? `Kelola ${rumahList.length} unit rumah Anda dalam satu tempat.`
-                : "Selamat datang di Dashboard Warga Cluster Topaz."}
+                : "Selamat datang di Beranda Warga Cluster Topaz."}
             </p>
             <div className="portal-hero-meta">
               <span className="portal-hero-periode">
@@ -1029,21 +1035,13 @@ function WargaDashboardView({ user }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [user, setUser] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { user, ready } = useUser();
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("user");
-      setUser(raw ? JSON.parse(raw) : null);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  }, []);
+  if (!ready || !user) return null;
 
-  if (isCheckingAuth) return null;
-
-  return user?.role === "WARGA" ? <WargaDashboardView user={user} /> : <AdminDashboardView user={user} />;
+  // Tampilan warga (tagihan sendiri), pengurus (ringkasan tagihan wilayah), atau pengelola sistem
+  // (Admin: tanpa akses tagihan, hanya role/pengurus/data warga), mengikuti hak akses.
+  if (isWargaView(user)) return <WargaDashboardView user={user} />;
+  if (!can(user, "ipl.read")) return <PanelSistem user={user} />;
+  return <AdminDashboardView user={user} />;
 }

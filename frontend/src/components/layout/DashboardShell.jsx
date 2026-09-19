@@ -5,57 +5,58 @@ import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
-import { getToken, clearSession } from "@/lib/session";
+import GantiPasswordModal from "@/components/auth/GantiPasswordModal";
+import { authApi } from "@/lib/api";
+import { getToken, getUser, saveUser, clearSession } from "@/lib/session";
+import { isPathAllowed } from "@/lib/nav";
+import { useUser } from "@/lib/useUser";
 import { showMessage } from "@/lib/message";
-
-const KNOWN_ROLES = ["ADMIN", "PENGURUS", "WARGA"];
-// Warga hanya boleh mengakses Dashboard, Tagihan IPL, dan Pengaduan — halaman
-// kelola (Data Warga, Kegiatan, Pengumuman) tetap khusus ADMIN/PENGURUS.
-const WARGA_ALLOWED_PATHS = ["/dashboard", "/dashboard/iuran", "/dashboard/pengaduan"];
 
 // Otomatis logout kalau tidak ada aktivitas sama sekali selama 15 menit.
 const IDLE_LIMIT_MS = 15 * 60 * 1000;
 const IDLE_EVENTS = ["mousemove", "keydown", "click", "scroll", "touchstart"];
 
-function isPathAllowedForWarga(pathname) {
-  return WARGA_ALLOWED_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`)
-  );
-}
-
 export default function DashboardShell({ children }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useUser();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
+  // Sekali per pemuatan: ambil hak akses terbaru dari server. Kalau admin baru saja
+  // mengubah jabatan/matriks, menu dan tombol ikut berubah tanpa harus login ulang.
   useEffect(() => {
-    const rawUser = localStorage.getItem("user");
-    if (!rawUser || !getToken()) {
+    if (!getToken() || !getUser()) {
       clearSession();
       router.replace("/login");
       return;
     }
+    let cancelled = false;
+    authApi
+      .me()
+      .then((fresh) => {
+        if (!cancelled) saveUser(fresh);
+      })
+      .catch(() => {
+        // 401 sudah membersihkan sesi di request(); arahkan ke login.
+        if (!cancelled && !getToken()) router.replace("/login");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
-    try {
-      const user = JSON.parse(rawUser);
-      if (!KNOWN_ROLES.includes(user?.role)) {
-        clearSession();
-        router.replace("/login");
-        return;
-      }
-      if (user.role === "WARGA" && !isPathAllowedForWarga(pathname)) {
-        setIsAuthorized(false);
-        router.replace("/dashboard");
-        return;
-      }
-      setIsAuthorized(true);
-    } catch {
-      clearSession();
-      router.replace("/login");
+  // Guard halaman: berdasarkan permission, bukan nama role.
+  useEffect(() => {
+    if (!user) return;
+    if (!isPathAllowed(user, pathname)) {
+      setIsAuthorized(false);
+      router.replace("/dashboard");
+      return;
     }
-  }, [router, pathname]);
+    setIsAuthorized(true);
+  }, [user, pathname, router]);
 
   // Auto-logout kalau tidak ada aktivitas (mouse/keyboard/klik/scroll) selama 15 menit.
   const idleTimerRef = useRef(null);
@@ -64,7 +65,7 @@ export default function DashboardShell({ children }) {
     clearSession();
     await showMessage(
       "Sesi Berakhir",
-      "Kamu logout otomatis karena tidak ada aktivitas selama 15 menit.",
+      "Kamu keluar otomatis karena tidak ada aktivitas selama 15 menit.",
       "info"
     );
     router.replace("/login");
@@ -119,6 +120,9 @@ export default function DashboardShell({ children }) {
         <main className="dashboard-content">{children}</main>
         <Footer />
       </div>
+
+      {/* Login pertama dengan password sementara dari pengurus RT: wajib ganti dulu */}
+      {user?.wajibGantiPassword && <GantiPasswordModal wajib />}
     </div>
   );
 }

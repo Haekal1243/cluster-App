@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Cluster App - Login",
+  title: "Cluster App - Masuk",
   description: "Masuk ke akun warga cluster",
 };
 

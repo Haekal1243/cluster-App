@@ -104,7 +104,7 @@ export default function PortalDashboardPage() {
       try {
         let data = [];
         try {
-          data = await kegiatanApi.getActive({ scope: kegiatanScope }).catch(() => null);
+          data = await (kegiatanScope === "aktif" ? kegiatanApi.getFeed() : kegiatanApi.getActive({ scope: kegiatanScope })).catch(() => null);
           if (!Array.isArray(data)) data = await kegiatanApi.getActive().catch(() => []);
         } catch {
           data = await kegiatanApi.getActive().catch(() => []);
@@ -145,7 +145,7 @@ export default function PortalDashboardPage() {
       try {
         let data = [];
         try {
-          data = await pengumumanApi.getActive({ scope: pengumumanScope }).catch(() => null);
+          data = await (pengumumanScope === "aktif" ? pengumumanApi.getFeed() : pengumumanApi.getActive({ scope: pengumumanScope })).catch(() => null);
           if (!Array.isArray(data)) data = await pengumumanApi.getActive().catch(() => []);
         } catch {
           data = await pengumumanApi.getActive().catch(() => []);

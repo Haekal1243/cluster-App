@@ -1,31 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  LayoutDashboard,
-  Users,
-  Wallet,
-  ReceiptText,
-  CalendarDays,
-  Megaphone,
-  MessageSquareWarning,
-  X,
-  LogOut,
-} from "lucide-react";
+import { X, LogOut } from "lucide-react";
 import { showConfirm } from "@/lib/message";
 import { clearSession } from "@/lib/session";
-
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["ADMIN", "PENGURUS", "WARGA"] },
-  { label: "Data Warga", href: "/dashboard/warga", icon: Users, roles: ["ADMIN", "PENGURUS"] },
-  { label: "Tagihan IPL", href: "/dashboard/iuran", icon: Wallet, roles: ["ADMIN", "PENGURUS", "WARGA"] },
-  { label: "Keuangan", href: "/dashboard/keuangan", icon: ReceiptText, roles: ["ADMIN", "PENGURUS"] },
-  { label: "Pengaduan", href: "/dashboard/pengaduan", icon: MessageSquareWarning, roles: ["ADMIN", "PENGURUS", "WARGA"] },
-  { label: "Kegiatan", href: "/dashboard/kegiatan", icon: CalendarDays, roles: ["ADMIN", "PENGURUS"] },
-  { label: "Pengumuman", href: "/dashboard/pengumuman", icon: Megaphone, roles: ["ADMIN", "PENGURUS"] },
-];
+import { NAV_ITEMS } from "@/lib/nav";
+import { useUser } from "@/lib/useUser";
 
 export default function Sidebar({
   isOpen,
@@ -34,23 +15,15 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [role, setRole] = useState(null);
+  const { user } = useUser();
 
-  useEffect(() => {
-    try {
-      const rawUser = localStorage.getItem("user");
-      setRole(rawUser ? JSON.parse(rawUser)?.role : null);
-    } catch {
-      setRole(null);
-    }
-  }, []);
-
-  const navItems = NAV_ITEMS.filter((item) => !role || item.roles.includes(role));
+  // Menu mengikuti hak akses (permission) user dari database, bukan nama role.
+  const navItems = user ? NAV_ITEMS.filter((item) => item.allow(user)) : [];
 
   const handleLogout = async () => {
     const confirmed = await showConfirm(
       "Keluar dari akun?",
-      "Kamu akan kembali ke halaman login.",
+      "Kamu akan kembali ke halaman masuk.",
       "warning",
       "Ya, keluar",
       "Batal"
@@ -105,12 +78,12 @@ export default function Sidebar({
             type="button"
             className="sidebar-logout-btn"
             onClick={handleLogout}
-            title={isCollapsed ? " Logout" : undefined}
+            title={isCollapsed ? "Keluar" : undefined}
           >
             <span className="sidebar-link-icon">
               <LogOut size={17} />
             </span>
-            <span className="sidebar-link-label">Logout</span>
+            <span className="sidebar-link-label">Keluar</span>
           </button>
         </div>
       </aside>

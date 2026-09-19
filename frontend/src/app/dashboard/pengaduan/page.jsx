@@ -9,6 +9,8 @@ import { showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import PengaduanFormModal from "@/components/pengaduan/PengaduanFormModal";
 import PengaduanDetailModal from "@/components/pengaduan/PengaduanDetailModal";
+import { can, isWargaView } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
 import PengaduanRespondModal from "@/components/pengaduan/PengaduanRespondModal";
 
 const KATEGORI_LABELS = {
@@ -46,12 +48,13 @@ function StatusBadge({ status }) {
   return <span className={`ipl-status-badge ${s.cls}`}>{s.label}</span>;
 }
 
-function canRespond(item) {
-  return item.status === "MENUNGGU" || item.status === "DIPROSES";
+// Hanya yang punya permission pengaduan.respon yang boleh menanggapi; lainnya hanya melihat.
+function canRespond(item, boleh = true) {
+  return boleh && (item.status === "MENUNGGU" || item.status === "DIPROSES");
 }
 
-function PengaduanActionButton({ item, onAction }) {
-  return canRespond(item) ? (
+function PengaduanActionButton({ item, onAction, bolehRespon }) {
+  return canRespond(item, bolehRespon) ? (
     <button
       type="button"
       className="btn-ipl-review"
@@ -135,9 +138,10 @@ function AdminPengaduanView({ user }) {
   }, []);
 
   const currentUserName = user?.nama || user?.name || "Admin";
+  const bolehRespon = can(user, "pengaduan.respon");
 
   const handlePengaduanAction = (item) => {
-    if (canRespond(item)) {
+    if (canRespond(item, bolehRespon)) {
       setRespondItem(item);
     } else {
       setDetailItem(item);
@@ -312,7 +316,7 @@ function AdminPengaduanView({ user }) {
                     <td data-label="Tanggal">{formatDate(item.createdAt)}</td>
                     <td data-label="Status"><StatusBadge status={item.status} /></td>
                     <td data-label="Aksi">
-                      <PengaduanActionButton item={item} onAction={handlePengaduanAction} />
+                      <PengaduanActionButton item={item} onAction={handlePengaduanAction} bolehRespon={bolehRespon} />
                     </td>
                   </tr>
                 ))}
@@ -337,7 +341,7 @@ function AdminPengaduanView({ user }) {
                 </div>
                 <div className="pengaduan-grid-footer">
                   <StatusBadge status={item.status} />
-                  <PengaduanActionButton item={item} onAction={handlePengaduanAction} />
+                  <PengaduanActionButton item={item} onAction={handlePengaduanAction} bolehRespon={bolehRespon} />
                 </div>
               </div>
             ))}
@@ -493,23 +497,11 @@ function WargaPengaduanView({ user }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PengaduanPage() {
-  const [user, setUser] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { user, ready } = useUser();
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("user");
-      setUser(raw ? JSON.parse(raw) : null);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  }, []);
+  if (!ready || !user) return null;
 
-  if (isCheckingAuth) return null;
-
-  return user?.role === "WARGA"
+  return isWargaView(user)
     ? <WargaPengaduanView user={user} />
     : <AdminPengaduanView user={user} />;
 }

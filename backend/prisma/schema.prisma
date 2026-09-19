@@ -11,10 +11,23 @@ datasource db {
 // ENUMS
 // ==========================================
 
-enum Role {
-  ADMIN
-  WARGA
-  PENGURUS
+// Wilayah kerja user. RT dipastikan tetap 4, jadi enum (bukan tabel).
+enum Area {
+  RW
+  RT_01
+  RT_02
+  RT_03
+  RT_04
+}
+
+// Jangkauan data yang boleh diakses sebuah permission.
+//   ALL  = seluruh warga RW
+//   AREA = hanya data dengan area sama dengan area user
+//   OWN  = hanya data milik user itu sendiri (khusus WARGA)
+enum ScopeAkses {
+  ALL
+  AREA
+  OWN
 }
 
 enum StatusPembayaran {
@@ -30,6 +43,12 @@ enum RT {
   RT_04
 }
 
+enum StatusRumah {
+  KOSONG
+  DIHUNI_KONTRAK
+  DIHUNI_TETAP
+}
+
 enum StatusPengumuman {
   active
   unactived
@@ -38,6 +57,20 @@ enum StatusPengumuman {
 enum StatusKegiatan {
   active
   unactived
+}
+
+// Alur pengajuan tampil ke seluruh RW: sekre RT ajukan -> ketua/sekre RW ACC.
+enum StatusPengajuan {
+  TIDAK
+  DIAJUKAN
+  DISETUJUI
+  DITOLAK
+}
+
+enum StatusSetoran {
+  MENUNGGU_KONFIRMASI
+  DIKONFIRMASI
+  DITOLAK
 }
 
 enum KategoriPengaduan {
@@ -68,20 +101,76 @@ enum TipeNotifikasi {
   PENGADUAN_DITANGGAPI
   PENGUMUMAN_BARU
   KEGIATAN_BARU
+  SETORAN_MASUK
+  SETORAN_DIKONFIRMASI
+  SETORAN_DITOLAK
+  PENGAJUAN_MASUK
+  PENGAJUAN_DISETUJUI
+  PENGAJUAN_DITOLAK
 }
 
 // ==========================================
-// PERMISSIONS
+// RBAC — seluruhnya di database, diatur admin lewat menu
 // ==========================================
 
-model RolePermission {
-  id           Int      @id @default(autoincrement())
-  role         Role     @map("role") // Menggunakan enum Role sebagai pengganti role_id
-  permissionId Int      @map("permission_id") 
-  createBy     String?  @map("create_by")
-  createAt     DateTime @default(now()) @map("create_at")
+// Role = jabatan. Ketua RT1 s/d RT4 memakai 1 role (KETUA_RT) yang sama;
+// RT-nya dibedakan oleh User.area, bukan oleh role.
+model Role {
+  id       Int      @id @default(autoincrement())
+  kode     String   @unique @db.VarChar(50) // contoh: KETUA_RT
+  nama     String                            // contoh: Ketua RT
+  level    Int                               // 0 admin, 1 RW, 2 RT, 3 warga
+  isSystem Boolean  @default(false) @map("is_system") // role bawaan, tidak boleh dihapus
+  createAt DateTime @default(now()) @map("create_at")
 
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("tb_Role")
+}
+
+// Satu baris = satu aksi pada satu menu, kode-nya "<menu>.<aksi>" (contoh: ipl.generate).
+model Permission {
+  id         Int     @id @default(autoincrement())
+  kode       String  @unique @db.VarChar(100)
+  menu       String  @db.VarChar(50)
+  aksi       String  @db.VarChar(50)
+  keterangan String?
+
+  roles RolePermission[]
+
+  @@map("tb_Permission")
+}
+
+// Matriks hak akses: role x permission, lengkap dengan scope-nya.
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  scope        ScopeAkses @default(AREA)
+  createBy     String?    @map("create_by")
+  createAt     DateTime   @default(now()) @map("create_at")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
   @@map("tb_Role_permission")
+}
+
+// Jejak aksi sensitif: reset password, ubah matriks, ganti pengurus, konfirmasi setoran.
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  idUser     Int?     @map("id_user")
+  aksi       String   @db.VarChar(100)
+  target     String?  @db.VarChar(100)
+  targetId   Int?     @map("target_id")
+  keterangan String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([aksi])
+  @@map("tb_AuditLog")
 }
 
 // ==========================================
@@ -91,33 +180,48 @@ model RolePermission {
 model User {
   id        Int      @id @default(autoincrement())
   namaUser  String   @map("nama_user")
-  email     String   @unique
-  password  String   
+  username  String   @unique // login pakai username (default diisi no HP)
+  email     String?  @unique // opsional, banyak warga tidak punya email
+  password  String
   noTelp    String?  @map("no_telp")
-  role      Role     @default(WARGA) @map("role") // Kembali menggunakan enum Role
+  roleId    Int      @map("role_id")
+  area      Area?    // wilayah kerja; null untuk ADMIN
+  wajibGantiPassword Boolean @default(false) @map("wajib_ganti_password")
   createAt  DateTime @default(now()) @map("create_at")
-  
+
+  role      Role     @relation(fields: [roleId], references: [id])
+
   // Relasi
   rumah      Rumah[]  // 1 User bisa memiliki/menghuni banyak rumah
   pembayaran PembayaranIpl[]
   pengaduan  Pengaduan[]
   notifikasi Notifikasi[]
 
+  @@index([roleId])
+  @@index([area])
   @@map("tb_User")
 }
 
+// Data blok rumah sekaligus penghubung ke warga. Blok berformat Exx/xx.
 model Rumah {
-  id         Int      @id @default(autoincrement())
-  rt         RT       @map("RT")
-  blokRumah  String   @map("block_rumah")
-  
+  id         Int         @id @default(autoincrement())
+  rt         RT          @map("RT")
+  blokRumah  String      @map("block_rumah")
+  status     StatusRumah @default(KOSONG)
+  isDelete   Boolean     @default(false) @map("is_delete")
+  createBy   String?     @map("create_by")
+  createDate DateTime    @default(now()) @map("create_date")
+  updateBy   String?     @map("update_by")
+  updateDate DateTime?   @map("update_date")
+
   // Berdasarkan garis relasi dari tb_User ke tb_Rumah
-  userId     Int?     @map("id_user")
-  penghuni   User?    @relation(fields: [userId], references: [id])
-  
+  userId     Int?        @map("id_user")
+  penghuni   User?       @relation(fields: [userId], references: [id])
+
   // Relasi
   tagihanIpl Ipl[]
 
+  @@unique([rt, blokRumah])
   @@map("tb_Rumah")
 }
 
@@ -125,19 +229,24 @@ model Rumah {
 // SESUAI PDM: TRANSAKSI (TAGIHAN & PEMBAYARAN)
 // ==========================================
 
-// Ini merepresentasikan trx_IPL (Tagihan bulanan)
+// Ini merepresentasikan trx_IPL (Tagihan bulanan).
+// Total yang dibayar warga = nominalIpl (disetor ke RW) + nominalKas (kas RT).
 model Ipl {
   id               Int              @id @default(autoincrement())
   idRumah          Int              @map("Id_rumah")
   bulanPeriode     String           @map("bulan_periode")
   tahunPeriode     String           @map("tahun_periode")
-  nominal          Int
+  nominalIpl       Int              @map("nominal_ipl")
+  nominalKas       Int              @default(0) @map("nominal_kas")
   statusPembayaran StatusPembayaran @default(BELUM_LUNAS) @map("status_pembayaran")
-  
+  setoranId        Int?             @map("setoran_id") // null = porsi IPL belum disetor ke RW
+
   // Relasi
   rumah            Rumah            @relation(fields: [idRumah], references: [id])
+  setoran          SetoranIpl?      @relation(fields: [setoranId], references: [id])
   pembayaran       PembayaranIpl[]
 
+  @@index([setoranId])
   @@map("trx_IPL")
 }
 
@@ -147,7 +256,7 @@ model PembayaranIpl {
   idUser            Int       @map("id_user")
   idIpl             Int       @map("Id_IPL")
   tanggalBayar      DateTime  @default(now()) @map("tanggal_bayar") // tanggal transaksi/transfer asli (paid_at)
-  tanggalKonfirmasi DateTime? @map("tanggal_konfirmasi") // tanggal admin konfirmasi, terpisah dari tanggal transaksi
+  tanggalKonfirmasi DateTime? @map("tanggal_konfirmasi") // tanggal konfirmasi, terpisah dari tanggal transaksi
   buktiTransaksi    String?   @map("bukti_transaksi")
   nominal           Int       @map("Nominal")
   catatan           String?   @map("catatan")
@@ -159,22 +268,53 @@ model PembayaranIpl {
   @@map("trx_pembayaran_ipl")
 }
 
+// Setoran porsi IPL dari satu RT ke bendahara RW (kas RT tidak ikut disetor).
+model SetoranIpl {
+  id                Int           @id @default(autoincrement())
+  area              Area          // RT yang menyetor
+  totalIpl          Int           @map("total_ipl")
+  jumlahTagihan     Int           @map("jumlah_tagihan")
+  buktiTransaksi    String?       @map("bukti_transaksi")
+  status            StatusSetoran @default(MENUNGGU_KONFIRMASI)
+  catatan           String?       @db.Text
+  createBy          String?       @map("create_by")
+  createDate        DateTime      @default(now()) @map("create_date")
+  konfirmasiBy      String?       @map("konfirmasi_by")
+  tanggalKonfirmasi DateTime?     @map("tanggal_konfirmasi")
+
+  tagihan           Ipl[]
+
+  @@index([area])
+  @@map("trx_setoran_ipl")
+}
+
 // ==========================================
 // TABEL TAMBAHAN
 // ==========================================
 
+// Kegiatan/pengumuman default milik RT pembuatnya (area). Sekre RT dapat
+// mengajukan agar tampil ke seluruh RW; ketua/sekre RW yang menyetujui.
+// Konten yang dibuat pengurus RW (area = RW) langsung tampil ke seluruh RW.
 model Kegiatan {
-  id           Int            @id @default(autoincrement())
-  judul        String
-  deskripsi    String   @db.Text
-  gambarUrl    String
-  tanggalAcara DateTime
-  status       StatusKegiatan @default(active)
-  createBy     String?
-  createdAt    DateTime       @default(now())
-  updateBy     String?
-  updatedAt    DateTime?
-  isDelete     Boolean        @default(false)
+  id              Int             @id @default(autoincrement())
+  judul           String
+  deskripsi       String          @db.Text
+  gambarUrl       String
+  tanggalAcara    DateTime
+  status          StatusKegiatan  @default(active)
+  area            Area            @default(RW)
+  statusPengajuan StatusPengajuan @default(TIDAK) @map("status_pengajuan")
+  alasanTolak     String?         @map("alasan_tolak") @db.Text
+  tampilSampai    DateTime?       @map("tampil_sampai") // batas tampil di dashboard warga
+  tampilDiLanding Boolean         @default(false) @map("tampil_di_landing") // portofolio landing page
+  createBy        String?
+  createdAt       DateTime        @default(now())
+  updateBy        String?
+  updatedAt       DateTime?
+  isDelete        Boolean         @default(false)
+
+  @@index([area])
+  @@map("tb_Kegiatan")
 }
 
 model Pengumuman {
@@ -183,13 +323,35 @@ model Pengumuman {
   filePengumuman        String?          @map("file_pengumuman")
   keteranganPengumuman  String?          @db.Text @map("keterangan_pengumuman")
   status                StatusPengumuman @default(active) @map("status")
+  area                  Area             @default(RW)
+  statusPengajuan       StatusPengajuan  @default(TIDAK) @map("status_pengajuan")
+  alasanTolak           String?          @map("alasan_tolak") @db.Text
+  tampilSampai          DateTime?        @map("tampil_sampai")
   createBy              String?          @map("create_by")
   createDate            DateTime         @default(now()) @map("create_date")
   updateBy              String?          @map("update_by")
   updateDate            DateTime?        @map("update_date")
   isDelete              Boolean          @default(false) @map("is_delete")
 
+  @@index([area])
   @@map("tb_Pengumuman")
+}
+
+// Notulen rapat. Area otomatis dari jabatan pembuatnya (RW atau RT masing-masing).
+model CatatanRapat {
+  id          Int       @id @default(autoincrement())
+  area        Area
+  judul       String
+  isiNotulen  String    @db.Text @map("isi_notulen")
+  fileNotulen String?   @map("file_notulen")
+  isDelete    Boolean   @default(false) @map("is_delete")
+  createBy    String?   @map("create_by")
+  createDate  DateTime  @default(now()) @map("create_date")
+  updateBy    String?   @map("update_by")
+  updateDate  DateTime? @map("update_date")
+
+  @@index([area])
+  @@map("tb_CatatanRapat")
 }
 
 model Pengaduan {
@@ -206,6 +368,8 @@ model Pengaduan {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime?
   isDelete    Boolean           @default(false)
+
+  @@map("tb_Pengaduan")
 }
 
 model Notifikasi {
@@ -218,13 +382,18 @@ model Notifikasi {
   link      String?
   isRead    Boolean        @default(false)
   createdAt DateTime       @default(now())
+
+  @@map("tb_Notifikasi")
 }
 
-// Transaksi kas manual (pemasukan non-IPL & seluruh pengeluaran).
-// Pemasukan IPL dihitung otomatis dari tagihan LUNAS, tidak disimpan di sini.
+// Transaksi kas manual (pemasukan non-IPL & seluruh pengeluaran), per area.
+// Pemasukan otomatis tidak disimpan di sini:
+//   - RT: nominalKas dari tagihan LUNAS di RT itu
+//   - RW: totalIpl dari setoran yang sudah DIKONFIRMASI
 model KasTransaksi {
   id         Int      @id @default(autoincrement())
   tipe       TipeKas
+  area       Area     @default(RW)
   kategori   String
   nominal    Int
   tanggal    DateTime @default(now())
@@ -234,5 +403,6 @@ model KasTransaksi {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime? @map("updated_at")
 
+  @@index([area])
   @@map("trx_kas")
 }

@@ -1,8 +1,18 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, Matches } from 'class-validator';
-import {RT } from '@prisma/client';
+import {
+  IsEmail,
+  IsEnum,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
+import { RT, StatusRumah } from '@prisma/client';
+import { BLOK_RUMAH_MESSAGE, BLOK_RUMAH_REGEX } from '../../common/helpers';
 
-const BLOK_RUMAH_REGEX = /^E\d{1,2}\/\d{1,2}$/;
-const BLOK_RUMAH_MESSAGE = 'Format blok rumah harus seperti E7/15';
+const blank = ({ value }: { value: unknown }) => (value === '' ? undefined : value);
 
 export class CreateWargaDto {
   @IsString()
@@ -22,15 +32,28 @@ export class CreateWargaDto {
   @Matches(BLOK_RUMAH_REGEX, { message: BLOK_RUMAH_MESSAGE })
   blokRumah!: string;
 
-  @IsEmail()
-  @IsNotEmpty()
-  email!: string;
+  /** Login. Kosong = pakai no HP. */
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @Transform(blank)
+  username?: string;
 
+  /** Opsional; banyak warga tidak punya email. */
+  @IsOptional()
+  @IsEmail()
+  @Transform(blank)
+  email?: string;
+
+  /** Kosong = dibuatkan otomatis dan dikembalikan sekali di response. */
+  @IsOptional()
   @IsString()
   @MinLength(6)
-  password!: string;
+  @Transform(blank)
+  password?: string;
 
-  @IsString()
   @IsOptional()
-  role?: string; 
+  @IsIn([StatusRumah.DIHUNI_TETAP, StatusRumah.DIHUNI_KONTRAK])
+  @Transform(blank)
+  statusRumah?: StatusRumah;
 }

@@ -70,8 +70,8 @@ export const pengurus = [
 export const panduan = [
   {
     no: "1",
-    judul: "Daftar atau Masuk Akun",
-    isi: "Buat akun menggunakan nomor rumah yang terdaftar di RW 21, atau masuk langsung apabila akun sudah dibuat sebelumnya. Verifikasi dilakukan melalui WhatsApp.",
+    judul: "Masuk dengan Akun dari RT",
+    isi: "Akun warga dibuatkan oleh pengurus RT. Masuk dengan nama pengguna (nomor HP) dan kata sandi sementara dari RT, lalu buat kata sandi baru saat masuk pertama kali.",
   },
   {
     no: "2",
@@ -100,13 +100,14 @@ export const faq = [
   },
   {
     q: "Saya lupa kata sandi. Bagaimana cara mengatur ulang?",
-    a: 'Pada halaman masuk portal, klik tautan "Lupa Kata Sandi", masukkan nomor rumah yang terdaftar, dan ikuti instruksi yang dikirimkan ke nomor WhatsApp terdaftar. Apabila mengalami kendala, hubungi pengurus RW langsung.',
+    a: "Hubungi sekretaris atau ketua RT Anda. Pengurus RT akan membuatkan kata sandi sementara yang wajib Anda ganti saat masuk berikutnya. Apabila mengalami kendala, hubungi pengurus RW langsung.",
   },
 ];
 
 export const navLinks = [
   { href: "#beranda", label: "Beranda" },
   { href: "#pengumuman", label: "Pengumuman" },
+  { href: "/landingpage/portofolio", label: "Portofolio" },
   { href: "#layanan", label: "Layanan" },
   { href: "#pengaduan", label: "Pengaduan" },
   { href: "#kontak", label: "Kontak" },

@@ -15,7 +15,8 @@ import * as path from 'path';
 import { MATRIX, PERMISSIONS, ROLES } from './rbac-data';
 
 const prisma = new PrismaClient();
-const SALT_ROUNDS = 10;
+const SALT_ROUNDS = 1
+0;
 
 const PASSWORD_ADMIN = 'admin1234';
 const PASSWORD_PENGURUS = 'Pengurus@123';

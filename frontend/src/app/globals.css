@@ -5037,6 +5037,75 @@ select {
   color: var(--db-slate-400);
 }
 
+/* ——— Keuangan Cluster: soft-tint redesign (scoped, tidak memengaruhi Iuran/Setoran) ——— */
+.keu-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.keu-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1.5px solid var(--keu-border);
+  background: linear-gradient(135deg, var(--keu-tint) 0%, var(--keu-tint) 42%, #ffffff 88%);
+  transition: box-shadow 0.2s;
+}
+.keu-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+.keu-card.keu-teal  { --keu-tint: rgba(13,148,136,0.26); --keu-border: rgba(13,148,136,0.45); --keu-icon: #0d9488; }
+.keu-card.keu-green { --keu-tint: #bbf7d0; --keu-border: #4ade80; --keu-icon: #16a34a; }
+.keu-card.keu-red   { --keu-tint: #fecaca; --keu-border: #f87171; --keu-icon: #dc2626; }
+.keu-card.keu-amber { --keu-tint: #fde68a; --keu-border: #f59e0b; --keu-icon: #d97706; }
+.keu-card.keu-purple { --keu-tint: #f5f3ff; --keu-border: #ddd6fe; --keu-icon: #7c3aed; }
+.keu-card.keu-muted { --keu-tint: #f1f5f9; --keu-border: #cbd5e1; --keu-icon: #94a3b8; }
+/* override flat white + border-left lama hanya untuk keu-card */
+.keu-card.ipl-summary-card { border-left: 0; background: linear-gradient(135deg, var(--keu-tint) 0%, var(--keu-tint) 42%, #ffffff 88%); }
+.keu-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.keu-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--keu-icon);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.keu-icon-circle svg { stroke: #fff; }
+.keu-card .ipl-summary-label {
+  flex: 1;
+  text-align: right;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--db-slate-500);
+  line-height: 1.25;
+}
+.keu-card .ipl-summary-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--db-slate-700);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.keu-card .ipl-summary-sub {
+  font-size: 0.75rem;
+  color: var(--db-slate-400);
+}
+@media (max-width: 640px) {
+  .keu-summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+
 /* Table */
 .ipl-table-header {
   display: flex;

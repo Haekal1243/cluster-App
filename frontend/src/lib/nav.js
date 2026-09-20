@@ -30,16 +30,10 @@ export const NAV_ITEMS = [
     allow: (u) => can(u, "warga.read") && !isWargaView(u),
   },
   {
-    label: "Tagihan IPL",
-    href: "/dashboard/iuran",
+    label: "Kelola IPL",
+    href: "/dashboard/kelola-ipl",
     icon: Wallet,
-    allow: (u) => can(u, "ipl.read"),
-  },
-  {
-    label: "Setoran IPL",
-    href: "/dashboard/setoran",
-    icon: Landmark,
-    allow: (u) => canAny(u, ["setoran.read", "setoran.create"]),
+    allow: (u) => can(u, "ipl.read") || canAny(u, ["setoran.read", "setoran.create"]),
   },
   {
     label: "Keuangan",

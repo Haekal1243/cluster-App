@@ -229,95 +229,64 @@ export default function WargaPage() {
 
   return (
     <div className="page-stack">
-      <div className="page-toolbar">
-        <div>
-          <h2>Data Warga &amp; Rumah</h2>
-          <p>
-            Kelola warga dan unit rumah cluster Topaz
-            {user?.area && user.area !== "RW" ? ` (${areaLabel(user.area)})` : ""}.
-          </p>
-        </div>
-      </div>
-
-      <div className="warga-stat-row">
-        <div className="warga-stat-card tone-info">
-          <div className="warga-stat-top">
-            <span className="warga-stat-icon"><Users size={20} /></span>
-            <span className="warga-stat-value">{stats.warga}</span>
+      <div className="ipl-summary-grid keu-summary-grid">
+        <div className="ipl-summary-card keu-card keu-teal">
+          <div className="keu-card-head">
+            <div className="keu-icon-circle"><Users size={18} strokeWidth={2} /></div>
+            <span className="ipl-summary-label">Penghuni Terdaftar</span>
           </div>
-          <span className="warga-stat-label">Penghuni Terdaftar</span>
+          <span className="ipl-summary-value">{stats.warga}</span>
+          <span className="ipl-summary-sub">seluruh cluster</span>
         </div>
-        <div className="warga-stat-card tone-success">
-          <div className="warga-stat-top">
-            <span className="warga-stat-icon"><Home size={20} /></span>
-            <span className="warga-stat-value">{stats.tetap}</span>
+        <div className="ipl-summary-card keu-card keu-green">
+          <div className="keu-card-head">
+            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+            <span className="ipl-summary-label">Rumah Tetap</span>
           </div>
-          <span className="warga-stat-label">Rumah Tetap</span>
+          <span className="ipl-summary-value">{stats.tetap}</span>
+          <span className="ipl-summary-sub">dihuni tetap</span>
         </div>
-        <div className="warga-stat-card tone-purple">
-          <div className="warga-stat-top">
-            <span className="warga-stat-icon"><Home size={20} /></span>
-            <span className="warga-stat-value">{stats.kontrak}</span>
+        <div className="ipl-summary-card keu-card keu-purple">
+          <div className="keu-card-head">
+            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+            <span className="ipl-summary-label">Rumah Kontrak</span>
           </div>
-          <span className="warga-stat-label">Rumah Kontrak</span>
+          <span className="ipl-summary-value">{stats.kontrak}</span>
+          <span className="ipl-summary-sub">dihuni kontrak</span>
         </div>
-        <div className="warga-stat-card tone-warning">
-          <div className="warga-stat-top">
-            <span className="warga-stat-icon"><Home size={20} /></span>
-            <span className="warga-stat-value">{stats.kosong}</span>
+        <div className="ipl-summary-card keu-card keu-muted">
+          <div className="keu-card-head">
+            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+            <span className="ipl-summary-label">Rumah Kosong</span>
           </div>
-          <span className="warga-stat-label">Rumah Kosong</span>
+          <span className="ipl-summary-value">{stats.kosong}</span>
+          <span className="ipl-summary-sub">belum berpenghuni</span>
         </div>
       </div>
 
       <div className="page-toolbar-row">
-        <div className="db-section-toggle" role="tablist" aria-label="Data warga atau blok rumah">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "warga"}
-            className={`db-toggle-btn ${tab === "warga" ? "is-active" : ""}`}
-            onClick={() => setTab("warga")}
-          >
-            Data Warga
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "rumah"}
-            className={`db-toggle-btn ${tab === "rumah" ? "is-active" : ""}`}
-            onClick={() => setTab("rumah")}
-          >
-            Blok Rumah
-          </button>
-        </div>
-
         <div className="warga-filter-bar">
           <div className="warga-search-wrap">
             <Search size={15} className="warga-search-icon" />
             <input
               type="text"
               className="warga-search-input"
-              placeholder={tab === "warga" ? "Cari nama, no. HP, atau blok…" : "Cari blok rumah atau penghuni…"}
+              placeholder="Cari nama, no. HP, atau blok…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <FilterPopover
-            active={filterAktif}
+            active={filterRT !== "SEMUA"}
             onOpen={() => {
               setDraftRT(filterRT);
-              setDraftStatus(filterStatus);
             }}
             onApply={() => {
               setFilterRT(draftRT);
-              setFilterStatus(draftStatus);
             }}
             onReset={() => {
               setFilterRT("SEMUA");
-              setFilterStatus("SEMUA");
               setDraftRT("SEMUA");
-              setDraftStatus("SEMUA");
             }}
           >
             <FilterField label="RT">
@@ -328,35 +297,19 @@ export default function WargaPage() {
                 ))}
               </select>
             </FilterField>
-            {tab === "rumah" && (
-              <FilterField label="Status rumah">
-                <select className="form-control warga-filter-select" value={draftStatus} onChange={(e) => setDraftStatus(e.target.value)}>
-                  <option value="SEMUA">Semua Status</option>
-                  <option value="DIHUNI_TETAP">Dihuni (tetap)</option>
-                  <option value="DIHUNI_KONTRAK">Dihuni (kontrak)</option>
-                  <option value="KOSONG">Kosong</option>
-                </select>
-              </FilterField>
-            )}
           </FilterPopover>
         </div>
 
-        {tab === "warga" && bolehTambah && (
+        {bolehTambah && (
           <button type="button" className="btn-primary" onClick={() => setWargaModal({ open: true, mode: "create", data: null })}>
             <Plus size={16} /> Tambah Warga
           </button>
         )}
-        {tab === "rumah" && bolehTambah && (
-          <button type="button" className="btn-primary" onClick={() => setRumahModal({ open: true, mode: "create", data: null })}>
-            <Plus size={16} /> Tambah Rumah
-          </button>
-        )}
       </div>
 
-      {/* ── Tab: Data Warga ─────────────────────────────────────────── */}
-      {tab === "warga" && (
-        <div className="table-card">
-          <div className="ipl-table-header">
+      {/* ── Data Warga ─────────────────────────────────────────── */}
+      <div className="table-card">
+        <div className="ipl-table-header">
             <span className="ipl-table-title">Daftar Warga</span>
             <span className="ipl-table-count">{wargaFiltered.length} data</span>
           </div>
@@ -492,117 +445,6 @@ export default function WargaPage() {
             </div>
           )}
         </div>
-      )}
-
-      {/* ── Tab: Blok Rumah ─────────────────────────────────────────── */}
-      {tab === "rumah" && (
-        <div className="table-card">
-          <div className="ipl-table-header">
-            <span className="ipl-table-title">Daftar Blok Rumah</span>
-            <span className="ipl-table-count">{rumahFiltered.length} data</span>
-          </div>
-          <div className="table-wrapper warga-table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>No</th>
-                  <th>Blok Rumah</th>
-                  <th>RT</th>
-                  <th>Penghuni</th>
-                  <th>Status</th>
-                  {(bolehUbah || bolehHapus) && <th>Aksi</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {!isLoading &&
-                  rumahFiltered.map((item, index) => {
-                    const st = STATUS_RUMAH[item.status] ?? STATUS_RUMAH.KOSONG;
-                    return (
-                      <tr key={item.id}>
-                        <td>{index + 1}</td>
-                        <td className="col-judul">{item.blokRumah}</td>
-                        <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>
-                        <td>
-                          {item.penghuni ? (
-                            <div className="penghuni-cell">
-                              <span className="penghuni-avatar">{item.penghuni.namaUser?.charAt(0).toUpperCase()}</span>
-                              <div>
-                                <span className="penghuni-name">{item.penghuni.namaUser}</span>
-                                {item.penghuni._count?.rumah > 1 && (
-                                  <span className="penghuni-multi-badge">{item.penghuni._count.rumah} rumah</span>
-                                )}
-                                <span className="penghuni-email">{item.penghuni.username}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="penghuni-empty">—</span>
-                          )}
-                        </td>
-                        <td><span className={`status-badge ${st.cls}`}>{item.userId ? `Dihuni (${st.label.toLowerCase()})` : "Kosong"}</span></td>
-                        {(bolehUbah || bolehHapus) && (
-                          <td>
-                            <div className="table-actions">
-                              {bolehUbah && (
-                                <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
-                                  <Pencil size={15} />
-                                </button>
-                              )}
-                              {bolehHapus && (
-                                <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
-                                  <Trash2 size={15} />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="warga-grid">
-            {!isLoading &&
-              rumahFiltered.map((item) => {
-                const st = STATUS_RUMAH[item.status] ?? STATUS_RUMAH.KOSONG;
-                return (
-                  <div key={item.id} className="warga-grid-card">
-                    <h3 className="warga-grid-title">
-                      {item.blokRumah}
-                      <span className="rt-badge">{areaLabel(item.rt)}</span>
-                    </h3>
-                    <span className="meta-item warga-grid-penghuni">
-                      {item.penghuni ? item.penghuni.namaUser : "Belum ada penghuni"}
-                    </span>
-                    <div className="warga-grid-footer">
-                      <div className="table-actions">
-                        {bolehUbah && (
-                          <button type="button" className="btn-icon" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
-                            <Pencil size={14} />
-                          </button>
-                        )}
-                        {bolehHapus && (
-                          <button type="button" className="btn-icon danger" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                      <span className={`status-badge ${st.cls}`}>{item.userId ? st.label : "Kosong"}</span>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-
-          {isLoading && <div className="table-loading">Memuat data rumah…</div>}
-          {!isLoading && rumahFiltered.length === 0 && (
-            <div className="table-empty">
-              {rumah.length === 0 ? "Belum ada data rumah." : "Tidak ada rumah yang sesuai filter."}
-            </div>
-          )}
-        </div>
-      )}
 
       <WargaFormModal
         open={wargaModal.open}

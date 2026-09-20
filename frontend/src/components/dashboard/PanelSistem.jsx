@@ -75,19 +75,20 @@ export default function PanelSistem({ user }) {
       </div>
 
       {kartu.length > 0 && (
-        <div className="ipl-summary-grid">
-          {kartu.map(({ icon: Icon, tone, label, nilai, sub }) => (
-            <div key={label} className={`ipl-summary-card ${tone}`}>
-              <div className="ipl-summary-icon">
-                <Icon size={20} />
-              </div>
-              <div className="ipl-summary-body">
-                <span className="ipl-summary-label">{label}</span>
+        <div className="ipl-summary-grid keu-summary-grid">
+          {kartu.map(({ icon: Icon, tone, label, nilai, sub }) => {
+            const keuTone = tone === "tone-info" ? "keu-teal" : tone === "tone-success" ? "keu-green" : tone === "tone-warning" ? "keu-amber" : tone === "tone-danger" ? "keu-red" : "keu-muted";
+            return (
+              <div key={label} className={`ipl-summary-card keu-card ${keuTone}`}>
+                <div className="keu-card-head">
+                  <div className="keu-icon-circle"><Icon size={18} strokeWidth={2} /></div>
+                  <span className="ipl-summary-label">{label}</span>
+                </div>
                 <span className="ipl-summary-value">{nilai}</span>
                 <span className="ipl-summary-sub">{sub}</span>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

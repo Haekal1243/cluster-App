@@ -333,63 +333,59 @@ function AdminDashboardView({ user }) {
         </Link>
       )}
 
-      {/* ── Metric Cards ── */}
-      <section className="db-metric-grid">
+      {/* ── Metric Cards — Beranda (tint redesign, selaras Keuangan/Iuran) ── */}
+      <section className="ipl-summary-grid keu-summary-grid">
 
         {/* Kas Masuk */}
-        <Link href="/dashboard/iuran" className="db-metric-card db-card-primary">
-          <div className="db-metric-icon"><Wallet size={22} /></div>
-          <div className="db-metric-body">
-            <span className="db-metric-label" style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              <span>Total Pembayaran IPL</span>
-              <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.75, letterSpacing: "0.01em" }}>
-                {dari === sampai ? periodeLabel : `${formatYm(dari)} – ${formatYm(sampai)}`}
-              </span>
-            </span>
-            <span className="db-metric-value">
-              {loadingStats ? "—" : formatRupiah(stats?.totalKasMasukBulanIni ?? 0)}
-            </span>
+        <Link href="/dashboard/iuran" className="ipl-summary-card keu-card keu-teal">
+          <div className="keu-card-head">
+            <div className="keu-icon-circle"><Wallet size={18} strokeWidth={2} /></div>
+            <span className="ipl-summary-label">Total Pembayaran IPL</span>
           </div>
+          <span className="ipl-summary-value">
+            {loadingStats ? "—" : formatRupiah(stats?.totalKasMasukBulanIni ?? 0)}
+          </span>
+          <span className="ipl-summary-sub">{dari === sampai ? periodeLabel : `${formatYm(dari)} – ${formatYm(sampai)}`}</span>
         </Link>
 
         {/* Lunas */}
-        <Link href="/dashboard/iuran" className="db-metric-card db-card-success">
-          <div className="db-metric-icon"><CheckCircle size={22} /></div>
-          <div className="db-metric-body">
-            <span className="db-metric-label">Rumah Lunas</span>
-            <span className="db-metric-value">
-              {loadingStats ? "—" : `${stats?.lunasBulanIni ?? 0} / ${stats?.totalTagihanBulanIni ?? 0}`}
-            </span>
-            <span className="db-metric-sub">
-              {stats?.totalTagihanBulanIni > 0
-                ? `${Math.round(((stats?.lunasBulanIni ?? 0) / stats.totalTagihanBulanIni) * 100)}% sudah lunas`
-                : "belum ada tagihan"}
-            </span>
+        <Link href="/dashboard/iuran" className="ipl-summary-card keu-card keu-green">
+          <div className="keu-card-head">
+            <div className="keu-icon-circle"><CheckCircle size={18} strokeWidth={2} /></div>
+            <span className="ipl-summary-label">Rumah Lunas</span>
           </div>
+          <span className="ipl-summary-value">
+            {loadingStats ? "—" : `${stats?.lunasBulanIni ?? 0} / ${stats?.totalTagihanBulanIni ?? 0}`}
+          </span>
+          <span className="ipl-summary-sub">
+            {stats?.totalTagihanBulanIni > 0
+              ? `${Math.round(((stats?.lunasBulanIni ?? 0) / stats.totalTagihanBulanIni) * 100)}% sudah lunas`
+              : "belum ada tagihan"}
+          </span>
         </Link>
 
         {/* Menunggu Konfirmasi */}
-        <Link href="/dashboard/iuran" className={`db-metric-card ${stats?.menungguKonfirmasi > 0 ? "db-card-warning" : "db-card-muted"}`}>
-          <div className="db-metric-icon"><Clock size={22} /></div>
-          <div className="db-metric-body">
-            <span className="db-metric-label">Menunggu Konfirmasi</span>
-            <span className="db-metric-value">
-              {loadingStats ? "—" : (stats?.menungguKonfirmasi ?? 0)}
-            </span>
-            <span className="db-metric-sub">bukti transfer perlu ditinjau</span>
+        <Link href="/dashboard/iuran" className={`ipl-summary-card keu-card ${stats?.menungguKonfirmasi > 0 ? "keu-amber" : "keu-muted"}`}>
+          <div className="keu-card-head">
+            <div className="keu-icon-circle"><Clock size={18} strokeWidth={2} /></div>
+            <span className="ipl-summary-label">Menunggu Konfirmasi</span>
           </div>
+          <span className="ipl-summary-value">
+            {loadingStats ? "—" : (stats?.menungguKonfirmasi ?? 0)}
+          </span>
+          <span className="ipl-summary-sub">bukti transfer perlu ditinjau</span>
         </Link>
 
         {/* Total Warga */}
-        <Link href="/dashboard/warga" className="db-metric-card db-card-info">
-          <div className="db-metric-icon"><Users size={22} /></div>
-          <div className="db-metric-body">
-            <span className="db-metric-label">Total Warga</span>
-            <span className="db-metric-value">
-              {loadingStats ? "—" : (stats?.totalWarga ?? "—")}
-            </span>
-            <span className="db-metric-sub">akun terdaftar</span>
+        <Link href="/dashboard/warga" className="ipl-summary-card keu-card keu-teal">
+          <div className="keu-card-head">
+            <div className="keu-icon-circle"><Users size={18} strokeWidth={2} /></div>
+            <span className="ipl-summary-label">Total Warga</span>
           </div>
+          <span className="ipl-summary-value">
+            {loadingStats ? "—" : (stats?.totalWarga ?? "—")}
+          </span>
+          <span className="ipl-summary-sub">akun terdaftar</span>
         </Link>
 
       </section>

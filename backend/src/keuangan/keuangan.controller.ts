@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -65,8 +64,8 @@ export class KeuanganController {
   /** GET /keuangan/:id — Detail satu transaksi */
   @Get(':id')
   @RequirePermission('keuangan', 'read')
-  findOne(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
-    return this.keuanganService.findOne(ctx, id);
+  findOne(@Access() ctx: AccessContext, @Param('id') id: string) {
+    return this.keuanganService.findOne(ctx, id as any);
   }
 
   /** PATCH /keuangan/:id — Perbarui transaksi */
@@ -75,17 +74,17 @@ export class KeuanganController {
   @UseInterceptors(FileInterceptor('bukti', keuanganMulterOptions))
   update(
     @Access() ctx: AccessContext,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateKasDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.keuanganService.update(ctx, id, dto, file);
+    return this.keuanganService.update(ctx, id as any, dto, file);
   }
 
   /** DELETE /keuangan/:id — Hapus transaksi */
   @Delete(':id')
   @RequirePermission('keuangan', 'delete')
-  remove(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
-    return this.keuanganService.remove(ctx, id);
+  remove(@Access() ctx: AccessContext, @Param('id') id: string) {
+    return this.keuanganService.remove(ctx, id as any);
   }
 }

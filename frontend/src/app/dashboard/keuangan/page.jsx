@@ -7,12 +7,13 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
+  List,
   PiggyBank,
   Eye,
   Pencil,
   Trash2,
 } from "lucide-react";
-import { keuanganApi } from "@/lib/api";
+import { keuanganApi, portalApi, setoranApi } from "@/lib/api";
 import { areaLabel, can, isWargaView, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -54,6 +55,13 @@ function KasTipeBadge({ tipe }) {
       {tipe === "PEMASUKAN" ? "Pemasukan" : "Pengeluaran"}
     </span>
   );
+}
+
+function getBuktiUrl(t) {
+  if (!t?.buktiFile) return null;
+  if (t.sumber === "IPL_KAS") return portalApi.buktiUrl(t.buktiFile);
+  if (t.sumber === "SETORAN") return setoranApi.buktiUrl(t.buktiFile);
+  return keuanganApi.buktiUrl(t.buktiFile);
 }
 
 // ── Grafik batang grup: pemasukan vs pengeluaran per bulan ────────────────────
@@ -103,7 +111,11 @@ function KasFormModal({ initial, pilihArea = false, onClose, onSuccess }) {
   const [bukti, setBukti] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const kategoriOptions = form.tipe === "PEMASUKAN" ? KATEGORI_MASUK : KATEGORI_KELUAR;
+  const isIplKasEdit = initial?.sumber === "IPL_KAS";
+  const baseKategoriOptions = form.tipe === "PEMASUKAN" ? KATEGORI_MASUK : KATEGORI_KELUAR;
+  const kategoriOptions = isIplKasEdit && initial?.kategori && !baseKategoriOptions.includes(initial.kategori)
+    ? [...baseKategoriOptions, initial.kategori]
+    : baseKategoriOptions;
 
   const handleTipeChange = (tipe) => {
     setForm((f) => ({ ...f, tipe, kategori: "" }));
@@ -269,6 +281,8 @@ function AdminKeuanganView({ user }) {
   // Scope ALL (ketua/bendahara RW, admin) melihat RW + semua RT; scope AREA hanya wilayahnya.
   const semuaArea = scopeOf(user, "keuangan.read") === "ALL";
   const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL";
+  const isBendaharaRT = user?.role === "BENDAHARA_RT";
+  const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT"].includes(user?.role);
   const getCurrentYm = () => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
@@ -423,99 +437,49 @@ function AdminKeuanganView({ user }) {
         </div>
       </div>
 
-      {/* ── Summary Cards ── */}
+      {/* ── Summary Cards — Keuangan Cluster (scoped redesign) ── */}
       {ringkasan && (
-        <div className="ipl-summary-grid">
-          <div className="ipl-summary-card tone-info">
-            <div className="ipl-summary-icon"><PiggyBank size={20} /></div>
-            <div className="ipl-summary-body">
+        <div className="ipl-summary-grid keu-summary-grid">
+          <div className="ipl-summary-card keu-card keu-teal">
+            <div className="keu-card-head">
+              <div className="keu-icon-circle"><Wallet size={18} strokeWidth={2} /></div>
               <span className="ipl-summary-label">Saldo Kas Saat Ini</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
-              <span className="ipl-summary-sub">kumulatif sepanjang waktu</span>
             </div>
+            <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
+            <span className="ipl-summary-sub">kumulatif sepanjang waktu</span>
           </div>
-          <div className="ipl-summary-card tone-success">
-            <div className="ipl-summary-icon"><TrendingUp size={20} /></div>
-            <div className="ipl-summary-body">
+          <div className="ipl-summary-card keu-card keu-green">
+            <div className="keu-card-head">
+              <div className="keu-icon-circle"><TrendingUp size={18} strokeWidth={2} /></div>
               <span className="ipl-summary-label">Pemasukan Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
-              <span className="ipl-summary-sub">{periodeLabel}</span>
             </div>
+            <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
+            <span className="ipl-summary-sub">{periodeLabel}</span>
           </div>
-          <div className="ipl-summary-card tone-danger">
-            <div className="ipl-summary-icon"><TrendingDown size={20} /></div>
-            <div className="ipl-summary-body">
+          <div className="ipl-summary-card keu-card keu-red">
+            <div className="keu-card-head">
+              <div className="keu-icon-circle"><TrendingDown size={18} strokeWidth={2} /></div>
               <span className="ipl-summary-label">Pengeluaran Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
-              <span className="ipl-summary-sub">{periodeLabel}</span>
             </div>
+            <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
+            <span className="ipl-summary-sub">{periodeLabel}</span>
           </div>
-          <div className={`ipl-summary-card ${(ringkasan.saldoPeriode ?? 0) >= 0 ? "tone-success" : "tone-warning"}`}>
-            <div className="ipl-summary-icon"><Wallet size={20} /></div>
-            <div className="ipl-summary-body">
+          <div className="ipl-summary-card keu-card keu-teal">
+            <div className="keu-card-head">
+              <div className="keu-icon-circle"><List size={18} strokeWidth={2} /></div>
               <span className="ipl-summary-label">Selisih Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
-              <span className="ipl-summary-sub">masuk − keluar {periodeLabel}</span>
             </div>
+            <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
+            <span className="ipl-summary-sub">masuk − keluar {periodeLabel}</span>
           </div>
         </div>
       )}
 
-      {/* ── Rincian pemasukan otomatis & per wilayah ── */}
-      {ringkasan && (
-        <div className="content-card keu-rincian">
-          <div className="db-section-header">
-            <PiggyBank size={17} />
-            <h3>Sumber Pemasukan &amp; Wilayah</h3>
-            <span className="db-section-sub">{periodeLabel}</span>
-          </div>
-          <div className="keu-rincian-grid">
-            <div>
-              <p className="keu-rincian-title">Pemasukan otomatis</p>
-              <ul className="keu-rincian-list">
-                {ringkasan.pemasukanOtomatis.kasRt > 0 || ringkasan.areas.some((a) => a !== "RW") ? (
-                  <li><span>Kas RT (dari tagihan warga yang lunas)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.kasRt)}</strong></li>
-                ) : null}
-                {ringkasan.areas.includes("RW") && (
-                  <li><span>Setoran IPL dari RT (sudah dikonfirmasi)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.setoranIpl)}</strong></li>
-                )}
-                <li><span>Kas manual (pemasukan lain)</span><strong>{formatRupiah(ringkasan.pemasukanManual)}</strong></li>
-              </ul>
-              {ringkasan.titipanIpl > 0 && (
-                <p className="keu-rincian-note">
-                  Porsi IPL {formatRupiah(ringkasan.titipanIpl)} masih dipegang RT (belum disetor / belum dikonfirmasi RW)
-                  dan belum dihitung sebagai saldo kas.
-                </p>
-              )}
-            </div>
-            {ringkasan.perArea?.length > 1 && (
-              <div>
-                <p className="keu-rincian-title">Per wilayah</p>
-                <table className="ipl-table keu-area-table">
-                  <thead>
-                    <tr><th>Wilayah</th><th>Masuk</th><th>Keluar</th><th>Selisih</th></tr>
-                  </thead>
-                  <tbody>
-                    {ringkasan.perArea.map((a) => (
-                      <tr key={a.area}>
-                        <td><span className="rt-badge">{areaLabel(a.area)}</span></td>
-                        <td>{formatRupiah(a.pemasukan)}</td>
-                        <td>{formatRupiah(a.pengeluaran)}</td>
-                        <td style={{ color: a.saldo >= 0 ? "#15803d" : "#dc2626" }}>{formatRupiah(a.saldo)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Catat + Search + Filter ── */}
+      {/* ── Tambah + Search + Filter ── */}
       <div className="page-toolbar-row">
         {bolehTambah && (
           <button
+            id="btn-catat-transaksi"
             className="btn-ipl-primary"
             onClick={() => { setEditItem(null); setShowForm(true); }}
           >
@@ -602,6 +566,57 @@ function AdminKeuanganView({ user }) {
         </div>
       </div>
 
+      {/* ── Rincian pemasukan otomatis & per wilayah ── */}
+      {ringkasan && !hideRincianRT && (
+        <div className="content-card keu-rincian">
+          <div className="db-section-header">
+            <PiggyBank size={17} />
+            <h3>Sumber Pemasukan &amp; Wilayah</h3>
+            <span className="db-section-sub">{periodeLabel}</span>
+          </div>
+          <div className="keu-rincian-grid">
+            <div>
+              <p className="keu-rincian-title">Pemasukan otomatis</p>
+              <ul className="keu-rincian-list">
+                {ringkasan.pemasukanOtomatis.kasRt > 0 || ringkasan.areas.some((a) => a !== "RW") ? (
+                  <li><span>Kas RT (dari tagihan warga yang lunas)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.kasRt)}</strong></li>
+                ) : null}
+                {ringkasan.areas.includes("RW") && (
+                  <li><span>Setoran IPL dari RT (sudah dikonfirmasi)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.setoranIpl)}</strong></li>
+                )}
+                <li><span>Kas manual (pemasukan lain)</span><strong>{formatRupiah(ringkasan.pemasukanManual)}</strong></li>
+              </ul>
+              {ringkasan.titipanIpl > 0 && (
+                <p className="keu-rincian-note">
+                  Porsi IPL {formatRupiah(ringkasan.titipanIpl)} masih dipegang RT (belum disetor / belum dikonfirmasi RW)
+                  dan belum dihitung sebagai saldo kas.
+                </p>
+              )}
+            </div>
+            {ringkasan.perArea?.length > 1 && (
+              <div>
+                <p className="keu-rincian-title">Per wilayah</p>
+                <table className="ipl-table keu-area-table">
+                  <thead>
+                    <tr><th>Wilayah</th><th>Masuk</th><th>Keluar</th><th>Selisih</th></tr>
+                  </thead>
+                  <tbody>
+                    {ringkasan.perArea.map((a) => (
+                      <tr key={a.area}>
+                        <td><span className="rt-badge">{areaLabel(a.area)}</span></td>
+                        <td>{formatRupiah(a.pemasukan)}</td>
+                        <td>{formatRupiah(a.pengeluaran)}</td>
+                        <td style={{ color: a.saldo >= 0 ? "#15803d" : "#dc2626" }}>{formatRupiah(a.saldo)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── Grafik Arus Kas ── */}
       {ringkasan && (
         <div className="content-card">
@@ -632,7 +647,7 @@ function AdminKeuanganView({ user }) {
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
           <span className="ipl-table-title">
-            Riwayat Kas Manual — {periodeLabel}
+            Riwayat Kas — {periodeLabel}
           </span>
           <span className="ipl-table-count">{riwayat.length} data</span>
         </div>
@@ -645,7 +660,7 @@ function AdminKeuanganView({ user }) {
         ) : riwayat.length === 0 ? (
           <div className="ipl-empty">
             <Wallet size={40} strokeWidth={1.2} />
-            <p>Belum ada transaksi manual untuk periode ini.</p>
+            <p>Belum ada transaksi untuk periode ini.</p>
           </div>
         ) : (
           <div className="ipl-table-wrapper">
@@ -663,7 +678,13 @@ function AdminKeuanganView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {riwayat.map((t) => (
+                {riwayat.map((t) => {
+                  const buktiUrl = getBuktiUrl(t);
+                  const isManual = t.sumber === "MANUAL" || !t.sumber;
+                  const isIplKas = t.sumber === "IPL_KAS";
+                  const canEdit = (isManual || isIplKas) && bolehUbah;
+                  const canDelete = (isManual || isIplKas) && bolehHapus;
+                  return (
                   <tr key={t.id}>
                     <td>{formatTanggal(t.tanggal)}</td>
                     {semuaArea && <td><span className="rt-badge">{areaLabel(t.area)}</span></td>}
@@ -677,9 +698,9 @@ function AdminKeuanganView({ user }) {
                       {t.tipe === "PEMASUKAN" ? "+" : "−"}{formatRupiah(t.nominal)}
                     </td>
                     <td>
-                      {t.buktiFile ? (
+                      {buktiUrl ? (
                         <a
-                          href={keuanganApi.buktiUrl(t.buktiFile)}
+                          href={buktiUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn-ipl-view"
@@ -693,7 +714,7 @@ function AdminKeuanganView({ user }) {
                     {(bolehUbah || bolehHapus) && (
                       <td>
                         <div className="table-actions">
-                          {bolehUbah && (
+                          {canEdit && (
                             <button
                               type="button"
                               className="btn-icon"
@@ -704,7 +725,7 @@ function AdminKeuanganView({ user }) {
                               <Pencil size={16} />
                             </button>
                           )}
-                          {bolehHapus && (
+                          {canDelete && (
                             <button
                               type="button"
                               className="btn-icon danger"
@@ -715,11 +736,13 @@ function AdminKeuanganView({ user }) {
                               <Trash2 size={16} />
                             </button>
                           )}
+                          {!canEdit && !canDelete && <span className="text-muted">—</span>}
                         </div>
                       </td>
                     )}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

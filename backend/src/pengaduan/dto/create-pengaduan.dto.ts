@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
-import { KategoriPengaduan } from '@prisma/client';
+import { Area, KategoriPengaduan } from '@prisma/client';
 
 export class CreatePengaduanDto {
   @IsString()
@@ -10,6 +10,12 @@ export class CreatePengaduanDto {
   @IsEnum(KategoriPengaduan)
   @IsNotEmpty()
   kategori!: KategoriPengaduan;
+
+  /** Tujuan pengaduan: RW atau salah satu RT. Divalidasi ulang di service terhadap
+   * rumah/jabatan pelapor, bukan cuma format enum. */
+  @IsEnum(Area)
+  @IsNotEmpty()
+  tujuan!: Area;
 
   @IsString()
   @IsNotEmpty()

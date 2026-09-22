@@ -63,6 +63,37 @@ export class NotifikasiService {
     return this.kirimBanyak(users.map((u) => u.id), tipe, judul, pesan, link);
   }
 
+  /**
+   * Sama seperti `kirimKePermission`, tapi `area` SELALU dicocokkan persis (termasuk saat
+   * areanya 'RW') — tanpa shortcut "RW = seluruh RW" di atas. Dipakai Pengaduan, karena
+   * pengurus RW dan pengurus RT punya `pengaduan.respon` di area masing-masing, dan
+   * notifikasi pengaduan tujuan RW TIDAK boleh ikut nyasar ke pengurus RT (beda dari
+   * Kegiatan/Pengumuman/Pengajuan yang memang "RW = pengumuman berlaku untuk semua").
+   */
+  async kirimKePermissionAreaPersis(
+    kode: string,
+    area: Area,
+    tipe: TipeNotifikasi,
+    judul: string,
+    pesan: string,
+    link?: string,
+    kecualiUserId?: number,
+  ) {
+    const punyaPermission = (scope: ScopeAkses[]) => ({
+      role: {
+        permissions: { some: { permission: { kode }, scope: { in: scope } } },
+      },
+    });
+    const users = await this.prisma.user.findMany({
+      where: {
+        ...(kecualiUserId !== undefined && { id: { not: kecualiUserId } }),
+        OR: [punyaPermission(['ALL']), { area, ...punyaPermission(['AREA', 'OWN']) }],
+      },
+      select: { id: true },
+    });
+    return this.kirimBanyak(users.map((u) => u.id), tipe, judul, pesan, link);
+  }
+
   findByUser(userId: number) {
     return this.prisma.notifikasi.findMany({
       where: { idUser: userId },

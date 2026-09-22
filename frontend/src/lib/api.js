@@ -135,6 +135,14 @@ export const wargaApi = {
   createRumah: (payload) => request("/warga/rumah", json("POST", payload)),
   updateRumah: (id, payload) => request(`/warga/rumah/${id}`, json("PATCH", payload)),
   deleteRumah: (id) => request(`/warga/rumah/${id}`, { method: "DELETE" }),
+
+  // Registrasi mandiri (Bagian 3) — dua yang pertama publik, tanpa token.
+  getRumahKosong: (rt) => request(`/warga/rumah-kosong${qs({ rt })}`),
+  daftarMandiri: (payload) => request("/warga/daftar", json("POST", payload)),
+  getPendaftaran: (status) => request(`/warga/pendaftaran${qs({ status })}`),
+  setujuiPendaftaran: (id) => request(`/warga/pendaftaran/${id}/setuju`, { method: "PATCH" }),
+  tolakPendaftaran: (id, alasan) =>
+    request(`/warga/pendaftaran/${id}/tolak`, json("PATCH", { alasan })),
 };
 
 export const portalApi = {
@@ -213,6 +221,7 @@ export const pengaduanApi = {
   getAll: () => request("/pengaduan"),
   getByUser: (userId) => request(`/pengaduan/user/${userId}`),
   getById: (id) => request(`/pengaduan/${id}`),
+  getTujuanPilihan: () => request("/pengaduan/tujuan"),
   create: (payload) => request("/pengaduan", { method: "POST", body: buildFormData(payload) }),
   respond: (id, payload) => request(`/pengaduan/${id}/respond`, json("PATCH", payload)),
   imageUrl: (filename) => (filename ? `${API_BASE_URL}/uploads/pengaduan/${filename}` : null),

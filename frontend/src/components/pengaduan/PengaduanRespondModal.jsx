@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Forward } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
+import { areaLabel } from "@/lib/session";
 
 const KATEGORI_LABELS = {
   KEBERSIHAN: "Kebersihan",
@@ -78,10 +79,26 @@ export default function PengaduanRespondModal({ pengaduan, currentUserName, onCl
               <span className="review-info-value">{pengaduan.judul}</span>
             </div>
             <div className="review-info-item">
+              <span className="review-info-label">Tujuan</span>
+              <span className="review-info-value">{areaLabel(pengaduan.tujuan)}</span>
+            </div>
+            <div className="review-info-item">
               <span className="review-info-label">Tanggal Lapor</span>
               <span className="review-info-value">{formatDate(pengaduan.createdAt)}</span>
             </div>
           </div>
+
+          {pengaduan.diteruskanAt && (
+            <div className="ipl-summary-card tone-warning" style={{ alignItems: "flex-start" }}>
+              <div className="ipl-summary-icon"><Forward size={20} /></div>
+              <div className="ipl-summary-body">
+                <span className="ipl-summary-label">Diteruskan ke RW</span>
+                <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>
+                  Belum ditanggapi pengurus RT sejak {formatDate(pengaduan.createdAt)}.
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="review-desc-card">
             <p className="review-bukti-label">Deskripsi</p>

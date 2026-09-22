@@ -19,7 +19,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { iplApi, portalApi } from "@/lib/api";
-import { areaLabel, can, isWargaView, scopeOf } from "@/lib/session";
+import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
@@ -446,6 +446,9 @@ function ReviewModal({ tagihan, onClose, onSuccess, buktiBaseUrl }) {
 function AdminIuranView({ user }) {
   const bolehGenerate = can(user, "ipl.generate");
   const bolehKonfirmasi = can(user, "ipl.konfirmasi");
+  // Ketua RT (dan role lain tanpa ipl.konfirmasi) cuma boleh konfirmasi pembayaran
+  // pengurus (role.level < 3), bukan warga biasa — dicek juga di backend.
+  const bolehKonfirmasiPengurus = can(user, "ipl.konfirmasi_pengurus");
   const bolehUbah = can(user, "ipl.update");
   const bolehHapus = can(user, "ipl.delete");
   // Scope ALL (ketua/bendahara/sekre RW, admin) melihat semua RT; scope AREA hanya RT sendiri.
@@ -742,6 +745,8 @@ function AdminIuranView({ user }) {
               <tbody>
                 {tagihan.map((t) => {
                   const pembayaran = t.pembayaran?.[0];
+                  const penghuniPengurus = (t.rumah?.penghuni?.role?.level ?? 3) < 3;
+                  const bisaKonfirmasiBaris = bolehKonfirmasi || (bolehKonfirmasiPengurus && penghuniPengurus);
                   return (
                     <tr key={t.id}>
                       <td>
@@ -763,7 +768,7 @@ function AdminIuranView({ user }) {
                       <td>{formatTanggal(pembayaran?.tanggalBayar)}</td>
                       <td>
                         <div className="table-actions">
-                          {t.statusPembayaran === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? (
+                          {t.statusPembayaran === "MENUNGGU_KONFIRMASI" && bisaKonfirmasiBaris ? (
                             <button
                               className="btn-ipl-review"
                               onClick={() => setReviewItem(t)}
@@ -1404,9 +1409,44 @@ function WargaIuranView({ user }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function IuranPage() {
   const { user, ready } = useUser();
+  const [activeView, setActiveView] = useState("warga");
 
   if (!ready || !user) return null;
 
-  // Tampilan warga (portal: bayar tagihan sendiri) vs tampilan pengurus (kelola per RT / RW)
-  return isWargaView(user) ? <WargaIuranView user={user} /> : <AdminIuranView user={user} />;
+  // Tampilan ditentukan permission, bukan roleLevel: pengurus yang juga punya rumah sendiri
+  // (ipl.bayar) dapat tab "Tagihan Saya" di samping "Tagihan Warga"; warga biasa (scope OWN
+  // di ipl.read) hanya dapat tampilan bayar tagihan sendiri tanpa bar tab.
+  const bisaLihatWarga = can(user, "ipl.read") && scopeOf(user, "ipl.read") !== "OWN";
+  const bisaBayarSendiri = can(user, "ipl.bayar");
+
+  if (bisaLihatWarga && bisaBayarSendiri) {
+    return (
+      <div className="page-stack">
+        <div className="db-section-toggle" role="tablist" aria-label="Tampilan Tagihan IPL">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "warga"}
+            className={`db-toggle-btn ${activeView === "warga" ? "is-active" : ""}`}
+            onClick={() => setActiveView("warga")}
+          >
+            Tagihan Warga
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "saya"}
+            className={`db-toggle-btn ${activeView === "saya" ? "is-active" : ""}`}
+            onClick={() => setActiveView("saya")}
+          >
+            Tagihan Saya
+          </button>
+        </div>
+        {activeView === "warga" ? <AdminIuranView user={user} /> : <WargaIuranView user={user} />}
+      </div>
+    );
+  }
+
+  if (bisaLihatWarga) return <AdminIuranView user={user} />;
+  return <WargaIuranView user={user} />;
 }

@@ -99,6 +99,8 @@ enum TipeNotifikasi {
   PEMBAYARAN_MASUK
   PENGADUAN_BARU
   PENGADUAN_DITANGGAPI
+  PENGADUAN_DITERUSKAN
+  PENDAFTARAN_BARU
   PENGUMUMAN_BARU
   KEGIATAN_BARU
   SETORAN_MASUK
@@ -219,7 +221,8 @@ model Rumah {
   penghuni   User?       @relation(fields: [userId], references: [id])
 
   // Relasi
-  tagihanIpl Ipl[]
+  tagihanIpl  Ipl[]
+  pendaftaran PendaftaranWarga[]
 
   @@unique([rt, blokRumah])
   @@map("tb_Rumah")
@@ -355,21 +358,57 @@ model CatatanRapat {
 }
 
 model Pengaduan {
-  id          Int               @id @default(autoincrement())
-  idUser      Int
-  pelapor     User              @relation(fields: [idUser], references: [id])
-  judul       String
-  kategori    KategoriPengaduan
-  deskripsi   String            @db.Text
-  fotoUrl     String?
-  status      StatusPengaduan   @default(MENUNGGU)
-  tanggapan   String?           @db.Text
-  tanggapanBy String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime?
-  isDelete    Boolean           @default(false)
+  id           Int               @id @default(autoincrement())
+  idUser       Int
+  pelapor      User              @relation(fields: [idUser], references: [id])
+  judul        String
+  kategori     KategoriPengaduan
+  deskripsi    String            @db.Text
+  fotoUrl      String?
+  status       StatusPengaduan   @default(MENUNGGU)
+  tanggapan    String?           @db.Text
+  tanggapanBy  String?
+  // Tujuan pengaduan: RW atau salah satu RT. Menentukan siapa yang bisa melihat
+  // (lihat PengaduanService.scopeWhere), lepas dari area akun pelapor.
+  tujuan       Area
+  // Cap waktu auto-teruskan ke RW karena RT tidak menanggapi dalam 7 hari; null =
+  // belum diteruskan. Lihat PengaduanService.teruskanOtomatis.
+  diteruskanAt DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime?
+  isDelete     Boolean           @default(false)
 
+  @@index([tujuan, status])
+  @@index([status, createdAt])
   @@map("tb_Pengaduan")
+}
+
+enum StatusPendaftaran {
+  PENDING
+  DISETUJUI
+  DITOLAK
+}
+
+// Pendaftaran mandiri warga (Bagian 3): belum jadi tb_User sampai pengurus RT
+// menyetujuinya. Password sudah di-hash sejak submit, dipindah apa adanya ke
+// tb_User.password saat disetujui (lihat WargaService.setujuiPendaftaran).
+model PendaftaranWarga {
+  id           Int               @id @default(autoincrement())
+  namaUser     String
+  noTelp       String
+  email        String?
+  password     String
+  rt           RT
+  rumahId      Int
+  rumah        Rumah             @relation(fields: [rumahId], references: [id])
+  status       StatusPendaftaran @default(PENDING)
+  alasanTolak  String?
+  diprosesOleh String?
+  diprosesAt   DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@index([rt, status])
+  @@map("tb_PendaftaranWarga")
 }
 
 model Notifikasi {

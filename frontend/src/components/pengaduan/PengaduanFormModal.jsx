@@ -12,7 +12,7 @@ const KATEGORI_OPTIONS = [
   { value: "LAINNYA", label: "Lainnya" },
 ];
 
-const EMPTY_FORM = { judul: "", kategori: "KEBERSIHAN", deskripsi: "" };
+const EMPTY_FORM = { judul: "", kategori: "KEBERSIHAN", deskripsi: "", tujuan: "" };
 const JUDUL_MAX_LENGTH = 50;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -21,7 +21,27 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tujuanPilihan, setTujuanPilihan] = useState([]);
+  const [loadingTujuan, setLoadingTujuan] = useState(true);
   const fileInputRef = useRef(null);
+
+  // Pilihan tujuan (RW / RT) mengikuti rumah & jabatan pelapor — dihitung backend supaya
+  // form dan validasi submit selalu pakai aturan yang sama (lihat PengaduanService.getTujuanPilihan).
+  useEffect(() => {
+    let cancelled = false;
+    pengaduanApi.getTujuanPilihan()
+      .then((data) => {
+        if (cancelled) return;
+        const pilihan = data || [];
+        setTujuanPilihan(pilihan);
+        if (pilihan.length > 0) {
+          setForm((prev) => ({ ...prev, tujuan: pilihan[0].value }));
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoadingTujuan(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!file) { setPreview(null); return; }
@@ -59,7 +79,7 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.judul.trim() || !form.deskripsi.trim()) return;
+    if (!form.judul.trim() || !form.deskripsi.trim() || !form.tujuan) return;
 
     setIsSubmitting(true);
     try {
@@ -108,6 +128,38 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
               <span className="field-hint" style={{ display: "block", textAlign: "right" }}>
                 {form.judul.length}/{JUDUL_MAX_LENGTH}
               </span>
+            </div>
+
+            <div className="form-group">
+              <label>
+                Tujuan <span className="required-star">*</span>
+              </label>
+              {loadingTujuan ? (
+                <span className="field-hint">Memuat pilihan tujuan...</span>
+              ) : tujuanPilihan.length === 0 ? (
+                <span className="field-hint" style={{ color: "var(--danger, #dc2626)" }}>
+                  Akun Anda tidak memiliki tujuan pengaduan yang valid. Hubungi pengurus.
+                </span>
+              ) : tujuanPilihan.length === 1 ? (
+                <input
+                  type="text"
+                  className="form-control"
+                  value={tujuanPilihan[0].label}
+                  disabled
+                  readOnly
+                />
+              ) : (
+                <select
+                  name="tujuan"
+                  className="form-control custom-select"
+                  value={form.tujuan}
+                  onChange={handleChange}
+                >
+                  {tujuanPilihan.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="form-group">
@@ -189,7 +241,11 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
             <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
               Batal
             </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={isSubmitting || loadingTujuan || tujuanPilihan.length === 0}
+            >
               {isSubmitting ? "Mengirim..." : <><Send size={15} /> Kirim Pengaduan</>}
             </button>
           </div>

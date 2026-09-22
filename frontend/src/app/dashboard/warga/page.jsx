@@ -10,7 +10,11 @@ import {
   Search,
   PhoneCall,
   KeyRound,
+  UserCheck,
+  Check,
+  X as XIcon,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import { wargaApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
@@ -58,7 +62,68 @@ export default function WargaPage() {
   const bolehUbah = can(user, "warga.update");
   const bolehHapus = can(user, "warga.delete");
   const bolehReset = can(user, "warga.reset_password");
+  const bolehApprove = can(user, "warga.approve_registrasi");
   const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
+
+  const [pendaftaran, setPendaftaran] = useState([]);
+  const [loadingPendaftaran, setLoadingPendaftaran] = useState(false);
+
+  const loadPendaftaran = async () => {
+    setLoadingPendaftaran(true);
+    try {
+      const data = await wargaApi.getPendaftaran();
+      setPendaftaran(Array.isArray(data) ? data : []);
+    } catch (error) {
+      showMessage("Gagal Memuat Data", error.message, "error");
+    } finally {
+      setLoadingPendaftaran(false);
+    }
+  };
+
+  useEffect(() => {
+    if (bolehApprove) loadPendaftaran();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bolehApprove]);
+
+  const handleSetujuiPendaftaran = async (item) => {
+    const ok = await showConfirm(
+      "Setujui pendaftaran?",
+      `${item.namaUser} akan dibuatkan akun warga untuk blok ${item.rumah?.blokRumah}.`,
+      "question",
+      "Ya, setujui",
+      "Batal",
+    );
+    if (!ok) return;
+    try {
+      const res = await wargaApi.setujuiPendaftaran(item.id);
+      showMessage("Berhasil", res.message, "success");
+      loadPendaftaran();
+      loadData();
+    } catch (error) {
+      showMessage("Gagal", error.message, "error");
+    }
+  };
+
+  const handleTolakPendaftaran = async (item) => {
+    const { value: alasan } = await Swal.fire({
+      title: `Tolak pendaftaran ${item.namaUser}?`,
+      input: "textarea",
+      inputLabel: "Alasan penolakan",
+      inputPlaceholder: "Contoh: data tidak sesuai, atau rumah sudah dihuni warga lain",
+      showCancelButton: true,
+      confirmButtonText: "Tolak Pendaftaran",
+      cancelButtonText: "Batal",
+      inputValidator: (v) => (!v?.trim() ? "Alasan wajib diisi" : undefined),
+    });
+    if (!alasan) return;
+    try {
+      const res = await wargaApi.tolakPendaftaran(item.id, alasan.trim());
+      showMessage("Berhasil", res.message, "success");
+      loadPendaftaran();
+    } catch (error) {
+      showMessage("Gagal", error.message, "error");
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -229,6 +294,90 @@ export default function WargaPage() {
 
   return (
     <div className="page-stack">
+      {bolehApprove && (
+        <div className="db-section-toggle" role="tablist" aria-label="Tampilan Data Warga">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "warga"}
+            className={`db-toggle-btn ${tab === "warga" ? "is-active" : ""}`}
+            onClick={() => setTab("warga")}
+          >
+            Data Warga
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "pendaftaran"}
+            className={`db-toggle-btn ${tab === "pendaftaran" ? "is-active" : ""}`}
+            onClick={() => setTab("pendaftaran")}
+          >
+            Pendaftaran Masuk{pendaftaran.length > 0 ? ` (${pendaftaran.length})` : ""}
+          </button>
+        </div>
+      )}
+
+      {tab === "pendaftaran" && bolehApprove ? (
+        <div className="table-card">
+          <div className="ipl-table-header">
+            <span className="ipl-table-title">Pendaftaran Menunggu Persetujuan</span>
+            <span className="ipl-table-count">{pendaftaran.length} data</span>
+          </div>
+          <div className="table-wrapper warga-table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>No. HP</th>
+                  <th>Rumah</th>
+                  <th>Tanggal Daftar</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!loadingPendaftaran &&
+                  pendaftaran.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="penghuni-cell">
+                          <span className="penghuni-avatar">{p.namaUser.charAt(0).toUpperCase()}</span>
+                          <div>
+                            <span className="penghuni-name">{p.namaUser}</span>
+                            <span className="penghuni-email">{p.email || "—"}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        {p.noTelp ? (
+                          <a href={waLink(p.noTelp)} target="_blank" rel="noopener noreferrer" className="wa-link">
+                            <PhoneCall size={13} /> {p.noTelp}
+                          </a>
+                        ) : "—"}
+                      </td>
+                      <td>{p.rumah?.blokRumah} · {areaLabel(p.rumah?.rt)}</td>
+                      <td>{new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</td>
+                      <td>
+                        <div className="table-actions">
+                          <button type="button" className="btn-icon" title="Setujui" aria-label="Setujui pendaftaran" onClick={() => handleSetujuiPendaftaran(p)}>
+                            <Check size={15} />
+                          </button>
+                          <button type="button" className="btn-icon danger" title="Tolak" aria-label="Tolak pendaftaran" onClick={() => handleTolakPendaftaran(p)}>
+                            <XIcon size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+          {loadingPendaftaran && <div className="table-loading">Memuat data pendaftaran…</div>}
+          {!loadingPendaftaran && pendaftaran.length === 0 && (
+            <div className="table-empty">Tidak ada pendaftaran yang menunggu persetujuan.</div>
+          )}
+        </div>
+      ) : (
+      <>
       <div className="ipl-summary-grid keu-summary-grid">
         <div className="ipl-summary-card keu-card keu-teal">
           <div className="keu-card-head">
@@ -445,6 +594,8 @@ export default function WargaPage() {
             </div>
           )}
         </div>
+      </>
+      )}
 
       <WargaFormModal
         open={wargaModal.open}

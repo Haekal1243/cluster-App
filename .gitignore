@@ -21,3 +21,4 @@ backend/prisma/seed.d.ts
 
 # Folder kerja lokal Claude Code (worktree, izin lokal) - jangan ikut ke git
 .claude/
+RENCANA-PERABIKAN-SISTEM.md

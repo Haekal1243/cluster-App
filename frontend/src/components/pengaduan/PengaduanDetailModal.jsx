@@ -1,7 +1,8 @@
 "use client";
 
-import { Calendar, MessageCircle } from "lucide-react";
+import { Calendar, MessageCircle, Forward } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
+import { areaLabel } from "@/lib/session";
 
 const KATEGORI_LABELS = {
   KEBERSIHAN: "Kebersihan",
@@ -54,6 +55,10 @@ export default function PengaduanDetailModal({ pengaduan, onClose }) {
               <span className="review-info-value">{KATEGORI_LABELS[pengaduan.kategori] || pengaduan.kategori}</span>
             </div>
             <div className="review-info-item">
+              <span className="review-info-label">Tujuan</span>
+              <span className="review-info-value">{areaLabel(pengaduan.tujuan)}</span>
+            </div>
+            <div className="review-info-item">
               <span className="review-info-label">Tanggal Lapor</span>
               <span className="review-info-value">{formatDate(pengaduan.createdAt)}</span>
             </div>
@@ -67,6 +72,19 @@ export default function PengaduanDetailModal({ pengaduan, onClose }) {
             <p className="review-bukti-label">Deskripsi</p>
             <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{pengaduan.deskripsi}</p>
           </div>
+
+          {pengaduan.diteruskanAt && (
+            <div className="ipl-summary-card tone-warning" style={{ alignItems: "flex-start" }}>
+              <div className="ipl-summary-icon"><Forward size={20} /></div>
+              <div className="ipl-summary-body">
+                <span className="ipl-summary-label">Diteruskan ke RW</span>
+                <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>
+                  Belum ditanggapi pengurus RT sejak {formatDate(pengaduan.createdAt)}, sudah
+                  diteruskan ke pengurus RW pada {formatDate(pengaduan.diteruskanAt)}.
+                </span>
+              </div>
+            </div>
+          )}
 
           {pengaduan.tanggapan && (
             <div className="ipl-summary-card tone-info" style={{ alignItems: "flex-start" }}>

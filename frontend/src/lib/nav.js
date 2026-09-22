@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   UserCog,
 } from "lucide-react";
-import { can, canAny, isWargaView } from "./session";
+import { can, canAny, isWargaView, scopeOf } from "./session";
 
 // Menu disusun dari permission user (dikirim backend lewat /auth/me), bukan dari
 // nama role, jadi role baru yang dibuat admin otomatis mendapat menu yang sesuai.
@@ -30,7 +30,9 @@ export const NAV_ITEMS = [
     allow: (u) => can(u, "warga.read") && !isWargaView(u),
   },
   {
-    label: "Kelola IPL",
+    // Pengurus (bisa lihat tagihan RT/RW, bukan cuma OWN) melihat "Pengelolaan IPL";
+    // warga biasa tetap "Tagihan IPL" seperti sebelumnya.
+    label: (u) => (can(u, "ipl.read") && scopeOf(u, "ipl.read") !== "OWN" ? "Pengelolaan IPL" : "Tagihan IPL"),
     href: "/dashboard/kelola-ipl",
     icon: Wallet,
     allow: (u) => can(u, "ipl.read") || canAny(u, ["setoran.read", "setoran.create"]),
@@ -46,7 +48,7 @@ export const NAV_ITEMS = [
     href: "/dashboard/pengaduan",
     icon: MessageSquareWarning,
     title: "Pengaduan Lingkungan",
-    allow: (u) => canAny(u, ["pengaduan.read", "pengaduan.create"]),
+    allow: (u) => canAny(u, ["pengaduan.read", "pengaduan.create_rw", "pengaduan.create_rt"]),
   },
   {
     label: "Kegiatan",
@@ -96,8 +98,14 @@ export function isPathAllowed(user, pathname) {
   return item ? item.allow(user) : true;
 }
 
-export function pageTitle(pathname) {
+/** `label`/`title` bisa string atau fungsi `(user) => string` (lihat item Kelola IPL). */
+export function resolveLabel(value, user) {
+  return typeof value === "function" ? value(user) : value;
+}
+
+export function pageTitle(pathname, user) {
   if (pathname === "/dashboard") return "Beranda";
   const item = navItemFor(pathname);
-  return item ? item.title || item.label : "Beranda";
+  if (!item) return "Beranda";
+  return resolveLabel(item.title, user) || resolveLabel(item.label, user);
 }

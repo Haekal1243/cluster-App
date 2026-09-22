@@ -17,8 +17,11 @@ import { CreateWargaDto } from './dto/create-warga.dto';
 import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
 import { UpdateRumahDto } from './dto/update-rumah.dto';
+import { DaftarMandiriDto } from './dto/daftar-mandiri.dto';
+import { TolakPendaftaranDto } from './dto/tolak-pendaftaran.dto';
 import { buktiMulterOptions } from './bukti.multer';
 import { Access, RequirePermission } from '../auth/permission.decorators';
+import { Public } from '../auth/public.decorator';
 import type { AccessContext } from '../auth/auth.types';
 
 @Controller('warga')
@@ -137,6 +140,48 @@ export class WargaController {
       nominal: body.nominal ? +body.nominal : undefined,
       buktiTransaksi: file?.filename ?? '',
     });
+  }
+
+  // -------------------------------------------------------
+  // REGISTRASI MANDIRI (Bagian 3) — daftar & rumah-kosong publik (tanpa token);
+  // pendaftaran/* butuh permission warga.approve_registrasi (Ketua/Sekre RT).
+  // -------------------------------------------------------
+
+  /** Publik: blok rumah kosong di satu RT, untuk dropdown form register. */
+  @Public()
+  @Get('rumah-kosong')
+  getRumahKosong(@Query('rt') rt: string) {
+    return this.wargaService.getRumahKosong(rt);
+  }
+
+  /** Publik: warga daftar akun sendiri, masuk status Menunggu Persetujuan. */
+  @Public()
+  @Post('daftar')
+  daftarMandiri(@Body() dto: DaftarMandiriDto) {
+    return this.wargaService.daftarMandiri(dto);
+  }
+
+  /** Daftar pendaftaran mandiri yang menunggu persetujuan di area pengurus ini. */
+  @Get('pendaftaran')
+  @RequirePermission('warga', 'approve_registrasi')
+  getPendaftaran(@Access() ctx: AccessContext, @Query('status') status?: string) {
+    return this.wargaService.getPendaftaran(ctx, status);
+  }
+
+  @Patch('pendaftaran/:id/setuju')
+  @RequirePermission('warga', 'approve_registrasi')
+  setujuiPendaftaran(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.wargaService.setujuiPendaftaran(ctx, id);
+  }
+
+  @Patch('pendaftaran/:id/tolak')
+  @RequirePermission('warga', 'approve_registrasi')
+  tolakPendaftaran(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: TolakPendaftaranDto,
+  ) {
+    return this.wargaService.tolakPendaftaran(ctx, id, dto.alasan);
   }
 
   // -------------------------------------------------------

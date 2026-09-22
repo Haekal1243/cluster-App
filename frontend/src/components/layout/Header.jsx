@@ -98,7 +98,7 @@ export default function Header({ onMenuClick }) {
         >
           <Menu size={20} />
         </button>
-        <h1>{pageTitle(pathname)}</h1>
+        <h1>{pageTitle(pathname, currentUser)}</h1>
       </div>
 
       <div className="header-actions">

@@ -6,7 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, RT, StatusPembayaran, StatusRumah } from '@prisma/client';
+import { Prisma, RT, StatusPembayaran, StatusPendaftaran, StatusRumah } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
@@ -20,6 +20,9 @@ import { CreateWargaDto } from './dto/create-warga.dto';
 import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
 import { UpdateRumahDto } from './dto/update-rumah.dto';
+import { DaftarMandiriDto } from './dto/daftar-mandiri.dto';
+
+const SEMUA_RT: RT[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
 export interface RingkasanRumah {
   id: number;
@@ -91,14 +94,17 @@ export class WargaService {
   // PORTAL WARGA — tagihan & pembayaran milik sendiri
   // ================================================================
 
-  /** OWN: hanya diri sendiri. AREA: warga di area-nya. ALL: siapa pun. */
+  /**
+   * OWN: hanya diri sendiri. AREA: warga di area-nya. ALL: siapa pun.
+   * Data milik sendiri selalu lolos apa pun scope-nya, supaya pengurus yang areanya
+   * beda dari rumahnya sendiri (mis. Bendahara RT 1 yang juga punya rumah di RT 3)
+   * tetap bisa melihat datanya sendiri.
+   */
   private async assertBolehLihatUser(ctx: AccessContext, targetUserId: number) {
+    if (targetUserId === ctx.user.sub) return;
     if (ctx.scope === 'ALL') return;
     if (ctx.scope === 'OWN') {
-      if (targetUserId !== ctx.user.sub) {
-        throw new ForbiddenException('Anda hanya dapat melihat data milik sendiri.');
-      }
-      return;
+      throw new ForbiddenException('Anda hanya dapat melihat data milik sendiri.');
     }
     const target = await this.prisma.user.findUnique({
       where: { id: targetUserId },
@@ -123,11 +129,12 @@ export class WargaService {
     });
     if (!rumah) throw new NotFoundException(`Rumah dengan ID ${rumahId} tidak ditemukan`);
 
-    if (ctx.scope === 'OWN') {
-      if (rumah.userId !== ctx.user.sub) {
+    // Rumah milik sendiri selalu boleh dilihat, apa pun scope-nya (lihat catatan di
+    // assertBolehLihatUser) — baru cek area kalau bukan rumah sendiri.
+    if (rumah.userId !== ctx.user.sub) {
+      if (ctx.scope === 'OWN') {
         throw new ForbiddenException('Rumah ini bukan milik Anda.');
       }
-    } else {
       assertInArea(ctx, rumah.rt);
     }
 
@@ -304,9 +311,19 @@ export class WargaService {
       return p;
     });
 
-    // Bendahara RT di RT rumah ini (dan pemegang ALL seperti admin)
+    // Kalau yang bayar pengurus, notifikasi ke pemegang ipl.konfirmasi_pengurus (mis.
+    // Ketua RT untuk pembayaran Bendahara RT), bukan ke pemegang ipl.konfirmasi biasa —
+    // supaya pemegang ipl.konfirmasi (Bendahara RT) tidak dapat notifikasi bukti bayarnya
+    // sendiri saat dia yang membayar.
+    const pembayarRole = await this.prisma.role.findUnique({
+      where: { id: ctx.user.roleId },
+      select: { level: true },
+    });
+    const kodePermissionNotif =
+      pembayarRole && pembayarRole.level < LEVEL_WARGA ? 'ipl.konfirmasi_pengurus' : 'ipl.konfirmasi';
+
     await this.notifikasiService.kirimKePermission(
-      'ipl.konfirmasi',
+      kodePermissionNotif,
       ipl.rumah.rt,
       'PEMBAYARAN_MASUK',
       'Bukti Pembayaran Baru',
@@ -641,5 +658,170 @@ export class WargaService {
       },
     });
     return { message: 'Rumah berhasil dihapus.' };
+  }
+
+  // ================================================================
+  // REGISTRASI MANDIRI (Bagian 3) — warga daftar sendiri, masuk status Menunggu
+  // Persetujuan; pengurus RT (permission warga.approve_registrasi) yang
+  // menyetujui/menolak. Endpoint daftar & rumah-kosong bersifat publik
+  // (lihat @Public() di WargaController), sisanya butuh permission seperti biasa.
+  // ================================================================
+
+  /** Publik: blok rumah KOSONG di satu RT, untuk dropdown form register mandiri. */
+  async getRumahKosong(rt: string) {
+    if (!SEMUA_RT.includes(rt as RT)) {
+      throw new BadRequestException('RT tidak valid.');
+    }
+    return this.prisma.rumah.findMany({
+      where: { rt: rt as RT, isDelete: false, status: 'KOSONG', userId: null },
+      select: { id: true, blokRumah: true },
+      orderBy: { blokRumah: 'asc' },
+    });
+  }
+
+  async daftarMandiri(dto: DaftarMandiriDto) {
+    const rumah = await this.prisma.rumah.findFirst({
+      where: { id: dto.rumahId, rt: dto.rt, isDelete: false, status: 'KOSONG', userId: null },
+    });
+    if (!rumah) {
+      throw new BadRequestException(
+        'Rumah yang dipilih tidak tersedia lagi. Muat ulang halaman dan pilih blok lain.',
+      );
+    }
+
+    const [userDuplikat, pendaftaranDuplikat] = await Promise.all([
+      this.prisma.user.findFirst({
+        where: { OR: [{ username: dto.noTelp }, ...(dto.email ? [{ email: dto.email }] : [])] },
+        select: { id: true },
+      }),
+      this.prisma.pendaftaranWarga.findFirst({
+        where: { noTelp: dto.noTelp, status: 'PENDING' },
+        select: { id: true },
+      }),
+    ]);
+    if (userDuplikat) {
+      throw new ConflictException('Nomor HP atau email ini sudah terdaftar sebagai akun.');
+    }
+    if (pendaftaranDuplikat) {
+      throw new ConflictException(
+        'Nomor HP ini sudah punya pendaftaran yang masih menunggu persetujuan pengurus.',
+      );
+    }
+
+    const password = await bcrypt.hash(dto.password, SALT_ROUNDS);
+    const pendaftaran = await this.prisma.pendaftaranWarga.create({
+      data: {
+        namaUser: dto.namaUser.trim(),
+        noTelp: dto.noTelp.trim(),
+        email: dto.email ?? null,
+        password,
+        rt: dto.rt,
+        rumahId: dto.rumahId,
+      },
+    });
+
+    // Area di sini selalu RT (tidak pernah 'RW'), jadi kirimKePermission biasa sudah
+    // mencocokkan area persis — lihat catatan seluruhRw di NotifikasiService.
+    await this.notifikasiService.kirimKePermission(
+      'warga.approve_registrasi',
+      dto.rt,
+      'PENDAFTARAN_BARU',
+      'Pendaftaran Warga Baru',
+      `${pendaftaran.namaUser} mendaftar untuk blok ${rumah.blokRumah}, menunggu persetujuan.`,
+      '/dashboard/warga',
+    );
+
+    return { message: 'Pendaftaran berhasil dikirim. Menunggu persetujuan pengurus RT.' };
+  }
+
+  /** Pengurus: daftar pendaftaran di area-nya (default hanya yang masih Menunggu). */
+  async getPendaftaran(ctx: AccessContext, status?: string) {
+    const area = areaFilter(ctx);
+    return this.prisma.pendaftaranWarga.findMany({
+      where: {
+        ...(area !== null && { rt: area as RT }),
+        status: (status && status !== 'SEMUA' ? status : 'PENDING') as StatusPendaftaran,
+      },
+      include: { rumah: { select: { id: true, blokRumah: true, rt: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  private async findPendaftaranScoped(ctx: AccessContext, id: number) {
+    const pendaftaran = await this.prisma.pendaftaranWarga.findUnique({ where: { id } });
+    if (!pendaftaran) throw new NotFoundException(`Pendaftaran dengan ID ${id} tidak ditemukan`);
+    assertInArea(ctx, pendaftaran.rt);
+    if (pendaftaran.status !== 'PENDING') {
+      throw new BadRequestException('Pendaftaran ini sudah diproses sebelumnya.');
+    }
+    return pendaftaran;
+  }
+
+  async setujuiPendaftaran(ctx: AccessContext, id: number) {
+    const pendaftaran = await this.findPendaftaranScoped(ctx, id);
+
+    const roleWarga = await this.prisma.role.findFirst({
+      where: { level: LEVEL_WARGA, isSystem: true },
+    });
+    if (!roleWarga) {
+      throw new InternalServerErrorException('Peran warga belum tersedia. Jalankan seed database.');
+    }
+
+    try {
+      const user = await this.prisma.$transaction(async (tx) => {
+        // Cek ulang rumah masih kosong — bisa saja sudah diisi pengurus lewat menu Data
+        // Warga sejak pendaftaran ini masuk.
+        const rumah = await tx.rumah.findUnique({ where: { id: pendaftaran.rumahId } });
+        if (!rumah || rumah.isDelete || rumah.userId) {
+          throw new ConflictException(
+            'Rumah yang dipilih sudah terisi warga lain. Tolak pendaftaran ini dan minta warga mendaftar ulang.',
+          );
+        }
+
+        const created = await tx.user.create({
+          data: {
+            namaUser: pendaftaran.namaUser,
+            username: pendaftaran.noTelp,
+            email: pendaftaran.email,
+            noTelp: pendaftaran.noTelp,
+            password: pendaftaran.password, // sudah di-hash sejak daftarMandiri()
+            roleId: roleWarga.id,
+            area: pendaftaran.rt,
+            wajibGantiPassword: false, // password sudah dipilih sendiri, bukan sementara
+          },
+          select: { id: true },
+        });
+
+        await tx.rumah.update({
+          where: { id: rumah.id },
+          data: {
+            userId: created.id,
+            status: 'DIHUNI_TETAP',
+            updateBy: ctx.user.nama,
+            updateDate: new Date(),
+          },
+        });
+
+        await tx.pendaftaranWarga.update({
+          where: { id: pendaftaran.id },
+          data: { status: 'DISETUJUI', diprosesOleh: ctx.user.nama, diprosesAt: new Date() },
+        });
+
+        return created;
+      });
+
+      return { message: `${pendaftaran.namaUser} disetujui dan akun warga dibuat.`, data: user };
+    } catch (error) {
+      this.handleUniqueError(error);
+    }
+  }
+
+  async tolakPendaftaran(ctx: AccessContext, id: number, alasan: string) {
+    const pendaftaran = await this.findPendaftaranScoped(ctx, id);
+    await this.prisma.pendaftaranWarga.update({
+      where: { id: pendaftaran.id },
+      data: { status: 'DITOLAK', alasanTolak: alasan, diprosesOleh: ctx.user.nama, diprosesAt: new Date() },
+    });
+    return { message: `Pendaftaran ${pendaftaran.namaUser} ditolak.` };
   }
 }

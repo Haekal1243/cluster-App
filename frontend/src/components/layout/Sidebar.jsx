@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { X, LogOut } from "lucide-react";
 import { showConfirm } from "@/lib/message";
 import { clearSession } from "@/lib/session";
-import { NAV_ITEMS } from "@/lib/nav";
+import { NAV_ITEMS, resolveLabel } from "@/lib/nav";
 import { useUser } from "@/lib/useUser";
 
 export default function Sidebar({
@@ -56,18 +56,19 @@ export default function Sidebar({
         <nav className="sidebar-nav">
           {navItems.map(({ label, href, icon: Icon }) => {
             const isActive = pathname === href;
+            const resolvedLabel = resolveLabel(label, user);
             return (
               <Link
                 key={href}
                 href={href}
                 className={`sidebar-link ${isActive ? "active" : ""}`}
                 onClick={onClose}
-                title={isCollapsed ? label : undefined}
+                title={isCollapsed ? resolvedLabel : undefined}
               >
                 <span className="sidebar-link-icon">
                   <Icon size={17} />
                 </span>
-                <span className="sidebar-link-label">{label}</span>
+                <span className="sidebar-link-label">{resolvedLabel}</span>
               </Link>
             );
           })}

@@ -13,8 +13,8 @@ import { IplService } from './ipl.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
 import { UpdateIplDto } from './dto/update-ipl.dto';
 import { KonfirmasiIplDto } from './dto/konfirmasi-ipl.dto';
-import { Access, RequirePermission } from '../auth/permission.decorators';
-import type { AccessContext } from '../auth/auth.types';
+import { Access, CurrentUser, RequirePermission } from '../auth/permission.decorators';
+import type { AccessContext, AuthUser } from '../auth/auth.types';
 
 @Controller('ipl')
 export class IplController {
@@ -66,15 +66,19 @@ export class IplController {
     return this.iplService.findAll(ctx, { bulan, tahun, dari, sampai, status, search, rt });
   }
 
-  /** PATCH /ipl/konfirmasi/:pembayaranId — Konfirmasi atau tolak bukti pembayaran */
+  /**
+   * PATCH /ipl/konfirmasi/:pembayaranId — Konfirmasi atau tolak bukti pembayaran.
+   * Sengaja tanpa @RequirePermission: pemegang `ipl.konfirmasi` ATAU
+   * `ipl.konfirmasi_pengurus` boleh masuk (mis. Ketua RT cuma boleh konfirmasi
+   * pembayaran pengurus), jadi pengecekannya dilakukan di service.
+   */
   @Patch('konfirmasi/:pembayaranId')
-  @RequirePermission('ipl', 'konfirmasi')
   konfirmasiPembayaran(
-    @Access() ctx: AccessContext,
+    @CurrentUser() user: AuthUser,
     @Param('pembayaranId', ParseIntPipe) pembayaranId: number,
     @Body() dto: KonfirmasiIplDto,
   ) {
-    return this.iplService.konfirmasiPembayaran(ctx, pembayaranId, dto);
+    return this.iplService.konfirmasiPembayaran(user, pembayaranId, dto);
   }
 
   /** PATCH /ipl/:id — Koreksi nominal satu tagihan (hanya yang belum lunas) */

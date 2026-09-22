@@ -65,6 +65,19 @@ async function seedRbac() {
     skipDuplicates: true,
   });
 
+  // Permission yang sudah dipecah/diganti dan tidak lagi ada di PERMISSIONS — dihapus dari
+  // DB juga (cascade menghapus baris tb_role_permission yang memakainya) supaya matriks di
+  // menu Peran & Hak Akses tidak menampilkan permission mati. Aman dijalankan berkali-kali.
+  const DEPRECATED_PERMISSIONS = [
+    'pengaduan.create', // dipecah jadi pengaduan.create_rw / pengaduan.create_rt (Bagian 2)
+  ];
+  const dihapus = await prisma.permission.deleteMany({
+    where: { kode: { in: DEPRECATED_PERMISSIONS } },
+  });
+  if (dihapus.count > 0) {
+    console.log(`🧹 Menghapus ${dihapus.count} permission lama yang sudah digantikan.`);
+  }
+
   console.log(
     `✅ RBAC: ${roles.length} role, ${perms.length} permission, ${grants.length} aturan akses`,
   );

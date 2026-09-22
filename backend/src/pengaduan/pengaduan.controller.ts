@@ -14,22 +14,25 @@ import { CreatePengaduanDto } from './dto/create-pengaduan.dto';
 import { RespondPengaduanDto } from './dto/respond-pengaduan.dto';
 import { pengaduanMulterOptions } from './pengaduan.multer';
 import { PengaduanService } from './pengaduan.service';
-import { Access, RequirePermission } from '../auth/permission.decorators';
-import type { AccessContext } from '../auth/auth.types';
+import { Access, CurrentUser, RequirePermission } from '../auth/permission.decorators';
+import type { AccessContext, AuthUser } from '../auth/auth.types';
 
 @Controller('pengaduan')
 export class PengaduanController {
   constructor(private readonly pengaduanService: PengaduanService) {}
 
+  /**
+   * Sengaja tanpa @RequirePermission: pemegang `pengaduan.create_rw` ATAU
+   * `pengaduan.create_rt` boleh masuk (dicek di service via getTujuanPilihan).
+   */
   @Post()
-  @RequirePermission('pengaduan', 'create')
   @UseInterceptors(FileInterceptor('file', pengaduanMulterOptions))
   create(
-    @Access() ctx: AccessContext,
+    @CurrentUser() user: AuthUser,
     @Body() dto: CreatePengaduanDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.pengaduanService.create(ctx, dto, file);
+    return this.pengaduanService.create(user, dto, file);
   }
 
   /** Daftar pengaduan sesuai scope: warga = miliknya, RT = warga RT-nya, RW = semua. */
@@ -44,6 +47,17 @@ export class PengaduanController {
   @RequirePermission('pengaduan', 'read')
   findByUser(@Access() ctx: AccessContext, @Param('userId', ParseIntPipe) userId: number) {
     return this.pengaduanService.findByUser(ctx, userId);
+  }
+
+  /**
+   * GET /pengaduan/tujuan — pilihan tujuan (RW/RT) untuk form buat pengaduan, mengikuti
+   * rumah & jabatan pelapor. Tanpa @RequirePermission: cukup login, karena hasilnya aman
+   * berupa daftar kosong untuk akun yang memang tidak punya izin membuat pengaduan.
+   * Harus didaftarkan sebelum @Get(':id') supaya "tujuan" tidak ketangkep sebagai :id.
+   */
+  @Get('tujuan')
+  getTujuanPilihan(@CurrentUser() user: AuthUser) {
+    return this.pengaduanService.getTujuanPilihan(user);
   }
 
   @Get(':id')

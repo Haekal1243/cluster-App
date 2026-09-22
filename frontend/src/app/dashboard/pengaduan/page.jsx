@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus, Eye, MessageSquareWarning, Megaphone, Calendar, Search,
+  Plus, Eye, MessageSquareWarning, Megaphone, Calendar, Search, Forward,
 } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import PengaduanFormModal from "@/components/pengaduan/PengaduanFormModal";
 import PengaduanDetailModal from "@/components/pengaduan/PengaduanDetailModal";
-import { can, isWargaView } from "@/lib/session";
+import { can, scopeOf, areaLabel } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import PengaduanRespondModal from "@/components/pengaduan/PengaduanRespondModal";
 
@@ -301,6 +301,7 @@ function AdminPengaduanView({ user }) {
                 <tr>
                   <th>Judul</th>
                   <th>Pelapor</th>
+                  <th>Tujuan</th>
                   <th>Kategori</th>
                   <th>Tanggal</th>
                   <th>Status</th>
@@ -312,6 +313,14 @@ function AdminPengaduanView({ user }) {
                   <tr key={item.id}>
                     <td data-label="Judul">{item.judul}</td>
                     <td data-label="Pelapor">{item.pelapor?.namaUser || "—"}</td>
+                    <td data-label="Tujuan">
+                      {areaLabel(item.tujuan)}
+                      {item.diteruskanAt && (
+                        <span className="ipl-rt" title="Diteruskan ke RW (belum ditanggapi RT 7 hari)">
+                          <Forward size={11} /> diteruskan
+                        </span>
+                      )}
+                    </td>
                     <td data-label="Kategori">{KATEGORI_LABELS[item.kategori] || item.kategori}</td>
                     <td data-label="Tanggal">{formatDate(item.createdAt)}</td>
                     <td data-label="Status"><StatusBadge status={item.status} /></td>
@@ -336,8 +345,12 @@ function AdminPengaduanView({ user }) {
               >
                 <h3 className="pengaduan-grid-title">{item.judul}</h3>
                 <div className="pengaduan-grid-meta">
+                  <span>{areaLabel(item.tujuan)}</span>
                   <span>{KATEGORI_LABELS[item.kategori] || item.kategori}</span>
                   <span className="meta-item"><Calendar size={11} /> {formatDate(item.createdAt)}</span>
+                  {item.diteruskanAt && (
+                    <span className="meta-item"><Forward size={11} /> diteruskan</span>
+                  )}
                 </div>
                 <div className="pengaduan-grid-footer">
                   <StatusBadge status={item.status} />
@@ -474,9 +487,13 @@ function WargaPengaduanView({ user }) {
                   <h3 className="portal-info-card-title">{item.judul}</h3>
                   <p className="portal-info-card-desc">{item.deskripsi}</p>
                   <div className="portal-info-card-meta">
+                    <span>{areaLabel(item.tujuan)}</span>
                     <span className="meta-item"><Calendar size={12} /> {formatDate(item.createdAt)}</span>
                     <span>{KATEGORI_LABELS[item.kategori] || item.kategori}</span>
                     <StatusBadge status={item.status} />
+                    {item.diteruskanAt && (
+                      <span className="meta-item"><Forward size={11} /> diteruskan ke RW</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -498,10 +515,47 @@ function WargaPengaduanView({ user }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PengaduanPage() {
   const { user, ready } = useUser();
+  const [activeView, setActiveView] = useState("masuk");
 
   if (!ready || !user) return null;
 
-  return isWargaView(user)
-    ? <WargaPengaduanView user={user} />
-    : <AdminPengaduanView user={user} />;
+  // Berbasis permission (bukan roleLevel): pengurus yang juga bisa mengadu (create_rw/create_rt)
+  // dapat tab "Pengaduan Saya" di samping "Pengaduan Masuk"; warga biasa (scope OWN di
+  // pengaduan.read) hanya dapat tampilan ajukan pengaduan sendiri tanpa bar tab.
+  const bisaLihatMasuk = scopeOf(user, "pengaduan.read") !== "OWN" && can(user, "pengaduan.read");
+  const bisaMengadu =
+    can(user, "pengaduan.create_rw") ||
+    can(user, "pengaduan.create_rt") ||
+    scopeOf(user, "pengaduan.read") === "OWN";
+
+  if (bisaLihatMasuk && bisaMengadu) {
+    return (
+      <div className="page-stack">
+        <div className="db-section-toggle" role="tablist" aria-label="Tampilan Pengaduan">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "masuk"}
+            className={`db-toggle-btn ${activeView === "masuk" ? "is-active" : ""}`}
+            onClick={() => setActiveView("masuk")}
+          >
+            Pengaduan Masuk
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeView === "saya"}
+            className={`db-toggle-btn ${activeView === "saya" ? "is-active" : ""}`}
+            onClick={() => setActiveView("saya")}
+          >
+            Pengaduan Saya
+          </button>
+        </div>
+        {activeView === "masuk" ? <AdminPengaduanView user={user} /> : <WargaPengaduanView user={user} />}
+      </div>
+    );
+  }
+
+  if (bisaLihatMasuk) return <AdminPengaduanView user={user} />;
+  return <WargaPengaduanView user={user} />;
 }

@@ -4,16 +4,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, RT } from '@prisma/client';
+import { Prisma, RT, ScopeAkses } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
 import { UpdateIplDto } from './dto/update-ipl.dto';
 import { KonfirmasiIplDto } from './dto/konfirmasi-ipl.dto';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
-import { AccessContext } from '../auth/auth.types';
+import { PermissionsService } from '../auth/permissions.service';
+import { AccessContext, AuthUser } from '../auth/auth.types';
 import { resolvePeriode } from '../common/periode.helper';
 import { areaFilter, assertInArea, rtFilter, wargaBacaWhere } from '../common/scope.helper';
-import { totalTagihan, withTotal } from '../common/helpers';
+import { LEVEL_WARGA, totalTagihan, withTotal } from '../common/helpers';
 
 const SEMUA_RT: RT[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
@@ -22,6 +23,7 @@ export class IplService {
   constructor(
     private prisma: PrismaService,
     private notifikasiService: NotifikasiService,
+    private permissions: PermissionsService,
   ) {}
 
   /** Batasan data tagihan sesuai scope: OWN = rumah sendiri, AREA = RT sendiri, ALL = semua. */
@@ -141,7 +143,13 @@ export class IplService {
         rumah: {
           include: {
             penghuni: {
-              select: { id: true, namaUser: true, email: true, noTelp: true },
+              select: {
+                id: true,
+                namaUser: true,
+                email: true,
+                noTelp: true,
+                role: { select: { level: true } },
+              },
             },
           },
         },
@@ -425,7 +433,7 @@ export class IplService {
   // KONFIRMASI / TOLAK PEMBAYARAN
   // ================================================================
 
-  async konfirmasiPembayaran(ctx: AccessContext, pembayaranId: number, dto: KonfirmasiIplDto) {
+  async konfirmasiPembayaran(user: AuthUser, pembayaranId: number, dto: KonfirmasiIplDto) {
     const pembayaran = await this.prisma.pembayaranIpl.findUnique({
       where: { idPembayaran: pembayaranId },
       include: { ipl: { include: { rumah: { select: { rt: true } } } } },
@@ -434,6 +442,36 @@ export class IplService {
     if (!pembayaran) {
       throw new NotFoundException(`Pembayaran dengan ID ${pembayaranId} tidak ditemukan.`);
     }
+
+    if (pembayaran.idUser === user.sub) {
+      throw new ForbiddenException('Anda tidak bisa mengonfirmasi pembayaran milik sendiri.');
+    }
+
+    // Pemegang `ipl.konfirmasi` (konfirmasi warga & pengurus) diutamakan; kalau tidak
+    // punya itu, cek `ipl.konfirmasi_pengurus` (mis. Ketua RT) yang hanya boleh
+    // dipakai untuk pembayaran pengurus (role.level < LEVEL_WARGA), bukan warga biasa.
+    const [scopeUmum, scopePengurus] = await Promise.all([
+      this.permissions.scopeOf(user.roleId, 'ipl.konfirmasi'),
+      this.permissions.scopeOf(user.roleId, 'ipl.konfirmasi_pengurus'),
+    ]);
+
+    let scope: ScopeAkses;
+    if (scopeUmum) {
+      scope = scopeUmum;
+    } else if (scopePengurus) {
+      const pembayar = await this.prisma.user.findUnique({
+        where: { id: pembayaran.idUser },
+        select: { role: { select: { level: true } } },
+      });
+      if (!pembayar || pembayar.role.level >= LEVEL_WARGA) {
+        throw new ForbiddenException('Anda hanya boleh mengonfirmasi pembayaran pengurus.');
+      }
+      scope = scopePengurus;
+    } else {
+      throw new ForbiddenException('Anda tidak memiliki akses untuk aksi ini.');
+    }
+
+    const ctx: AccessContext = { user, scope };
     assertInArea(ctx, pembayaran.ipl.rumah.rt);
 
     if (pembayaran.ipl.statusPembayaran !== 'MENUNGGU_KONFIRMASI') {

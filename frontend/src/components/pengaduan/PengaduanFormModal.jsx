@@ -38,7 +38,9 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
           setForm((prev) => ({ ...prev, tujuan: pilihan[0].value }));
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (!cancelled) showMessage("Gagal Memuat Tujuan", err.message || "Tidak dapat memuat pilihan tujuan.", "error");
+      })
       .finally(() => { if (!cancelled) setLoadingTujuan(false); });
     return () => { cancelled = true; };
   }, []);
@@ -140,14 +142,6 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
                 <span className="field-hint" style={{ color: "var(--danger, #dc2626)" }}>
                   Akun Anda tidak memiliki tujuan pengaduan yang valid. Hubungi pengurus.
                 </span>
-              ) : tujuanPilihan.length === 1 ? (
-                <input
-                  type="text"
-                  className="form-control"
-                  value={tujuanPilihan[0].label}
-                  disabled
-                  readOnly
-                />
               ) : (
                 <select
                   name="tujuan"

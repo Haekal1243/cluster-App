@@ -22,7 +22,6 @@ const PASSWORD_ADMIN = 'admin1234';
 const PASSWORD_PENGURUS = 'Pengurus@123';
 const PASSWORD_WARGA = 'warga123';
 
-// ============================================================
 // 1. RBAC — role, permission, matriks. Idempotent; aman dijalankan ulang.
 //    Setelah pertama kali di-seed, matriks diatur admin lewat menu; seed ini
 //    tidak menimpa perubahan itu (hanya menambah yang belum ada).

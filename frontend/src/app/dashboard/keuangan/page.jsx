@@ -282,7 +282,7 @@ function AdminKeuanganView({ user }) {
   const semuaArea = scopeOf(user, "keuangan.read") === "ALL";
   const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL";
   const isBendaharaRT = user?.role === "BENDAHARA_RT";
-  const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT"].includes(user?.role);
+  const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT", "BENDAHARA_RW"].includes(user?.role);
   const getCurrentYm = () => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;

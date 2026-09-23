@@ -11,6 +11,7 @@ import { NotifikasiService } from '../notifikasi/notifikasi.service';
 import { AuditService } from '../audit/audit.service';
 import { AccessContext } from '../auth/auth.types';
 import { areaFilter, assertInArea } from '../common/scope.helper';
+import { resolvePeriode } from '../common/periode.helper';
 import { KonfirmasiSetoranDto } from './dto/setoran.dto';
 
 const labelRt = (rt: string) => rt.replace('_', ' ');
@@ -113,12 +114,21 @@ export class SetoranService {
   // DAFTAR & DETAIL
   // ================================================================
 
-  async findAll(ctx: AccessContext, params: { status?: string; rt?: string }) {
+  async findAll(
+    ctx: AccessContext,
+    params: { status?: string; rt?: string; dari?: string; sampai?: string },
+  ) {
     const area = areaFilter(ctx);
     const where: Prisma.SetoranIplWhereInput = {
       ...(area ? { area } : params.rt ? { area: params.rt as RT } : {}),
       ...(params.status && params.status !== 'SEMUA' && { status: params.status as any }),
     };
+    const range = resolvePeriode(params.dari, params.sampai);
+    if (range) {
+      // Filter berdasarkan periode tagihan yang ada di dalam setoran (bukan tanggal setor),
+      // agar tracking per RT sinkron dengan filter periode di tabel Tagihan IPL.
+      (where as any).tagihan = { some: { OR: range.periodeOr } };
+    }
     const data = await this.prisma.setoranIpl.findMany({
       where,
       orderBy: { createDate: 'desc' },

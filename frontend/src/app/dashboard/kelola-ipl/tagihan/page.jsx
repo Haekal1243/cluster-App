@@ -259,25 +259,32 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
   );
 }
 
-// ── Rekap per RT (tampilan RW): terkumpul & sudah disetor tiap RT ─────────────
-function RekapRtPanel({ dari, sampai, refreshKey }) {
+// ── Rekap per RT (tampilan RW): tracking per RT, ikut filter aktif (periode/status/RT, tanpa search) ──
+function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
   const [rekap, setRekap] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     iplApi
-      .getRekapRt({ dari, sampai })
+      .getRekapRt({ dari, sampai, status, rt })
       .then((r) => { if (!cancelled) setRekap(r); })
       .catch(() => { if (!cancelled) setRekap(null); });
     return () => { cancelled = true; };
-  }, [dari, sampai, refreshKey]);
+  }, [dari, sampai, status, rt, refreshKey]);
 
   if (!rekap) return null;
+
+  const formatPeriode = (ym) => {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    const [y, m] = ym.split("-");
+    return `${BULAN_NAMES[m] || m} ${y}`;
+  };
+  const periodeLabel = dari === sampai ? formatPeriode(dari) : `${formatPeriode(dari)} – ${formatPeriode(sampai)}`;
 
   return (
     <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
       <div className="ipl-table-header">
-        <span className="ipl-table-title">Rekap per RT</span>
+        <span className="ipl-table-title">Rekap per RT — {periodeLabel}</span>
         <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
       </div>
       <div className="ipl-table-wrapper">
@@ -307,14 +314,6 @@ function RekapRtPanel({ dari, sampai, refreshKey }) {
                 </td>
               </tr>
             ))}
-            <tr className="ipl-total-row">
-              <td><strong>Total</strong></td>
-              <td><strong>{rekap.total.lunas} / {rekap.total.totalTagihan}</strong></td>
-              <td className="ipl-nominal"><strong>{formatRupiah(rekap.total.terkumpulIpl)}</strong></td>
-              <td><strong>{formatRupiah(rekap.total.terkumpulKas)}</strong></td>
-              <td><strong>{formatRupiah(rekap.total.sudahDisetor)}</strong></td>
-              <td><strong>{formatRupiah(rekap.total.belumDisetor)}</strong></td>
-            </tr>
           </tbody>
         </table>
       </div>
@@ -706,8 +705,8 @@ function AdminIuranView({ user }) {
         </div>
       </div>
 
-      {/* Tampilan RW: rekap terkumpul & disetor per RT */}
-      {semuaRt && !rangeError && <RekapRtPanel dari={dari} sampai={sampai} refreshKey={refreshKey} />}
+      {/* Tampilan RW: rekap terkumpul & disetor per RT — ikut filter aktif (tanpa search) */}
+      {semuaRt && !rangeError && <RekapRtPanel dari={dari} sampai={sampai} status={filterStatus} rt={filterRt} refreshKey={refreshKey} />}
 
       {/* ── Table ── */}
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>

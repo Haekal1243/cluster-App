@@ -177,8 +177,8 @@ export const iplApi = {
   getDashboardStats: ({ dari, sampai, rt } = {}) =>
     request(`/ipl/dashboard-stats${qs({ dari, sampai, rt })}`),
 
-  // Rekap terkumpul & disetor per RT (tampilan RW)
-  getRekapRt: ({ dari, sampai } = {}) => request(`/ipl/rekap-rt${qs({ dari, sampai })}`),
+  // Rekap terkumpul & disetor per RT (tampilan RW, ikut filter aktif periode/status/rt)
+  getRekapRt: ({ dari, sampai, status, rt } = {}) => request(`/ipl/rekap-rt${qs({ dari, sampai, status, rt })}`),
 
   // Konfirmasi atau tolak pembayaran
   konfirmasi: (pembayaranId, payload) =>
@@ -193,7 +193,7 @@ export const setoranApi = {
   getSiapSetor: ({ rt } = {}) => request(`/setoran/siap-setor${qs({ rt })}`),
   create: ({ bukti, rt }) =>
     request("/setoran", { method: "POST", body: buildFormData({ bukti, rt }) }),
-  getAll: ({ status, rt } = {}) => request(`/setoran${qs({ status, rt })}`),
+  getAll: ({ status, rt, dari, sampai } = {}) => request(`/setoran${qs({ status, rt, dari, sampai })}`),
   getById: (id) => request(`/setoran/${id}`),
   konfirmasi: (id, payload) => request(`/setoran/${id}/konfirmasi`, json("PATCH", payload)),
   buktiUrl: (filename) => (filename ? `${API_BASE_URL}/uploads/setoran/${filename}` : null),

@@ -1,7 +1,7 @@
 // backend/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
+import { join } from 'node:path';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PesanIndonesiaFilter, validasiIndonesia } from './common/pesan-indonesia';

@@ -39,15 +39,17 @@ export class IplController {
     return this.iplService.getDashboardStats(ctx, { dari, sampai, rt });
   }
 
-  /** GET /ipl/rekap-rt — Rekap terkumpul & disetor per RT (tampilan RW) */
+  /** GET /ipl/rekap-rt — Rekap terkumpul & disetor per RT (tampilan RW, ikut filter aktif) */
   @Get('rekap-rt')
   @RequirePermission('ipl', 'read')
   rekapPerRt(
     @Access() ctx: AccessContext,
     @Query('dari') dari?: string,
     @Query('sampai') sampai?: string,
+    @Query('status') status?: string,
+    @Query('rt') rt?: string,
   ) {
-    return this.iplService.rekapPerRt(ctx, { dari, sampai });
+    return this.iplService.rekapPerRt(ctx, { dari, sampai, status, rt });
   }
 
   /** GET /ipl — Daftar tagihan IPL dengan filter opsional */

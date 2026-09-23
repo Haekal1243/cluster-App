@@ -16,10 +16,10 @@ export default function Panduan({ items = panduan }) {
           </div>
         </Reveal>
 
-        <Reveal>
-          <div className="lp-panduan-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, background: "#1E293B", borderRadius: 10, overflow: "hidden" }}>
-            {items.map((s) => (
-              <div key={s.no} style={{ background: "#0F172A", padding: "40px 32px" }}>
+        <div className="lp-panduan-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, background: "#1E293B", borderRadius: 10, overflow: "hidden" }}>
+          {items.map((s, i) => (
+            <Reveal key={s.no} style={{ transitionDelay: `${i * 60}ms` }}>
+              <div className="lp-card-dark" style={{ height: "100%", background: "#0F172A", padding: "40px 32px" }}>
                 <div
                   style={{
                     width: 44,
@@ -43,9 +43,9 @@ export default function Panduan({ items = panduan }) {
                 </h3>
                 <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.75 }}>{s.isi}</p>
               </div>
-            ))}
-          </div>
-        </Reveal>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );

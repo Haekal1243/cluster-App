@@ -130,7 +130,7 @@ export default function Kegiatan({ items = [] }) {
                 const img = imageUrl(k.gambarUrl);
                 return (
                   <div key={`${k.id}-${idx}`} className="lp-kegiatan-item" style={{ flex: "0 0 calc(33.333333% - 13.333333px)", boxSizing: "border-box" }}>
-                    <div style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>
+                    <div className="lp-card" style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>
                       <div
                         style={{
                           background: "#134E4A",

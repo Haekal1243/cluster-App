@@ -47,6 +47,41 @@ html {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Blob gradient di background Hero — blur dihitung sekali (statis), yang di-animate cuma
+   transform (translate), sama seperti perbaikan logo glow: murah, tidak trigger repaint. */
+@keyframes lpBlobDriftA {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(30px, -25px) scale(1.08); }
+}
+@keyframes lpBlobDriftB {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-25px, 20px) scale(1.05); }
+}
+
+.lp-hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+}
+.lp-hero-blob-a {
+  top: -10%;
+  left: -8%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.35), transparent 70%);
+  animation: lpBlobDriftA 14s ease-in-out infinite;
+}
+.lp-hero-blob-b {
+  bottom: -15%;
+  right: -6%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.25), transparent 70%);
+  animation: lpBlobDriftB 16s ease-in-out infinite;
+}
+
 
 /* Animasi Logo Topaz */
 @keyframes logoFloat {
@@ -55,25 +90,42 @@ html {
   75%       { transform: translateY(8px) rotate(-1deg); }
 }
 
+/* Dulu glow-nya pakai filter: drop-shadow() yang di-animate infinite — berat karena
+   browser ngitung ulang blur-nya tiap frame di atas gambar 420x420 + 2-3 layer shadow.
+   Sekarang glow-nya elemen radial-gradient terpisah di belakang logo; yang di-animate cuma
+   opacity + transform: scale() (murah, full GPU-composited, tidak trigger repaint/blur ulang). */
 @keyframes logoGlowPulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 30px rgba(13,148,136,0.35))
-            drop-shadow(0 0 60px rgba(13,148,136,0.15));
-  }
-  50% {
-    filter: drop-shadow(0 0 55px rgba(13,148,136,0.7))
-            drop-shadow(0 0 100px rgba(13,148,136,0.3))
-            drop-shadow(0 0 20px rgba(20,184,166,0.5));
-  }
+  0%, 100% { opacity: 0.55; transform: scale(0.92); }
+  50%      { opacity: 1;    transform: scale(1.08); }
+}
+
+.logo-topaz-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-topaz-glow {
+  position: absolute;
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(13,148,136,0.55) 0%, rgba(13,148,136,0.22) 45%, transparent 72%);
+  filter: blur(28px);
+  animation: logoGlowPulse 3s ease-in-out 0.8s infinite;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .logo-topaz {
+  position: relative;
+  z-index: 1;
   animation:
-    lpFadeUp     0.8s ease both,
-    logoFloat    5s ease-in-out 0.8s infinite,
-    logoGlowPulse 3s ease-in-out 0.8s infinite;
+    lpFadeUp  0.8s ease both,
+    logoFloat 5s ease-in-out 0.8s infinite;
   transform-origin: center center;
-  will-change: transform, filter;
+  will-change: transform;
 }
 
 /* Navbar */
@@ -91,6 +143,8 @@ html {
 
 /* Tombol */
 .lp-btn-primary {
+  position: relative;
+  overflow: hidden;
   background: #0d9488;
   color: #fff;
   text-decoration: none;
@@ -100,10 +154,28 @@ html {
   border-radius: 6px;
   white-space: nowrap;
   flex-shrink: 0;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.15s ease;
 }
 .lp-btn-primary:hover {
   background: #0f766e;
+}
+.lp-btn-primary:active {
+  transform: scale(0.97);
+}
+/* Efek "shine" nyapu dari kiri ke kanan pas hover — cuma transform, murah buat GPU */
+.lp-btn-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.35) 48%, transparent 66%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .lp-btn-primary:hover::before {
+    transform: translateX(120%);
+    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 .lp-btn-sm {
   font-size: 13px;
@@ -150,17 +222,62 @@ html {
 
 /* Kartu & baris */
 .lp-card {
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  position: relative;
 }
-.lp-card:hover {
-  background: #f8fafc !important;
+.lp-card:active {
+  transform: scale(0.98);
+}
+.lp-row {
+  transition: background 0.15s, transform 0.2s ease;
 }
 
-.lp-row {
-  transition: background 0.15s;
+/* Varian .lp-card buat kartu bertema gelap (Panduan) — background hover-nya beda,
+   bukan putih terang. */
+.lp-card-dark {
+  transition: background 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 }
-.lp-row:hover {
-  background: #f8fafc;
+.lp-card-dark:active {
+  transform: scale(0.98);
+}
+
+/* Hover diaktifkan cuma buat perangkat yang beneran punya mouse — supaya di HP/tablet
+   (sentuh) gak ada efek "nempel" setelah tap. */
+@media (hover: hover) and (pointer: fine) {
+  .lp-card:hover {
+    background: #f8fafc !important;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+    z-index: 1;
+  }
+  .lp-row:hover {
+    background: #f8fafc;
+    transform: translateX(3px);
+  }
+  .lp-card-dark:hover {
+    background: #1e293b !important;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    z-index: 1;
+  }
+}
+
+/* Scroll progress bar — nempel di tepi bawah navbar */
+.lp-scroll-progress-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  background: transparent;
+  overflow: hidden;
+}
+.lp-scroll-progress-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #0d9488, #5eead4);
+  transform: scaleX(0);
+  transform-origin: left;
 }
 
 /* FAQ */
@@ -186,6 +303,190 @@ html {
 @media (max-width: 1024px) {
   .lp-nav-link {
     display: none;
+  }
+}
+
+/* Tombol buka sidebar (mobile/tablet, pengganti .lp-nav-link yang disembunyikan) */
+.lp-drawer-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #1e293b;
+  background: transparent;
+  color: #e2e8f0;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.lp-drawer-toggle:hover {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+@keyframes lpFabSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.lp-fab-spin {
+  animation: lpFabSpin 0.5s ease;
+}
+
+/* Overlay gelap di belakang drawer */
+.lp-drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 15, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 199;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.lp-drawer-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Panel drawer, slide-in dari kanan */
+.lp-drawer {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: min(320px, 84vw);
+  background: linear-gradient(160deg, #0f172a 0%, #0a1120 100%);
+  border-left: 1px solid #1e293b;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lp-drawer.is-open {
+  transform: translateX(0);
+}
+
+.lp-drawer-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.lp-drawer-brand {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.lp-drawer-brand-title {
+  font-size: 9px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.3;
+}
+
+.lp-drawer-brand-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.lp-drawer-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+
+.lp-drawer-close:hover {
+  background: #1e293b;
+  color: #fff;
+}
+
+.lp-drawer-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.lp-drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: 10px;
+  color: #cbd5e1;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lp-drawer-link-icon {
+  color: #0d9488;
+  flex-shrink: 0;
+}
+
+.lp-drawer-link:hover {
+  background: #1e293b;
+  color: #fff;
+}
+
+.lp-drawer-footer {
+  margin-top: auto;
+  padding: 18px 20px 22px;
+  border-top: 1px solid #1e293b;
+}
+
+.lp-drawer-login {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+@media (max-width: 1024px) {
+  .lp-drawer-toggle {
+    display: flex;
+  }
+
+  .lp-drawer-overlay,
+  .lp-drawer {
+    display: flex;
+  }
+
+  /* Tombol "Masuk" di navbar disembunyikan di mobile/tablet — sudah ada versinya
+     ("Masuk ke Portal") di footer drawer, dua-duanya sekaligus bikin baris navbar
+     sempit kepotong di layar HP kecil. */
+  .lp-navbar-cta {
+    display: none !important;
   }
 }
 
@@ -287,9 +588,39 @@ html {
     grid-template-columns: 1fr !important;
   }
 
-  /* Layanan: 3 kartu → 1 kolom */
+  /* Layanan: 4 kartu → 2 kolom (2 baris). Deskripsi disembunyikan (bukan dipotong 2 baris
+     + "…" — itu malah kelihatan kalimatnya putus) supaya kartu jadi ikon+judul yang ringkas
+     dan rapi. Deskripsi lengkap tetap tampil di desktop. */
   .lp-layanan-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Target .lp-card langsung (bukan ">div") — kartu sekarang dibungkus <Reveal>,
+     jadi ">div" kena div pembungkus Reveal yang transparan, bukan kartunya. Itu
+     penyebab padding numpuk & background abu-abu grid keliatan kayak "shadow". */
+  .lp-layanan-grid .lp-card {
+    padding: 20px 16px !important;
+  }
+
+  .lp-layanan-icon {
+    width: 28px !important;
+    height: 28px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .lp-layanan-icon svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .lp-layanan-title {
+    font-size: 14px !important;
+    margin-bottom: 0 !important;
+    line-height: 1.35 !important;
+  }
+
+  .lp-layanan-desc {
+    display: none !important;
   }
 
   /* Kegiatan header (judul + nav) → stack */

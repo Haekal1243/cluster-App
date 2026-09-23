@@ -144,7 +144,7 @@ export class WargaService {
         pembayaran: {
           orderBy: { tanggalBayar: 'desc' },
           take: 1,
-          select: { buktiTransaksi: true, tanggalBayar: true, tanggalKonfirmasi: true },
+          select: { idPembayaran: true, buktiTransaksi: true, tanggalBayar: true, tanggalKonfirmasi: true },
         },
       },
       orderBy: [{ tahunPeriode: 'desc' }, { bulanPeriode: 'desc' }],
@@ -212,7 +212,7 @@ export class WargaService {
         pembayaran: {
           orderBy: { tanggalBayar: 'desc' },
           take: 1,
-          select: { buktiTransaksi: true, tanggalBayar: true, tanggalKonfirmasi: true, nominal: true },
+          select: { idPembayaran: true, buktiTransaksi: true, tanggalBayar: true, tanggalKonfirmasi: true, nominal: true },
         },
       },
       orderBy: [

@@ -6,6 +6,7 @@ import { setoranApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
+import ProtectedImage from "@/components/ui/ProtectedImage";
 
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -128,7 +129,7 @@ function DetailModal({ id, bolehKonfirmasi, onClose, onSuccess }) {
     }
   };
 
-  const buktiUrl = data ? setoranApi.buktiUrl(data.buktiTransaksi) : null;
+  const buktiPath = data?.buktiTransaksi ? setoranApi.buktiPath(data.id) : null;
 
   return (
     <div className="ipl-modal-overlay" onClick={onClose}>
@@ -174,13 +175,7 @@ function DetailModal({ id, bolehKonfirmasi, onClose, onSuccess }) {
 
             <div className="review-bukti-section">
               <p className="review-bukti-label">Bukti Transfer</p>
-              {buktiUrl ? (
-                <a href={buktiUrl} target="_blank" rel="noopener noreferrer">
-                  <img src={buktiUrl} alt="Bukti setoran" className="review-bukti-img" />
-                </a>
-              ) : (
-                <div className="review-bukti-empty">Tidak ada file bukti.</div>
-              )}
+              <ProtectedImage path={buktiPath} alt="Bukti setoran" className="review-bukti-img" />
             </div>
 
             {data.tagihan?.length > 0 && (

@@ -8,7 +8,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { IplService } from './ipl.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
 import { UpdateIplDto } from './dto/update-ipl.dto';
@@ -64,6 +66,17 @@ export class IplController {
     @Query('rt') rt?: string,
   ) {
     return this.iplService.findAll(ctx, { bulan, tahun, dari, sampai, status, search, rt });
+  }
+
+  /** GET /ipl/pembayaran/:id/bukti — Unduh bukti transfer (butuh login + scope sesuai). */
+  @Get('pembayaran/:id/bukti')
+  @RequirePermission('ipl', 'read')
+  async bukti(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    res.sendFile(await this.iplService.filePathBukti(ctx, id));
   }
 
   /**

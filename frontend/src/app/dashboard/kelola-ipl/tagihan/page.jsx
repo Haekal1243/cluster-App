@@ -18,12 +18,13 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { iplApi, portalApi } from "@/lib/api";
+import { iplApi, portalApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
+import ProtectedImage from "@/components/ui/ProtectedImage";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const BULAN_NAMES = {
@@ -323,7 +324,7 @@ function RekapRtPanel({ dari, sampai, refreshKey }) {
 }
 
 // ── Modal: Review Bukti Pembayaran ────────────────────────────────────────────
-function ReviewModal({ tagihan, onClose, onSuccess, buktiBaseUrl }) {
+function ReviewModal({ tagihan, onClose, onSuccess }) {
   const [catatan, setCatatan] = useState("");
   const [loading, setLoading] = useState(false);
   const pembayaran = tagihan?.pembayaran?.[0];
@@ -356,8 +357,8 @@ function ReviewModal({ tagihan, onClose, onSuccess, buktiBaseUrl }) {
     }
   };
 
-  const buktiUrl = pembayaran?.buktiTransaksi
-    ? `${buktiBaseUrl}/uploads/bukti-bayar/${pembayaran.buktiTransaksi}`
+  const buktiPath = pembayaran?.buktiTransaksi
+    ? portalApi.buktiPath(pembayaran.idPembayaran)
     : null;
 
   return (
@@ -399,13 +400,7 @@ function ReviewModal({ tagihan, onClose, onSuccess, buktiBaseUrl }) {
           {/* Bukti transfer */}
           <div className="review-bukti-section">
             <p className="review-bukti-label">Bukti Transfer</p>
-            {buktiUrl ? (
-              <a href={buktiUrl} target="_blank" rel="noopener noreferrer">
-                <img src={buktiUrl} alt="Bukti Transfer" className="review-bukti-img" />
-              </a>
-            ) : (
-              <div className="review-bukti-empty">Tidak ada file bukti.</div>
-            )}
+            <ProtectedImage path={buktiPath} alt="Bukti Transfer" className="review-bukti-img" />
           </div>
 
           {/* Textarea catatan penolakan */}
@@ -536,8 +531,6 @@ function AdminIuranView({ user }) {
   const [showGenerate, setShowGenerate] = useState(false);
   const [reviewItem, setReviewItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
-
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   const loadData = useCallback(async () => {
     if (rangeError) return;
@@ -777,14 +770,13 @@ function AdminIuranView({ user }) {
                               <Eye size={14} /> Review
                             </button>
                           ) : pembayaran?.buktiTransaksi && t.statusPembayaran !== "BELUM_LUNAS" ? (
-                            <a
-                              href={`${API_BASE}/uploads/bukti-bayar/${pembayaran.buktiTransaksi}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
                               className="btn-ipl-view"
+                              onClick={() => openProtectedFile(portalApi.buktiPath(pembayaran.idPembayaran))}
                             >
                               <Eye size={14} /> Lihat Bukti
-                            </a>
+                            </button>
                           ) : null}
                           {t.statusPembayaran === "BELUM_LUNAS" && bolehUbah && (
                             <button type="button" className="btn-icon" title="Koreksi nominal" aria-label="Koreksi nominal" onClick={() => setEditItem(t)}>
@@ -826,7 +818,6 @@ function AdminIuranView({ user }) {
           tagihan={reviewItem}
           onClose={() => setReviewItem(null)}
           onSuccess={loadData}
-          buktiBaseUrl={API_BASE}
         />
       )}
     </div>
@@ -866,8 +857,8 @@ function rupiah(n) {
 // ── Modal: Riwayat Transaksi (read-only, untuk tagihan Lunas role Warga) ────
 function RiwayatTransaksiModal({ ipl, onClose }) {
   const pembayaran = ipl?.pembayaran?.[0];
-  const buktiUrl = pembayaran?.buktiTransaksi
-    ? portalApi.buktiUrl(pembayaran.buktiTransaksi)
+  const buktiPath = pembayaran?.buktiTransaksi
+    ? portalApi.buktiPath(pembayaran.idPembayaran)
     : null;
 
   return (
@@ -911,13 +902,7 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
           {/* Bukti transfer */}
           <div className="review-bukti-section">
             <p className="review-bukti-label">Bukti Transfer</p>
-            {buktiUrl ? (
-              <a href={buktiUrl} target="_blank" rel="noopener noreferrer">
-                <img src={buktiUrl} alt="Bukti Transfer" className="review-bukti-img" />
-              </a>
-            ) : (
-              <div className="review-bukti-empty">Tidak ada file bukti.</div>
-            )}
+            <ProtectedImage path={buktiPath} alt="Bukti Transfer" className="review-bukti-img" />
           </div>
 
           <div className="ipl-modal-footer">

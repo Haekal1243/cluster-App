@@ -7,10 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { KeuanganService } from './keuangan.service';
 import { CreateKasDto } from './dto/create-kas.dto';
 import { UpdateKasDto } from './dto/update-kas.dto';
@@ -59,6 +61,13 @@ export class KeuanganController {
     @Query('area') area?: string,
   ) {
     return this.keuanganService.findAll(ctx, { dari, sampai, tipe, kategori, search, area });
+  }
+
+  /** GET /keuangan/:id/bukti — unduh bukti file transaksi (butuh login + scope area) */
+  @Get(':id/bukti')
+  @RequirePermission('keuangan', 'read')
+  async bukti(@Access() ctx: AccessContext, @Param('id') id: string, @Res() res: Response) {
+    res.sendFile(await this.keuanganService.filePathBukti(ctx, id));
   }
 
   /** GET /keuangan/:id — Detail satu transaksi */

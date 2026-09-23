@@ -159,7 +159,8 @@ export const portalApi = {
   uploadBuktiPembayaran: (payload) =>
     request("/warga/portal/bayar", { method: "POST", body: buildFormData(payload) }),
 
-  buktiUrl: (filename) => (filename ? `${API_BASE_URL}/uploads/bukti-bayar/${filename}` : null),
+  // Path endpoint terautentikasi (bukan URL statis) — dipakai lewat <ProtectedImage>.
+  buktiPath: (pembayaranId) => (pembayaranId ? `/ipl/pembayaran/${pembayaranId}/bukti` : null),
 };
 
 // ── Tagihan IPL: warga membayar total (IPL + kas RT) ────────────────────
@@ -196,7 +197,7 @@ export const setoranApi = {
   getAll: ({ status, rt } = {}) => request(`/setoran${qs({ status, rt })}`),
   getById: (id) => request(`/setoran/${id}`),
   konfirmasi: (id, payload) => request(`/setoran/${id}/konfirmasi`, json("PATCH", payload)),
-  buktiUrl: (filename) => (filename ? `${API_BASE_URL}/uploads/setoran/${filename}` : null),
+  buktiPath: (id) => (id ? `/setoran/${id}/bukti` : null),
 };
 
 export const keuanganApi = {
@@ -214,7 +215,7 @@ export const keuanganApi = {
     request(`/keuangan/${id}`, { method: "PATCH", body: buildFormData(payload) }),
   remove: (id) => request(`/keuangan/${id}`, { method: "DELETE" }),
 
-  buktiUrl: (filename) => (filename ? `${API_BASE_URL}/uploads/keuangan/${filename}` : null),
+  buktiPath: (id) => (id ? `/keuangan/${id}/bukti` : null),
 };
 
 export const pengaduanApi = {

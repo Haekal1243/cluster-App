@@ -13,7 +13,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { keuanganApi, portalApi, setoranApi } from "@/lib/api";
+import { keuanganApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, isWargaView, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -57,11 +57,11 @@ function KasTipeBadge({ tipe }) {
   );
 }
 
-function getBuktiUrl(t) {
+// Hanya transaksi kas manual (sumber "MANUAL") yang punya file bukti sendiri —
+// baris agregat IPL_KAS/SETORAN adalah gabungan banyak pembayaran, tidak punya satu file.
+function getBuktiPath(t) {
   if (!t?.buktiFile) return null;
-  if (t.sumber === "IPL_KAS") return portalApi.buktiUrl(t.buktiFile);
-  if (t.sumber === "SETORAN") return setoranApi.buktiUrl(t.buktiFile);
-  return keuanganApi.buktiUrl(t.buktiFile);
+  return keuanganApi.buktiPath(t.id);
 }
 
 // ── Grafik batang grup: pemasukan vs pengeluaran per bulan ────────────────────
@@ -248,15 +248,14 @@ function KasFormModal({ initial, pilihArea = false, onClose, onSuccess }) {
               className="ipl-input"
             />
             {isEdit && !bukti && initial?.buktiFile && (
-              <a
-                href={keuanganApi.buktiUrl(initial.buktiFile)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
                 className="portal-download-link"
                 style={{ marginTop: 6, display: "inline-block" }}
+                onClick={() => openProtectedFile(keuanganApi.buktiPath(initial.id))}
               >
                 <Eye size={12} /> Lihat bukti saat ini
-              </a>
+              </button>
             )}
           </div>
           <div className="ipl-modal-footer">
@@ -679,7 +678,7 @@ function AdminKeuanganView({ user }) {
               </thead>
               <tbody>
                 {riwayat.map((t) => {
-                  const buktiUrl = getBuktiUrl(t);
+                  const buktiPath = getBuktiPath(t);
                   const isManual = t.sumber === "MANUAL" || !t.sumber;
                   const isIplKas = t.sumber === "IPL_KAS";
                   const canEdit = (isManual || isIplKas) && bolehUbah;
@@ -698,15 +697,14 @@ function AdminKeuanganView({ user }) {
                       {t.tipe === "PEMASUKAN" ? "+" : "−"}{formatRupiah(t.nominal)}
                     </td>
                     <td>
-                      {buktiUrl ? (
-                        <a
-                          href={buktiUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      {buktiPath ? (
+                        <button
+                          type="button"
                           className="btn-ipl-view"
+                          onClick={() => openProtectedFile(buktiPath)}
                         >
                           <Eye size={14} /> Lihat
-                        </a>
+                        </button>
                       ) : (
                         <span className="text-muted">—</span>
                       )}

@@ -6,6 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, RT } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
 import { AuditService } from '../audit/audit.service';
@@ -161,6 +163,15 @@ export class SetoranService {
     if (!setoran) throw new NotFoundException(`Setoran dengan ID ${id} tidak ditemukan.`);
     assertInArea(ctx, setoran.area);
     return setoran;
+  }
+
+  /** Path file bukti transfer setoran; dicek scope dulu, folder ini tidak disajikan statis. */
+  async filePathBukti(ctx: AccessContext, id: number) {
+    const setoran = await this.findOne(ctx, id);
+    if (!setoran.buktiTransaksi) throw new NotFoundException('Setoran ini tidak memiliki bukti transfer.');
+    const full = path.join(process.cwd(), 'uploads', 'setoran', setoran.buktiTransaksi);
+    if (!fs.existsSync(full)) throw new NotFoundException('File bukti transfer tidak ditemukan.');
+    return full;
   }
 
   // ================================================================

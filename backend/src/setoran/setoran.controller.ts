@@ -7,10 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { RT } from '@prisma/client';
 import { SetoranService } from './setoran.service';
 import { CreateSetoranDto, KonfirmasiSetoranDto } from './dto/setoran.dto';
@@ -55,6 +57,17 @@ export class SetoranController {
   @RequirePermission('setoran', 'read')
   findOne(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
     return this.setoranService.findOne(ctx, id);
+  }
+
+  /** GET /setoran/:id/bukti — unduh bukti transfer setoran (butuh login + scope area) */
+  @Get(':id/bukti')
+  @RequirePermission('setoran', 'read')
+  async bukti(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+  ) {
+    res.sendFile(await this.setoranService.filePathBukti(ctx, id));
   }
 
   /** PATCH /setoran/:id/konfirmasi — bendahara RW menerima/menolak setoran */

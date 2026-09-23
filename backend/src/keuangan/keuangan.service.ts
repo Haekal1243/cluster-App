@@ -1,5 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Area, Prisma, RT } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateKasDto } from './dto/create-kas.dto';
 import { UpdateKasDto } from './dto/update-kas.dto';
@@ -224,6 +226,17 @@ export class KeuanganService {
       throw new ForbiddenException('Transaksi ini di luar wilayah Anda.');
     }
     return data;
+  }
+
+  /** Path file bukti transaksi kas; dicek scope dulu, folder ini tidak disajikan statis. */
+  async filePathBukti(ctx: AccessContext, id: string | number) {
+    const data = await this.findOne(ctx, id);
+    if (data.virtual || !data.buktiFile) {
+      throw new NotFoundException('Transaksi ini tidak memiliki bukti file.');
+    }
+    const full = path.join(process.cwd(), 'uploads', 'keuangan', data.buktiFile);
+    if (!fs.existsSync(full)) throw new NotFoundException('File bukti tidak ditemukan.');
+    return full;
   }
 
   /** Untuk ubah/hapus, hak tulis dicek terhadap scope permission update/delete. */

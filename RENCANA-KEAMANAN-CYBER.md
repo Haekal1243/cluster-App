@@ -1,8 +1,9 @@
 # Rencana Perbaikan Keamanan (Cyber Security)
 
-Status: **belum dikerjakan**, ini daftar rencana kerja dulu — tunggu sinyal eksplisit user
-sebelum eksekusi kode. Sumber: audit read-only auth/RBAC backend (23 Sep 2026) + pengecekan
-lanjutan token storage & validasi input.
+Status: **item #1–#6 sudah dikerjakan** (23 Sep 2026) — lihat catatan implementasi di bagian
+"Prioritas pengerjaan" di bawah. Item #7 (cookie httpOnly) dan #8 (password policy) sengaja
+belum dikerjakan karena eksplisit ditandai opsional/effort besar. Sumber: audit read-only
+auth/RBAC backend (23 Sep 2026) + pengecekan lanjutan token storage & validasi input.
 
 Kesimpulan umum: fondasi auth & RBAC-nya sudah rapi (bcrypt, role/permission direfetch dari DB
 tiap request, scope OWN/AREA/ALL diterapkan konsisten di query Prisma lewat `assertInArea`/
@@ -117,3 +118,30 @@ Item #7 (nomor 4 di daftar temuan) sengaja ditaruh paling akhir/opsional karena 
 arsitektur auth (frontend & backend sama-sama kena), bukan sekadar tambal config. Temuan #7
 (account enumeration) dan #9 (sensitive data di log) sudah aman, tidak perlu tindakan — dicatat
 di sini sebagai bukti sudah dicek.
+
+## Catatan implementasi (23 Sep 2026)
+
+1. **Rate limiting** — `@nestjs/throttler` dipasang (5x/menit per IP), diterapkan lewat
+   `@UseGuards(ThrottlerGuard)` di `POST /auth/login` dan `POST /warga/daftar`.
+2. **`npm audit fix` backend** — 0 vulnerability (sebelumnya 8, termasuk `multer` high).
+3. **Proteksi file finansial** — folder `uploads/bukti-bayar`, `uploads/setoran`,
+   `uploads/keuangan` diblokir dari static serving di `main.ts` (pola sama seperti
+   `catatan-rapat`). Endpoint baru: `GET /ipl/pembayaran/:id/bukti`, `GET /setoran/:id/bukti`,
+   `GET /keuangan/:id/bukti` — semua cek login + scope (OWN/AREA/ALL) sebelum kirim file.
+   Frontend diubah dari `<img src>` URL statis ke `<ProtectedImage>` (fetch blob dengan
+   Authorization header) via `components/ui/ProtectedImage.jsx`, dan link "Lihat Bukti" jadi
+   tombol yang panggil `openProtectedFile()`. Folder `uploads/pengumuman`, `kegiatan`,
+   `pengaduan` sengaja dibiarkan publik karena memang ada endpoint publik terkait
+   (`pengumuman/active`, dst).
+4. **`ValidationPipe` whitelist** — `whitelist: true, forbidNonWhitelisted: true` diaktifkan
+   di `main.ts` setelah audit manual semua DTO create/update vs payload yang dikirim frontend
+   (tidak ada field ekstra yang dibutuhkan).
+5. **`helmet()` + CORS whitelist** — dipasang dengan `crossOriginResourcePolicy: cross-origin`
+   (supaya file publik di `/uploads` tetap bisa di-load dari origin frontend yang beda
+   port/host). Origin CORS diambil dari env `CORS_ORIGINS` (default localhost:3000 + LAN IP
+   dev saat ini), bukan hardcode, karena IP LAN dev sudah pernah berubah sebelumnya.
+6. **`npm audit fix` frontend** — sudah 0 vulnerability saat dicek (tidak ada aksi diperlukan).
+
+Build backend (`nest build`) dan frontend (`next build`) lolos setelah semua perubahan di atas;
+backend juga sudah di-boot-test (routes baru terdaftar, tidak ada error wiring — satu-satunya
+error saat boot adalah database lokal belum dinyalakan, di luar cakupan perubahan ini).

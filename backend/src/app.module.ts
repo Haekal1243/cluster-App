@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -25,6 +26,8 @@ import { RbacModule } from './rbac/rbac.module';
     ConfigModule.forRoot({ isGlobal: true }),
     // Job auto-teruskan pengaduan RT yang tidak ditanggapi 7 hari (PengaduanService).
     ScheduleModule.forRoot(),
+    // Dipasang per-endpoint via @Throttle di login & registrasi mandiri (rawan brute-force/spam).
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
     PrismaModule,
     AuditModule,
     AuthModule,

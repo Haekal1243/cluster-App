@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, RT, ScopeAkses } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
 import { UpdateIplDto } from './dto/update-ipl.dto';
@@ -427,6 +429,31 @@ export class IplService {
       trenPemasukan: trenData,
       pembayaranTerbaru,
     };
+  }
+
+  /**
+   * Path file bukti transfer; dicek scope dulu (OWN = punya sendiri, AREA/ALL = wilayah
+   * sesuai RT rumah), karena folder ini tidak disajikan sebagai file statis publik.
+   */
+  async filePathBukti(ctx: AccessContext, pembayaranId: number) {
+    const pembayaran = await this.prisma.pembayaranIpl.findUnique({
+      where: { idPembayaran: pembayaranId },
+      include: { ipl: { include: { rumah: { select: { rt: true } } } } },
+    });
+    if (!pembayaran) {
+      throw new NotFoundException(`Pembayaran dengan ID ${pembayaranId} tidak ditemukan.`);
+    }
+    if (ctx.scope === 'OWN') {
+      if (pembayaran.idUser !== ctx.user.sub) {
+        throw new ForbiddenException('Anda hanya boleh melihat bukti pembayaran milik sendiri.');
+      }
+    } else {
+      assertInArea(ctx, pembayaran.ipl.rumah.rt);
+    }
+    if (!pembayaran.buktiTransaksi) throw new NotFoundException('Pembayaran ini tidak memiliki bukti transfer.');
+    const full = path.join(process.cwd(), 'uploads', 'bukti-bayar', pembayaran.buktiTransaksi);
+    if (!fs.existsSync(full)) throw new NotFoundException('File bukti transfer tidak ditemukan.');
+    return full;
   }
 
   // ================================================================

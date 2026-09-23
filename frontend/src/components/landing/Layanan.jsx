@@ -19,21 +19,22 @@ export default function Layanan({ items = layanan }) {
           </p>
         </Reveal>
 
-        <Reveal>
-          <div
-            className="lp-layanan-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3,1fr)",
-              gap: 1,
-              background: "#E2E8F0",
-              borderRadius: 10,
-              overflow: "hidden",
-            }}
-          >
-            {items.map((s) => (
-              <div key={s.id} id={s.id === "pengaduan" ? "pengaduan" : undefined} className="lp-card" style={{ background: "white", padding: "32px 28px" }}>
+        <div
+          className="lp-layanan-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2,1fr)",
+            gap: 1,
+            background: "#E2E8F0",
+            borderRadius: 10,
+            overflow: "hidden",
+          }}
+        >
+          {items.map((s, i) => (
+            <Reveal key={s.id} style={{ transitionDelay: `${i * 50}ms` }}>
+              <div id={s.id === "pengaduan" ? "pengaduan" : undefined} className="lp-card" style={{ height: "100%", background: "white", padding: "32px 28px" }}>
                 <div
+                  className="lp-layanan-icon"
                   style={{
                     width: 44,
                     height: 44,
@@ -47,14 +48,14 @@ export default function Layanan({ items = layanan }) {
                 >
                   <ServiceIcon name={s.icon} />
                 </div>
-                <h3 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 16, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>
+                <h3 className="lp-layanan-title" style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 16, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>
                   {s.judul}
                 </h3>
-                <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.7 }}>{s.deskripsi}</p>
+                <p className="lp-layanan-desc" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.7 }}>{s.deskripsi}</p>
               </div>
-            ))}
-          </div>
-        </Reveal>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );

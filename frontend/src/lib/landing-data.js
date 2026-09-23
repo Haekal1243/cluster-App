@@ -34,28 +34,12 @@ export const layanan = [
       "Pelaporan gangguan lingkungan, keamanan, atau infrastruktur. Status penanganan dapat dipantau langsung oleh pelapor.",
   },
   {
-    id: "surat",
-    icon: "surat",
-    akses: "login",
-    judul: "Administrasi Surat",
-    deskripsi:
-      "Pengajuan surat pengantar RT/RW secara daring. Formulir diisi melalui portal dan dokumen dapat diambil di sekretariat RW.",
-  },
-  {
-    id: "fasilitas",
-    icon: "kalender",
-    akses: "login",
-    judul: "Booking Fasilitas Umum",
-    deskripsi:
-      "Reservasi penggunaan aula dan fasilitas bersama milik RW. Jadwal dan ketersediaan dapat dilihat secara langsung.",
-  },
-  {
     id: "kependudukan",
     icon: "warga",
     akses: "pengurus",
     judul: "Data Kependudukan",
     deskripsi:
-      "Pengelolaan data warga oleh pengurus RW. Warga hanya dapat memperbarui data rumah tangganya sendiri melalui akun masing-masing.",
+      "Pengelolaan data warga dan rumah oleh pengurus RT/RW, termasuk persetujuan pendaftaran warga baru.",
   },
 ];
 

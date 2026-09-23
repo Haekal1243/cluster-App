@@ -23,7 +23,10 @@ export default function Reveal({ children, style }) {
           }
         });
       },
-      { threshold: 0.08, rootMargin: "0px 0px -32px 0px" }
+      // rootMargin bawah positif: animasi mulai ~140px SEBELUM elemen kelihatan di layar,
+      // supaya selesai duluan dan tidak pernah "ketangkap" nanggung di tengah transisi
+      // pas discroll/di-screenshot (ini penyebab kartu kelihatan "ada shadow aneh").
+      { threshold: 0.01, rootMargin: "0px 0px 140px 0px" }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -34,9 +37,9 @@ export default function Reveal({ children, style }) {
       ref={ref}
       style={{
         opacity: shown ? 1 : 0,
-        transform: shown ? "translateY(0)" : "translateY(20px)",
+        transform: shown ? "translateY(0)" : "translateY(12px)",
         transition:
-          "opacity 0.55s cubic-bezier(0.4,0,0.2,1), transform 0.55s cubic-bezier(0.4,0,0.2,1)",
+          "opacity 0.4s cubic-bezier(0.4,0,0.2,1), transform 0.4s cubic-bezier(0.4,0,0.2,1)",
         ...style,
       }}
     >

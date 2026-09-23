@@ -65,7 +65,7 @@ export default async function PortofolioPage() {
                       {kegiatan.map((k) => {
                         const img = gambar(k.gambarUrl);
                         return (
-                          <article key={k.id} style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>
+                          <article key={k.id} className="lp-card" style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>
                             <div style={{ background: "#134E4A", height: 190 }}>
                               {img && <img src={img} alt={k.judul} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
                             </div>

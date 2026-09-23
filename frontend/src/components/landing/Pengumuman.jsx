@@ -33,21 +33,20 @@ export default function Pengumuman({ items = [] }) {
             Belum ada pengumuman yang ditampilkan.
           </div>
         ) : (
-        <Reveal>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              border: "1px solid #E2E8F0",
-              borderRadius: 10,
-              overflow: "hidden",
-              background: "white",
-            }}
-          >
-            {items.map((p, i) => {
-              return (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            border: "1px solid #E2E8F0",
+            borderRadius: 10,
+            overflow: "hidden",
+            background: "white",
+          }}
+        >
+          {items.map((p, i) => {
+            return (
+              <Reveal key={p.id} style={{ transitionDelay: `${i * 50}ms` }}>
                 <div
-                  key={p.id}
                   className="lp-row lp-pengumuman-row"
                   style={{
                     borderBottom: i === items.length - 1 ? "none" : "1px solid #E2E8F0",
@@ -56,18 +55,19 @@ export default function Pengumuman({ items = [] }) {
                   <div style={{ paddingTop: 2 }}>
                     <span
                       style={{
-                        display: "inline-block",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 30,
+                        height: 30,
                         background: badgeStyle.background,
                         color: badgeStyle.color,
-                        fontSize: 10,
+                        fontSize: 13,
                         fontWeight: 700,
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        padding: "3px 8px",
-                        borderRadius: 4,
+                        borderRadius: "50%",
                       }}
                     >
-                      Pengumuman
+                      {String(i + 1).padStart(2, "0")}
                     </span>
                   </div>
                   <div>
@@ -78,10 +78,10 @@ export default function Pengumuman({ items = [] }) {
                     <div style={{ fontSize: 12, color: "#94A3B8" }}>{formatTanggalPengumuman(p.createDate)}</div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </Reveal>
+              </Reveal>
+            );
+          })}
+        </div>
         )}
       </div>
     </section>

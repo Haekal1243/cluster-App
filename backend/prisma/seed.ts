@@ -22,7 +22,6 @@ const PASSWORD_ADMIN = 'admin1234';
 const PASSWORD_PENGURUS = 'Pengurus@123';
 const PASSWORD_WARGA = 'warga123';
 
-// ============================================================
 // 1. RBAC — role, permission, matriks. Idempotent; aman dijalankan ulang.
 //    Setelah pertama kali di-seed, matriks diatur admin lewat menu; seed ini
 //    tidak menimpa perubahan itu (hanya menambah yang belum ada).
@@ -464,19 +463,19 @@ async function seedDummy(roleId: Map<string, number>) {
   console.log(`   ✔ ${pengumuman.length} pengumuman`);
 
   // ---------- Pengaduan ----------
-  const pengaduan: [string, string, KategoriPengaduan, string, StatusPengaduan, string | null][] = [
-    [telpOf(1, 4), 'Lampu jalan blok E1 mati', 'INFRASTRUKTUR', 'Lampu jalan di depan E1/06 sudah dua minggu mati sehingga gelap saat malam.', 'MENUNGGU', null],
-    [telpOf(1, 6), 'Sampah menumpuk di ujung jalan', 'KEBERSIHAN', 'Sampah di ujung blok E1 belum diangkut sejak Sabtu.', 'DIPROSES', 'Sudah dikoordinasikan dengan petugas kebersihan, diangkut besok pagi.'],
-    [telpOf(2, 5), 'Motor asing parkir lama di blok E2', 'KEAMANAN', 'Ada motor tidak dikenal parkir dua hari di depan E2/05.', 'SELESAI', 'Sudah dicek satpam, milik tamu warga yang menginap. Terima kasih laporannya.'],
-    [telpOf(2, 7), 'Air PAM sering mati', 'INFRASTRUKTUR', 'Air mati hampir tiap sore sejak minggu lalu.', 'MENUNGGU', null],
-    [telpOf(3, 4), 'Suara musik hingga larut malam', 'LAINNYA', 'Tetangga blok E3 memutar musik keras sampai lewat tengah malam.', 'DITOLAK', 'Sudah ditegur langsung; mohon selesaikan secara kekeluargaan lebih dulu.'],
-    [telpOf(4, 5), 'Got tersumbat depan E4/05', 'KEBERSIHAN', 'Got tersumbat dan menimbulkan bau serta genangan air.', 'DIPROSES', 'Dijadwalkan kerja bakti hari Minggu.'],
+  const pengaduan: [string, string, KategoriPengaduan, string, StatusPengaduan, string | null, Area][] = [
+    [telpOf(1, 4), 'Lampu jalan blok E1 mati', 'INFRASTRUKTUR', 'Lampu jalan di depan E1/06 sudah dua minggu mati sehingga gelap saat malam.', 'MENUNGGU', null, 'RT_01'],
+    [telpOf(1, 6), 'Sampah menumpuk di ujung jalan', 'KEBERSIHAN', 'Sampah di ujung blok E1 belum diangkut sejak Sabtu.', 'DIPROSES', 'Sudah dikoordinasikan dengan petugas kebersihan, diangkut besok pagi.', 'RW'],
+    [telpOf(2, 5), 'Motor asing parkir lama di blok E2', 'KEAMANAN', 'Ada motor tidak dikenal parkir dua hari di depan E2/05.', 'SELESAI', 'Sudah dicek satpam, milik tamu warga yang menginap. Terima kasih laporannya.', 'RT_02'],
+    [telpOf(2, 7), 'Air PAM sering mati', 'INFRASTRUKTUR', 'Air mati hampir tiap sore sejak minggu lalu.', 'MENUNGGU', null, 'RW'],
+    [telpOf(3, 4), 'Suara musik hingga larut malam', 'LAINNYA', 'Tetangga blok E3 memutar musik keras sampai lewat tengah malam.', 'DITOLAK', 'Sudah ditegur langsung; mohon selesaikan secara kekeluargaan lebih dulu.', 'RT_03'],
+    [telpOf(4, 5), 'Got tersumbat depan E4/05', 'KEBERSIHAN', 'Got tersumbat dan menimbulkan bau serta genangan air.', 'DIPROSES', 'Dijadwalkan kerja bakti hari Minggu.', 'RT_04'],
   ];
-  for (const [username, judul, kategori, deskripsi, status, tanggapan] of pengaduan) {
+  for (const [username, judul, kategori, deskripsi, status, tanggapan, tujuan] of pengaduan) {
     await prisma.pengaduan.create({
       data: {
         idUser: userByUsername.get(username)!,
-        judul, kategori, deskripsi, status, tanggapan,
+        judul, kategori, deskripsi, status, tanggapan, tujuan,
         tanggapanBy: tanggapan ? 'Pengurus' : null,
         updatedAt: tanggapan ? new Date() : null,
       },

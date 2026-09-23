@@ -989,13 +989,16 @@ function WargaIuranView({ user }) {
     : "";
 
   const hasActiveFilter = !!periodeDari || !!periodeSampai || filterStatus !== "SEMUA" || selectedRumahId !== "semua";
-  const periodeLabel = !periodeDari && !periodeSampai
+  // displayDari/displaySampai terurut kronologis agar label tidak terbalik jika user isi Dari > Sampai
+  const displayDari = periodeDari && periodeSampai && periodeDari > periodeSampai ? periodeSampai : periodeDari;
+  const displaySampai = periodeDari && periodeSampai && periodeDari > periodeSampai ? periodeDari : periodeSampai;
+  const periodeLabel = !displayDari && !displaySampai
     ? "Semua Periode"
-    : !periodeDari || !periodeSampai
-      ? formatYmPanjang(periodeDari || periodeSampai)
-      : periodeDari === periodeSampai
-        ? formatYmPanjang(periodeDari)
-        : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+    : !displayDari || !displaySampai
+      ? formatYmPanjang(displayDari || displaySampai)
+      : displayDari === displaySampai
+        ? formatYmPanjang(displayDari)
+        : `${formatYmPanjang(displayDari)} – ${formatYmPanjang(displaySampai)}`;
 
   // Sinkronkan draft dari filter yang sedang diterapkan setiap popover dibuka
   const handleFilterOpenChange = (next) => {
@@ -1208,7 +1211,7 @@ function WargaIuranView({ user }) {
         >
           <FilterField label="Periode Dari">
             <div
-              className="ipl-month-input-wrap"
+              className={`ipl-month-input-wrap ${!draftDari ? "has-empty" : ""}`}
               data-placeholder={draftDari ? undefined : "Semua Periode"}
               style={{ position: "relative" }}
             >
@@ -1217,13 +1220,13 @@ function WargaIuranView({ user }) {
                 value={draftDari}
                 onChange={(e) => setDraftDari(e.target.value)}
                 className="ipl-input"
-                style={{ width: "100%", color: draftDari ? undefined : "transparent" }}
+                style={{ width: "100%" }}
               />
             </div>
           </FilterField>
           <FilterField label="Periode Sampai">
             <div
-              className="ipl-month-input-wrap"
+              className={`ipl-month-input-wrap ${!draftSampai ? "has-empty" : ""}`}
               data-placeholder={draftSampai ? undefined : "Semua Periode"}
               style={{ position: "relative" }}
             >
@@ -1232,7 +1235,7 @@ function WargaIuranView({ user }) {
                 value={draftSampai}
                 onChange={(e) => setDraftSampai(e.target.value)}
                 className="ipl-input"
-                style={{ width: "100%", color: draftSampai ? undefined : "transparent" }}
+                style={{ width: "100%" }}
               />
             </div>
           </FilterField>

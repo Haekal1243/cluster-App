@@ -1453,15 +1453,13 @@ select {
 }
 
 /* Input mm/yyyy bawaan browser di dalam .ipl-month-input-wrap disembunyiin
-   pakai color:transparent di elemen <input>-nya sendiri, tapi Chrome masih
-   ngegambar kotak highlight biru di belakang segmen mm/yyyy itu pas di-klik
-   atau di-drag (highlight ini terpisah dari `color`, jadi nggak ketutup sama
-   color:transparent di parent). Kotak biru itu numpuk persis di atas teks
-   placeholder ::before di atas, jadi keliatan kayak teksnya ke-select/blok
-   padahal itu murni UI bawaan field tanggal Chrome. Matiin lewat pseudo-
-   element internal webkit-nya biar nggak nongol sama sekali. */
-.ipl-month-input-wrap input[type="month"]::-webkit-datetime-edit-month-field,
-.ipl-month-input-wrap input[type="month"]::-webkit-datetime-edit-year-field {
+   HANYA saat kosong (has-empty) — dulu pakai selector tanpa .has-empty jadi
+   permanen transparent bahkan saat ada value (bug: nilai 2026-03 tidak terlihat).
+   Opsi B: placeholder "Semua Periode" via ::before tetap tampil saat kosong,
+   tapi saat ada value class has-empty dilepas jadi field terlihat normal. */
+.ipl-month-input-wrap.has-empty input[type="month"]::-webkit-datetime-edit-month-field,
+.ipl-month-input-wrap.has-empty input[type="month"]::-webkit-datetime-edit-year-field,
+.ipl-month-input-wrap.has-empty input[type="month"]::-webkit-datetime-edit-text {
   color: transparent;
   background-color: transparent;
 }

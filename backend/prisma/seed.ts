@@ -10,13 +10,13 @@ import {
   TipeKas,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as process from 'node:process';
 import { MATRIX, PERMISSIONS, ROLES } from './rbac-data';
 
 const prisma = new PrismaClient();
-const SALT_ROUNDS = 1
-0;
+const SALT_ROUNDS = 10;
 
 const PASSWORD_ADMIN = 'admin1234';
 const PASSWORD_PENGURUS = 'Pengurus@123';

@@ -14,6 +14,7 @@ import {
 const SEMUA_AREA: Area[] = ['RW', 'RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
 const sum = (rows: { nominal: number }[]) => rows.reduce((s, r) => s + r.nominal, 0);
+const labelRt = (rt: string) => rt.replace('_', ' ');
 
 @Injectable()
 export class KeuanganService {
@@ -95,8 +96,10 @@ export class KeuanganService {
     // Pemasukan otomatis agregat per bulan (bukan per transaksi) — 1 baris/bulan
     const autoRows: any[] = [];
     const isPemasukanFilter = !tipe || tipe === 'SEMUA' || tipe === 'PEMASUKAN';
-    // kategori filter diabaikan untuk otomatis (klarifikasi 3)
-    if (isPemasukanFilter && rtDipilih.length > 0) {
+    const kategoriIsSetorIpl = kategori === 'Setor IPL';
+    const kategoriIsKasRt = kategori === 'Kas RT (dari IPL warga)';
+    // Hormati filter kategori untuk auto-row: Kas RT hanya muncul jika kategori SEMUA/Kas RT, Setor IPL hanya jika SEMUA/Setor IPL
+    if (isPemasukanFilter && rtDipilih.length > 0 && (!kategori || kategori === 'SEMUA' || kategoriIsKasRt)) {
       const whereIpl: Prisma.IplWhereInput = {
         statusPembayaran: 'LUNAS',
         rumah: { rt: { in: rtDipilih } },
@@ -153,46 +156,79 @@ export class KeuanganService {
       }
     }
 
-    if (isPemasukanFilter && rwDipilih) {
-      const whereSetoran: Prisma.SetoranIplWhereInput = {
-        status: 'DIKONFIRMASI',
-        tanggalKonfirmasi: gte && lt ? { gte, lt } : { not: null } as any,
+    // Setor IPL: per RT per periode tagihan (wilayah hanya RT), 1 row per RT+bulan.
+    // Jika 1 setoran berisi multi-periode, akan jadi multi-row (per periode).
+    // Jika 2 setoran same RT same periode, nominal dijumlah (update).
+    const needSetor = isPemasukanFilter && (!kategori || kategori === 'SEMUA' || kategoriIsSetorIpl);
+    let setorRtList: RT[] = [];
+    if (needSetor) {
+      if (area && area !== 'SEMUA' && (['RT_01','RT_02','RT_03','RT_04'] as string[]).includes(area)) {
+        setorRtList = [area as RT];
+      } else if (rtDipilih.length > 0) {
+        setorRtList = rtDipilih;
+      } else if (rwDipilih) {
+        setorRtList = ['RT_01','RT_02','RT_03','RT_04'] as RT[];
+      }
+      // filter by user's scope: if user is RT, rtDipilih already limited
+      if (areaFilter(ctx) && areaFilter(ctx) !== 'RW' && areaFilter(ctx) !== null) {
+        const userRt = areaFilter(ctx) as RT;
+        setorRtList = setorRtList.filter((r) => r === userRt);
+      }
+    }
+    if (needSetor && setorRtList.length > 0) {
+      const whereIplSetor: Prisma.IplWhereInput = {
+        setoran: { status: 'DIKONFIRMASI' },
+        rumah: { rt: { in: setorRtList } },
       };
-      if (!gte) whereSetoran.tanggalKonfirmasi = { not: null } as any;
-      const setoranRows = await this.prisma.setoranIpl.findMany({
-        where: whereSetoran,
+      if (range) (whereIplSetor as any).OR = range.periodeOr;
+      const iplSetorRows = await this.prisma.ipl.findMany({
+        where: whereIplSetor,
         select: {
-          totalIpl: true,
-          tanggalKonfirmasi: true,
+          nominalIpl: true,
+          bulanPeriode: true,
+          tahunPeriode: true,
+          rumah: { select: { rt: true } },
+          setoran: { select: { id: true, buktiTransaksi: true, tanggalKonfirmasi: true, createDate: true } },
         },
       });
-      // group setoran per bulan konfirmasi (YYYY-MM) -> 1 baris/bulan
-      const sGroups = new Map<string, { total:number; count:number; latest: Date|null; ym:string }>();
-      for (const s of setoranRows) {
-        if (!s.tanggalKonfirmasi) continue;
-        const d = s.tanggalKonfirmasi;
-        const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-        const g = sGroups.get(ym) ?? { total:0, count:0, latest:null, ym };
-        g.total += s.totalIpl;
+      const BULAN_LABEL2: Record<string,string> = {"01":"Jan","02":"Feb","03":"Mar","04":"Apr","05":"Mei","06":"Jun","07":"Jul","08":"Agu","09":"Sep","10":"Okt","11":"Nov","12":"Des"};
+      const sGroups = new Map<string, { rt:RT; bulan:string; tahun:string; total:number; count:number; buktiFile:string|null; latest:Date|null; setoranIds:Set<number> }>();
+      for (const r of iplSetorRows) {
+        const rt = r.rumah.rt;
+        const bulan = r.bulanPeriode;
+        const tahun = r.tahunPeriode;
+        const key = `${rt}-${tahun}-${bulan}`;
+        const g = sGroups.get(key) ?? { rt, bulan, tahun, total:0, count:0, buktiFile:null, latest:null, setoranIds:new Set<number>() };
+        g.total += r.nominalIpl;
         g.count += 1;
-        if (!g.latest || d > g.latest) g.latest = d;
-        sGroups.set(ym, g);
+        const sid = (r.setoran as any)?.id;
+        if (sid) g.setoranIds.add(sid);
+        const bukti = (r.setoran as any)?.buktiTransaksi ?? null;
+        const tgl = (r.setoran as any)?.tanggalKonfirmasi ?? (r.setoran as any)?.createDate ?? null;
+        if (bukti && !g.buktiFile) g.buktiFile = bukti;
+        // pakai tanggalKonfirmasi terbaru untuk tanggal baris
+        if (tgl && (!g.latest || new Date(tgl) > g.latest)) {
+          g.latest = new Date(tgl);
+          if (bukti) g.buktiFile = bukti;
+        }
+        sGroups.set(key, g);
       }
-      for (const [ym, g] of sGroups) {
-        const [y,m] = ym.split('-');
-        const label = `${({"01":"Jan","02":"Feb","03":"Mar","04":"Apr","05":"Mei","06":"Jun","07":"Jul","08":"Agu","09":"Sep","10":"Okt","11":"Nov","12":"Des"} as any)[m]||m} ${y}`;
-        const keterangan = `Setoran IPL ${g.count} setoran - ${label}`;
-        const searchOk = !search || `${keterangan} Setoran IPL RT`.toLowerCase().includes(search.toLowerCase());
+      for (const [key, g] of sGroups) {
+        if (g.total === 0) continue;
+        const label = `${BULAN_LABEL2[g.bulan]||g.bulan} ${g.tahun}`;
+        const keterangan = `Setoran IPL ${labelRt(g.rt)} - ${label}`;
+        const searchHay = `${keterangan} Setor IPL ${labelRt(g.rt)} ${label}`.toLowerCase();
+        const searchOk = !search || searchHay.includes(search.toLowerCase());
         if (!searchOk) continue;
         autoRows.push({
-          id: `setoran-${ym}`,
+          id: `setoran-${g.rt}-${g.tahun}-${g.bulan}`,
           tipe: 'PEMASUKAN',
-          area: 'RW' as Area,
-          kategori: 'Setoran IPL RT',
+          area: g.rt as unknown as Area,
+          kategori: 'Setor IPL',
           nominal: g.total,
-          tanggal: g.latest!,
+          tanggal: g.latest ?? new Date(Number(g.tahun), Number(g.bulan)-1, 15),
           keterangan,
-          buktiFile: null,
+          buktiFile: g.buktiFile,
           sumber: 'SETORAN' as const,
           locked: true,
         });
@@ -338,6 +374,24 @@ export class KeuanganService {
     const tanpaRw = { id: { in: [] as number[] } };
     const rtSaja = { rumah: { rt: { in: rtDipilih } } };
 
+    // Untuk Setor IPL wilayah hanya RT: tentukan RT yang visible untuk setor
+    let setorRtList: RT[] = [];
+    const filterAreaIsRt = params?.area && params.area !== 'SEMUA' && (['RT_01','RT_02','RT_03','RT_04'] as string[]).includes(params.area);
+    if (filterAreaIsRt) {
+      setorRtList = [params!.area as RT];
+    } else if (rtDipilih.length > 0) {
+      setorRtList = rtDipilih;
+    } else if (rwDipilih) {
+      setorRtList = ['RT_01','RT_02','RT_03','RT_04'] as RT[];
+    }
+    // batasi sesuai scope user RT
+    const userRt = areaFilter(ctx) as RT | null;
+    if (userRt && (['RT_01','RT_02','RT_03','RT_04'] as string[]).includes(userRt)) {
+      setorRtList = setorRtList.filter((r) => r === userRt);
+    }
+    const setorRtSaja = setorRtList.length ? { rumah: { rt: { in: setorRtList } } } : tanpaRw;
+    const setorRtSajaAll = setorRtList.length ? { rumah: { rt: { in: setorRtList } } } : tanpaRw;
+
     const [kasRtPeriode, kasRtSemua, setoranPeriode, setoranSemua, kasPeriode, kasSemua, titipan] =
       await Promise.all([
         // Kas RT yang terkumpul pada periode tagihan
@@ -349,14 +403,14 @@ export class KeuanganService {
           where: { statusPembayaran: 'LUNAS', ...rtSaja },
           select: { nominalKas: true },
         }),
-        // Setoran RT yang dikonfirmasi RW menjadi pemasukan kas RW
-        this.prisma.setoranIpl.findMany({
-          where: { status: 'DIKONFIRMASI', tanggalKonfirmasi: { gte, lt }, ...(!rwDipilih && tanpaRw) },
-          select: { totalIpl: true, area: true, tanggalKonfirmasi: true },
+        // Setoran RT yang dikonfirmasi RW menjadi pemasukan kas RW — filter by periode tagihan (bukan tanggalKonfirmasi), per RT
+        this.prisma.ipl.findMany({
+          where: { OR: resolved.periodeOr, setoran: { status: 'DIKONFIRMASI' }, ...setorRtSaja },
+          select: { nominalIpl: true, bulanPeriode: true, tahunPeriode: true },
         }),
-        this.prisma.setoranIpl.findMany({
-          where: { status: 'DIKONFIRMASI', ...(!rwDipilih && tanpaRw) },
-          select: { totalIpl: true },
+        this.prisma.ipl.findMany({
+          where: { setoran: { status: 'DIKONFIRMASI' }, ...setorRtSajaAll },
+          select: { nominalIpl: true },
         }),
         this.prisma.kasTransaksi.findMany({
           where: { area: { in: areas }, tanggal: { gte, lt } },
@@ -378,7 +432,7 @@ export class KeuanganService {
       ]);
 
     const kasRtTotal = kasRtPeriode.reduce((s, r) => s + r.nominalKas, 0);
-    const setoranTotal = setoranPeriode.reduce((s, r) => s + r.totalIpl, 0);
+    const setoranTotal = setoranPeriode.reduce((s, r) => s + (r as any).nominalIpl, 0);
     const pemasukanOtomatis = kasRtTotal + setoranTotal;
     const pemasukanManual = sum(kasPeriode.filter((t) => t.tipe === 'PEMASUKAN'));
     const totalPemasukan = pemasukanOtomatis + pemasukanManual;
@@ -390,7 +444,7 @@ export class KeuanganService {
       PENGELUARAN: {},
     };
     if (kasRtTotal) perKategori.PEMASUKAN['Kas RT (dari IPL warga)'] = kasRtTotal;
-    if (setoranTotal) perKategori.PEMASUKAN['Setoran IPL RT'] = setoranTotal;
+    if (setoranTotal) perKategori.PEMASUKAN['Setor IPL'] = setoranTotal;
     for (const t of kasPeriode) {
       const bucket = perKategori[t.tipe];
       bucket[t.kategori] = (bucket[t.kategori] ?? 0) + t.nominal;
@@ -399,7 +453,7 @@ export class KeuanganService {
     // Saldo kas saat ini (kumulatif sepanjang waktu)
     const saldoKas =
       kasRtSemua.reduce((s, r) => s + r.nominalKas, 0) +
-      setoranSemua.reduce((s, r) => s + r.totalIpl, 0) +
+      setoranSemua.reduce((s, r) => s + (r as any).nominalIpl, 0) +
       sum(kasSemua.filter((t) => t.tipe === 'PEMASUKAN')) -
       sum(kasSemua.filter((t) => t.tipe === 'PENGELUARAN'));
 
@@ -411,9 +465,9 @@ export class KeuanganService {
       const kasBulanIni = kasRtPeriode
         .filter((t) => t.bulanPeriode === bulan && t.tahunPeriode === tahun)
         .reduce((s, t) => s + t.nominalKas, 0);
-      const setoranBulanIni = setoranPeriode
-        .filter((s) => s.tanggalKonfirmasi && ymKey(s.tanggalKonfirmasi) === key)
-        .reduce((s, r) => s + r.totalIpl, 0);
+      const setoranBulanIni = (setoranPeriode as any[])
+        .filter((s) => (s as any).bulanPeriode === bulan && (s as any).tahunPeriode === tahun)
+        .reduce((s, r) => s + (r as any).nominalIpl, 0);
       const manualBulan = kasPeriode.filter((t) => ymKey(t.tanggal) === key);
       return {
         label,

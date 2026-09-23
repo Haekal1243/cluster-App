@@ -47,8 +47,10 @@ export class SetoranController {
     @Access() ctx: AccessContext,
     @Query('status') status?: string,
     @Query('rt') rt?: string,
+    @Query('dari') dari?: string,
+    @Query('sampai') sampai?: string,
   ) {
-    return this.setoranService.findAll(ctx, { status, rt });
+    return this.setoranService.findAll(ctx, { status, rt, dari, sampai });
   }
 
   @Get(':id')

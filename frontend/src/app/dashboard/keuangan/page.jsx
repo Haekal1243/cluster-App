@@ -344,10 +344,10 @@ function AdminKeuanganView({ user }) {
   const kategoriOptions = [
     ...new Set(
       draftFilterTipe === "PEMASUKAN"
-        ? KATEGORI_MASUK
+        ? [...KATEGORI_MASUK, "Setor IPL"]
         : draftFilterTipe === "PENGELUARAN"
           ? KATEGORI_KELUAR
-          : [...KATEGORI_MASUK, ...KATEGORI_KELUAR]
+          : [...KATEGORI_MASUK, ...KATEGORI_KELUAR, "Setor IPL"]
     ),
   ];
 

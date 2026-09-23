@@ -203,7 +203,10 @@ export class IplService {
   // REKAP PER RT — tampilan RW: berapa yang terkumpul & sudah disetor tiap RT
   // ================================================================
 
-  async rekapPerRt(ctx: AccessContext, params: { dari?: string; sampai?: string }) {
+  async rekapPerRt(
+    ctx: AccessContext,
+    params: { dari?: string; sampai?: string; status?: string; rt?: string },
+  ) {
     if (ctx.scope === 'OWN') throw new ForbiddenException('Rekap per RT tidak tersedia untuk akun ini.');
     const range = resolvePeriode(params.dari, params.sampai);
     const now = new Date();
@@ -215,8 +218,11 @@ export class IplService {
         },
       ];
 
+    const and: Prisma.IplWhereInput[] = [this.scopeWhere(ctx, params.rt), { OR: periodeOr }];
+    if (params.status && params.status !== 'SEMUA') and.push({ statusPembayaran: params.status as any });
+
     const rows = await this.prisma.ipl.findMany({
-      where: { AND: [this.scopeWhere(ctx), { OR: periodeOr }] },
+      where: { AND: and },
       select: {
         nominalIpl: true,
         nominalKas: true,
@@ -228,7 +234,11 @@ export class IplService {
     });
 
     const area = areaFilter(ctx);
-    const daftarRt = area === null ? SEMUA_RT : SEMUA_RT.filter((r) => r === area);
+    let daftarRt = area === null ? [...SEMUA_RT] : SEMUA_RT.filter((r) => r === area);
+    if (params.rt && params.rt !== 'SEMUA') {
+      const requested = params.rt as RT;
+      if ((SEMUA_RT as string[]).includes(requested)) daftarRt = daftarRt.filter((r) => r === requested);
+    }
 
     const perRt = daftarRt.map((rt) => {
       const list = rows.filter((r) => r.rumah.rt === rt);

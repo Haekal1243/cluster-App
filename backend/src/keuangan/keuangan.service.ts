@@ -1,7 +1,10 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Area, Prisma, RT } from '@prisma/client';
+import { stringify } from 'csv-stringify/sync';
+import ExcelJS from 'exceljs';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateKasDto } from './dto/create-kas.dto';
+import { ExportKasDto } from './dto/export-kas.dto';
 import { UpdateKasDto } from './dto/update-kas.dto';
 import { AccessContext } from '../auth/auth.types';
 import { areaFilter, assertInArea } from '../common/scope.helper';
@@ -15,6 +18,98 @@ const SEMUA_AREA: Area[] = ['RW', 'RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
 const sum = (rows: { nominal: number }[]) => rows.reduce((s, r) => s + r.nominal, 0);
 const labelRt = (rt: string) => rt.replace('_', ' ');
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** Tanggal export: DD-MM-YYYY (setiap transaksi tetap satu baris sendiri). */
+function formatTanggalExport(t: Date | string): string {
+  const d = new Date(t);
+  return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+}
+
+// ================================================================
+// EXPORT RIWAYAT KAS (CSV / XLSX) — pure function agar bisa di-test
+// ================================================================
+
+export interface KasExportRow {
+  tanggal: string;
+  wilayah: string;
+  deskripsi: string;
+  masuk: number;
+  keluar: number;
+  saldo: number;
+}
+
+export interface KasExportInput {
+  id?: unknown;
+  tanggal: Date | string;
+  area: string;
+  keterangan?: string | null;
+  tipe: string;
+  nominal: number;
+}
+
+/**
+ * Urutkan ASCENDING by tanggal (oldest → newest) lalu hitung saldo berjalan:
+ * saldo = saldoSebelumnya + masuk - keluar, mulai dari saldoAwal (default 0).
+ * Tanggal yang SAMA dengan baris sebelumnya di-suppress (string kosong) agar
+ * tabel lebih ringkas; kolom lain tetap diisi normal.
+ */
+export function hitungSaldoBerjalan(rows: KasExportInput[], saldoAwal = 0) {
+  const sorted = [...rows].sort((a, b) => {
+    const diff = new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime();
+    if (diff !== 0) return diff;
+    return String(a.id ?? '').localeCompare(String(b.id ?? ''));
+  });
+  let saldo = saldoAwal;
+  let totalMasuk = 0;
+  let totalKeluar = 0;
+  let tanggalSebelumnya = '';
+  const baris: KasExportRow[] = sorted.map((r) => {
+    const masuk = r.tipe === 'PEMASUKAN' ? r.nominal : 0;
+    const keluar = r.tipe === 'PENGELUARAN' ? r.nominal : 0;
+    saldo += masuk - keluar;
+    totalMasuk += masuk;
+    totalKeluar += keluar;
+    const tanggal = formatTanggalExport(r.tanggal);
+    const tampilkanTanggal = tanggal === tanggalSebelumnya ? '' : tanggal;
+    tanggalSebelumnya = tanggal;
+    return {
+      tanggal: tampilkanTanggal,
+      wilayah: labelRt(String(r.area)),
+      deskripsi: r.keterangan ?? '-',
+      masuk,
+      keluar,
+      saldo,
+    };
+  });
+  return { baris, totalMasuk, totalKeluar, saldoAkhir: saldo };
+}
+
+const NAMA_BULAN_ID = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
+
+/** "2026-09" -> "September 2026" (asumsi format YYYY-MM sudah divalidasi DTO). */
+function labelBulanYm(ym: string): string {
+  const [tahun, bulan] = ym.split('-');
+  return `${NAMA_BULAN_ID[Number(bulan) - 1] ?? bulan} ${tahun}`;
+}
+
+/**
+ * Label periode untuk title & filename: satu bulan -> "September 2026",
+ * multi-bulan -> "Januari 2026 - Maret 2026", tanpa filter -> "Semua Periode".
+ */
+export function labelPeriodeExport(dari?: string, sampai?: string): string {
+  if (dari && sampai) {
+    if (dari === sampai) return labelBulanYm(dari);
+    const [a, b] = dari > sampai ? [sampai, dari] : [dari, sampai];
+    return `${labelBulanYm(a)} - ${labelBulanYm(b)}`;
+  }
+  if (dari) return labelBulanYm(dari);
+  if (sampai) return labelBulanYm(sampai);
+  return 'Semua Periode';
+}
 
 @Injectable()
 export class KeuanganService {
@@ -243,6 +338,102 @@ export class KeuanganService {
     });
 
     return { riwayat };
+  }
+
+  /**
+   * GET /keuangan/export — data sama persis seperti tabel Riwayat Kas
+   * (manual + baris virtual otomatis), diurut ASCENDING untuk saldo berjalan.
+   */
+  async exportRiwayat(ctx: AccessContext, dto: ExportKasDto) {
+    const { riwayat } = await this.findAll(ctx, {
+      dari: dto.dari,
+      sampai: dto.sampai,
+      tipe: dto.tipe,
+      kategori: dto.kategori,
+      search: dto.search,
+      area: dto.area,
+    });
+    const { baris, totalMasuk, totalKeluar, saldoAkhir } = hitungSaldoBerjalan(
+      riwayat,
+      dto.saldoAwal ?? 0,
+    );
+    const periodeLabel = labelPeriodeExport(dto.dari, dto.sampai);
+    const title = `Laporan Kas ${periodeLabel}`;
+    // Suffix wilayah hanya bila filter RT spesifik: RT_01 -> RT01
+    const rtDipilih =
+      dto.area && dto.area !== 'SEMUA' && dto.area !== 'RW' && SEMUA_AREA.includes(dto.area as Area)
+        ? dto.area.replace('_', '')
+        : '';
+    const periodeFS = periodeLabel.replace(/ - /g, '_sd_').replace(/ /g, '-');
+    const baseName = `Laporan-kas-${rtDipilih ? `${rtDipilih}-` : ''}${periodeFS}`;
+
+    if (dto.format === 'csv') {
+      // BOM agar file terbuka rapi di Excel Indonesia; baris 1 = title, baris 2 = header
+      const csv =
+        String.fromCharCode(0xfeff) +
+        `${title}\n` +
+        stringify(
+          [
+            ...baris,
+            { tanggal: '', wilayah: '', deskripsi: 'TOTAL', masuk: totalMasuk, keluar: totalKeluar, saldo: saldoAkhir },
+          ],
+          {
+            header: true,
+            delimiter: ',',
+            columns: [
+              { key: 'tanggal', header: 'Tanggal' },
+              { key: 'wilayah', header: 'Wilayah' },
+              { key: 'deskripsi', header: 'Deskripsi' },
+              { key: 'masuk', header: 'Masuk' },
+              { key: 'keluar', header: 'Keluar' },
+              { key: 'saldo', header: 'Saldo' },
+            ],
+          },
+        );
+      return {
+        filename: `${baseName}.csv`,
+        contentType: 'text/csv; charset=utf-8',
+        buffer: Buffer.from(csv, 'utf8'),
+      };
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('Riwayat Kas');
+    // Tanpa `header` di columns agar baris header tidak otomatis dibuat di row 1
+    ws.columns = [
+      { key: 'tanggal', width: 14 },
+      { key: 'wilayah', width: 12 },
+      { key: 'deskripsi', width: 44 },
+      { key: 'masuk', width: 16 },
+      { key: 'keluar', width: 16 },
+      { key: 'saldo', width: 16 },
+    ];
+    // Row 1 = title (merge A-F, center, bold 14pt)
+    ws.mergeCells('A1:F1');
+    const titleCell = ws.getCell('A1');
+    titleCell.value = title;
+    titleCell.font = { bold: true, size: 14 };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    // Row 2 = header
+    ws.addRow(['Tanggal', 'Wilayah', 'Deskripsi', 'Masuk', 'Keluar', 'Saldo']);
+    for (const b of baris) {
+      ws.addRow([b.tanggal, b.wilayah, b.deskripsi, b.masuk, b.keluar, b.saldo]);
+    }
+    ws.addRow(['', '', 'TOTAL', totalMasuk, totalKeluar, saldoAkhir]);
+    ws.getRow(2).font = { bold: true };
+    const lastRow = ws.lastRow;
+    if (lastRow) lastRow.font = { bold: true };
+    // Kolom angka sebagai number agar bisa di-SUM di Excel (data mulai row 3)
+    for (let i = 3; i <= ws.rowCount; i++) {
+      for (const col of ['D', 'E', 'F']) ws.getCell(`${col}${i}`).numFmt = '#,##0';
+    }
+    const xlsx = await workbook.xlsx.writeBuffer();
+    return {
+      filename: `${baseName}.xlsx`,
+      contentType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      buffer: Buffer.from(xlsx),
+    };
   }
 
   async findOne(ctx: AccessContext, id: string | number) {

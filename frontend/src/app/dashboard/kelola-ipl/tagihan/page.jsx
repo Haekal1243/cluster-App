@@ -937,7 +937,8 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
   );
 }
 
-function WargaIuranView({ user }) {
+// Diekspor agar dipakai ulang oleh route /kelola-ipl/tagihan-saya tanpa duplikasi kode.
+export function WargaIuranView({ user }) {
   const formatYmPanjang = (ym) => {
     if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
     const [y, m] = ym.split("-");
@@ -1422,45 +1423,15 @@ function WargaIuranView({ user }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+// Halaman ini murni tampilan kerja bendahara (Tagihan Warga). Tagihan pribadi
+// pengurus tinggal di route /kelola-ipl/tagihan-saya; warga biasa tetap
+// melihat tagihan sendiri di sini sebagai fallback (redirect /dashboard/iuran).
 export default function IuranPage() {
   const { user, ready } = useUser();
-  const [activeView, setActiveView] = useState("warga");
 
   if (!ready || !user) return null;
 
-  // Tampilan ditentukan permission, bukan roleLevel: pengurus yang juga punya rumah sendiri
-  // (ipl.bayar) dapat tab "Tagihan Saya" di samping "Tagihan Warga"; warga biasa (scope OWN
-  // di ipl.read) hanya dapat tampilan bayar tagihan sendiri tanpa bar tab.
   const bisaLihatWarga = can(user, "ipl.read") && scopeOf(user, "ipl.read") !== "OWN";
-  const bisaBayarSendiri = can(user, "ipl.bayar");
-
-  if (bisaLihatWarga && bisaBayarSendiri) {
-    return (
-      <div className="page-stack">
-        <div className="db-section-toggle" role="tablist" aria-label="Tampilan Tagihan IPL">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === "warga"}
-            className={`db-toggle-btn ${activeView === "warga" ? "is-active" : ""}`}
-            onClick={() => setActiveView("warga")}
-          >
-            Tagihan Warga
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === "saya"}
-            className={`db-toggle-btn ${activeView === "saya" ? "is-active" : ""}`}
-            onClick={() => setActiveView("saya")}
-          >
-            Tagihan Saya
-          </button>
-        </div>
-        {activeView === "warga" ? <AdminIuranView user={user} /> : <WargaIuranView user={user} />}
-      </div>
-    );
-  }
 
   if (bisaLihatWarga) return <AdminIuranView user={user} />;
   return <WargaIuranView user={user} />;

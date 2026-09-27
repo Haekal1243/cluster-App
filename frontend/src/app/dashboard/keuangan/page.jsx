@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -12,6 +12,8 @@ import {
   Eye,
   Pencil,
   Trash2,
+  Download,
+  ChevronDown,
 } from "lucide-react";
 import { keuanganApi, portalApi, setoranApi } from "@/lib/api";
 import { areaLabel, can, isWargaView, scopeOf } from "@/lib/session";
@@ -323,6 +325,11 @@ function AdminKeuanganView({ user }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
+  // Export CSV/XLSX
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(null);
+  const exportRef = useRef(null);
+
   const [dari, sampai] = periodeDari > periodeSampai
     ? [periodeSampai, periodeDari]
     : [periodeDari, periodeSampai];
@@ -410,6 +417,44 @@ function AdminKeuanganView({ user }) {
     setDraftFilterArea("SEMUA");
   };
 
+  // Tutup menu export saat klik di luar / tekan Escape
+  useEffect(() => {
+    if (!exportOpen) return;
+    const onDown = (e) => {
+      if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setExportOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [exportOpen]);
+
+  const handleExport = async (format) => {
+    setExportOpen(false);
+    setExporting(format);
+    try {
+      const filename = await keuanganApi.exportFile({
+        format,
+        dari,
+        sampai,
+        tipe: filterTipe,
+        kategori: filterKategori,
+        search,
+        area: filterArea,
+      });
+      showMessage("Berhasil", `File ${filename} berhasil diunduh.`, "success");
+    } catch (err) {
+      showMessage("Gagal Mengekspor", err.message, "error");
+    } finally {
+      setExporting(null);
+    }
+  };
+
   const handleDelete = async (item) => {
     const confirmed = await showConfirm(
       "Hapus Transaksi?",
@@ -490,6 +535,53 @@ function AdminKeuanganView({ user }) {
             <Plus size={16} /> Catat Transaksi
           </button>
         )}
+
+        <div className="export-split" ref={exportRef}>
+          <button
+            type="button"
+            className="btn-ipl-secondary"
+            onClick={() => handleExport("xlsx")}
+            disabled={!!exporting || !!rangeError || isLoading}
+            title={rangeError || "Unduh Riwayat Kas sebagai Excel (.xlsx)"}
+          >
+            <Download size={16} /> {exporting ? "Menyiapkan..." : "Export"}
+          </button>
+          <button
+            type="button"
+            className="btn-ipl-secondary"
+            onClick={() => setExportOpen((o) => !o)}
+            disabled={!!exporting || !!rangeError || isLoading}
+            aria-label="Pilihan format export"
+            aria-expanded={exportOpen}
+            title="Pilihan format export"
+          >
+            <ChevronDown size={15} />
+          </button>
+          {exportOpen && (
+            <div className="export-menu" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                className="export-menu-item"
+                onClick={() => handleExport("xlsx")}
+                disabled={!!exporting}
+              >
+                <strong>Export Excel (.xlsx)</strong>
+                <span>Kolom angka bisa di-SUM di Excel</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="export-menu-item"
+                onClick={() => handleExport("csv")}
+                disabled={!!exporting}
+              >
+                <strong>Export CSV (.csv)</strong>
+                <span>Format teks, delimiter koma</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="list-toolbar-row">
           <div className="list-search-wrap">

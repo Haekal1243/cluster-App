@@ -20,6 +20,8 @@ import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showCredentials, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import RumahFormModal from "@/components/warga/RumahFormModal";
 import WargaFormModal from "@/components/warga/WargaFormModal";
 
@@ -292,6 +294,21 @@ export default function WargaPage() {
 
   const filterAktif = filterRT !== "SEMUA" || filterStatus !== "SEMUA";
 
+  const {
+    page: pageWarga,
+    totalPages: totalPagesWarga,
+    paginatedItems: wargaPage,
+    prev: prevWarga,
+    next: nextWarga,
+  } = usePagination(wargaFiltered, [q, filterRT, tab]);
+  const {
+    page: pagePendaftaran,
+    totalPages: totalPagesPendaftaran,
+    paginatedItems: pendaftaranPage,
+    prev: prevPendaftaran,
+    next: nextPendaftaran,
+  } = usePagination(pendaftaran, [tab]);
+
   return (
     <div className="page-stack">
       {bolehApprove && (
@@ -336,7 +353,7 @@ export default function WargaPage() {
               </thead>
               <tbody>
                 {!loadingPendaftaran &&
-                  pendaftaran.map((p) => (
+                  pendaftaranPage.map((p) => (
                     <tr key={p.id}>
                       <td>
                         <div className="penghuni-cell">
@@ -374,6 +391,9 @@ export default function WargaPage() {
           {loadingPendaftaran && <div className="table-loading">Memuat data pendaftaran…</div>}
           {!loadingPendaftaran && pendaftaran.length === 0 && (
             <div className="table-empty">Tidak ada pendaftaran yang menunggu persetujuan.</div>
+          )}
+          {!loadingPendaftaran && (
+            <Pagination page={pagePendaftaran} totalPages={totalPagesPendaftaran} total={pendaftaran.length} onPrev={prevPendaftaran} onNext={nextPendaftaran} />
           )}
         </div>
       ) : (
@@ -476,12 +496,12 @@ export default function WargaPage() {
               </thead>
               <tbody>
                 {!isLoading &&
-                  wargaFiltered.map((w, index) => {
+                  wargaPage.map((w, index) => {
                     // Warga biasa boleh diubah; pengurus yang kebetulan tinggal di RT ini hanya bisa dilihat.
                     const bisaDiubah = w.role?.level === 3;
                     return (
                       <tr key={w.id}>
-                        <td>{index + 1}</td>
+                        <td>{(pageWarga - 1) * 10 + index + 1}</td>
                         <td>
                           <div className="penghuni-cell">
                             <span className="penghuni-avatar">{w.namaUser.charAt(0).toUpperCase()}</span>
@@ -546,7 +566,7 @@ export default function WargaPage() {
 
           <div className="warga-grid">
             {!isLoading &&
-              wargaFiltered.map((w) => (
+              wargaPage.map((w) => (
                 <div key={w.id} className="warga-grid-card">
                   <h3 className="warga-grid-title">{w.namaUser}</h3>
                   <div className="rumah-chip-list">
@@ -592,6 +612,9 @@ export default function WargaPage() {
                   : "Belum ada data warga."
                 : "Tidak ada warga yang sesuai pencarian/filter."}
             </div>
+          )}
+          {!isLoading && (
+            <Pagination page={pageWarga} totalPages={totalPagesWarga} total={wargaFiltered.length} onPrev={prevWarga} onNext={nextWarga} />
           )}
         </div>
       </>

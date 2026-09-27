@@ -18,6 +18,8 @@ import { areaLabel, can, isWargaView, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 // ── Helpers & opsi ────────────────────────────────────────────────────────────
 const BULAN_NAMES = {
@@ -372,6 +374,8 @@ function AdminKeuanganView({ user }) {
     loadData();
   }, [loadData]);
 
+  const { page, totalPages, paginatedItems: riwayatPage, prev, next } = usePagination(riwayat, [riwayat]);
+
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400);
     return () => clearTimeout(t);
@@ -663,6 +667,7 @@ function AdminKeuanganView({ user }) {
             <p>Belum ada transaksi untuk periode ini.</p>
           </div>
         ) : (
+          <>
           <div className="ipl-table-wrapper">
             <table className="ipl-table">
               <thead>
@@ -678,7 +683,7 @@ function AdminKeuanganView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {riwayat.map((t) => {
+                {riwayatPage.map((t) => {
                   const buktiUrl = getBuktiUrl(t);
                   const isManual = t.sumber === "MANUAL" || !t.sumber;
                   const isIplKas = t.sumber === "IPL_KAS";
@@ -746,6 +751,8 @@ function AdminKeuanganView({ user }) {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} totalPages={totalPages} total={riwayat.length} onPrev={prev} onNext={next} />
+          </>
         )}
       </div>
 

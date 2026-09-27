@@ -23,6 +23,8 @@ import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -563,6 +565,8 @@ function AdminIuranView({ user }) {
     loadData();
   }, [loadData]);
 
+  const { page, totalPages, paginatedItems: tagihanPage, prev, next } = usePagination(tagihan, [tagihan]);
+
   // Search debounce
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400);
@@ -728,6 +732,7 @@ function AdminIuranView({ user }) {
             <p>Belum ada tagihan untuk periode ini.</p>
           </div>
         ) : (
+          <>
           <div className="ipl-table-wrapper">
             <table className="ipl-table">
               <thead>
@@ -742,7 +747,7 @@ function AdminIuranView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {tagihan.map((t) => {
+                {tagihanPage.map((t) => {
                   const pembayaran = t.pembayaran?.[0];
                   const penghuniPengurus = (t.rumah?.penghuni?.role?.level ?? 3) < 3;
                   const bisaKonfirmasiBaris = bolehKonfirmasi || (bolehKonfirmasiPengurus && penghuniPengurus);
@@ -806,6 +811,8 @@ function AdminIuranView({ user }) {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} totalPages={totalPages} total={tagihan.length} onPrev={prev} onNext={next} />
+          </>
         )}
       </div>
 
@@ -1115,6 +1122,11 @@ function WargaIuranView({ user }) {
   // Label periode untuk hero & tabel (mengikuti filter range yang dipilih)
   const heroLabel = periodeLabel;
 
+  const { page: pageRiwayat, totalPages: totalPagesRiwayat, paginatedItems: riwayatPage, prev: prevRiwayat, next: nextRiwayat } = usePagination(
+    displayData,
+    [selectedRumahId, search, tagihanGabungan],
+  );
+
   const modalRumah = useMemo(() => {
     if (!modalIpl) return null;
     const rid = modalIpl.rumah?.id ?? modalIpl.idRumah;
@@ -1306,7 +1318,7 @@ function WargaIuranView({ user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayData.map((ipl) => (
+                  {riwayatPage.map((ipl) => (
                     <tr key={ipl.id}>
                       {rumahList.length > 1 && selectedRumahId === "semua" && (
                         <td>{ipl.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl.idRumah}`}</td>
@@ -1345,7 +1357,7 @@ function WargaIuranView({ user }) {
             </div>
 
             <div className="iuran-grid">
-              {displayData.map((ipl) => (
+              {riwayatPage.map((ipl) => (
                 <div key={ipl.id} className="iuran-grid-card">
                   <h3 className="iuran-grid-title">
                     {getMonthLabel(ipl.bulanPeriode, ipl.tahunPeriode)}
@@ -1382,6 +1394,7 @@ function WargaIuranView({ user }) {
                 </div>
               ))}
             </div>
+            <Pagination page={pageRiwayat} totalPages={totalPagesRiwayat} total={displayData.length} onPrev={prevRiwayat} onNext={nextRiwayat} />
           </>
         )}
       </section>

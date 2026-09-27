@@ -10,7 +10,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // <-- 2. Tambahkan pengaturan CORS
-  app.enableCors();
+  // exposedHeaders: agar fetch browser boleh MEMBACA Content-Disposition
+  // (dipakai tombol Export agar nama file dari server ikut terpakai).
+  app.enableCors({ exposedHeaders: ['Content-Disposition'] });
 
   // <-- 3. Tambahkan ValidationPipe untuk class-validator
   // transform:true agar @Type() pada DTO berjalan (mis. nominal string

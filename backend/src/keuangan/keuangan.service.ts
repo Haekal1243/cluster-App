@@ -364,8 +364,7 @@ export class KeuanganService {
       dto.area && dto.area !== 'SEMUA' && dto.area !== 'RW' && SEMUA_AREA.includes(dto.area as Area)
         ? dto.area.replace('_', '')
         : '';
-    const periodeFS = periodeLabel.replace(/ - /g, '_sd_').replace(/ /g, '-');
-    const baseName = `Laporan-kas-${rtDipilih ? `${rtDipilih}-` : ''}${periodeFS}`;
+    const baseName = `Laporan Kas-${rtDipilih ? `${rtDipilih}-` : ''}${periodeLabel}`;
 
     if (dto.format === 'csv') {
       // BOM agar file terbuka rapi di Excel Indonesia; baris 1 = title, baris 2 = header

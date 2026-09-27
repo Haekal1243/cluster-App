@@ -438,6 +438,10 @@ function AdminKeuanganView({ user }) {
     setExportOpen(false);
     setExporting(format);
     try {
+      // Nama cadangan bila header server tak terbaca browser — dirakit dari
+      // filter yang tampil di layar sehingga periode selalu ikut.
+      const rtSuffix =
+        filterArea && filterArea !== "SEMUA" && filterArea !== "RW" ? `${filterArea.replace("_", "")}-` : "";
       const filename = await keuanganApi.exportFile({
         format,
         dari,
@@ -446,6 +450,7 @@ function AdminKeuanganView({ user }) {
         kategori: filterKategori,
         search,
         area: filterArea,
+        fallbackFilename: `Laporan Kas-${rtSuffix}${periodeLabel}.${format === "xlsx" ? "xlsx" : "csv"}`,
       });
       showMessage("Berhasil", `File ${filename} berhasil diunduh.`, "success");
     } catch (err) {

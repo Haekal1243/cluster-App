@@ -209,8 +209,9 @@ export const keuanganApi = {
     request(`/keuangan/ringkasan${qs({ dari, sampai, area })}`),
 
   getById: (id) => request(`/keuangan/${id}`),
-  // Unduh Riwayat Kas (CSV/XLSX + saldo berjalan) sesuai filter aktif tabel
-  exportFile: async ({ format, dari, sampai, tipe, kategori, search, area } = {}) => {
+  // Unduh Riwayat Kas (CSV/XLSX + saldo berjalan) sesuai filter aktif tabel.
+  // fallbackFilename dipakai hanya bila header Content-Disposition tak terbaca browser.
+  exportFile: async ({ format, dari, sampai, tipe, kategori, search, area, fallbackFilename } = {}) => {
     const token = getToken();
     const response = await fetch(
       `${API_BASE_URL}/keuangan/export${qs({ format, dari, sampai, tipe, kategori, search, area })}`,
@@ -225,7 +226,8 @@ export const keuanganApi = {
     const blob = await response.blob();
     const disposition = response.headers.get("content-disposition") || "";
     const match = disposition.match(/filename="?([^";]+)"?/);
-    const filename = match?.[1] || `Laporan-kas.${format === "xlsx" ? "xlsx" : "csv"}`;
+    const filename =
+      match?.[1] || fallbackFilename || `Laporan Kas.${format === "xlsx" ? "xlsx" : "csv"}`;
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;

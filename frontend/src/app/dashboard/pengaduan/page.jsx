@@ -7,6 +7,8 @@ import {
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import PengaduanFormModal from "@/components/pengaduan/PengaduanFormModal";
 import PengaduanDetailModal from "@/components/pengaduan/PengaduanDetailModal";
 import { can, scopeOf, areaLabel } from "@/lib/session";
@@ -192,6 +194,11 @@ function AdminPengaduanView({ user }) {
     return BULAN_OPTIONS.filter(({ val }) => months.has(val));
   }, [items]);
 
+  const { page, totalPages, paginatedItems, prev, next } = usePagination(
+    filteredItems,
+    [search, filterKategori, filterStatus, filterBulan, filterTahun],
+  );
+
   return (
     <div className="page-stack">
       <div className="ipl-page-header">
@@ -309,7 +316,7 @@ function AdminPengaduanView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {filteredItems.map((item) => (
+                {paginatedItems.map((item) => (
                   <tr key={item.id}>
                     <td data-label="Judul">{item.judul}</td>
                     <td data-label="Pelapor">{item.pelapor?.namaUser || "—"}</td>
@@ -334,7 +341,7 @@ function AdminPengaduanView({ user }) {
           </div>
 
           <div className="pengaduan-grid">
-            {filteredItems.map((item) => (
+            {paginatedItems.map((item) => (
               <div
                 key={item.id}
                 className="pengaduan-grid-card"
@@ -359,6 +366,7 @@ function AdminPengaduanView({ user }) {
               </div>
             ))}
           </div>
+          <Pagination page={page} totalPages={totalPages} total={filteredItems.length} onPrev={prev} onNext={next} />
           </>
         )}
       </div>
@@ -412,6 +420,8 @@ function WargaPengaduanView({ user }) {
         item.deskripsi?.toLowerCase().includes(query)
     );
   }, [items, search]);
+
+  const { page, totalPages, paginatedItems, prev, next } = usePagination(filteredItems, [search]);
 
   return (
     <div className="page-stack">
@@ -470,8 +480,9 @@ function WargaPengaduanView({ user }) {
             <p>Tidak ada pengaduan yang cocok dengan pencarian.</p>
           </div>
         ) : (
+          <>
           <div className="portal-card-list">
-            {filteredItems.map((item) => (
+            {paginatedItems.map((item) => (
               <div
                 key={item.id}
                 className="portal-info-card"
@@ -499,6 +510,8 @@ function WargaPengaduanView({ user }) {
               </div>
             ))}
           </div>
+          <Pagination page={page} totalPages={totalPages} total={filteredItems.length} onPrev={prev} onNext={next} />
+          </>
         )}
       </section>
 

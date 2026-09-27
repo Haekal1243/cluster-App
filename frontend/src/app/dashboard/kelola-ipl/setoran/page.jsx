@@ -7,6 +7,8 @@ import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -351,6 +353,8 @@ export default function SetoranPage() {
   const summary = data.summary;
   const list = useMemo(() => data.setoran ?? [], [data]);
 
+  const { page, totalPages, paginatedItems: listPage, prev, next } = usePagination(list, [list]);
+
   if (!ready || !user) return null;
 
   return (
@@ -493,6 +497,7 @@ export default function SetoranPage() {
             <p>Belum ada setoran.</p>
           </div>
         ) : (
+          <>
           <div className="ipl-table-wrapper">
             <table className="ipl-table">
               <thead>
@@ -507,7 +512,7 @@ export default function SetoranPage() {
                 </tr>
               </thead>
               <tbody>
-                {list.map((s) => (
+                {listPage.map((s) => (
                   <tr key={s.id}>
                     <td>{tanggal(s.createDate)}</td>
                     <td><span className="rt-badge">{areaLabel(s.area)}</span></td>
@@ -538,6 +543,8 @@ export default function SetoranPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} totalPages={totalPages} total={list.length} onPrev={prev} onNext={next} />
+          </>
         )}
       </div>
 

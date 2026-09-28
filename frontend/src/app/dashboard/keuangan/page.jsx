@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -12,12 +12,16 @@ import {
   Eye,
   Pencil,
   Trash2,
+  Download,
+  ChevronDown,
 } from "lucide-react";
 import { keuanganApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, isWargaView, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 // ── Helpers & opsi ────────────────────────────────────────────────────────────
 const BULAN_NAMES = {
@@ -281,7 +285,7 @@ function AdminKeuanganView({ user }) {
   const semuaArea = scopeOf(user, "keuangan.read") === "ALL";
   const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL";
   const isBendaharaRT = user?.role === "BENDAHARA_RT";
-  const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT"].includes(user?.role);
+  const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT", "BENDAHARA_RW"].includes(user?.role);
   const getCurrentYm = () => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
@@ -320,6 +324,11 @@ function AdminKeuanganView({ user }) {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
+  // Export CSV/XLSX
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(null);
+  const exportRef = useRef(null);
+
   const [dari, sampai] = periodeDari > periodeSampai
     ? [periodeSampai, periodeDari]
     : [periodeDari, periodeSampai];
@@ -343,10 +352,10 @@ function AdminKeuanganView({ user }) {
   const kategoriOptions = [
     ...new Set(
       draftFilterTipe === "PEMASUKAN"
-        ? KATEGORI_MASUK
+        ? [...KATEGORI_MASUK, "Setor IPL"]
         : draftFilterTipe === "PENGELUARAN"
           ? KATEGORI_KELUAR
-          : [...KATEGORI_MASUK, ...KATEGORI_KELUAR]
+          : [...KATEGORI_MASUK, ...KATEGORI_KELUAR, "Setor IPL"]
     ),
   ];
 
@@ -370,6 +379,8 @@ function AdminKeuanganView({ user }) {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const { page, totalPages, paginatedItems: riwayatPage, prev, next } = usePagination(riwayat, [riwayat]);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400);
@@ -403,6 +414,49 @@ function AdminKeuanganView({ user }) {
     setDraftFilterKategori("SEMUA");
     setFilterArea("SEMUA");
     setDraftFilterArea("SEMUA");
+  };
+
+  // Tutup menu export saat klik di luar / tekan Escape
+  useEffect(() => {
+    if (!exportOpen) return;
+    const onDown = (e) => {
+      if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setExportOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [exportOpen]);
+
+  const handleExport = async (format) => {
+    setExportOpen(false);
+    setExporting(format);
+    try {
+      // Nama cadangan bila header server tak terbaca browser — dirakit dari
+      // filter yang tampil di layar sehingga periode selalu ikut.
+      const rtSuffix =
+        filterArea && filterArea !== "SEMUA" && filterArea !== "RW" ? `${filterArea.replace("_", "")}-` : "";
+      const filename = await keuanganApi.exportFile({
+        format,
+        dari,
+        sampai,
+        tipe: filterTipe,
+        kategori: filterKategori,
+        search,
+        area: filterArea,
+        fallbackFilename: `Laporan Kas-${rtSuffix}${periodeLabel}.${format === "xlsx" ? "xlsx" : "csv"}`,
+      });
+      showMessage("Berhasil", `File ${filename} berhasil diunduh.`, "success");
+    } catch (err) {
+      showMessage("Gagal Mengekspor", err.message, "error");
+    } finally {
+      setExporting(null);
+    }
   };
 
   const handleDelete = async (item) => {
@@ -485,6 +539,53 @@ function AdminKeuanganView({ user }) {
             <Plus size={16} /> Catat Transaksi
           </button>
         )}
+
+        <div className="export-split" ref={exportRef}>
+          <button
+            type="button"
+            className="btn-ipl-secondary"
+            onClick={() => handleExport("xlsx")}
+            disabled={!!exporting || !!rangeError || isLoading}
+            title={rangeError || "Unduh Riwayat Kas sebagai Excel (.xlsx)"}
+          >
+            <Download size={16} /> {exporting ? "Menyiapkan..." : "Export"}
+          </button>
+          <button
+            type="button"
+            className="btn-ipl-secondary"
+            onClick={() => setExportOpen((o) => !o)}
+            disabled={!!exporting || !!rangeError || isLoading}
+            aria-label="Pilihan format export"
+            aria-expanded={exportOpen}
+            title="Pilihan format export"
+          >
+            <ChevronDown size={15} />
+          </button>
+          {exportOpen && (
+            <div className="export-menu" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                className="export-menu-item"
+                onClick={() => handleExport("xlsx")}
+                disabled={!!exporting}
+              >
+                <strong>Export Excel (.xlsx)</strong>
+                <span>Kolom angka bisa di-SUM di Excel</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="export-menu-item"
+                onClick={() => handleExport("csv")}
+                disabled={!!exporting}
+              >
+                <strong>Export CSV (.csv)</strong>
+                <span>Format teks, delimiter koma</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
@@ -662,6 +763,7 @@ function AdminKeuanganView({ user }) {
             <p>Belum ada transaksi untuk periode ini.</p>
           </div>
         ) : (
+          <>
           <div className="ipl-table-wrapper">
             <table className="ipl-table">
               <thead>
@@ -677,8 +779,8 @@ function AdminKeuanganView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {riwayat.map((t) => {
-                  const buktiPath = getBuktiPath(t);
+                {riwayatPage.map((t) => {
+                  const buktiUrl = getBuktiUrl(t);
                   const isManual = t.sumber === "MANUAL" || !t.sumber;
                   const isIplKas = t.sumber === "IPL_KAS";
                   const canEdit = (isManual || isIplKas) && bolehUbah;
@@ -744,6 +846,8 @@ function AdminKeuanganView({ user }) {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} totalPages={totalPages} total={riwayat.length} onPrev={prev} onNext={next} />
+          </>
         )}
       </div>
 

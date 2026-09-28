@@ -11,7 +11,13 @@ export default function KelolaIplLayout({ children }) {
   const isWarga = isWargaView(user);
   const isPengurusIpl = can(user, "ipl.read") && scopeOf(user, "ipl.read") !== "OWN";
   const bolehSetoran = !isWarga && canAny(user, ["setoran.read", "setoran.create"]);
-  const isTagihan = pathname?.includes("/tagihan");
+  const bisaBayarSendiri = can(user, "ipl.bayar");
+  // "/tagihan-saya" mengandung substring "/tagihan", jadi harus dicek lebih dulu
+  // agar tidak dua tab aktif sekaligus.
+  const isTagihanSaya =
+    pathname === "/dashboard/kelola-ipl/tagihan-saya" ||
+    pathname?.startsWith("/dashboard/kelola-ipl/tagihan-saya/");
+  const isTagihan = !isTagihanSaya && pathname?.includes("/tagihan");
   const isSetoran = pathname?.includes("/setoran");
 
   return (
@@ -21,7 +27,7 @@ export default function KelolaIplLayout({ children }) {
           <h2 className="ipl-page-title">{isPengurusIpl ? "Pengelolaan IPL" : "Tagihan IPL"}</h2>
           <p className="ipl-page-subtitle">
             {isPengurusIpl
-              ? "Kelola tagihan dan setoran IPL — Tagihan untuk penagihan warga, Setoran untuk rekap RT ke RW."
+              ? "Tagihan Warga untuk penagihan, Tagihan Saya untuk IPL pribadi Anda, Setoran untuk rekap RT ke RW."
               : "Bayar dan pantau tagihan IPL rumah Anda."}
           </p>
         </div>
@@ -34,8 +40,18 @@ export default function KelolaIplLayout({ children }) {
           aria-selected={isTagihan}
           className={`db-toggle-btn ${isTagihan ? "is-active" : ""}`}
         >
-          Tagihan IPL
+          {isPengurusIpl ? "Tagihan Warga" : "Tagihan IPL"}
         </Link>
+        {bisaBayarSendiri && isPengurusIpl && (
+          <Link
+            href="/dashboard/kelola-ipl/tagihan-saya"
+            role="tab"
+            aria-selected={isTagihanSaya}
+            className={`db-toggle-btn ${isTagihanSaya ? "is-active" : ""}`}
+          >
+            Tagihan Saya
+          </Link>
+        )}
         {!isWarga && bolehSetoran && (
           <Link
             href="/dashboard/kelola-ipl/setoran"

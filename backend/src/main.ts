@@ -1,8 +1,7 @@
 // backend/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
-import helmet from 'helmet';
+import { join } from 'node:path';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PesanIndonesiaFilter, validasiIndonesia } from './common/pesan-indonesia';
@@ -10,20 +9,10 @@ import { PesanIndonesiaFilter, validasiIndonesia } from './common/pesan-indonesi
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // crossOriginResourcePolicy 'cross-origin' supaya file di /uploads (pengumuman, kegiatan,
-  // pengaduan) tetap bisa di-load frontend yang jalan di origin/port berbeda (dev: LAN IP:3000
-  // vs backend :4000).
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-
-  // Origin frontend yang diizinkan; override lewat env CORS_ORIGINS (dipisah koma) untuk
-  // production atau saat IP LAN dev berubah. Default mencakup localhost & LAN dev umum.
-  const corsOrigins = (
-    process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://192.168.0.102:3000'
-  )
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-  app.enableCors({ origin: corsOrigins });
+  // <-- 2. Tambahkan pengaturan CORS
+  // exposedHeaders: agar fetch browser boleh MEMBACA Content-Disposition
+  // (dipakai tombol Export agar nama file dari server ikut terpakai).
+  app.enableCors({ exposedHeaders: ['Content-Disposition'] });
 
   // <-- 3. Tambahkan ValidationPipe untuk class-validator
   // transform:true agar @Type() pada DTO berjalan (mis. nominal string

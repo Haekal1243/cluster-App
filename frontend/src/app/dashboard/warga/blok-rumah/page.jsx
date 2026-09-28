@@ -7,6 +7,8 @@ import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import RumahFormModal from "@/components/warga/RumahFormModal";
 
 const ALL_RT = ["RT_01", "RT_02", "RT_03", "RT_04"];
@@ -85,6 +87,11 @@ export default function BlokRumahPage() {
   );
 
   const filterAktif = filterRT !== "SEMUA" || filterStatus !== "SEMUA";
+
+  const { page, totalPages, paginatedItems: rumahPage, prev, next } = usePagination(
+    rumahFiltered,
+    [q, filterRT, filterStatus],
+  );
 
   const handleSubmitRumah = async (payload) => {
     try {
@@ -231,11 +238,11 @@ export default function BlokRumahPage() {
             </thead>
             <tbody>
               {!isLoading &&
-                rumahFiltered.map((item, index) => {
+                rumahPage.map((item, index) => {
                   const st = STATUS_RUMAH[item.status] ?? STATUS_RUMAH.KOSONG;
                   return (
                     <tr key={item.id}>
-                      <td>{index + 1}</td>
+                      <td>{(page - 1) * 10 + index + 1}</td>
                       <td className="col-judul">{item.blokRumah}</td>
                       <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>
                       <td>
@@ -280,7 +287,7 @@ export default function BlokRumahPage() {
 
         <div className="warga-grid">
           {!isLoading &&
-            rumahFiltered.map((item) => {
+            rumahPage.map((item) => {
               const st = STATUS_RUMAH[item.status] ?? STATUS_RUMAH.KOSONG;
               return (
                 <div key={item.id} className="warga-grid-card">
@@ -316,6 +323,9 @@ export default function BlokRumahPage() {
           <div className="table-empty">
             {rumah.length === 0 ? "Belum ada data rumah." : "Tidak ada rumah yang sesuai filter."}
           </div>
+        )}
+        {!isLoading && (
+          <Pagination page={page} totalPages={totalPages} total={rumahFiltered.length} onPrev={prev} onNext={next} />
         )}
       </div>
 

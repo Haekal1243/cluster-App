@@ -18,7 +18,7 @@ async function bootstrap() {
   // Origin frontend yang diizinkan; override lewat env CORS_ORIGINS (dipisah koma) untuk
   // production atau saat IP LAN dev berubah. Default mencakup localhost & LAN dev umum.
   const corsOrigins = (
-    process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://192.168.200.34:3000'
+    process.env.CORS_ORIGINS ?? 'http://localhost:3000,http://192.168.0.102:3000'
   )
     .split(',')
     .map((o) => o.trim())

@@ -21,6 +21,7 @@ import {
   VacatePengurusDto,
 } from './rbac.dto';
 import { CurrentUser, RequirePermission } from '../auth/permission.decorators';
+import { Public } from '../auth/public.decorator';
 import type { AuthUser } from '../auth/auth.types';
 
 /** Menu admin "Role & Permission": matriks hak akses seluruhnya disimpan di database. */
@@ -90,6 +91,13 @@ export class RbacController {
 @RequirePermission('pengurus', 'manage')
 export class PengurusController {
   constructor(private readonly pengurusService: PengurusService) {}
+
+  /** Susunan pengurus untuk landing page publik, tanpa login. */
+  @Public()
+  @Get('publik')
+  publik() {
+    return this.pengurusService.publik();
+  }
 
   @Get()
   slots() {

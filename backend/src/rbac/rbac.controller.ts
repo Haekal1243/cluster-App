@@ -9,13 +9,20 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Area } from '@prisma/client';
+import { pengurusMulterOptions } from './pengurus.multer';
 import { RbacService } from './rbac.service';
 import { PengurusService } from './pengurus.service';
 import {
   AssignPengurusDto,
   CreateRoleDto,
+  SetKontakPengurusDto,
   SetRolePermissionsDto,
   UpdateRoleDto,
   VacatePengurusDto,
@@ -92,8 +99,13 @@ export class RbacController {
 export class PengurusController {
   constructor(private readonly pengurusService: PengurusService) {}
 
-  /** Susunan pengurus untuk landing page publik, tanpa login. */
+  /**
+   * Susunan pengurus untuk landing page publik, tanpa login. Dibatasi 30 permintaan/menit per IP:
+   * cukup untuk pengunjung biasa (satu kali muat per halaman) tapi menyulitkan scraping massal.
+   */
   @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @Get('publik')
   publik() {
     return this.pengurusService.publik();
@@ -117,5 +129,31 @@ export class PengurusController {
   @Post('kosongkan')
   vacate(@CurrentUser() user: AuthUser, @Body() dto: VacatePengurusDto) {
     return this.pengurusService.vacate(user, dto);
+  }
+
+  /** Unggah / ganti foto pemegang jabatan (multipart, field `foto`). */
+  @Post(':userId/foto')
+  @UseInterceptors(FileInterceptor('foto', pengurusMulterOptions))
+  setFoto(
+    @CurrentUser() user: AuthUser,
+    @Param('userId', ParseIntPipe) userId: number,
+    @UploadedFile() foto?: Express.Multer.File,
+  ) {
+    return this.pengurusService.setFoto(user, userId, foto);
+  }
+
+  /** Atur nomor WhatsApp publik pemegang jabatan; kirim kosong untuk menyembunyikannya. */
+  @Patch(':userId/kontak')
+  setKontak(
+    @CurrentUser() user: AuthUser,
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() dto: SetKontakPengurusDto,
+  ) {
+    return this.pengurusService.setKontak(user, userId, dto.kontak);
+  }
+
+  @Delete(':userId/foto')
+  hapusFoto(@CurrentUser() user: AuthUser, @Param('userId', ParseIntPipe) userId: number) {
+    return this.pengurusService.hapusFoto(user, userId);
   }
 }

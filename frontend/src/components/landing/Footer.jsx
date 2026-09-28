@@ -71,7 +71,7 @@ export default function Footer() {
 
         <div className="lp-footer-bottom">
           <div style={{ fontSize: 11, color: "#334155" }}>© 2026 RW 21 Cluster Topaz, Permata Cimanggis. Hak cipta dilindungi.</div>
-          <div style={{ fontSize: 11, color: "#334155" }}>Portal Administrasi Warga — Kota Depok, Jawa Barat</div>
+          <div style={{ fontSize: 11, color: "#334155" }}>Portal Administrasi Warga - Kota Depok, Jawa Barat</div>
         </div>
       </div>
     </footer>

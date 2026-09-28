@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
@@ -19,6 +19,11 @@ class LoginDto {
   @IsString()
   @IsNotEmpty()
   password!: string;
+
+  /** Centang "Ingat saya": token berlaku lebih lama (lihat REMEMBER_EXPIRES_IN di AuthService). */
+  @IsOptional()
+  @IsBoolean()
+  remember?: boolean;
 }
 
 class GantiPasswordDto {
@@ -39,7 +44,7 @@ export class AuthController {
   @UseGuards(ThrottlerGuard)
   @Post('login')
   login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.username ?? dto.email ?? '', dto.password);
+    return this.authService.login(dto.username ?? dto.email ?? '', dto.password, dto.remember === true);
   }
 
   /** Profil + permission user yang sedang login. */

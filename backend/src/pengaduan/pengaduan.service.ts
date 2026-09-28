@@ -8,6 +8,7 @@ import {
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Area, Prisma, RT } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { FileService } from '../common/file/file.service';
 import { CreatePengaduanDto } from './dto/create-pengaduan.dto';
 import { RespondPengaduanDto } from './dto/respond-pengaduan.dto';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
@@ -37,6 +38,7 @@ export class PengaduanService implements OnApplicationBootstrap {
     private prisma: PrismaService,
     private notifikasiService: NotifikasiService,
     private permissions: PermissionsService,
+    private files: FileService,
   ) {}
 
   /** Job jalan sekali juga saat start, supaya keterlambatan (backend sempat mati) terkejar. */
@@ -110,13 +112,15 @@ export class PengaduanService implements OnApplicationBootstrap {
       );
     }
 
+    // Tampil lewat <img>, yang tidak bisa mengirim token; sama seperti sebelumnya (folder statis).
+    const fotoUrl = file ? await this.files.simpan(file, { publik: true }) : undefined;
     const data = await this.prisma.pengaduan.create({
       data: {
         idUser: user.sub,
         judul: dto.judul,
         kategori: dto.kategori,
         deskripsi: dto.deskripsi,
-        fotoUrl: file?.filename,
+        fotoUrl,
         tujuan: dto.tujuan,
       },
     });

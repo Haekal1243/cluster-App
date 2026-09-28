@@ -19,6 +19,9 @@ export default function KelolaIplLayout({ children }) {
     pathname?.startsWith("/dashboard/kelola-ipl/tagihan-saya/");
   const isTagihan = !isTagihanSaya && pathname?.includes("/tagihan");
   const isSetoran = pathname?.includes("/setoran");
+  const tampilTagihanSaya = bisaBayarSendiri && isPengurusIpl;
+  // Tab hanya berguna kalau ada lebih dari satu pilihan; warga biasa cuma punya "Tagihan IPL".
+  const jumlahTab = 1 + (tampilTagihanSaya ? 1 : 0) + (bolehSetoran ? 1 : 0);
 
   return (
     <div className="page-stack">
@@ -33,6 +36,7 @@ export default function KelolaIplLayout({ children }) {
         </div>
       </div>
 
+      {jumlahTab > 1 && (
       <div className="db-section-toggle" role="tablist" aria-label="Kelola IPL">
         <Link
           href="/dashboard/kelola-ipl/tagihan"
@@ -42,7 +46,7 @@ export default function KelolaIplLayout({ children }) {
         >
           {isPengurusIpl ? "Tagihan Warga" : "Tagihan IPL"}
         </Link>
-        {bisaBayarSendiri && isPengurusIpl && (
+        {tampilTagihanSaya && (
           <Link
             href="/dashboard/kelola-ipl/tagihan-saya"
             role="tab"
@@ -52,7 +56,7 @@ export default function KelolaIplLayout({ children }) {
             Tagihan Saya
           </Link>
         )}
-        {!isWarga && bolehSetoran && (
+        {bolehSetoran && (
           <Link
             href="/dashboard/kelola-ipl/setoran"
             role="tab"
@@ -63,6 +67,7 @@ export default function KelolaIplLayout({ children }) {
           </Link>
         )}
       </div>
+      )}
 
       <div>{children}</div>
     </div>

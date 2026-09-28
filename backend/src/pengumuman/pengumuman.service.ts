@@ -1,6 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { Area, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePengumumanDto } from './dto/create-pengumuman.dto';
@@ -10,6 +8,7 @@ import { KeputusanPengajuanDto } from '../common/dto/pengajuan.dto';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
 import { PermissionsService } from '../auth/permissions.service';
 import { AuditService } from '../audit/audit.service';
+import { FileService } from '../common/file/file.service';
 import { AccessContext } from '../auth/auth.types';
 import { areaFilter, assertInArea } from '../common/scope.helper';
 import {
@@ -36,6 +35,7 @@ export class PengumumanService {
     private notifikasiService: NotifikasiService,
     private permissions: PermissionsService,
     private audit: AuditService,
+    private files: FileService,
   ) {}
 
   private async bolehApprove(ctx: AccessContext) {
@@ -50,12 +50,13 @@ export class PengumumanService {
     const area: Area = areaFilter(ctx) ?? dto.area ?? ctx.user.area ?? 'RW';
     const approver = await this.bolehApprove(ctx);
 
+    const filePengumuman = file ? await this.files.simpan(file, { publik: true }) : undefined;
     const data = await this.prisma.pengumuman.create({
       data: {
         judul: dto.judul,
         keteranganPengumuman: dto.keteranganPengumuman,
         status: dto.status,
-        filePengumuman: file?.filename,
+        filePengumuman,
         area,
         createBy: ctx.user.nama,
         ...(approver && { tampilSampai: tampilSampaiDari(dto.durasiHari) }),
@@ -144,9 +145,7 @@ export class PengumumanService {
     const existing = await this.findForWrite(ctx, id);
     const approver = await this.bolehApprove(ctx);
 
-    if (file && existing.filePengumuman) {
-      this.deleteFile(existing.filePengumuman);
-    }
+    const fileBaru = file ? await this.files.simpan(file, { publik: true }) : undefined;
 
     const data = await this.prisma.pengumuman.update({
       where: { id },
@@ -154,7 +153,7 @@ export class PengumumanService {
         judul: dto.judul,
         keteranganPengumuman: dto.keteranganPengumuman,
         status: dto.status,
-        filePengumuman: file?.filename,
+        filePengumuman: fileBaru,
         updateBy: ctx.user.nama,
         updateDate: new Date(),
         ...(approver && { tampilSampai: tampilSampaiDari(dto.durasiHari) }),
@@ -166,6 +165,8 @@ export class PengumumanService {
           }),
       },
     });
+
+    if (fileBaru) await this.files.hapus(existing.filePengumuman);
 
     return { message: 'Pengumuman berhasil diperbarui', data };
   }
@@ -299,12 +300,5 @@ export class PengumumanService {
       );
     }
     return { message: 'Pengajuan disetujui. Pengumuman tampil ke seluruh warga.', data };
-  }
-
-  private deleteFile(filename: string) {
-    const filePath = path.join(process.cwd(), 'uploads', 'pengumuman', filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlink(filePath, () => undefined);
-    }
   }
 }

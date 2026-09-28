@@ -6,11 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, RT } from '@prisma/client';
-import * as fs from 'fs';
-import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
 import { AuditService } from '../audit/audit.service';
+import { FileService } from '../common/file/file.service';
 import { AccessContext } from '../auth/auth.types';
 import { areaFilter, assertInArea } from '../common/scope.helper';
 import { resolvePeriode } from '../common/periode.helper';
@@ -24,6 +23,7 @@ export class SetoranService {
     private prisma: PrismaService,
     private notifikasiService: NotifikasiService,
     private audit: AuditService,
+    private files: FileService,
   ) {}
 
   /** Tentukan RT yang disetor: RT sendiri untuk bendahara RT, atau dipilih untuk scope ALL. */
@@ -67,6 +67,7 @@ export class SetoranService {
     const target = this.resolveRt(ctx, rt);
     if (!file) throw new BadRequestException('Bukti transfer setoran wajib diunggah.');
 
+    const buktiId = await this.files.simpan(file);
     const setoran = await this.prisma.$transaction(async (tx) => {
       const tagihan = await tx.ipl.findMany({
         where: this.tagihanSiapSetor(target),
@@ -83,7 +84,7 @@ export class SetoranService {
           area: target,
           totalIpl: tagihan.reduce((s, t) => s + t.nominalIpl, 0),
           jumlahTagihan: tagihan.length,
-          buktiTransaksi: file.filename,
+          buktiTransaksi: buktiId,
           createBy: ctx.user.nama,
         },
       });
@@ -97,6 +98,10 @@ export class SetoranService {
         throw new ConflictException('Data tagihan berubah saat diproses. Coba setor lagi.');
       }
       return created;
+    }).catch(async (err) => {
+      // Setoran gagal dibuat: jangan tinggalkan bukti yatim di database.
+      await this.files.hapus(buktiId);
+      throw err;
     });
 
     await this.notifikasiService.kirimKePermission(
@@ -175,13 +180,11 @@ export class SetoranService {
     return setoran;
   }
 
-  /** Path file bukti transfer setoran; dicek scope dulu, folder ini tidak disajikan statis. */
-  async filePathBukti(ctx: AccessContext, id: number) {
+  /** Id file bukti transfer setoran; dicek scope dulu, file ini tidak boleh diambil lewat GET /files/:id publik. */
+  async fileIdBukti(ctx: AccessContext, id: number) {
     const setoran = await this.findOne(ctx, id);
     if (!setoran.buktiTransaksi) throw new NotFoundException('Setoran ini tidak memiliki bukti transfer.');
-    const full = path.join(process.cwd(), 'uploads', 'setoran', setoran.buktiTransaksi);
-    if (!fs.existsSync(full)) throw new NotFoundException('File bukti transfer tidak ditemukan.');
-    return full;
+    return setoran.buktiTransaksi;
   }
 
   // ================================================================

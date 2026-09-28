@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Reveal from "./Reveal";
 import { PhotoIcon } from "./icons";
-import { API_BASE_URL } from "@/lib/api";
+import { fileUrl } from "@/lib/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const labelStyle = {
@@ -19,10 +19,6 @@ function formatTanggalAcara(value) {
     month: "long",
     year: "numeric",
   });
-}
-
-function imageUrl(filename) {
-  return filename ? `${API_BASE_URL}/uploads/kegiatan/${filename}` : null;
 }
 
 export default function Kegiatan({ items = [] }) {
@@ -127,7 +123,7 @@ export default function Kegiatan({ items = [] }) {
               }}
             >
               {extendedItems.map((k, idx) => {
-                const img = imageUrl(k.gambarUrl);
+                const img = fileUrl(k.gambarUrl);
                 return (
                   <div key={`${k.id}-${idx}`} className="lp-kegiatan-item" style={{ flex: "0 0 calc(33.333333% - 13.333333px)", boxSizing: "border-box" }}>
                     <div className="lp-card" style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>

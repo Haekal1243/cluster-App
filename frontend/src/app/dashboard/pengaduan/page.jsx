@@ -38,6 +38,18 @@ const STATUS_PRIORITY = {
   DITOLAK: 2,
 };
 
+// Urutan tanggal di filter. "prioritas" (khusus pengurus) = status yang perlu ditindaklanjuti dulu.
+const URUTAN_LABELS = {
+  terbaru: "Terbaru dulu",
+  terlama: "Terlama dulu",
+};
+
+/** Urutkan berdasarkan tanggal lapor; `terlama` = naik (asc), selain itu turun (desc). */
+function urutkanTanggal(list, urutan) {
+  const arah = urutan === "terlama" ? 1 : -1;
+  return [...list].sort((a, b) => arah * (new Date(a.createdAt) - new Date(b.createdAt)));
+}
+
 const BULAN_NAMES = {
   "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
   "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
@@ -84,6 +96,37 @@ function formatDate(dateStr) {
   });
 }
 
+/** Kartu pengaduan untuk layar HP (desktop memakai tabel). Dipakai bersama oleh tampilan pengurus dan warga. */
+function PengaduanCard({ item, onOpen, pelapor, aksi }) {
+  return (
+    <div
+      className="pengaduan-card"
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(item)}
+      onKeyDown={(e) => { if (e.key === "Enter") onOpen(item); }}
+    >
+      <div className="pengaduan-card-top">
+        <h3 className="pengaduan-card-title">{item.judul}</h3>
+        <StatusBadge status={item.status} />
+      </div>
+      {item.deskripsi && <p className="pengaduan-card-desc">{item.deskripsi}</p>}
+      <div className="pengaduan-card-meta">
+        {pelapor && <span className="pengaduan-chip">{pelapor}</span>}
+        <span className="pengaduan-chip">{areaLabel(item.tujuan)}</span>
+        <span className="pengaduan-chip">{KATEGORI_LABELS[item.kategori] || item.kategori}</span>
+        <span className="pengaduan-chip"><Calendar size={12} /> {formatDate(item.createdAt)}</span>
+        {item.diteruskanAt && (
+          <span className="pengaduan-chip pengaduan-chip-info"><Forward size={12} /> Diteruskan ke RW</span>
+        )}
+      </div>
+      {aksi && (
+        <div className="pengaduan-card-actions" onClick={(e) => e.stopPropagation()}>{aksi}</div>
+      )}
+    </div>
+  );
+}
+
 // ── Admin/Pengurus: lihat & tanggapi semua pengaduan ──────────────────────────
 function AdminPengaduanView({ user }) {
   const [items, setItems] = useState([]);
@@ -94,10 +137,12 @@ function AdminPengaduanView({ user }) {
   const [filterStatus, setFilterStatus] = useState("SEMUA");
   const [filterBulan, setFilterBulan] = useState("SEMUA");
   const [filterTahun, setFilterTahun] = useState("SEMUA");
+  const [urutan, setUrutan] = useState("prioritas");
   const [draftFilterKategori, setDraftFilterKategori] = useState("SEMUA");
   const [draftFilterStatus, setDraftFilterStatus] = useState("SEMUA");
   const [draftFilterBulan, setDraftFilterBulan] = useState("SEMUA");
   const [draftFilterTahun, setDraftFilterTahun] = useState("SEMUA");
+  const [draftUrutan, setDraftUrutan] = useState("prioritas");
   const [search, setSearch] = useState("");
 
   const handleFilterOpen = () => {
@@ -105,22 +150,26 @@ function AdminPengaduanView({ user }) {
     setDraftFilterStatus(filterStatus);
     setDraftFilterBulan(filterBulan);
     setDraftFilterTahun(filterTahun);
+    setDraftUrutan(urutan);
   };
   const handleFilterApply = () => {
     setFilterKategori(draftFilterKategori);
     setFilterStatus(draftFilterStatus);
     setFilterBulan(draftFilterBulan);
     setFilterTahun(draftFilterTahun);
+    setUrutan(draftUrutan);
   };
   const handleFilterReset = () => {
     setFilterKategori("SEMUA");
     setFilterStatus("SEMUA");
     setFilterBulan("SEMUA");
     setFilterTahun("SEMUA");
+    setUrutan("prioritas");
     setDraftFilterKategori("SEMUA");
     setDraftFilterStatus("SEMUA");
     setDraftFilterBulan("SEMUA");
     setDraftFilterTahun("SEMUA");
+    setDraftUrutan("prioritas");
   };
 
   const loadData = async () => {
@@ -169,13 +218,15 @@ function AdminPengaduanView({ user }) {
       return matchKategori && matchStatus && matchBulan && matchTahun && matchSearch;
     });
 
+    if (urutan !== "prioritas") return urutkanTanggal(filtered, urutan);
+
     return [...filtered].sort((a, b) => {
       const prioA = STATUS_PRIORITY[a.status] ?? 99;
       const prioB = STATUS_PRIORITY[b.status] ?? 99;
       if (prioA !== prioB) return prioA - prioB;
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
-  }, [items, filterKategori, filterStatus, filterBulan, filterTahun, search]);
+  }, [items, filterKategori, filterStatus, filterBulan, filterTahun, urutan, search]);
 
   // Opsi Bulan & Tahun di filter cuma nampilin yang beneran ada datanya
   const availableTahun = useMemo(() => {
@@ -196,7 +247,7 @@ function AdminPengaduanView({ user }) {
 
   const { page, totalPages, paginatedItems, prev, next } = usePagination(
     filteredItems,
-    [search, filterKategori, filterStatus, filterBulan, filterTahun],
+    [search, filterKategori, filterStatus, filterBulan, filterTahun, urutan],
   );
 
   return (
@@ -227,7 +278,8 @@ function AdminPengaduanView({ user }) {
             filterBulan !== "SEMUA" ||
             filterTahun !== "SEMUA" ||
             filterKategori !== "SEMUA" ||
-            filterStatus !== "SEMUA"
+            filterStatus !== "SEMUA" ||
+            urutan !== "prioritas"
           }
           onOpen={handleFilterOpen}
           onApply={handleFilterApply}
@@ -277,6 +329,18 @@ function AdminPengaduanView({ user }) {
             >
               <option value="SEMUA">Semua Status</option>
               {Object.entries(STATUS_LABELS).map(([value, { label }]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Urutan Tanggal">
+            <select
+              className="ipl-select ipl-select-sm"
+              value={draftUrutan}
+              onChange={(e) => setDraftUrutan(e.target.value)}
+            >
+              <option value="prioritas">Status dulu (default)</option>
+              {Object.entries(URUTAN_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
@@ -340,30 +404,15 @@ function AdminPengaduanView({ user }) {
             </table>
           </div>
 
-          <div className="pengaduan-grid">
+          <div className="pengaduan-cards">
             {paginatedItems.map((item) => (
-              <div
+              <PengaduanCard
                 key={item.id}
-                className="pengaduan-grid-card"
-                role="button"
-                tabIndex={0}
-                onClick={() => handlePengaduanAction(item)}
-                onKeyDown={(e) => { if (e.key === "Enter") handlePengaduanAction(item); }}
-              >
-                <h3 className="pengaduan-grid-title">{item.judul}</h3>
-                <div className="pengaduan-grid-meta">
-                  <span>{areaLabel(item.tujuan)}</span>
-                  <span>{KATEGORI_LABELS[item.kategori] || item.kategori}</span>
-                  <span className="meta-item"><Calendar size={11} /> {formatDate(item.createdAt)}</span>
-                  {item.diteruskanAt && (
-                    <span className="meta-item"><Forward size={11} /> diteruskan</span>
-                  )}
-                </div>
-                <div className="pengaduan-grid-footer">
-                  <StatusBadge status={item.status} />
-                  <PengaduanActionButton item={item} onAction={handlePengaduanAction} bolehRespon={bolehRespon} />
-                </div>
-              </div>
+                item={item}
+                pelapor={item.pelapor?.namaUser}
+                onOpen={handlePengaduanAction}
+                aksi={<PengaduanActionButton item={item} onAction={handlePengaduanAction} bolehRespon={bolehRespon} />}
+              />
             ))}
           </div>
           <Pagination page={page} totalPages={totalPages} total={filteredItems.length} onPrev={prev} onNext={next} />
@@ -393,6 +442,31 @@ function WargaPengaduanView({ user }) {
   const [showForm, setShowForm] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
   const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("SEMUA");
+  const [filterKategori, setFilterKategori] = useState("SEMUA");
+  const [urutan, setUrutan] = useState("terbaru");
+  const [draftStatus, setDraftStatus] = useState("SEMUA");
+  const [draftKategori, setDraftKategori] = useState("SEMUA");
+  const [draftUrutan, setDraftUrutan] = useState("terbaru");
+
+  const handleFilterOpen = () => {
+    setDraftStatus(filterStatus);
+    setDraftKategori(filterKategori);
+    setDraftUrutan(urutan);
+  };
+  const handleFilterApply = () => {
+    setFilterStatus(draftStatus);
+    setFilterKategori(draftKategori);
+    setUrutan(draftUrutan);
+  };
+  const handleFilterReset = () => {
+    setFilterStatus("SEMUA");
+    setFilterKategori("SEMUA");
+    setUrutan("terbaru");
+    setDraftStatus("SEMUA");
+    setDraftKategori("SEMUA");
+    setDraftUrutan("terbaru");
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -413,15 +487,22 @@ function WargaPengaduanView({ user }) {
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return items;
-    return items.filter(
-      (item) =>
+    const filtered = items.filter((item) => {
+      const matchStatus = filterStatus === "SEMUA" || item.status === filterStatus;
+      const matchKategori = filterKategori === "SEMUA" || item.kategori === filterKategori;
+      const matchSearch =
+        !query ||
         item.judul?.toLowerCase().includes(query) ||
-        item.deskripsi?.toLowerCase().includes(query)
-    );
-  }, [items, search]);
+        item.deskripsi?.toLowerCase().includes(query);
+      return matchStatus && matchKategori && matchSearch;
+    });
+    return urutkanTanggal(filtered, urutan);
+  }, [items, search, filterStatus, filterKategori, urutan]);
 
-  const { page, totalPages, paginatedItems, prev, next } = usePagination(filteredItems, [search]);
+  const { page, totalPages, paginatedItems, prev, next } = usePagination(
+    filteredItems,
+    [search, filterStatus, filterKategori, urutan],
+  );
 
   return (
     <div className="page-stack">
@@ -450,15 +531,60 @@ function WargaPengaduanView({ user }) {
         </div>
 
         {items.length > 0 && (
-          <div className="list-search-wrap" style={{ marginBottom: 16 }}>
-            <Search size={15} className="list-search-icon" />
-            <input
-              type="text"
-              placeholder="Cari judul atau deskripsi pengaduan..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="list-search-input"
-            />
+          <div className="list-toolbar-row" style={{ marginBottom: 16 }}>
+            <div className="list-search-wrap">
+              <Search size={15} className="list-search-icon" />
+              <input
+                type="text"
+                placeholder="Cari judul atau deskripsi pengaduan..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="list-search-input"
+              />
+            </div>
+
+            <FilterPopover
+              active={filterStatus !== "SEMUA" || filterKategori !== "SEMUA" || urutan !== "terbaru"}
+              onOpen={handleFilterOpen}
+              onApply={handleFilterApply}
+              onReset={handleFilterReset}
+            >
+              <FilterField label="Status">
+                <select
+                  className="ipl-select ipl-select-sm"
+                  value={draftStatus}
+                  onChange={(e) => setDraftStatus(e.target.value)}
+                >
+                  <option value="SEMUA">Semua Status</option>
+                  {Object.entries(STATUS_LABELS).map(([value, { label }]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </FilterField>
+              <FilterField label="Kategori">
+                <select
+                  className="ipl-select ipl-select-sm"
+                  value={draftKategori}
+                  onChange={(e) => setDraftKategori(e.target.value)}
+                >
+                  <option value="SEMUA">Semua Kategori</option>
+                  {Object.entries(KATEGORI_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </FilterField>
+              <FilterField label="Urutan Tanggal">
+                <select
+                  className="ipl-select ipl-select-sm"
+                  value={draftUrutan}
+                  onChange={(e) => setDraftUrutan(e.target.value)}
+                >
+                  {Object.entries(URUTAN_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </FilterField>
+            </FilterPopover>
           </div>
         )}
 
@@ -477,37 +603,54 @@ function WargaPengaduanView({ user }) {
           <div className="portal-empty-notice">
             <Megaphone size={32} />
             <p><strong>Tidak ditemukan</strong></p>
-            <p>Tidak ada pengaduan yang cocok dengan pencarian.</p>
+            <p>Tidak ada pengaduan yang cocok dengan pencarian atau filter.</p>
           </div>
         ) : (
           <>
-          <div className="portal-card-list">
+          <div className="ipl-table-wrapper pengaduan-table-wrapper">
+            <table className="ipl-table pengaduan-table">
+              <thead>
+                <tr>
+                  <th>Judul</th>
+                  <th>Tujuan</th>
+                  <th>Kategori</th>
+                  <th>Tanggal</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedItems.map((item) => (
+                  <tr key={item.id}>
+                    <td className="pengaduan-col-judul">
+                      <span className="pengaduan-judul">{item.judul}</span>
+                      {item.deskripsi && <span className="pengaduan-judul-sub">{item.deskripsi}</span>}
+                    </td>
+                    <td>
+                      {areaLabel(item.tujuan)}
+                      {item.diteruskanAt && (
+                        <span className="ipl-rt" title="Diteruskan ke RW (belum ditanggapi RT 7 hari)">
+                          <Forward size={11} /> diteruskan
+                        </span>
+                      )}
+                    </td>
+                    <td>{KATEGORI_LABELS[item.kategori] || item.kategori}</td>
+                    <td className="pengaduan-col-tanggal">{formatDate(item.createdAt)}</td>
+                    <td><StatusBadge status={item.status} /></td>
+                    <td>
+                      <button type="button" className="btn-ipl-view" onClick={() => setDetailItem(item)} title="Lihat detail">
+                        <Eye size={14} /> Lihat
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="pengaduan-cards">
             {paginatedItems.map((item) => (
-              <div
-                key={item.id}
-                className="portal-info-card"
-                role="button"
-                tabIndex={0}
-                onClick={() => setDetailItem(item)}
-                onKeyDown={(e) => { if (e.key === "Enter") setDetailItem(item); }}
-              >
-                <div className="portal-info-card-icon">
-                  <MessageSquareWarning size={18} />
-                </div>
-                <div className="portal-info-card-body">
-                  <h3 className="portal-info-card-title">{item.judul}</h3>
-                  <p className="portal-info-card-desc">{item.deskripsi}</p>
-                  <div className="portal-info-card-meta">
-                    <span>{areaLabel(item.tujuan)}</span>
-                    <span className="meta-item"><Calendar size={12} /> {formatDate(item.createdAt)}</span>
-                    <span>{KATEGORI_LABELS[item.kategori] || item.kategori}</span>
-                    <StatusBadge status={item.status} />
-                    {item.diteruskanAt && (
-                      <span className="meta-item"><Forward size={11} /> diteruskan ke RW</span>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <PengaduanCard key={item.id} item={item} onOpen={setDetailItem} />
             ))}
           </div>
           <Pagination page={page} totalPages={totalPages} total={filteredItems.length} onPrev={prev} onNext={next} />

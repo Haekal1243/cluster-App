@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuditModule } from './audit/audit.service';
+import { FileModule } from './common/file/file.module';
 import { WargaModule } from './warga/warga.module';
 import { PengumumanModule } from './pengumuman/pengumuman.module';
 import { KegiatanModule } from './kegiatan/kegiatan.module';
@@ -29,6 +30,7 @@ import { RbacModule } from './rbac/rbac.module';
     // Dipasang per-endpoint via @Throttle di login & registrasi mandiri (rawan brute-force/spam).
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
     PrismaModule,
+    FileModule,
     AuditModule,
     AuthModule,
     RbacModule,

@@ -1,7 +1,6 @@
 // backend/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'node:path';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PesanIndonesiaFilter, validasiIndonesia } from './common/pesan-indonesia';
@@ -31,19 +30,9 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new PesanIndonesiaFilter());
 
-  // Bukti finansial (bukti transfer IPL, setoran, transaksi kas) & notulen rapat
-  // bersifat rahasia: tidak disajikan statis, hanya lewat endpoint terautentikasi
-  // yang mengecek login + scope wilayah (GET .../:id/bukti atau .../:id/file).
-  const blokirStatis = (_req: unknown, res: { status: (c: number) => { end: () => void } }) =>
-    res.status(404).end();
-  app.use('/uploads/catatan-rapat', blokirStatis);
-  app.use('/uploads/bukti-bayar', blokirStatis);
-  app.use('/uploads/setoran', blokirStatis);
-  app.use('/uploads/keuangan', blokirStatis);
+  // Semua file upload disimpan di database (tb_File). File publik diambil lewat GET /files/:id;
+  // bukti finansial & notulen hanya lewat endpoint modulnya (cek login + wilayah).
 
-  // Sajikan file yang diupload (mis. file pengumuman) secara statis
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
-
-await app.listen(process.env.PORT ?? 4000, '0.0.0.0');
+  await app.listen(process.env.PORT ?? 4000, '0.0.0.0');
 }
 bootstrap();

@@ -28,12 +28,13 @@ function inisialDari(jabatan) {
 function petakanDariDb(slots) {
   return slots.map((s) => ({
     id: `${s.kode}-${s.area}`,
-    foto: null,
+    foto: pengurusApi.fotoUrl(s.foto),
     inisial: inisialDari(s.jabatan),
     warna: WARNA_JABATAN[s.kode] ?? "#64748B",
     jabatan: s.jabatan,
     nama: s.nama ?? "Belum ditetapkan",
     kontak: s.nama ? "Hubungi Sekretariat RW" : "—",
+    wa: s.nama && s.kontak ? `https://wa.me/${s.kontak}?text=${encodeURIComponent(`Halo, saya warga Cluster ingin bertanya kepada ${s.jabatan}.`)}` : null,
   }));
 }
 
@@ -184,7 +185,19 @@ export default function Pengurus({ items: itemsProp }) {
                       <h4 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700, color: "#0F172A", marginBottom: 4 }}>
                         {o.nama}
                       </h4>
-                      <p style={{ fontSize: 12, color: "#94A3B8" }}>{o.kontak}</p>
+                      {o.wa ? (
+                        <a
+                          href={o.wa}
+                          target="_blank"
+                          rel="noopener noreferrer nofollow"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ display: "inline-block", marginTop: 4, padding: "6px 12px", borderRadius: 999, background: "#0D9488", color: "white", fontSize: 12, fontWeight: 600, textDecoration: "none" }}
+                        >
+                          Hubungi via WhatsApp
+                        </a>
+                      ) : (
+                        <p style={{ fontSize: 12, color: "#94A3B8" }}>{o.kontak}</p>
+                      )}
                     </div>
                   </div>
                 );
@@ -218,6 +231,11 @@ export default function Pengurus({ items: itemsProp }) {
               onMouseLeave={e => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.color = "#64748B"; }}
             >&#8250;</button>
           </div>
+
+          <p style={{ maxWidth: 560, margin: "20px auto 0", textAlign: "center", fontSize: 12, lineHeight: 1.6, color: "#64748B" }}>
+            Pengurus tidak pernah meminta transfer uang atau kode verifikasi lewat chat pribadi. Ragu dengan
+            sebuah pesan? Tanyakan langsung ke sekretariat RW sebelum membalas.
+          </p>
         </Reveal>
       </div>
     </section>

@@ -10,8 +10,6 @@ import {
   TipeKas,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import * as process from 'node:process';
 import { MATRIX, PERMISSIONS, ROLES } from './rbac-data';
 
@@ -89,23 +87,24 @@ async function seedRbac() {
 
 const hash = (p: string) => bcrypt.hash(p, SALT_ROUNDS);
 const pad = (n: number) => String(n).padStart(2, '0');
-const uploads = (...p: string[]) => path.join(process.cwd(), 'uploads', ...p);
 
-/** Gambar placeholder SVG supaya halaman tidak menampilkan gambar rusak. */
-function tulisSvg(folder: string, nama: string, judul: string, warna: string, sub = '') {
-  fs.mkdirSync(uploads(folder), { recursive: true });
+/** Gambar placeholder SVG (disimpan di tb_File) supaya halaman tidak menampilkan gambar rusak. */
+async function buatSvg(nama: string, judul: string, warna: string, sub = '', publik = false) {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  fs.writeFileSync(
-    uploads(folder, nama),
+  const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">` +
-      `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${warna}"/>` +
-      `<stop offset="1" stop-color="#0f172a"/></linearGradient></defs>` +
-      `<rect width="800" height="500" fill="url(#g)"/>` +
-      `<text x="400" y="240" font-family="Arial,sans-serif" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">${esc(judul)}</text>` +
-      `<text x="400" y="290" font-family="Arial,sans-serif" font-size="22" fill="#e2e8f0" text-anchor="middle">${esc(sub || 'Cluster Topaz (data dummy)')}</text>` +
-      `</svg>`,
-  );
-  return nama;
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${warna}"/>` +
+    `<stop offset="1" stop-color="#0f172a"/></linearGradient></defs>` +
+    `<rect width="800" height="500" fill="url(#g)"/>` +
+    `<text x="400" y="240" font-family="Arial,sans-serif" font-size="38" font-weight="bold" fill="#fff" text-anchor="middle">${esc(judul)}</text>` +
+    `<text x="400" y="290" font-family="Arial,sans-serif" font-size="22" fill="#e2e8f0" text-anchor="middle">${esc(sub || 'Cluster Topaz (data dummy)')}</text>` +
+    `</svg>`;
+  const data = Buffer.from(svg, 'utf-8');
+  const file = await prisma.file.create({
+    data: { namaAsli: nama, mimeType: 'image/svg+xml', ukuran: data.length, publik, data },
+    select: { id: true },
+  });
+  return file.id;
 }
 
 interface WargaSeed {
@@ -262,9 +261,9 @@ async function seedDummy(roleId: Map<string, number>) {
     return { bulan: pad(d.getMonth() + 1), tahun: String(d.getFullYear()), awal: d };
   });
 
-  // Bukti bayar dummy (SVG). Nama file dipakai bersama pembayaran dan setoran.
-  const buktiBayar = tulisSvg('bukti-bayar', 'dummy-bukti-bayar.svg', 'Bukti Transfer IPL', '#0f766e', 'Data dummy');
-  const buktiSetoran = tulisSvg('setoran', 'dummy-bukti-setoran.svg', 'Bukti Setoran IPL RT ke RW', '#1d4ed8', 'Data dummy');
+  // Bukti bayar dummy (SVG di tb_File, tidak publik). Satu file dipakai bersama pembayaran dan setoran.
+  const buktiBayar = await buatSvg('dummy-bukti-bayar.svg', 'Bukti Transfer IPL', '#0f766e', 'Data dummy');
+  const buktiSetoran = await buatSvg('dummy-bukti-setoran.svg', 'Bukti Setoran IPL RT ke RW', '#1d4ed8', 'Data dummy');
 
   type Tagihan = { id: number; rt: RT; k: number; status: StatusPembayaran; nominalIpl: number };
   const semuaTagihan: Tagihan[] = [];
@@ -392,7 +391,7 @@ async function seedDummy(roleId: Map<string, number>) {
   const hariIni = (plus: number) => new Date(now.getTime() + plus * 24 * 3600 * 1000);
   let gambarNo = 0;
   const gambar = (judul: string, warna: string) =>
-    tulisSvg('kegiatan', `dummy-kegiatan-${pad(++gambarNo)}.svg`, judul, warna, 'Cluster Topaz');
+    buatSvg(`dummy-kegiatan-${pad(++gambarNo)}.svg`, judul, warna, 'Cluster Topaz', true);
 
   type K = {
     judul: string; deskripsi: string; tanggal: Date; area: Area; warna: string;
@@ -422,7 +421,7 @@ async function seedDummy(roleId: Map<string, number>) {
         judul: k.judul,
         deskripsi: k.deskripsi,
         tanggalAcara: k.tanggal,
-        gambarUrl: gambar(k.judul, k.warna),
+        gambarUrl: await gambar(k.judul, k.warna),
         status: 'active',
         area: k.area,
         statusPengajuan: k.pengajuan ?? 'TIDAK',

@@ -48,6 +48,9 @@ export async function openProtectedFile(path) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
+/** URL file publik (foto/gambar/lampiran); isinya disimpan di database, bukan folder statis. */
+export const fileUrl = (id) => (id ? `${API_BASE_URL}/files/${id}` : null);
+
 function buildFormData(payload) {
   const formData = new FormData();
   Object.entries(payload).forEach(([key, value]) => {
@@ -77,7 +80,8 @@ function qs(params = {}) {
 
 // ── Auth ────────────────────────────────────────────────────────────────
 export const authApi = {
-  login: ({ username, password }) => request("/auth/login", json("POST", { username, password })),
+  login: ({ username, password, remember }) =>
+    request("/auth/login", json("POST", { username, password, remember: remember === true })),
   me: () => request("/auth/me"),
   gantiPassword: ({ passwordLama, passwordBaru }) =>
     request("/auth/ganti-password", json("POST", { passwordLama, passwordBaru })),
@@ -99,7 +103,7 @@ export const pengumumanApi = {
   ajukan: (id) => request(`/pengumuman/${id}/ajukan`, { method: "POST" }),
   putuskanPengajuan: (id, payload) => request(`/pengumuman/${id}/pengajuan`, json("PATCH", payload)),
 
-  fileUrl: (filename) => (filename ? `${API_BASE_URL}/uploads/pengumuman/${filename}` : null),
+  fileUrl: fileUrl,
 };
 
 export const kegiatanApi = {
@@ -118,7 +122,7 @@ export const kegiatanApi = {
   ajukan: (id) => request(`/kegiatan/${id}/ajukan`, { method: "POST" }),
   putuskanPengajuan: (id, payload) => request(`/kegiatan/${id}/pengajuan`, json("PATCH", payload)),
 
-  imageUrl: (filename) => (filename ? `${API_BASE_URL}/uploads/kegiatan/${filename}` : null),
+  imageUrl: fileUrl,
 };
 
 // ── Warga & rumah ───────────────────────────────────────────────────────
@@ -254,7 +258,7 @@ export const pengaduanApi = {
   getTujuanPilihan: () => request("/pengaduan/tujuan"),
   create: (payload) => request("/pengaduan", { method: "POST", body: buildFormData(payload) }),
   respond: (id, payload) => request(`/pengaduan/${id}/respond`, json("PATCH", payload)),
-  imageUrl: (filename) => (filename ? `${API_BASE_URL}/uploads/pengaduan/${filename}` : null),
+  imageUrl: fileUrl,
 };
 
 export const notifikasiApi = {
@@ -292,4 +296,9 @@ export const pengurusApi = {
   getKandidat: (area) => request(`/pengurus/kandidat${qs({ area })}`),
   tetapkan: (payload) => request("/pengurus/tetapkan", json("POST", payload)),
   kosongkan: (payload) => request("/pengurus/kosongkan", json("POST", payload)),
+  uploadFoto: (userId, foto) =>
+    request(`/pengurus/${userId}/foto`, { method: "POST", body: buildFormData({ foto }) }),
+  setKontak: (userId, kontak) => request(`/pengurus/${userId}/kontak`, json("PATCH", { kontak })),
+  hapusFoto: (userId) => request(`/pengurus/${userId}/foto`, { method: "DELETE" }),
+  fotoUrl: fileUrl,
 };

@@ -15,6 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { CatatanRapatService } from './catatan-rapat.service';
+import { FileService } from '../common/file/file.service';
 import { CreateCatatanRapatDto, UpdateCatatanRapatDto } from './dto/catatan-rapat.dto';
 import { catatanRapatMulterOptions } from './catatan-rapat.multer';
 import { Access, RequirePermission } from '../auth/permission.decorators';
@@ -22,7 +23,10 @@ import type { AccessContext } from '../auth/auth.types';
 
 @Controller('catatan-rapat')
 export class CatatanRapatController {
-  constructor(private readonly catatanRapatService: CatatanRapatService) {}
+  constructor(
+    private readonly catatanRapatService: CatatanRapatService,
+    private readonly files: FileService,
+  ) {}
 
   @Post()
   @RequirePermission('catatan_rapat', 'create')
@@ -59,7 +63,7 @@ export class CatatanRapatController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
-    res.sendFile(await this.catatanRapatService.filePath(ctx, id));
+    await this.files.kirim(res, await this.catatanRapatService.fileId(ctx, id));
   }
 
   @Patch(':id')

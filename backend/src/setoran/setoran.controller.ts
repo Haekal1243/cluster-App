@@ -15,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { RT } from '@prisma/client';
 import { SetoranService } from './setoran.service';
+import { FileService } from '../common/file/file.service';
 import { CreateSetoranDto, KonfirmasiSetoranDto } from './dto/setoran.dto';
 import { setoranMulterOptions } from './setoran.multer';
 import { Access, RequirePermission } from '../auth/permission.decorators';
@@ -22,7 +23,10 @@ import type { AccessContext } from '../auth/auth.types';
 
 @Controller('setoran')
 export class SetoranController {
-  constructor(private readonly setoranService: SetoranService) {}
+  constructor(
+    private readonly setoranService: SetoranService,
+    private readonly files: FileService,
+  ) {}
 
   /** GET /setoran/siap-setor — pratinjau total porsi IPL yang belum disetor */
   @Get('siap-setor')
@@ -69,7 +73,7 @@ export class SetoranController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
-    res.sendFile(await this.setoranService.filePathBukti(ctx, id));
+    await this.files.kirim(res, await this.setoranService.fileIdBukti(ctx, id));
   }
 
   /** PATCH /setoran/:id/konfirmasi — bendahara RW menerima/menolak setoran */

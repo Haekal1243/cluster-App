@@ -101,8 +101,8 @@ export default function PengaduanRespondModal({ pengaduan, currentUserName, onCl
           )}
 
           <div className="review-desc-card">
-            <p className="review-bukti-label">Deskripsi</p>
-            <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{pengaduan.deskripsi}</p>
+            <span className="review-info-label">Deskripsi</span>
+            <p className="review-desc-text">{pengaduan.deskripsi}</p>
           </div>
 
           {buktiUrl && (

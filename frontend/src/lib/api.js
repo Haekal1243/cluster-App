@@ -178,8 +178,8 @@ export const iplApi = {
   getDashboardStats: ({ dari, sampai, rt } = {}) =>
     request(`/ipl/dashboard-stats${qs({ dari, sampai, rt })}`),
 
-  // Rekap terkumpul & disetor per RT (tampilan RW)
-  getRekapRt: ({ dari, sampai } = {}) => request(`/ipl/rekap-rt${qs({ dari, sampai })}`),
+  // Rekap terkumpul & disetor per RT (tampilan RW, ikut filter aktif periode/status/rt)
+  getRekapRt: ({ dari, sampai, status, rt } = {}) => request(`/ipl/rekap-rt${qs({ dari, sampai, status, rt })}`),
 
   // Konfirmasi atau tolak pembayaran
   konfirmasi: (pembayaranId, payload) =>
@@ -194,7 +194,7 @@ export const setoranApi = {
   getSiapSetor: ({ rt } = {}) => request(`/setoran/siap-setor${qs({ rt })}`),
   create: ({ bukti, rt }) =>
     request("/setoran", { method: "POST", body: buildFormData({ bukti, rt }) }),
-  getAll: ({ status, rt } = {}) => request(`/setoran${qs({ status, rt })}`),
+  getAll: ({ status, rt, dari, sampai } = {}) => request(`/setoran${qs({ status, rt, dari, sampai })}`),
   getById: (id) => request(`/setoran/${id}`),
   konfirmasi: (id, payload) => request(`/setoran/${id}/konfirmasi`, json("PATCH", payload)),
   buktiPath: (id) => (id ? `/setoran/${id}/bukti` : null),
@@ -210,6 +210,35 @@ export const keuanganApi = {
     request(`/keuangan/ringkasan${qs({ dari, sampai, area })}`),
 
   getById: (id) => request(`/keuangan/${id}`),
+  // Unduh Riwayat Kas (CSV/XLSX + saldo berjalan) sesuai filter aktif tabel.
+  // fallbackFilename dipakai hanya bila header Content-Disposition tak terbaca browser.
+  exportFile: async ({ format, dari, sampai, tipe, kategori, search, area, fallbackFilename } = {}) => {
+    const token = getToken();
+    const response = await fetch(
+      `${API_BASE_URL}/keuangan/export${qs({ format, dari, sampai, tipe, kategori, search, area })}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!response.ok) {
+      if (response.status === 401) clearSession();
+      const body = await response.json().catch(() => null);
+      const message = body?.message || "Gagal mengekspor data.";
+      throw new Error(Array.isArray(message) ? message.join(", ") : message);
+    }
+    const blob = await response.blob();
+    const disposition = response.headers.get("content-disposition") || "";
+    const match = disposition.match(/filename="?([^";]+)"?/);
+    const filename =
+      match?.[1] || fallbackFilename || `Laporan Kas.${format === "xlsx" ? "xlsx" : "csv"}`;
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return filename;
+  },
   create: (payload) => request("/keuangan", { method: "POST", body: buildFormData(payload) }),
   update: (id, payload) =>
     request(`/keuangan/${id}`, { method: "PATCH", body: buildFormData(payload) }),

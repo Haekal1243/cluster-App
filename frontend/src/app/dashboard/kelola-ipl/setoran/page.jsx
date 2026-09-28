@@ -6,7 +6,9 @@ import { setoranApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
-import ProtectedImage from "@/components/ui/ProtectedImage";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -233,8 +235,6 @@ export default function SetoranPage() {
   const [data, setData] = useState({ setoran: [], summary: null });
   const [siap, setSiap] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState("SEMUA");
-  const [filterRt, setFilterRt] = useState("SEMUA");
   const [siapRt, setSiapRt] = useState("RT_01");
   const [showSetor, setShowSetor] = useState(false);
   const [detailId, setDetailId] = useState(null);
@@ -244,13 +244,90 @@ export default function SetoranPage() {
   const semuaRt = scopeOf(user, "setoran.read") === "ALL";
   const pilihRtSetor = scopeOf(user, "setoran.create") === "ALL";
 
+  // ── Filter: periode (bulan berjalan default) + status + wilayah — pola sama Keuangan/Tagihan ──
+  const BULAN_NAMES = {
+    "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+    "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
+    "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
+  };
+  const getCurrentYm = () => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
+  };
+  const formatYmPanjang = (ym) => {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    const [y, m] = ym.split("-");
+    return `${BULAN_NAMES[m] || m} ${y}`;
+  };
+  const monthDiffInclusive = (dari, sampai) => {
+    const [y1, m1] = dari.split("-").map(Number);
+    const [y2, m2] = sampai.split("-").map(Number);
+    return (y2 - y1) * 12 + (m2 - m1) + 1;
+  };
+
+  const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
+  const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
+  const [filterStatus, setFilterStatus] = useState("SEMUA");
+  const [filterRt, setFilterRt] = useState("SEMUA");
+
+  const [draftPeriodeDari, setDraftPeriodeDari] = useState(getCurrentYm);
+  const [draftPeriodeSampai, setDraftPeriodeSampai] = useState(getCurrentYm);
+  const [draftFilterStatus, setDraftFilterStatus] = useState("SEMUA");
+  const [draftFilterRt, setDraftFilterRt] = useState("SEMUA");
+
+  const [dari, sampai] = periodeDari > periodeSampai
+    ? [periodeSampai, periodeDari]
+    : [periodeDari, periodeSampai];
+  const rangeError = monthDiffInclusive(dari, sampai) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
+
+  const [draftDariN, draftSampaiN] = draftPeriodeDari > draftPeriodeSampai
+    ? [draftPeriodeSampai, draftPeriodeDari]
+    : [draftPeriodeDari, draftPeriodeSampai];
+  const draftRangeError = draftPeriodeDari && draftPeriodeSampai &&
+    monthDiffInclusive(draftDariN, draftSampaiN) > 12
+    ? "Rentang periode maksimal 12 bulan."
+    : "";
+
+  const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
+  const periodeLabel = periodeDari === periodeSampai
+    ? formatYmPanjang(periodeDari)
+    : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+
+  const handleFilterOpen = () => {
+    setDraftPeriodeDari(periodeDari);
+    setDraftPeriodeSampai(periodeSampai);
+    setDraftFilterStatus(filterStatus);
+    setDraftFilterRt(filterRt);
+  };
+  const handleFilterApply = () => {
+    if (draftRangeError) return;
+    setPeriodeDari(draftPeriodeDari);
+    setPeriodeSampai(draftPeriodeSampai);
+    setFilterStatus(draftFilterStatus);
+    setFilterRt(draftFilterRt);
+  };
+  const handleFilterReset = () => {
+    const cur = getCurrentYm();
+    setPeriodeDari(cur);
+    setPeriodeSampai(cur);
+    setFilterStatus("SEMUA");
+    setDraftPeriodeDari(cur);
+    setDraftPeriodeSampai(cur);
+    setDraftFilterStatus("SEMUA");
+    setFilterRt("SEMUA");
+    setDraftFilterRt("SEMUA");
+  };
+
   const load = useCallback(async () => {
     if (!user) return;
+    if (rangeError) return;
     setIsLoading(true);
     try {
       const [list, pratinjau] = await Promise.all([
         can(user, "setoran.read")
-          ? setoranApi.getAll({ status: filterStatus, rt: filterRt })
+          ? setoranApi.getAll({ status: filterStatus, rt: filterRt, dari, sampai })
           : Promise.resolve({ setoran: [], summary: null }),
         bolehSetor ? setoranApi.getSiapSetor({ rt: pilihRtSetor ? siapRt : undefined }) : Promise.resolve(null),
       ]);
@@ -261,7 +338,7 @@ export default function SetoranPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, filterStatus, filterRt, siapRt, bolehSetor, pilihRtSetor]);
+  }, [user, filterStatus, filterRt, dari, sampai, rangeError, siapRt, bolehSetor, pilihRtSetor]);
 
   useEffect(() => {
     load();
@@ -269,6 +346,8 @@ export default function SetoranPage() {
 
   const summary = data.summary;
   const list = useMemo(() => data.setoran ?? [], [data]);
+
+  const { page, totalPages, paginatedItems: listPage, prev, next } = usePagination(list, [list]);
 
   if (!ready || !user) return null;
 
@@ -337,27 +416,70 @@ export default function SetoranPage() {
             </button>
           </div>
         )}
-        <div className="list-toolbar-row">
-          <select className="ipl-select ipl-select-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-            <option value="SEMUA">Semua Status</option>
-            <option value="MENUNGGU_KONFIRMASI">Menunggu Konfirmasi</option>
-            <option value="DIKONFIRMASI">Dikonfirmasi</option>
-            <option value="DITOLAK">Ditolak</option>
-          </select>
-          {semuaRt && (
-            <select className="ipl-select ipl-select-sm" value={filterRt} onChange={(e) => setFilterRt(e.target.value)}>
-              <option value="SEMUA">Semua RT</option>
-              {["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => (
-                <option key={rt} value={rt}>{areaLabel(rt)}</option>
-              ))}
-            </select>
-          )}
+        <div className="list-toolbar-row" style={{ justifyContent: "flex-end", marginLeft: "auto" }}>
+          <FilterPopover
+            active={!isDefaultPeriode || filterStatus !== "SEMUA" || filterRt !== "SEMUA"}
+            onOpen={handleFilterOpen}
+            onApply={handleFilterApply}
+            onReset={handleFilterReset}
+            applyDisabled={!!draftRangeError}
+          >
+            <FilterField label="Periode Dari">
+              <input
+                type="month"
+                value={draftPeriodeDari}
+                onChange={(e) => e.target.value && setDraftPeriodeDari(e.target.value)}
+                className="ipl-input"
+              />
+            </FilterField>
+            <FilterField label="Periode Sampai">
+              <input
+                type="month"
+                value={draftPeriodeSampai}
+                onChange={(e) => e.target.value && setDraftPeriodeSampai(e.target.value)}
+                className="ipl-input"
+              />
+            </FilterField>
+            {draftRangeError && (
+              <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftRangeError}</p>
+            )}
+            <FilterField label="Status">
+              <select
+                className="ipl-select ipl-select-sm"
+                value={draftFilterStatus}
+                onChange={(e) => setDraftFilterStatus(e.target.value)}
+              >
+                <option value="SEMUA">Semua Status</option>
+                <option value="MENUNGGU_KONFIRMASI">Menunggu Konfirmasi</option>
+                <option value="DIKONFIRMASI">Dikonfirmasi</option>
+                <option value="DITOLAK">Ditolak</option>
+              </select>
+            </FilterField>
+            {semuaRt && (
+              <FilterField label="Wilayah">
+                <select
+                  className="ipl-select ipl-select-sm"
+                  value={draftFilterRt}
+                  onChange={(e) => setDraftFilterRt(e.target.value)}
+                >
+                  <option value="SEMUA">Semua Wilayah</option>
+                  {["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => (
+                    <option key={rt} value={rt}>{areaLabel(rt)}</option>
+                  ))}
+                </select>
+              </FilterField>
+            )}
+          </FilterPopover>
         </div>
       </div>
 
+      {rangeError && (
+        <p style={{ color: "#dc2626", fontSize: 13, margin: "-8px 0 0" }}>{rangeError}</p>
+      )}
+
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
-          <span className="ipl-table-title">Riwayat Setoran</span>
+          <span className="ipl-table-title">Riwayat Setoran — {rangeError ? "—" : periodeLabel}</span>
           <span className="ipl-table-count">{list.length} data</span>
         </div>
 
@@ -369,6 +491,7 @@ export default function SetoranPage() {
             <p>Belum ada setoran.</p>
           </div>
         ) : (
+          <>
           <div className="ipl-table-wrapper">
             <table className="ipl-table">
               <thead>
@@ -383,7 +506,7 @@ export default function SetoranPage() {
                 </tr>
               </thead>
               <tbody>
-                {list.map((s) => (
+                {listPage.map((s) => (
                   <tr key={s.id}>
                     <td>{tanggal(s.createDate)}</td>
                     <td><span className="rt-badge">{areaLabel(s.area)}</span></td>
@@ -414,6 +537,8 @@ export default function SetoranPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} totalPages={totalPages} total={list.length} onPrev={prev} onNext={next} />
+          </>
         )}
       </div>
 

@@ -23,6 +23,8 @@ import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import Pagination from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
 import ProtectedImage from "@/components/ui/ProtectedImage";
 
@@ -260,25 +262,32 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
   );
 }
 
-// ── Rekap per RT (tampilan RW): terkumpul & sudah disetor tiap RT ─────────────
-function RekapRtPanel({ dari, sampai, refreshKey }) {
+// ── Rekap per RT (tampilan RW): tracking per RT, ikut filter aktif (periode/status/RT, tanpa search) ──
+function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
   const [rekap, setRekap] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     iplApi
-      .getRekapRt({ dari, sampai })
+      .getRekapRt({ dari, sampai, status, rt })
       .then((r) => { if (!cancelled) setRekap(r); })
       .catch(() => { if (!cancelled) setRekap(null); });
     return () => { cancelled = true; };
-  }, [dari, sampai, refreshKey]);
+  }, [dari, sampai, status, rt, refreshKey]);
 
   if (!rekap) return null;
+
+  const formatPeriode = (ym) => {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    const [y, m] = ym.split("-");
+    return `${BULAN_NAMES[m] || m} ${y}`;
+  };
+  const periodeLabel = dari === sampai ? formatPeriode(dari) : `${formatPeriode(dari)} – ${formatPeriode(sampai)}`;
 
   return (
     <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
       <div className="ipl-table-header">
-        <span className="ipl-table-title">Rekap per RT</span>
+        <span className="ipl-table-title">Rekap per RT — {periodeLabel}</span>
         <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
       </div>
       <div className="ipl-table-wrapper">
@@ -308,14 +317,6 @@ function RekapRtPanel({ dari, sampai, refreshKey }) {
                 </td>
               </tr>
             ))}
-            <tr className="ipl-total-row">
-              <td><strong>Total</strong></td>
-              <td><strong>{rekap.total.lunas} / {rekap.total.totalTagihan}</strong></td>
-              <td className="ipl-nominal"><strong>{formatRupiah(rekap.total.terkumpulIpl)}</strong></td>
-              <td><strong>{formatRupiah(rekap.total.terkumpulKas)}</strong></td>
-              <td><strong>{formatRupiah(rekap.total.sudahDisetor)}</strong></td>
-              <td><strong>{formatRupiah(rekap.total.belumDisetor)}</strong></td>
-            </tr>
           </tbody>
         </table>
       </div>
@@ -557,6 +558,8 @@ function AdminIuranView({ user }) {
     loadData();
   }, [loadData]);
 
+  const { page, totalPages, paginatedItems: tagihanPage, prev, next } = usePagination(tagihan, [tagihan]);
+
   // Search debounce
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400);
@@ -699,8 +702,8 @@ function AdminIuranView({ user }) {
         </div>
       </div>
 
-      {/* Tampilan RW: rekap terkumpul & disetor per RT */}
-      {semuaRt && !rangeError && <RekapRtPanel dari={dari} sampai={sampai} refreshKey={refreshKey} />}
+      {/* Tampilan RW: rekap terkumpul & disetor per RT — ikut filter aktif (tanpa search) */}
+      {semuaRt && !rangeError && <RekapRtPanel dari={dari} sampai={sampai} status={filterStatus} rt={filterRt} refreshKey={refreshKey} />}
 
       {/* ── Table ── */}
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
@@ -722,6 +725,7 @@ function AdminIuranView({ user }) {
             <p>Belum ada tagihan untuk periode ini.</p>
           </div>
         ) : (
+          <>
           <div className="ipl-table-wrapper">
             <table className="ipl-table">
               <thead>
@@ -736,7 +740,7 @@ function AdminIuranView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {tagihan.map((t) => {
+                {tagihanPage.map((t) => {
                   const pembayaran = t.pembayaran?.[0];
                   const penghuniPengurus = (t.rumah?.penghuni?.role?.level ?? 3) < 3;
                   const bisaKonfirmasiBaris = bolehKonfirmasi || (bolehKonfirmasiPengurus && penghuniPengurus);
@@ -799,6 +803,8 @@ function AdminIuranView({ user }) {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} totalPages={totalPages} total={tagihan.length} onPrev={prev} onNext={next} />
+          </>
         )}
       </div>
 
@@ -916,7 +922,8 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
   );
 }
 
-function WargaIuranView({ user }) {
+// Diekspor agar dipakai ulang oleh route /kelola-ipl/tagihan-saya tanpa duplikasi kode.
+export function WargaIuranView({ user }) {
   const formatYmPanjang = (ym) => {
     if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
     const [y, m] = ym.split("-");
@@ -1100,6 +1107,11 @@ function WargaIuranView({ user }) {
 
   // Label periode untuk hero & tabel (mengikuti filter range yang dipilih)
   const heroLabel = periodeLabel;
+
+  const { page: pageRiwayat, totalPages: totalPagesRiwayat, paginatedItems: riwayatPage, prev: prevRiwayat, next: nextRiwayat } = usePagination(
+    displayData,
+    [selectedRumahId, search, tagihanGabungan],
+  );
 
   const modalRumah = useMemo(() => {
     if (!modalIpl) return null;
@@ -1292,7 +1304,7 @@ function WargaIuranView({ user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayData.map((ipl) => (
+                  {riwayatPage.map((ipl) => (
                     <tr key={ipl.id}>
                       {rumahList.length > 1 && selectedRumahId === "semua" && (
                         <td>{ipl.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl.idRumah}`}</td>
@@ -1331,7 +1343,7 @@ function WargaIuranView({ user }) {
             </div>
 
             <div className="iuran-grid">
-              {displayData.map((ipl) => (
+              {riwayatPage.map((ipl) => (
                 <div key={ipl.id} className="iuran-grid-card">
                   <h3 className="iuran-grid-title">
                     {getMonthLabel(ipl.bulanPeriode, ipl.tahunPeriode)}
@@ -1368,6 +1380,7 @@ function WargaIuranView({ user }) {
                 </div>
               ))}
             </div>
+            <Pagination page={pageRiwayat} totalPages={totalPagesRiwayat} total={displayData.length} onPrev={prevRiwayat} onNext={nextRiwayat} />
           </>
         )}
       </section>
@@ -1395,45 +1408,15 @@ function WargaIuranView({ user }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+// Halaman ini murni tampilan kerja bendahara (Tagihan Warga). Tagihan pribadi
+// pengurus tinggal di route /kelola-ipl/tagihan-saya; warga biasa tetap
+// melihat tagihan sendiri di sini sebagai fallback (redirect /dashboard/iuran).
 export default function IuranPage() {
   const { user, ready } = useUser();
-  const [activeView, setActiveView] = useState("warga");
 
   if (!ready || !user) return null;
 
-  // Tampilan ditentukan permission, bukan roleLevel: pengurus yang juga punya rumah sendiri
-  // (ipl.bayar) dapat tab "Tagihan Saya" di samping "Tagihan Warga"; warga biasa (scope OWN
-  // di ipl.read) hanya dapat tampilan bayar tagihan sendiri tanpa bar tab.
   const bisaLihatWarga = can(user, "ipl.read") && scopeOf(user, "ipl.read") !== "OWN";
-  const bisaBayarSendiri = can(user, "ipl.bayar");
-
-  if (bisaLihatWarga && bisaBayarSendiri) {
-    return (
-      <div className="page-stack">
-        <div className="db-section-toggle" role="tablist" aria-label="Tampilan Tagihan IPL">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === "warga"}
-            className={`db-toggle-btn ${activeView === "warga" ? "is-active" : ""}`}
-            onClick={() => setActiveView("warga")}
-          >
-            Tagihan Warga
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === "saya"}
-            className={`db-toggle-btn ${activeView === "saya" ? "is-active" : ""}`}
-            onClick={() => setActiveView("saya")}
-          >
-            Tagihan Saya
-          </button>
-        </div>
-        {activeView === "warga" ? <AdminIuranView user={user} /> : <WargaIuranView user={user} />}
-      </div>
-    );
-  }
 
   if (bisaLihatWarga) return <AdminIuranView user={user} />;
   return <WargaIuranView user={user} />;

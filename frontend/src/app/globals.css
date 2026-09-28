@@ -1394,6 +1394,64 @@ select {
   transform: rotate(180deg);
 }
 
+/* ── Export split-button (Riwayat Kas): tombol aksi + menu pilihan format ── */
+.export-split {
+  position: relative;
+  display: inline-flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.export-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  min-width: 230px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  animation: dropdown-pop 0.15s ease-out;
+}
+
+.export-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.export-menu-item:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.export-menu-item:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.export-menu-item strong {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.export-menu-item span {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
 @keyframes dropdown-pop {
   from { opacity: 0; transform: translateY(-6px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -1421,8 +1479,7 @@ select {
 
 .filter-popover-field {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: column;  gap: 6px;
 }
 
 .filter-popover-field label {

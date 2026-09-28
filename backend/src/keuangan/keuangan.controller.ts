@@ -11,10 +11,12 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { KeuanganService } from './keuangan.service';
 import { CreateKasDto } from './dto/create-kas.dto';
+import { ExportKasDto } from './dto/export-kas.dto';
 import { UpdateKasDto } from './dto/update-kas.dto';
 import { keuanganMulterOptions } from './keuangan.multer';
 import { Access, RequirePermission } from '../auth/permission.decorators';
@@ -63,11 +65,20 @@ export class KeuanganController {
     return this.keuanganService.findAll(ctx, { dari, sampai, tipe, kategori, search, area });
   }
 
-  /** GET /keuangan/:id/bukti — unduh bukti file transaksi (butuh login + scope area) */
-  @Get(':id/bukti')
+  /** GET /keuangan/export — Unduh Riwayat Kas (CSV/XLSX + saldo berjalan). Wajib di atas ':id'. */
+  @Get('export')
   @RequirePermission('keuangan', 'read')
-  async bukti(@Access() ctx: AccessContext, @Param('id') id: string, @Res() res: Response) {
-    res.sendFile(await this.keuanganService.filePathBukti(ctx, id));
+  async export(
+    @Access() ctx: AccessContext,
+    @Query() dto: ExportKasDto,
+    @Res() res: Response,
+  ) {
+    const file = await this.keuanganService.exportRiwayat(ctx, dto);
+    res.set({
+      'Content-Type': file.contentType,
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+    });
+    res.send(file.buffer);
   }
 
   /** GET /keuangan/:id — Detail satu transaksi */

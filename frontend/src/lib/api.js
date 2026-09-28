@@ -258,6 +258,7 @@ export const rbacApi = {
 };
 
 export const pengurusApi = {
+  getPublik: () => request("/pengurus/publik"),
   getSlots: () => request("/pengurus"),
   getKandidat: (area) => request(`/pengurus/kandidat${qs({ area })}`),
   tetapkan: (payload) => request("/pengurus/tetapkan", json("POST", payload)),

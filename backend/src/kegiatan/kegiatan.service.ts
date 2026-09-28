@@ -132,19 +132,20 @@ export class KegiatanService {
     });
   }
 
-  /** Publik (landing): portofolio cluster selama 5 tahun terakhir, dikelompokkan per tahun. */
+  /** Publik (landing): portofolio cluster 5 tahun ke depan, dikelompokkan per tahun. */
   async portofolio() {
+    const sekarang = new Date();
     const batas = new Date();
-    batas.setFullYear(batas.getFullYear() - 5);
+    batas.setFullYear(batas.getFullYear() + 5);
     const rows = await this.prisma.kegiatan.findMany({
       where: {
         isDelete: false,
         status: 'active',
         tampilDiLanding: true,
         ...tampilKeSemua,
-        tanggalAcara: { gte: batas },
+        tanggalAcara: { gte: sekarang, lte: batas },
       },
-      orderBy: { tanggalAcara: 'desc' },
+      orderBy: { tanggalAcara: 'asc' },
       select: RINGKAS,
     });
 
@@ -156,7 +157,7 @@ export class KegiatanService {
     return {
       total: rows.length,
       tahun: [...perTahun.entries()]
-        .sort((a, b) => b[0] - a[0])
+        .sort((a, b) => a[0] - b[0])
         .map(([tahun, kegiatan]) => ({ tahun, kegiatan })),
     };
   }

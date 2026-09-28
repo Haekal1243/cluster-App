@@ -5,7 +5,7 @@ import { API_BASE_URL } from "@/lib/api";
 
 export const metadata = {
   title: "Portofolio Kegiatan — Cluster Topaz",
-  description: "Rekam jejak kegiatan warga RW 21 Cluster Topaz selama 5 tahun terakhir.",
+  description: "Rencana dan agenda kegiatan warga RW 21 Cluster Topaz untuk 5 tahun ke depan.",
 };
 
 async function getPortofolio() {
@@ -40,10 +40,10 @@ export default async function PortofolioPage() {
             Portofolio Cluster
           </p>
           <h1 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(26px,3.4vw,40px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em", margin: 0 }}>
-            Kegiatan Warga RW 21, 5 Tahun Terakhir
+            Kegiatan Warga RW 21, 5 Tahun ke Depan
           </h1>
           <p style={{ fontSize: 15, color: "#64748B", maxWidth: 640, lineHeight: 1.7, marginTop: 12 }}>
-            Rekam jejak kegiatan yang diselenggarakan bersama warga Cluster Topaz, dari tahun ke tahun.
+            Rencana dan agenda kegiatan yang akan diselenggarakan bersama warga Cluster Topaz, dari tahun ke tahun.
             {total > 0 ? ` Total ${total} kegiatan terdokumentasi.` : ""}
           </p>
 
@@ -61,7 +61,7 @@ export default async function PortofolioPage() {
                     </div>
                   </div>
                   <div style={{ borderLeft: "2px solid #CCFBF1", paddingLeft: 24 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
+                    <div className="lp-porto-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20 }}>
                       {kegiatan.map((k) => {
                         const img = gambar(k.gambarUrl);
                         return (

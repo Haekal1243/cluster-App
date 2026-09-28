@@ -2,13 +2,62 @@
 
 import { useState, useEffect } from "react";
 import Reveal from "./Reveal";
-import { pengurus } from "@/lib/landing-data";
+import { pengurus as pengurusFallback } from "@/lib/landing-data";
+import { pengurusApi } from "@/lib/api";
 
-const RADIUS = 220; 
-const CARD_H = 250;   
+const RADIUS = 220;
+const CARD_H = 250;
 
-export default function Pengurus({ items = pengurus }) {
+const WARNA_JABATAN = {
+  KETUA_RW: "#0D9488",
+  SEKRE_RW: "#1D4ED8",
+  BENDAHARA_RW: "#7C3AED",
+  KETUA_RT: "#B45309",
+};
+
+function inisialDari(jabatan) {
+  const huruf = jabatan
+    .split(" ")
+    .filter((kata) => kata && Number.isNaN(Number(kata)))
+    .map((kata) => kata[0])
+    .join("");
+  return (huruf || jabatan[0] || "?").slice(0, 2).toUpperCase();
+}
+
+/** Ubah hasil GET /pengurus/publik jadi bentuk yang dipakai kartu. */
+function petakanDariDb(slots) {
+  return slots.map((s) => ({
+    id: `${s.kode}-${s.area}`,
+    foto: null,
+    inisial: inisialDari(s.jabatan),
+    warna: WARNA_JABATAN[s.kode] ?? "#64748B",
+    jabatan: s.jabatan,
+    nama: s.nama ?? "Belum ditetapkan",
+    kontak: s.nama ? "Hubungi Sekretariat RW" : "—",
+  }));
+}
+
+export default function Pengurus({ items: itemsProp }) {
+  const [items, setItems] = useState(itemsProp ?? pengurusFallback);
   const [activeIdx, setActiveIdx] = useState(0);
+
+  /* Tarik susunan pengurus dari database; kalau gagal, tetap tampilkan data statis. */
+  useEffect(() => {
+    if (itemsProp) return;
+    let batal = false;
+    pengurusApi
+      .getPublik()
+      .then((data) => {
+        if (!batal && Array.isArray(data) && data.length) {
+          setItems(petakanDariDb(data));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      batal = true;
+    };
+  }, [itemsProp]);
+
   const total     = items.length;
   const angleStep = 360 / total;
 

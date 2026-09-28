@@ -36,6 +36,41 @@ export class PengurusService {
   }
 
   // ================================================================
+  // DATA PUBLIK — susunan pengurus untuk landing page (tanpa login)
+  // ================================================================
+
+  /** Ketua/Sekretaris/Bendahara RW + Ketua RT 01-04. Dipakai landing page, jadi tidak membawa kontak pribadi. */
+  async publik() {
+    const kodeRW = ['KETUA_RW', 'SEKRE_RW', 'BENDAHARA_RW'];
+    const roles = await this.prisma.role.findMany({
+      where: { kode: { in: [...kodeRW, 'KETUA_RT'] } },
+    });
+    const roleKetuaRt = roles.find((r) => r.kode === 'KETUA_RT');
+
+    const slots = [
+      ...kodeRW
+        .map((kode) => roles.find((r) => r.kode === kode))
+        .filter((role): role is NonNullable<typeof role> => !!role)
+        .map((role) => ({ role, area: 'RW' as Area, jabatan: role.nama })),
+      ...(roleKetuaRt
+        ? AREA_RT.map((area) => ({ role: roleKetuaRt, area, jabatan: `Ketua ${label(area)}` }))
+        : []),
+    ];
+
+    const pemegang = await this.prisma.user.findMany({
+      where: { OR: slots.map((s) => ({ roleId: s.role.id, area: s.area })) },
+      select: { namaUser: true, roleId: true, area: true },
+    });
+
+    return slots.map((s) => ({
+      kode: s.role.kode,
+      area: s.area,
+      jabatan: s.jabatan,
+      nama: pemegang.find((p) => p.roleId === s.role.id && p.area === s.area)?.namaUser ?? null,
+    }));
+  }
+
+  // ================================================================
   // DAFTAR JABATAN — tiap role RW/RT x area, beserta pemegangnya
   // ================================================================
 

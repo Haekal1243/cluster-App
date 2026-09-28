@@ -11,6 +11,9 @@ import { PermissionsService } from './permissions.service';
 
 export const SALT_ROUNDS = 10;
 
+/** Masa berlaku token bila "Ingat saya" dicentang; selain itu pakai JWT_EXPIRES_IN (default 1d). */
+const REMEMBER_EXPIRES_IN = '30d';
+
 const INVALID_CREDENTIALS_MSG = 'Nama pengguna atau kata sandi salah.';
 
 @Injectable()
@@ -22,7 +25,7 @@ export class AuthService {
     private audit: AuditService,
   ) {}
 
-  async login(identifier: string, password: string) {
+  async login(identifier: string, password: string, remember = false) {
     const id = identifier?.trim();
     if (!id || !password) throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
 
@@ -35,10 +38,10 @@ export class AuthService {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
 
-    const token = await this.jwtService.signAsync({
-      sub: user.id,
-      username: user.username,
-    });
+    const token = await this.jwtService.signAsync(
+      { sub: user.id, username: user.username },
+      remember ? { expiresIn: REMEMBER_EXPIRES_IN } : undefined,
+    );
 
     return {
       message: 'Login berhasil',

@@ -10,7 +10,7 @@ import Footer from "@/components/landing/Footer";
 import { API_BASE_URL } from "@/lib/api";
 
 export const metadata = {
-  title: "Portal Warga RW 21 — Cluster Topaz",
+  title: "Portal Warga RW 21 - Cluster Topaz",
   description:
     "Portal resmi administrasi warga RW 21 Cluster Topaz, Perumahan Permata Cimanggis, Kota Depok.",
 };

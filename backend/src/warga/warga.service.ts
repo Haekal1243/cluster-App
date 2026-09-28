@@ -11,6 +11,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
 import { AuditService } from '../audit/audit.service';
+import { FileService } from '../common/file/file.service';
 import { SALT_ROUNDS } from '../auth/auth.service';
 import { AccessContext } from '../auth/auth.types';
 import { resolvePeriode } from '../common/periode.helper';
@@ -88,6 +89,7 @@ export class WargaService {
     private prisma: PrismaService,
     private notifikasiService: NotifikasiService,
     private audit: AuditService,
+    private files: FileService,
   ) {}
 
   // ================================================================
@@ -271,9 +273,9 @@ export class WargaService {
   /** Warga mengirim bukti pembayaran untuk tagihan rumahnya sendiri. */
   async uploadBuktiPembayaran(
     ctx: AccessContext,
-    data: { idIpl: number; nominal?: number; buktiTransaksi: string },
+    data: { idIpl: number; nominal?: number; bukti?: Express.Multer.File },
   ) {
-    if (!data.buktiTransaksi) throw new BadRequestException('Bukti pembayaran wajib diunggah.');
+    if (!data.bukti) throw new BadRequestException('Bukti pembayaran wajib diunggah.');
 
     const ipl = await this.prisma.ipl.findUnique({
       where: { id: data.idIpl },
@@ -295,21 +297,28 @@ export class WargaService {
       throw new BadRequestException('Bukti pembayaran untuk tagihan ini sedang menunggu konfirmasi.');
     }
 
-    const pembayaran = await this.prisma.$transaction(async (tx) => {
-      const p = await tx.pembayaranIpl.create({
-        data: {
-          idUser: ctx.user.sub,
-          idIpl: data.idIpl,
-          nominal: data.nominal && data.nominal > 0 ? data.nominal : totalTagihan(ipl),
-          buktiTransaksi: data.buktiTransaksi,
-        },
+    const buktiId = await this.files.simpan(data.bukti);
+    const pembayaran = await this.prisma
+      .$transaction(async (tx) => {
+        const p = await tx.pembayaranIpl.create({
+          data: {
+            idUser: ctx.user.sub,
+            idIpl: data.idIpl,
+            nominal: data.nominal && data.nominal > 0 ? data.nominal : totalTagihan(ipl),
+            buktiTransaksi: buktiId,
+          },
+        });
+        await tx.ipl.update({
+          where: { id: data.idIpl },
+          data: { statusPembayaran: 'MENUNGGU_KONFIRMASI' },
+        });
+        return p;
+      })
+      .catch(async (err) => {
+        // Pembayaran gagal dicatat: jangan tinggalkan bukti yatim di database.
+        await this.files.hapus(buktiId);
+        throw err;
       });
-      await tx.ipl.update({
-        where: { id: data.idIpl },
-        data: { statusPembayaran: 'MENUNGGU_KONFIRMASI' },
-      });
-      return p;
-    });
 
     // Kalau yang bayar pengurus, notifikasi ke pemegang ipl.konfirmasi_pengurus (mis.
     // Ketua RT untuk pembayaran Bendahara RT), bukan ke pemegang ipl.konfirmasi biasa —

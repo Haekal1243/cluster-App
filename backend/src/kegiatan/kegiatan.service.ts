@@ -1,6 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { Area, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateKegiatanDto } from './dto/create-kegiatan.dto';
@@ -10,6 +8,7 @@ import { KeputusanPengajuanDto } from '../common/dto/pengajuan.dto';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
 import { PermissionsService } from '../auth/permissions.service';
 import { AuditService } from '../audit/audit.service';
+import { FileService } from '../common/file/file.service';
 import { AccessContext } from '../auth/auth.types';
 import { areaFilter, assertInArea } from '../common/scope.helper';
 import {
@@ -35,6 +34,7 @@ export class KegiatanService {
     private notifikasiService: NotifikasiService,
     private permissions: PermissionsService,
     private audit: AuditService,
+    private files: FileService,
   ) {}
 
   /** Apakah user ini berhak menyetujui pengajuan (menentukan boleh atur portofolio & durasi tampil). */
@@ -54,13 +54,14 @@ export class KegiatanService {
     const area: Area = areaFilter(ctx) ?? dto.area ?? ctx.user.area ?? 'RW';
     const approver = await this.bolehApprove(ctx);
 
+    const gambarUrl = await this.files.simpan(file, { publik: true });
     const data = await this.prisma.kegiatan.create({
       data: {
         judul: dto.judul,
         deskripsi: dto.deskripsi,
         tanggalAcara: new Date(dto.tanggalAcara),
         status: dto.status,
-        gambarUrl: file.filename,
+        gambarUrl,
         area,
         createBy: ctx.user.nama,
         ...(approver && {
@@ -186,9 +187,7 @@ export class KegiatanService {
     const existing = await this.findForWrite(ctx, id);
     const approver = await this.bolehApprove(ctx);
 
-    if (file && existing.gambarUrl) {
-      this.deleteFile(existing.gambarUrl);
-    }
+    const gambarBaru = file ? await this.files.simpan(file, { publik: true }) : undefined;
 
     const data = await this.prisma.kegiatan.update({
       where: { id },
@@ -197,7 +196,7 @@ export class KegiatanService {
         deskripsi: dto.deskripsi,
         tanggalAcara: dto.tanggalAcara ? new Date(dto.tanggalAcara) : undefined,
         status: dto.status,
-        gambarUrl: file?.filename,
+        gambarUrl: gambarBaru,
         updateBy: ctx.user.nama,
         updatedAt: new Date(),
         ...(approver && {
@@ -212,6 +211,8 @@ export class KegiatanService {
           }),
       },
     });
+
+    if (gambarBaru) await this.files.hapus(existing.gambarUrl);
 
     return { message: 'Kegiatan berhasil diperbarui', data };
   }
@@ -337,12 +338,5 @@ export class KegiatanService {
       );
     }
     return { message: 'Pengajuan disetujui. Kegiatan tampil ke seluruh warga.', data };
-  }
-
-  private deleteFile(filename: string) {
-    const filePath = path.join(process.cwd(), 'uploads', 'kegiatan', filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlink(filePath, () => undefined);
-    }
   }
 }

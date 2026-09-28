@@ -21,6 +21,7 @@ export function clearSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
   sessionStorage.removeItem(TOKEN_KEY);
 }
 
@@ -29,19 +30,28 @@ export function clearSession() {
 // disimpan di sini hanya salinan untuk menyusun menu dan tombol; setiap aksi
 // tetap divalidasi ulang oleh backend.
 
+// Data user mengikuti token: "Ingat saya" -> localStorage (bertahan), tidak -> sessionStorage
+// (hilang saat tab ditutup), supaya profil orang sebelumnya tidak tertinggal di komputer bersama.
 export function getUser() {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(USER_KEY);
+    const raw = sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-export function saveUser(user) {
+/**
+ * `remember` diisi saat login. Saat menyegarkan data (tanpa argumen) user tetap disimpan
+ * di storage tempat ia berada sekarang.
+ */
+export function saveUser(user, remember) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  const pakaiSession = remember === undefined ? !!sessionStorage.getItem(USER_KEY) : !remember;
+  const [tujuan, lain] = pakaiSession ? [sessionStorage, localStorage] : [localStorage, sessionStorage];
+  lain.removeItem(USER_KEY);
+  tujuan.setItem(USER_KEY, JSON.stringify(user));
   // Kabari komponen lain (sidebar, header) di tab ini bahwa user berubah.
   window.dispatchEvent(new Event("user-updated"));
 }

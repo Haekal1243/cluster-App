@@ -140,7 +140,7 @@ export class WargaController {
     return this.wargaService.uploadBuktiPembayaran(ctx, {
       idIpl: +body.idIpl,
       nominal: body.nominal ? +body.nominal : undefined,
-      buktiTransaksi: file?.filename ?? '',
+      bukti: file,
     });
   }
 

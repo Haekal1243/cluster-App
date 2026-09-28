@@ -176,6 +176,26 @@ model AuditLog {
 }
 
 // ==========================================
+// FILE UPLOAD — isi file disimpan di database (bukan folder uploads/).
+// Kolom lain (gambarUrl, buktiTransaksi, buktiFile, fileNotulen, filePengumuman, fotoUrl, foto)
+// tetap String tetapi kini berisi `id` baris ini.
+// `publik`: true = boleh diambil siapa saja lewat GET /files/:id (foto/gambar yang tampil di
+// halaman publik). false = hanya lewat endpoint modul terkait yang mengecek login & wilayah.
+// ==========================================
+
+model File {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  namaAsli  String   @map("nama_asli")
+  mimeType  String   @map("mime_type")
+  ukuran    Int
+  publik    Boolean  @default(false)
+  data      Bytes    @db.LongBlob
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("tb_File")
+}
+
+// ==========================================
 // SESUAI PDM: TABEL MASTER DATA
 // ==========================================
 
@@ -186,6 +206,8 @@ model User {
   email     String?  @unique // opsional, banyak warga tidak punya email
   password  String
   noTelp    String?  @map("no_telp")
+  foto      String?  // id di tb_File; foto pengurus untuk landing page
+  kontakPublik String? @map("kontak_publik") // nomor WhatsApp khusus pengurus (format 62...) untuk landing page; null = tidak ditampilkan (opt-in)
   roleId    Int      @map("role_id")
   area      Area?    // wilayah kerja; null untuk ADMIN
   wajibGantiPassword Boolean @default(false) @map("wajib_ganti_password")

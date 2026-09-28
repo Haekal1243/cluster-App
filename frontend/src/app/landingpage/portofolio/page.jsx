@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, fileUrl } from "@/lib/api";
 
 export const metadata = {
   title: "Portofolio Kegiatan — Cluster Topaz",
@@ -21,7 +21,7 @@ async function getPortofolio() {
 const tanggal = (v) =>
   v ? new Date(v).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }) : "-";
 
-const gambar = (f) => (f ? `${API_BASE_URL}/uploads/kegiatan/${f}` : null);
+const gambar = fileUrl;
 
 export default async function PortofolioPage() {
   const { total, tahun } = await getPortofolio();

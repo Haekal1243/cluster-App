@@ -1,34 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
-import * as fs from 'node:fs';
-import { diskStorage } from 'multer';
-import * as path from 'node:path';
+import { buatMulterOptions } from '../common/file/file.multer';
 
-const uploadDir = path.join(process.cwd(), 'uploads', 'kegiatan');
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const allowedExtensions = /\.(jpg|jpeg|png)$/i;
-
-export const kegiatanMulterOptions = {
-  storage: diskStorage({
-    destination: uploadDir,
-    filename: (_req, file, callback) => {
-      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      callback(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
-    },
-  }),
-  fileFilter: (_req: any, file: Express.Multer.File, callback: any) => {
-    if (!allowedExtensions.test(path.extname(file.originalname))) {
-      return callback(
-        new BadRequestException(
-          'Tipe file tidak didukung. Gunakan JPG atau PNG.',
-        ),
-        false,
-      );
-    }
-    callback(null, true);
-  },
-  limits: { fileSize: 10 * 1024 * 1024 },
-};
+export const kegiatanMulterOptions = buatMulterOptions(
+  /\.(jpg|jpeg|png)$/i,
+  'Tipe file tidak didukung. Gunakan JPG atau PNG.',
+  10,
+);

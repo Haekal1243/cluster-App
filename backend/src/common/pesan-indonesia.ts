@@ -21,6 +21,7 @@ const LABEL: Record<string, string> = {
   nama: 'Nama',
   no_hp: 'No. HP',
   noTelp: 'No. HP',
+  kontak: 'Nomor kontak',
   rt: 'RT',
   blokRumah: 'Blok rumah',
   statusRumah: 'Status rumah',

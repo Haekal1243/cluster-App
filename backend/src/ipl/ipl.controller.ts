@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { IplService } from './ipl.service';
+import { FileService } from '../common/file/file.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
 import { UpdateIplDto } from './dto/update-ipl.dto';
 import { KonfirmasiIplDto } from './dto/konfirmasi-ipl.dto';
@@ -20,7 +21,10 @@ import type { AccessContext, AuthUser } from '../auth/auth.types';
 
 @Controller('ipl')
 export class IplController {
-  constructor(private readonly iplService: IplService) {}
+  constructor(
+    private readonly iplService: IplService,
+    private readonly files: FileService,
+  ) {}
 
   /** POST /ipl/generate — Generate tagihan massal untuk rumah aktif di RT pembuat */
   @Post('generate')
@@ -78,7 +82,7 @@ export class IplController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
-    res.sendFile(await this.iplService.filePathBukti(ctx, id));
+    await this.files.kirim(res, await this.iplService.fileIdBukti(ctx, id));
   }
 
   /**

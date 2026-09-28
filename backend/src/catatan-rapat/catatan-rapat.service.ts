@@ -1,25 +1,28 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { Area, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { FileService } from '../common/file/file.service';
 import { AccessContext } from '../auth/auth.types';
 import { areaFilter, assertInArea } from '../common/scope.helper';
 import { CreateCatatanRapatDto, UpdateCatatanRapatDto } from './dto/catatan-rapat.dto';
 
 @Injectable()
 export class CatatanRapatService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private files: FileService,
+  ) {}
 
   async create(ctx: AccessContext, dto: CreateCatatanRapatDto, file?: Express.Multer.File) {
     const area: Area = areaFilter(ctx) ?? dto.area ?? ctx.user.area ?? 'RW';
 
+    const fileNotulen = file ? await this.files.simpan(file) : null;
     const data = await this.prisma.catatanRapat.create({
       data: {
         area,
         judul: dto.judul,
         isiNotulen: dto.isiNotulen,
-        fileNotulen: file?.filename ?? null,
+        fileNotulen,
         createBy: ctx.user.nama,
       },
     });
@@ -52,13 +55,11 @@ export class CatatanRapatService {
     return catatan;
   }
 
-  /** Path file notulen; dicek scope dulu, karena folder ini tidak disajikan sebagai file statis publik. */
-  async filePath(ctx: AccessContext, id: number) {
+  /** Id file notulen; dicek scope dulu, karena file ini tidak boleh diambil lewat GET /files/:id publik. */
+  async fileId(ctx: AccessContext, id: number) {
     const catatan = await this.findOne(ctx, id);
     if (!catatan.fileNotulen) throw new NotFoundException('Catatan rapat ini tidak memiliki file.');
-    const full = path.join(process.cwd(), 'uploads', 'catatan-rapat', catatan.fileNotulen);
-    if (!fs.existsSync(full)) throw new NotFoundException('File notulen tidak ditemukan.');
-    return full;
+    return catatan.fileNotulen;
   }
 
   private async findForWrite(ctx: AccessContext, id: number) {
@@ -75,7 +76,7 @@ export class CatatanRapatService {
     file?: Express.Multer.File,
   ) {
     const existing = await this.findForWrite(ctx, id);
-    if (file && existing.fileNotulen) this.deleteFile(existing.fileNotulen);
+    const fileBaru = file ? await this.files.simpan(file) : undefined;
 
     const scopeArea = areaFilter(ctx);
     const data = await this.prisma.catatanRapat.update({
@@ -83,13 +84,14 @@ export class CatatanRapatService {
       data: {
         judul: dto.judul,
         isiNotulen: dto.isiNotulen,
-        fileNotulen: file?.filename,
+        fileNotulen: fileBaru,
         // Area hanya bisa dipindah oleh scope ALL; pengurus tidak bisa memindah notulen ke area lain.
         ...(scopeArea === null && dto.area && { area: dto.area }),
         updateBy: ctx.user.nama,
         updateDate: new Date(),
       },
     });
+    if (fileBaru) await this.files.hapus(existing.fileNotulen);
     return { message: 'Catatan rapat berhasil diperbarui', data };
   }
 
@@ -100,12 +102,5 @@ export class CatatanRapatService {
       data: { isDelete: true, updateBy: ctx.user.nama, updateDate: new Date() },
     });
     return { message: 'Catatan rapat berhasil dihapus' };
-  }
-
-  private deleteFile(filename: string) {
-    const filePath = path.join(process.cwd(), 'uploads', 'catatan-rapat', filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlink(filePath, () => undefined);
-    }
   }
 }

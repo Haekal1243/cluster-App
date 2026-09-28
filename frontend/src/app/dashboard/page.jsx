@@ -467,8 +467,6 @@ function WargaDashboardView({ user }) {
   const [tagihanAllList, setTagihanAllList] = useState([]);
   const [kegiatan, setKegiatan] = useState([]);
   const [pengumuman, setPengumuman] = useState([]);
-  const [kegiatanScope, setKegiatanScope] = useState("aktif");
-  const [pengumumanScope, setPengumumanScope] = useState("aktif");
   const [loading, setLoading] = useState(true);
   const [selectedKegiatan, setSelectedKegiatan] = useState(null);
   const [selectedPengumuman, setSelectedPengumuman] = useState(null);
@@ -511,84 +509,37 @@ function WargaDashboardView({ user }) {
     fetchData();
   }, [user.id]);
 
-  // Kegiatan & Pengumuman dengan scope Aktif/Arsip independen — Task 3
-  // Filter periode tagihan TIDAK diteruskan ke sini; scope berbasis tanggalAcara / status
+  // Warga hanya melihat yang aktif: kegiatan yang belum lewat tanggalnya dan pengumuman
+  // berstatus aktif. Yang sudah lewat/dinonaktifkan tidak ditampilkan (tanpa tab arsip).
   useEffect(() => {
     let cancelled = false;
     async function loadKegiatan() {
-      try {
-        // coba pakai scope query, fallback ke getActive tanpa scope jika backend lama
-        let data = [];
-        try {
-          data = await (kegiatanScope === "aktif" ? kegiatanApi.getFeed() : kegiatanApi.getActive({ scope: kegiatanScope })).catch(() => null);
-          if (!Array.isArray(data)) data = await kegiatanApi.getActive().catch(() => []);
-        } catch {
-          data = await kegiatanApi.getActive().catch(() => []);
-        }
-        if (cancelled) return;
-        if (kegiatanScope === "aktif" && Array.isArray(data)) {
-          data = [...data].sort((a, b) => new Date(a.tanggalAcara) - new Date(b.tanggalAcara));
-        }
-        // Client-side filter sebagai safety net jika backend belum support scope
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const filtered = (data || []).filter((k) => {
-          const t = new Date(k.tanggalAcara);
-          if (Number.isNaN(t.getTime())) return kegiatanScope === "aktif";
-          return kegiatanScope === "aktif" ? t >= today : t < today;
-        });
-        // Jika backend sudah memfilter, filtered akan sama; jika belum, ini yang benar
-        // Untuk aktif, sort ascending (terdekat dulu); arsip desc
-        filtered.sort((a, b) => {
-          const da = new Date(a.tanggalAcara).getTime();
-          const db = new Date(b.tanggalAcara).getTime();
-          return kegiatanScope === "aktif" ? da - db : db - da;
-        });
-        // Jika backend belum support scope dan data hanya 5 aktif, arsip akan kosong — itu expected sampai backend diupdate
-        // Fallback: jika scope arsip dan filtered kosong tapi data ada, jangan tampilkan aktif sebagai arsip
-        setKegiatan(kegiatanScope === "aktif" ? (data || []) : filtered);
-        // Jika backend support, data sudah benar; override dengan filtered hanya jika backend ignore param (deteksi: semua tanggal >= today tapi scope arsip)
-        if (kegiatanScope === "arsip" && data && data.length > 0) {
-          const allFuture = data.every((k) => new Date(k.tanggalAcara) >= today);
-          if (allFuture && filtered.length === 0) setKegiatan([]);
-          else if (filtered.length !== data.length) setKegiatan(filtered);
-        }
-        if (kegiatanScope === "aktif" && data) {
-          // ensure aktif tidak menampilkan yang sudah lewat
-          const hasPast = data.some((k) => new Date(k.tanggalAcara) < today);
-          if (hasPast) setKegiatan(filtered);
-        }
-      } catch {}
+      let data = await kegiatanApi.getFeed().catch(() => null);
+      if (!Array.isArray(data)) data = await kegiatanApi.getActive().catch(() => []);
+      if (cancelled) return;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const akanDatang = (data || []).filter((k) => {
+        const t = new Date(k.tanggalAcara);
+        return Number.isNaN(t.getTime()) || t >= today;
+      });
+      akanDatang.sort((a, b) => new Date(a.tanggalAcara).getTime() - new Date(b.tanggalAcara).getTime());
+      setKegiatan(akanDatang);
     }
     loadKegiatan();
     return () => { cancelled = true; };
-  }, [kegiatanScope]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     async function loadPengumuman() {
-      try {
-        let data = [];
-        try {
-          data = await (pengumumanScope === "aktif" ? pengumumanApi.getFeed() : pengumumanApi.getActive({ scope: pengumumanScope })).catch(() => null);
-          if (!Array.isArray(data)) data = await pengumumanApi.getActive().catch(() => []);
-        } catch {
-          data = await pengumumanApi.getActive().catch(() => []);
-        }
-        if (cancelled) return;
-        // Client safety: aktif = status active, arsip = unactived atau isDelete (tapi getActive hanya return active)
-        // Jika backend belum support scope, arsip akan kosong
-        if (pengumumanScope === "arsip" && data && data.length > 0) {
-          const allActive = data.every((p) => (p.status || "active") === "active");
-          if (allActive) setPengumuman([]);
-          else setPengumuman(data);
-        } else {
-          setPengumuman(data || []);
-        }
-      } catch {}
+      let data = await pengumumanApi.getFeed().catch(() => null);
+      if (!Array.isArray(data)) data = await pengumumanApi.getActive().catch(() => []);
+      if (!cancelled) setPengumuman(data || []);
     }
     loadPengumuman();
     return () => { cancelled = true; };
-  }, [pengumumanScope]);
+  }, []);
 
   // ── Derived untuk hero & breakdown — sebelum early return agar hooks tidak berubah urutan
   const isBulanIni = (t) => t.bulanPeriode === bulanIni && t.tahunPeriode === tahunIni;
@@ -888,37 +839,17 @@ function WargaDashboardView({ user }) {
         </section>
       )}
 
-      {/* Kegiatan Cluster — Task 3: toggle Aktif/Arsip independen dari filter tagihan */}
+      {/* Kegiatan Cluster */}
       <section className="content-card">
         <div className="db-section-header">
           <CalendarDays size={17} />
           <h3>Kegiatan Cluster</h3>
-          <div className="db-section-toggle" role="tablist" aria-label="Filter kegiatan">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={kegiatanScope === "aktif"}
-              className={`db-toggle-btn ${kegiatanScope === "aktif" ? "is-active" : ""}`}
-              onClick={() => setKegiatanScope("aktif")}
-            >
-              Aktif
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={kegiatanScope === "arsip"}
-              className={`db-toggle-btn ${kegiatanScope === "arsip" ? "is-active" : ""}`}
-              onClick={() => setKegiatanScope("arsip")}
-            >
-              Arsip
-            </button>
-          </div>
         </div>
 
         {kegiatan.length === 0 ? (
           <div className="portal-empty-notice">
             <CalendarDays size={32} />
-            <p>{kegiatanScope === "aktif" ? "Belum ada kegiatan akan datang." : "Belum ada arsip kegiatan."}</p>
+            <p>Belum ada kegiatan akan datang.</p>
           </div>
         ) : (
           <div className="portal-kegiatan-grid">
@@ -956,35 +887,15 @@ function WargaDashboardView({ user }) {
         )}
       </section>
 
-      {/* Pengumuman — Task 3: toggle Aktif/Arsip independen */}
+      {/* Pengumuman */}
       <section className="content-card">
         <div className="db-section-header">
           <Megaphone size={17} />
           <h3>Pengumuman</h3>
-          <div className="db-section-toggle" role="tablist" aria-label="Filter pengumuman">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={pengumumanScope === "aktif"}
-              className={`db-toggle-btn ${pengumumanScope === "aktif" ? "is-active" : ""}`}
-              onClick={() => setPengumumanScope("aktif")}
-            >
-              Aktif
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={pengumumanScope === "arsip"}
-              className={`db-toggle-btn ${pengumumanScope === "arsip" ? "is-active" : ""}`}
-              onClick={() => setPengumumanScope("arsip")}
-            >
-              Arsip
-            </button>
-          </div>
         </div>
 
         {pengumuman.length === 0 ? (
-          <p className="portal-empty-text">{pengumumanScope === "aktif" ? "Belum ada pengumuman aktif saat ini." : "Belum ada arsip pengumuman."}</p>
+          <p className="portal-empty-text">Belum ada pengumuman aktif saat ini.</p>
         ) : (
           <div className="portal-card-list">
             {pengumuman.map((p) => (

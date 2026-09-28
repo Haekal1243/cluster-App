@@ -6,6 +6,7 @@ import {
 import { Area } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { FileService } from '../common/file/file.service';
 import { AuthUser } from '../auth/auth.types';
 import { LEVEL_ADMIN, LEVEL_WARGA } from '../common/helpers';
 import { AssignPengurusDto, VacatePengurusDto } from './rbac.dto';
@@ -25,6 +26,7 @@ export class PengurusService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private files: FileService,
   ) {}
 
   private async roleWarga() {
@@ -59,15 +61,20 @@ export class PengurusService {
 
     const pemegang = await this.prisma.user.findMany({
       where: { OR: slots.map((s) => ({ roleId: s.role.id, area: s.area })) },
-      select: { namaUser: true, roleId: true, area: true },
+      select: { namaUser: true, foto: true, kontakPublik: true, roleId: true, area: true },
     });
 
-    return slots.map((s) => ({
-      kode: s.role.kode,
-      area: s.area,
-      jabatan: s.jabatan,
-      nama: pemegang.find((p) => p.roleId === s.role.id && p.area === s.area)?.namaUser ?? null,
-    }));
+    return slots.map((s) => {
+      const p = pemegang.find((x) => x.roleId === s.role.id && x.area === s.area);
+      return {
+        kode: s.role.kode,
+        area: s.area,
+        jabatan: s.jabatan,
+        nama: p?.namaUser ?? null,
+        foto: p?.foto ?? null,
+        kontak: p?.kontakPublik ?? null,
+      };
+    });
   }
 
   // ================================================================
@@ -81,7 +88,7 @@ export class PengurusService {
     });
     const pemegang = await this.prisma.user.findMany({
       where: { roleId: { in: roles.map((r) => r.id) } },
-      select: { id: true, namaUser: true, username: true, noTelp: true, roleId: true, area: true },
+      select: { id: true, namaUser: true, username: true, noTelp: true, foto: true, kontakPublik: true, roleId: true, area: true },
     });
 
     return roles.flatMap((role) =>
@@ -112,6 +119,81 @@ export class PengurusService {
   }
 
   // ================================================================
+  // FOTO PENGURUS
+  // ================================================================
+
+  /** Pemegang jabatan RW/RT; warga biasa & admin tidak punya foto pengurus. */
+  private async pemegangJabatan(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, namaUser: true, foto: true, role: { select: { level: true } } },
+    });
+    if (!user) throw new NotFoundException('Pengurus tidak ditemukan.');
+    if (user.role.level === LEVEL_ADMIN || user.role.level === LEVEL_WARGA) {
+      throw new BadRequestException(`${user.namaUser} bukan pemegang jabatan pengurus.`);
+    }
+    return user;
+  }
+
+  async setFoto(actor: AuthUser, userId: number, file?: Express.Multer.File) {
+    if (!file) throw new BadRequestException('File foto wajib diunggah.');
+    const user = await this.pemegangJabatan(userId);
+
+    // Foto pengurus tampil di landing page, jadi bertanda publik (GET /files/:id).
+    const fotoId = await this.files.simpan(file, { publik: true });
+    await this.prisma.user.update({ where: { id: user.id }, data: { foto: fotoId } });
+    await this.files.hapus(user.foto);
+
+    await this.audit.catat(actor.sub, 'pengurus.foto', {
+      target: 'User',
+      targetId: user.id,
+      keterangan: `Foto ${user.namaUser} diperbarui`,
+    });
+    return { message: `Foto ${user.namaUser} berhasil disimpan.`, foto: fotoId };
+  }
+
+  /** Normalisasi ke format 62xxxxxxxxxx (dipakai langsung oleh tautan wa.me). */
+  private normalisasiNomor(nomor: string) {
+    return nomor.replace(/^\+?62/, '62').replace(/^0/, '62');
+  }
+
+  async setKontak(actor: AuthUser, userId: number, kontak?: string | null) {
+    const user = await this.pemegangJabatan(userId);
+    const nomor = kontak ? this.normalisasiNomor(kontak) : null;
+
+    await this.prisma.user.update({ where: { id: user.id }, data: { kontakPublik: nomor } });
+
+    await this.audit.catat(actor.sub, 'pengurus.kontak', {
+      target: 'User',
+      targetId: user.id,
+      keterangan: nomor
+        ? `Kontak publik ${user.namaUser} diatur`
+        : `Kontak publik ${user.namaUser} dihapus`,
+    });
+    return {
+      message: nomor
+        ? `Kontak ${user.namaUser} kini tampil di halaman depan.`
+        : `Kontak ${user.namaUser} tidak lagi tampil di halaman depan.`,
+      kontak: nomor,
+    };
+  }
+
+  async hapusFoto(actor: AuthUser, userId: number) {
+    const user = await this.pemegangJabatan(userId);
+    if (!user.foto) throw new BadRequestException('Pengurus ini belum punya foto.');
+
+    await this.prisma.user.update({ where: { id: user.id }, data: { foto: null } });
+    await this.files.hapus(user.foto);
+
+    await this.audit.catat(actor.sub, 'pengurus.foto', {
+      target: 'User',
+      targetId: user.id,
+      keterangan: `Foto ${user.namaUser} dihapus`,
+    });
+    return { message: `Foto ${user.namaUser} dihapus.` };
+  }
+
+  // ================================================================
   // TETAPKAN / KOSONGKAN JABATAN
   // ================================================================
 
@@ -129,7 +211,8 @@ export class PengurusService {
     });
     await tx.user.update({
       where: { id: userId },
-      data: { roleId: warga.id, area: rumah?.rt ?? areaCadangan },
+      // kontakPublik dikosongkan: publikasi nomor itu izin untuk jabatan ini, bukan untuk selamanya.
+      data: { roleId: warga.id, area: rumah?.rt ?? areaCadangan, kontakPublik: null },
     });
   }
 

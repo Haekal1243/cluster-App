@@ -11,7 +11,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { Area, ScopeAkses } from '@prisma/client';
 
 export class CreateRoleDto {
@@ -85,4 +85,18 @@ export class VacatePengurusDto {
 
   @IsEnum(Area)
   area!: Area;
+}
+
+/** Nomor WhatsApp khusus pengurus untuk landing page. Kosong/null = hapus (tidak ditampilkan). */
+export class SetKontakPengurusDto {
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value !== 'string') return value;
+    const bersih = value.replace(/[\s.\-()]/g, '');
+    return bersih === '' ? null : bersih;
+  })
+  @Matches(/^(\+62|62|0)8\d{8,12}$/, {
+    message: 'Nomor kontak harus nomor HP Indonesia, contoh 0812 3456 7890 atau +62 812 3456 7890.',
+  })
+  kontak?: string | null;
 }

@@ -3,6 +3,7 @@ import { Area, Prisma, RT } from '@prisma/client';
 import { stringify } from 'csv-stringify/sync';
 import ExcelJS from 'exceljs';
 import { PrismaService } from '../prisma/prisma.service';
+import { FileService } from '../common/file/file.service';
 import { CreateKasDto } from './dto/create-kas.dto';
 import { ExportKasDto } from './dto/export-kas.dto';
 import { UpdateKasDto } from './dto/update-kas.dto';
@@ -113,7 +114,10 @@ export function labelPeriodeExport(dari?: string, sampai?: string): string {
 
 @Injectable()
 export class KeuanganService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private files: FileService,
+  ) {}
 
   /** Area yang datanya ikut dihitung/ditampilkan oleh user ini. */
   private areasFor(ctx: AccessContext, pilih?: string): Area[] {
@@ -132,6 +136,7 @@ export class KeuanganService {
     const scopeArea = areaFilter(ctx);
     const area = scopeArea ?? dto.area ?? 'RW';
 
+    const buktiFile = file ? await this.files.simpan(file) : null;
     const data = await this.prisma.kasTransaksi.create({
       data: {
         tipe: dto.tipe,
@@ -140,7 +145,7 @@ export class KeuanganService {
         nominal: dto.nominal,
         tanggal: new Date(dto.tanggal),
         keterangan: dto.keterangan ?? null,
-        buktiFile: file?.filename ?? null,
+        buktiFile,
         createBy: ctx.user.nama,
       },
     });
@@ -452,15 +457,13 @@ export class KeuanganService {
     return data;
   }
 
-  /** Path file bukti transaksi kas; dicek scope dulu, folder ini tidak disajikan statis. */
-  async filePathBukti(ctx: AccessContext, id: string | number) {
+  /** Id file bukti transaksi kas; dicek scope dulu, file ini tidak boleh diambil lewat GET /files/:id publik. */
+  async fileIdBukti(ctx: AccessContext, id: string | number) {
     const data = await this.findOne(ctx, id);
     if (data.virtual || !data.buktiFile) {
       throw new NotFoundException('Transaksi ini tidak memiliki bukti file.');
     }
-    const full = path.join(process.cwd(), 'uploads', 'keuangan', data.buktiFile);
-    if (!fs.existsSync(full)) throw new NotFoundException('File bukti tidak ditemukan.');
-    return full;
+    return data.buktiFile;
   }
 
   /** Untuk ubah/hapus, hak tulis dicek terhadap scope permission update/delete. */
@@ -504,10 +507,11 @@ export class KeuanganService {
     if (sid.startsWith('setoran-')) {
       throw new ForbiddenException('Setoran IPL tidak dapat diedit dari menu Keuangan.');
     }
-    await this.findForWrite(ctx, sid);
+    const existing = await this.findForWrite(ctx, sid);
     const scopeArea = areaFilter(ctx);
     if (dto.area && scopeArea) assertInArea(ctx, dto.area);
 
+    const buktiBaru = file ? await this.files.simpan(file) : undefined;
     const nid = Number(id);
     const data = await this.prisma.kasTransaksi.update({
       where: { id: nid },
@@ -518,10 +522,11 @@ export class KeuanganService {
         ...(dto.tanggal !== undefined && { tanggal: new Date(dto.tanggal) }),
         ...(dto.keterangan !== undefined && { keterangan: dto.keterangan }),
         ...(dto.area !== undefined && { area: dto.area }),
-        ...(file && { buktiFile: file.filename }),
+        ...(buktiBaru && { buktiFile: buktiBaru }),
         updatedAt: new Date(),
       },
     });
+    if (buktiBaru) await this.files.hapus(existing.buktiFile);
     return { message: 'Transaksi kas berhasil diperbarui.', data };
   }
 
@@ -539,8 +544,9 @@ export class KeuanganService {
       return { message: `Pemasukan Kas RT ${rt} periode ${bulan}/${tahun} berhasil dihapus (nominalKas di-nol-kan).` };
     }
     if (sid.startsWith('setoran-')) throw new ForbiddenException('Setoran tidak dapat dihapus dari menu Keuangan.');
-    await this.findForWrite(ctx, sid);
+    const existing = await this.findForWrite(ctx, sid);
     await this.prisma.kasTransaksi.delete({ where: { id: Number(id) } });
+    await this.files.hapus(existing.buktiFile);
     return { message: 'Transaksi kas berhasil dihapus.' };
   }
 

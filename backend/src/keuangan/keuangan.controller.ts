@@ -13,8 +13,8 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import type { Response } from 'express';
 import { KeuanganService } from './keuangan.service';
+import { FileService } from '../common/file/file.service';
 import { CreateKasDto } from './dto/create-kas.dto';
 import { ExportKasDto } from './dto/export-kas.dto';
 import { UpdateKasDto } from './dto/update-kas.dto';
@@ -24,7 +24,10 @@ import type { AccessContext } from '../auth/auth.types';
 
 @Controller('keuangan')
 export class KeuanganController {
-  constructor(private readonly keuanganService: KeuanganService) {}
+  constructor(
+    private readonly keuanganService: KeuanganService,
+    private readonly files: FileService,
+  ) {}
 
   /** POST /keuangan — Catat transaksi kas manual (bukti opsional) */
   @Post()
@@ -79,6 +82,13 @@ export class KeuanganController {
       'Content-Disposition': `attachment; filename="${file.filename}"`,
     });
     res.send(file.buffer);
+  }
+
+  /** GET /keuangan/:id/bukti — unduh bukti file transaksi (butuh login + scope area). Wajib di atas ':id'. */
+  @Get(':id/bukti')
+  @RequirePermission('keuangan', 'read')
+  async bukti(@Access() ctx: AccessContext, @Param('id') id: string, @Res() res: Response) {
+    await this.files.kirim(res, await this.keuanganService.fileIdBukti(ctx, id));
   }
 
   /** GET /keuangan/:id — Detail satu transaksi */

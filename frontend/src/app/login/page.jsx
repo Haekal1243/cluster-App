@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, User, Lock } from "lucide-react";
+import { ArrowLeft, User, Lock, Eye, EyeOff } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import { authApi } from "@/lib/api";
 import { saveUser, setToken } from "@/lib/session";
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,10 +24,10 @@ export default function LoginPage() {
 
     try {
       // Login pakai username (default no HP) dan password; akun dibuatkan pengurus RT.
-      const data = await authApi.login({ username: username.trim(), password });
+      const data = await authApi.login({ username: username.trim(), password, remember });
 
       // Simpan data user (termasuk hak akses) dan token sesuai "Ingat saya"
-      saveUser(data.user);
+      saveUser(data.user, remember);
       setToken(data.token, remember);
 
       // Semua role masuk ke /dashboard — menu dan tampilan menyesuaikan hak akses
@@ -88,15 +89,25 @@ export default function LoginPage() {
           <div className="input-wrapper">
             <Lock className="input-icon" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               id="password"
-              className="form-control with-icon"
+              className="form-control with-icon with-toggle"
               placeholder="*********"
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
             />
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+              aria-pressed={showPassword}
+              title={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+            >
+              {showPassword ? <EyeOff /> : <Eye />}
+            </button>
           </div>
         </div>
 

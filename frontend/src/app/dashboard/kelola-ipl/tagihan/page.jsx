@@ -12,7 +12,6 @@ import {
   Wallet,
   TrendingUp,
   FileX,
-  CreditCard,
   Home,
   Upload,
   Pencil,
@@ -23,6 +22,7 @@ import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import { BillSummaryCard } from "@/components/ipl/BillSummaryCard";
 import Pagination from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
@@ -1093,12 +1093,15 @@ export function WargaIuranView({ user }) {
     return tagihanGabungan.filter((t) => (t.rumah?.id ?? t.idRumah) === id);
   }, [tagihanGabungan, selectedRumahId]);
 
-  // Ringkasan tampilan (periode terpilih, sesuai filter rumah)
+  // Ringkasan tampilan (periode terpilih, sesuai filter rumah).
+  // Nominal hanya menjumlah tagihan yang belum lunas (BELUM_LUNAS + MENUNGGU_KONFIRMASI);
+  // yang sudah LUNAS dikecualikan.
   const ringkasan = useMemo(() => {
-    const total = displayData.reduce((s, t) => s + (t.nominal || 0), 0);
+    const tagihanAktif = displayData.filter((t) => t.statusPembayaran !== "LUNAS");
+    const total = tagihanAktif.reduce((s, t) => s + (Number(t.nominal) || 0), 0);
     return {
       totalNominal: total,
-      totalTagihan: displayData.length,
+      totalTagihan: tagihanAktif.length,
       lunas: displayData.filter((t) => t.statusPembayaran === "LUNAS").length,
       belumLunas: displayData.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length,
       menunggu: displayData.filter((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI").length,
@@ -1143,46 +1146,21 @@ export function WargaIuranView({ user }) {
   return (
     <div className="page-stack">
       {/* Ringkasan Total Gabungan */}
-      <section className="portal-tagihan-hero">
-        <div className="portal-tagihan-hero-left">
-          <div className="portal-tagihan-hero-icon">
-            <CreditCard size={28} />
-          </div>
-          <div>
-            <p className="portal-tagihan-period">
-              {selectedRumahId === "semua"
-                ? `Semua Unit (${rumahList.length} Rumah)`
-                : (() => {
-                  const r = rumahList.find((x) => x.id === Number(selectedRumahId));
-                  return r ? `${r.blokRumah} · ${formatRt(r.rt)}` : "";
-                })()}
-            </p>
-            <h3 className="portal-tagihan-month">
-              Total Tagihan {heroLabel}
-            </h3>
-            <p className="portal-stat-sub">
-              {ringkasan.lunas} lunas · {ringkasan.belumLunas} belum lunas
-              {ringkasan.menunggu > 0 ? ` · ${ringkasan.menunggu} menunggu` : ""}
-            </p>
-          </div>
-        </div>
-
-        {loadingTagihan ? (
-          <div className="portal-spinner-sm" />
-        ) : (
-          <div className="portal-tagihan-hero-right">
-            <span className="portal-tagihan-amount">
-              {rupiah(ringkasan.totalNominal)}
-            </span>
-            {ringkasan.totalTagihan > 0 && (
-              <span className="portal-stat-sub">
-                {ringkasan.totalTagihan} tagihan
-                {rumahList.length > 1 && selectedRumahId === "semua" ? ` · ${rumahList.length} unit` : ""}
-              </span>
-            )}
-          </div>
-        )}
-      </section>
+      <BillSummaryCard
+        unitLabel={
+          selectedRumahId === "semua"
+            ? `Semua Unit (${rumahList.length} Rumah)`
+            : (() => {
+              const r = rumahList.find((x) => x.id === Number(selectedRumahId));
+              return r ? `${r.blokRumah} · ${formatRt(r.rt)}` : "";
+            })()
+        }
+        periodLabel={heroLabel}
+        outstanding={ringkasan.totalNominal}
+        paidCount={ringkasan.lunas}
+        unpaidCount={ringkasan.belumLunas + ringkasan.menunggu}
+        loading={loadingTagihan}
+      />
 
       {/* ── Search + Filter (sama seperti Tagihan IPL admin) ── */}
       <div className="list-toolbar-row">

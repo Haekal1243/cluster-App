@@ -119,8 +119,14 @@ export class KeuanganService {
     private files: FileService,
   ) {}
 
-  /** Area yang datanya ikut dihitung/ditampilkan oleh user ini. */
+  /**
+   * Area yang datanya ikut dihitung/ditampilkan oleh user ini.
+   * Isolasi kas per wilayah: pengurus (RT maupun RW) hanya melihat kas areanya
+   * sendiri; parameter pilih dari klien diabaikan. Hanya admin (area null)
+   * yang boleh melihat semua wilayah / memfilter wilayah.
+   */
   private areasFor(ctx: AccessContext, pilih?: string): Area[] {
+    if (ctx.user.area) return [ctx.user.area];
     const area = areaFilter(ctx);
     if (area) return [area];
     if (pilih && (SEMUA_AREA as string[]).includes(pilih)) return [pilih as Area];
@@ -132,9 +138,8 @@ export class KeuanganService {
   // ================================================================
 
   async create(ctx: AccessContext, dto: CreateKasDto, file?: Express.Multer.File) {
-    // Pengurus menulis ke kas area-nya sendiri; hanya scope ALL yang boleh memilih area.
-    const scopeArea = areaFilter(ctx);
-    const area = scopeArea ?? dto.area ?? 'RW';
+    // Pengurus menulis ke kas area-nya sendiri; hanya admin yang boleh memilih area.
+    const area = ctx.user.area ?? dto.area ?? 'RW';
 
     const buktiFile = file ? await this.files.simpan(file) : null;
     const data = await this.prisma.kasTransaksi.create({
@@ -257,16 +262,19 @@ export class KeuanganService {
     }
 
     // Setor IPL: per RT per periode tagihan (wilayah hanya RT), 1 row per RT+bulan.
+    // Setoran adalah pemasukan RW — baris ini hanya dibangun bila scope mencakup RW,
+    // sehingga user RT tidak melihatnya di riwayat (porsi yang belum dikonfirmasi
+    // tetap terpantau lewat titipanIpl di ringkasan + menu Setoran).
     // Jika 1 setoran berisi multi-periode, akan jadi multi-row (per periode).
     // Jika 2 setoran same RT same periode, nominal dijumlah (update).
     const needSetor = isPemasukanFilter && (!kategori || kategori === 'SEMUA' || kategoriIsSetorIpl);
     let setorRtList: RT[] = [];
-    if (needSetor) {
+    if (needSetor && rwDipilih) {
       if (area && area !== 'SEMUA' && (['RT_01','RT_02','RT_03','RT_04'] as string[]).includes(area)) {
         setorRtList = [area as RT];
       } else if (rtDipilih.length > 0) {
         setorRtList = rtDipilih;
-      } else if (rwDipilih) {
+      } else {
         setorRtList = ['RT_01','RT_02','RT_03','RT_04'] as RT[];
       }
       // filter by user's scope: if user is RT, rtDipilih already limited
@@ -459,6 +467,30 @@ export class KeuanganService {
 
   /** Id file bukti transaksi kas; dicek scope dulu, file ini tidak boleh diambil lewat GET /files/:id publik. */
   async fileIdBukti(ctx: AccessContext, id: string | number) {
+    const sid = String(id);
+    if (sid.startsWith('setoran-')) {
+      // Baris virtual agregat setoran: id = setoran-{RT}-{tahun}-{bulan} (periode tagihan).
+      // Ambil bukti setoran terbaru yang mencakup periode itu (cermin logika grup riwayat).
+      const parts = sid.slice('setoran-'.length).split('-');
+      const rt = parts[0] as RT;
+      const tahun = parts[1];
+      const bulan = parts[2];
+      if (!rt || !tahun || !bulan) throw new NotFoundException('ID setoran tidak valid.');
+      assertInArea(ctx, rt as Area);
+      const row = await this.prisma.ipl.findFirst({
+        where: {
+          bulanPeriode: bulan,
+          tahunPeriode: tahun,
+          rumah: { rt },
+          setoran: { buktiTransaksi: { not: null } },
+        },
+        orderBy: { setoran: { tanggalKonfirmasi: 'desc' } },
+        select: { setoran: { select: { buktiTransaksi: true } } },
+      });
+      const bukti = row?.setoran?.buktiTransaksi ?? null;
+      if (!bukti) throw new NotFoundException('Transaksi ini tidak memiliki bukti file.');
+      return bukti;
+    }
     const data = await this.findOne(ctx, id);
     if (data.virtual || !data.buktiFile) {
       throw new NotFoundException('Transaksi ini tidak memiliki bukti file.');
@@ -474,6 +506,10 @@ export class KeuanganService {
     const data = await this.prisma.kasTransaksi.findUnique({ where: { id: nid } });
     if (!data) {
       throw new NotFoundException(`Transaksi kas dengan ID ${id} tidak ditemukan.`);
+    }
+    // Isolasi kas per wilayah: pengurus hanya boleh mengubah kas areanya sendiri.
+    if (ctx.user.area && data.area !== ctx.user.area) {
+      throw new ForbiddenException('Transaksi ini di luar wilayah Anda.');
     }
     assertInArea(ctx, data.area);
     return data;
@@ -508,8 +544,11 @@ export class KeuanganService {
       throw new ForbiddenException('Setoran IPL tidak dapat diedit dari menu Keuangan.');
     }
     const existing = await this.findForWrite(ctx, sid);
-    const scopeArea = areaFilter(ctx);
-    if (dto.area && scopeArea) assertInArea(ctx, dto.area);
+    // Isolasi kas per wilayah: area tujuan harus area sendiri (kecuali admin).
+    const areaTujuan = dto.area ?? existing.area;
+    if (ctx.user.area && areaTujuan !== ctx.user.area) {
+      throw new ForbiddenException('Transaksi ini di luar wilayah Anda.');
+    }
 
     const buktiBaru = file ? await this.files.simpan(file) : undefined;
     const nid = Number(id);
@@ -581,12 +620,16 @@ export class KeuanganService {
     const tanpaRw = { id: { in: [] as number[] } };
     const rtSaja = { rumah: { rt: { in: rtDipilih } } };
 
-    // Untuk Setor IPL wilayah hanya RT: tentukan RT yang visible untuk setor
+    // Untuk Setor IPL wilayah hanya RT: tentukan RT yang visible untuk setor.
+    // Setoran adalah pemasukan RW, bukan RT — hanya dihitung bila scope mencakup RW.
+    // Scope RT murni (areas = [RT_x]) mendapat setorRtList kosong: ringkasannya
+    // hanya kas RT + manual, dan porsi IPL yang belum dikonfirmasi tetap
+    // dilaporkan terpisah sebagai titipanIpl.
     let setorRtList: RT[] = [];
     const filterAreaIsRt = params?.area && params.area !== 'SEMUA' && (['RT_01','RT_02','RT_03','RT_04'] as string[]).includes(params.area);
-    if (filterAreaIsRt) {
+    if (filterAreaIsRt && rwDipilih) {
       setorRtList = [params!.area as RT];
-    } else if (rtDipilih.length > 0) {
+    } else if (rtDipilih.length > 0 && rwDipilih) {
       setorRtList = rtDipilih;
     } else if (rwDipilih) {
       setorRtList = ['RT_01','RT_02','RT_03','RT_04'] as RT[];

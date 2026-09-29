@@ -283,7 +283,10 @@ function AdminKeuanganView({ user }) {
   const bolehHapus = can(user, "keuangan.delete");
   // Scope ALL (ketua/bendahara RW, admin) melihat RW + semua RT; scope AREA hanya wilayahnya.
   const semuaArea = scopeOf(user, "keuangan.read") === "ALL";
-  const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL";
+  // Isolasi kas per wilayah: hanya admin yang boleh memilih wilayah lain.
+  // Pengurus (RT maupun RW) terkunci ke kas areanya sendiri.
+  const isAdmin = user?.role === "ADMIN";
+  const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL" && isAdmin;
   const isBendaharaRT = user?.role === "BENDAHARA_RT";
   const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT", "BENDAHARA_RW"].includes(user?.role);
   const getCurrentYm = () => {
@@ -648,7 +651,7 @@ function AdminKeuanganView({ user }) {
                 ))}
               </select>
             </FilterField>
-            {semuaArea && (
+            {semuaArea && isAdmin && (
               <FilterField label="Wilayah">
                 <select
                   className="ipl-select ipl-select-sm"
@@ -780,7 +783,7 @@ function AdminKeuanganView({ user }) {
               </thead>
               <tbody>
                 {riwayatPage.map((t) => {
-                  const buktiUrl = getBuktiUrl(t);
+                  const buktiPath = getBuktiPath(t);
                   const isManual = t.sumber === "MANUAL" || !t.sumber;
                   const isIplKas = t.sumber === "IPL_KAS";
                   const canEdit = (isManual || isIplKas) && bolehUbah;

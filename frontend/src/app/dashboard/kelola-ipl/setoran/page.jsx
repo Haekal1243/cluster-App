@@ -64,9 +64,15 @@ function SetorModal({ siap, pilihRt, onClose, onSuccess }) {
             <strong>{rupiah(siap.totalIpl)}</strong>
           </div>
           <p className="field-hint">
-            Yang disetor hanya porsi IPL. Kas RT tidak ikut dan tetap di keuangan RT. Transfer sesuai nominal
+            Yang disetor hanya porsi IPL rumah yang dihuni. Kas RT tidak ikut dan tetap di keuangan RT.
+            Tagihan rumah kosong dikecualikan — porsi IPL-nya masuk kas RT. Transfer sesuai nominal
             di atas, lalu unggah buktinya.
           </p>
+          {siap.dikecualikanRumahKosong?.jumlahTagihan > 0 && (
+            <p className="field-hint">
+              {siap.dikecualikanRumahKosong.jumlahTagihan} tagihan rumah kosong ({rupiah(siap.dikecualikanRumahKosong.totalMasukKasRt)}) masuk kas RT, tidak disetor.
+            </p>
+          )}
           <div className="ipl-form-group">
             <label>Bukti transfer <span className="required-star">*</span></label>
             <input
@@ -363,6 +369,11 @@ export default function SetoranPage() {
                 <span className="ipl-summary-label">Siap Disetor {pilihRtSetor ? areaLabel(siap.rt) : ""}</span>
                 <span className="ipl-summary-value">{rupiah(siap.totalIpl)}</span>
                 <span className="ipl-summary-sub">{siap.jumlahTagihan} tagihan lunas belum disetor</span>
+                {siap.dikecualikanRumahKosong?.jumlahTagihan > 0 && (
+                  <span className="ipl-summary-sub">
+                    {siap.dikecualikanRumahKosong.jumlahTagihan} tagihan rumah kosong masuk kas RT
+                  </span>
+                )}
               </div>
             </div>
           )}

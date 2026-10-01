@@ -52,26 +52,35 @@ export class IplService {
       rt = area;
     }
 
-    // Rumah aktif = berpenghuni
+    // Rumah tertagih = punya pemilik/penanggung jawab (termasuk rumah KOSONG
+    // yang pemiliknya sudah terdaftar akun). Rumah yang pemiliknya belum daftar
+    // akun belum bisa ditagih; penagihan pertamanya mengikuti periode saat akun
+    // dibuat, tanpa tunggakan mundur.
     const rumahAktif = await this.prisma.rumah.findMany({
       where: { rt, isDelete: false, userId: { not: null } },
       select: { id: true, userId: true },
     });
     if (rumahAktif.length === 0) {
-      throw new BadRequestException(`Tidak ada rumah aktif di ${rt.replace('_', ' ')}.`);
+      throw new BadRequestException(`Tidak ada rumah tertagih di ${rt.replace('_', ' ')}.`);
     }
 
-    const existing = await this.prisma.ipl.findFirst({
+    // Idempotent: rumah yang sudah punya tagihan periode ini dilewati, sehingga
+    // pemilik yang baru terdaftar di tengah bulan bisa disusulkan dengan
+    // generate ulang periode berjalan tanpa error duplikat.
+    const sudahAda = await this.prisma.ipl.findMany({
       where: { bulanPeriode, tahunPeriode, idRumah: { in: rumahAktif.map((r) => r.id) } },
+      select: { idRumah: true },
     });
-    if (existing) {
+    const sudahAdaIds = new Set(sudahAda.map((r) => r.idRumah));
+    const rumahBaru = rumahAktif.filter((r) => !sudahAdaIds.has(r.id));
+    if (rumahBaru.length === 0) {
       throw new BadRequestException(
-        `Tagihan ${rt.replace('_', ' ')} untuk periode ${bulanPeriode}/${tahunPeriode} sudah pernah digenerate.`,
+        `Tagihan ${rt.replace('_', ' ')} untuk periode ${bulanPeriode}/${tahunPeriode} sudah pernah digenerate dan tidak ada rumah baru yang perlu ditagih.`,
       );
     }
 
     await this.prisma.ipl.createMany({
-      data: rumahAktif.map((r) => ({
+      data: rumahBaru.map((r) => ({
         idRumah: r.id,
         bulanPeriode,
         tahunPeriode,
@@ -82,16 +91,21 @@ export class IplService {
 
     const total = nominalIpl + nominalKas;
     await this.notifikasiService.kirimBanyak(
-      rumahAktif.map((r) => r.userId).filter((id): id is number => id !== null),
+      rumahBaru.map((r) => r.userId).filter((id): id is number => id !== null),
       'TAGIHAN_BARU',
       'Tagihan IPL Baru',
       `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${total.toLocaleString('id-ID')} telah diterbitkan.`,
       '/dashboard/iuran',
     );
 
+    const dilewati = rumahAktif.length - rumahBaru.length;
     return {
-      message: `Berhasil generate ${rumahAktif.length} tagihan IPL ${rt.replace('_', ' ')} untuk periode ${bulanPeriode}/${tahunPeriode}.`,
-      jumlahTagihan: rumahAktif.length,
+      message:
+        dilewati > 0
+          ? `Berhasil generate ${rumahBaru.length} tagihan IPL ${rt.replace('_', ' ')} untuk periode ${bulanPeriode}/${tahunPeriode} (${dilewati} rumah sudah ada tagihannya, dilewati).`
+          : `Berhasil generate ${rumahBaru.length} tagihan IPL ${rt.replace('_', ' ')} untuk periode ${bulanPeriode}/${tahunPeriode}.`,
+      jumlahTagihan: rumahBaru.length,
+      dilewati,
       rt,
       nominalIpl,
       nominalKas,
@@ -153,6 +167,8 @@ export class IplService {
             },
           },
         },
+        // NOTE: rumah.status ikut terbawa via include di atas (kolom scalar
+        // selalu disertakan) dan dipakai untuk memisahkan porsi rumah kosong.
         setoran: { select: { id: true, status: true } },
         pembayaran: {
           orderBy: { tanggalBayar: 'desc' },
@@ -191,9 +207,16 @@ export class IplService {
         tagihan.filter((t) => t.statusPembayaran !== 'LUNAS'),
         (t) => t.nominal,
       ),
-      // Pecahan dari yang sudah terkumpul: porsi RW vs kas RT
-      terkumpulIpl: sum(lunas, (t) => t.nominalIpl),
-      terkumpulKas: sum(lunas, (t) => t.nominalKas),
+      // Pecahan dari yang sudah terkumpul: porsi RW vs kas RT.
+      // Rumah KOSONG: porsi IPL dialihkan ke kas RT (tidak disetor ke RW).
+      terkumpulIpl: sum(
+        lunas.filter((t) => t.rumah.status !== 'KOSONG'),
+        (t) => t.nominalIpl,
+      ),
+      terkumpulKas: sum(
+        lunas,
+        (t) => t.nominalKas + (t.rumah.status === 'KOSONG' ? t.nominalIpl : 0),
+      ),
     };
 
     return { tagihan, summary };
@@ -229,7 +252,7 @@ export class IplService {
         statusPembayaran: true,
         setoranId: true,
         setoran: { select: { status: true } },
-        rumah: { select: { rt: true } },
+        rumah: { select: { rt: true, status: true } },
       },
     });
 
@@ -240,10 +263,15 @@ export class IplService {
       if ((SEMUA_RT as string[]).includes(requested)) daftarRt = daftarRt.filter((r) => r === requested);
     }
 
+    // Rumah KOSONG: porsi IPL dialihkan ke kas RT (tidak disetor ke RW).
+    const kosong = (r: (typeof rows)[number]) => r.rumah.status === 'KOSONG';
+    const kasRt = (r: (typeof rows)[number]) => r.nominalKas + (kosong(r) ? r.nominalIpl : 0);
     const perRt = daftarRt.map((rt) => {
       const list = rows.filter((r) => r.rumah.rt === rt);
       const lunas = list.filter((r) => r.statusPembayaran === 'LUNAS');
-      const disetor = lunas.filter((r) => r.setoranId !== null && r.setoran?.status !== 'DITOLAK');
+      const lunasDihuni = lunas.filter((r) => !kosong(r));
+      const lunasKosong = lunas.filter((r) => kosong(r));
+      const disetor = lunasDihuni.filter((r) => r.setoranId !== null && r.setoran?.status !== 'DITOLAK');
       const sum = (l: typeof list, f: (r: (typeof list)[number]) => number) =>
         l.reduce((s, r) => s + f(r), 0);
       return {
@@ -252,10 +280,15 @@ export class IplService {
         lunas: lunas.length,
         belumLunas: list.length - lunas.length,
         nominalTagihan: sum(list, totalTagihan),
-        terkumpulIpl: sum(lunas, (r) => r.nominalIpl),
-        terkumpulKas: sum(lunas, (r) => r.nominalKas),
+        terkumpulIpl: sum(lunasDihuni, (r) => r.nominalIpl),
+        terkumpulKas: sum(lunas, (r) => kasRt(r)),
+        // Penjelas selisih: tagihan rumah kosong yang dikecualikan dari setoran.
+        terkumpulRumahKosong: {
+          jumlahTagihan: lunasKosong.length,
+          nominal: sum(lunasKosong, (r) => totalTagihan(r)),
+        },
         sudahDisetor: sum(disetor, (r) => r.nominalIpl),
-        belumDisetor: sum(lunas, (r) => r.nominalIpl) - sum(disetor, (r) => r.nominalIpl),
+        belumDisetor: sum(lunasDihuni, (r) => r.nominalIpl) - sum(disetor, (r) => r.nominalIpl),
       };
     });
 
@@ -267,6 +300,10 @@ export class IplService {
         nominalTagihan: t.nominalTagihan + r.nominalTagihan,
         terkumpulIpl: t.terkumpulIpl + r.terkumpulIpl,
         terkumpulKas: t.terkumpulKas + r.terkumpulKas,
+        terkumpulRumahKosong: {
+          jumlahTagihan: t.terkumpulRumahKosong.jumlahTagihan + r.terkumpulRumahKosong.jumlahTagihan,
+          nominal: t.terkumpulRumahKosong.nominal + r.terkumpulRumahKosong.nominal,
+        },
         sudahDisetor: t.sudahDisetor + r.sudahDisetor,
         belumDisetor: t.belumDisetor + r.belumDisetor,
       }),
@@ -277,6 +314,7 @@ export class IplService {
         nominalTagihan: 0,
         terkumpulIpl: 0,
         terkumpulKas: 0,
+        terkumpulRumahKosong: { jumlahTagihan: 0, nominal: 0 },
         sudahDisetor: 0,
         belumDisetor: 0,
       },

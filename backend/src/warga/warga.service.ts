@@ -398,7 +398,7 @@ export class WargaService {
           where: { rt_blokRumah: { rt: dto.rt, blokRumah: dto.blokRumah } },
         });
         if (rumah && !rumah.isDelete && rumah.userId) {
-          throw new ConflictException(`Blok ${dto.blokRumah} sudah dihuni warga lain.`);
+          throw new ConflictException(`Blok ${dto.blokRumah} sudah ada pemilik/penanggung jawab lain.`);
         }
 
         const created = await tx.user.create({
@@ -502,6 +502,20 @@ export class WargaService {
   async remove(ctx: AccessContext, id: number) {
     await this.findWargaScoped(ctx, id, true);
 
+    // Rumah kosong pun sudah pasti terjual: akun tidak boleh dihapus selama masih
+    // jadi satu-satunya pemilik/penanggung jawab rumah mana pun. Pengurus wajib
+    // menunjuk pemilik pengganti dulu lewat Ubah Rumah.
+    const rumahMilik = await this.prisma.rumah.findMany({
+      where: { userId: id, isDelete: false },
+      select: { id: true, blokRumah: true, rt: true, status: true },
+    });
+    if (rumahMilik.length > 0) {
+      const daftar = rumahMilik.map((r) => `${r.blokRumah} (${r.rt.replace('_', ' ')})`).join(', ');
+      throw new BadRequestException(
+        `Warga ini masih tercatat sebagai pemilik/penanggung jawab rumah: ${daftar}. Tunjuk pemilik pengganti dulu lewat Ubah Rumah sebelum menghapus akun.`,
+      );
+    }
+
     const [pembayaran, pengaduan] = await Promise.all([
       this.prisma.pembayaranIpl.count({ where: { idUser: id } }),
       this.prisma.pengaduan.count({ where: { idUser: id } }),
@@ -513,10 +527,6 @@ export class WargaService {
     }
 
     await this.prisma.$transaction([
-      this.prisma.rumah.updateMany({
-        where: { userId: id },
-        data: { userId: null, status: 'KOSONG', updateBy: ctx.user.nama, updateDate: new Date() },
-      }),
       this.prisma.notifikasi.deleteMany({ where: { idUser: id } }),
       this.prisma.user.delete({ where: { id } }),
     ]);
@@ -553,18 +563,24 @@ export class WargaService {
   // RUMAH / BLOK RUMAH
   // ================================================================
 
-  /** Status ikut penghuni: ada penghuni -> dihuni, tanpa penghuni -> kosong. */
+  /**
+   * Status hunian terpisah dari kepemilikan: rumah kosong pun sudah pasti terjual
+   * sehingga boleh tetap ada pemilik/penanggung jawab IPL (`userId`).
+   * `userId = null` hanya berarti "pemilik belum terdaftar akun", bukan "tak bertuan".
+   * Aturan: DIHUNI_* wajib ada pemilik; KOSONG boleh ada pemilik atau belum.
+   */
   private resolveStatus(userId: number | null, status?: StatusRumah): StatusRumah {
-    if (userId) {
-      if (status === 'KOSONG') {
-        throw new BadRequestException('Rumah yang punya penghuni tidak bisa berstatus KOSONG.');
+    if (status === 'KOSONG') {
+      return StatusRumah.KOSONG;
+    }
+    if (status === 'DIHUNI_KONTRAK' || status === 'DIHUNI_TETAP') {
+      if (!userId) {
+        throw new BadRequestException('Rumah berstatus dihuni harus memiliki pemilik/penghuni.');
       }
-      return status ?? StatusRumah.DIHUNI_TETAP;
+      return status;
     }
-    if (status && status !== 'KOSONG') {
-      throw new BadRequestException('Rumah berstatus dihuni harus memiliki penghuni.');
-    }
-    return StatusRumah.KOSONG;
+    // Status tidak diisi: ikuti kepemilikan (ada pemilik -> tetap, tanpa pemilik -> kosong).
+    return userId ? StatusRumah.DIHUNI_TETAP : StatusRumah.KOSONG;
   }
 
   private async assertPenghuniBoleh(ctx: AccessContext, userId: number) {
@@ -676,7 +692,11 @@ export class WargaService {
   // (lihat @Public() di WargaController), sisanya butuh permission seperti biasa.
   // ================================================================
 
-  /** Publik: blok rumah KOSONG di satu RT, untuk dropdown form register mandiri. */
+  /**
+   * Publik: blok rumah KOSONG yang pemiliknya belum terdaftar akun
+   * (`userId null` = pemilik belum punya akun, bukan tak bertuan),
+   * untuk dropdown form register mandiri.
+   */
   async getRumahKosong(rt: string) {
     if (!SEMUA_RT.includes(rt as RT)) {
       throw new BadRequestException('RT tidak valid.');
@@ -766,8 +786,12 @@ export class WargaService {
     return pendaftaran;
   }
 
-  async setujuiPendaftaran(ctx: AccessContext, id: number) {
+  async setujuiPendaftaran(ctx: AccessContext, id: number, statusHunian?: StatusRumah) {
     const pendaftaran = await this.findPendaftaranScoped(ctx, id);
+    // Default KOSONG: pendaftar umumnya pemilik rumah kosong yang tetap tidak
+    // menempati rumahnya (tetap ditagih IPL, masuk kas RT). Pengurus dapat
+    // memilih DIHUNI_* bila pendaftar langsung menempati rumah tersebut.
+    const statusAwal: StatusRumah = statusHunian ?? StatusRumah.KOSONG;
 
     const roleWarga = await this.prisma.role.findFirst({
       where: { level: LEVEL_WARGA, isSystem: true },
@@ -805,7 +829,7 @@ export class WargaService {
           where: { id: rumah.id },
           data: {
             userId: created.id,
-            status: 'DIHUNI_TETAP',
+            status: statusAwal,
             updateBy: ctx.user.nama,
             updateDate: new Date(),
           },

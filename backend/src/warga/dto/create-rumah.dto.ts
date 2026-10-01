@@ -13,7 +13,11 @@ export class CreateRumahDto {
   @IsNotEmpty()
   rt!: RT;
 
-  /** Kosong = ikut penghuni: ada userId -> DIHUNI_TETAP, tanpa userId -> KOSONG. */
+  /**
+   * Status hunian. KOSONG berarti tidak dihuni tetapi boleh tetap ada pemilik/
+   * penanggung jawab IPL (rumah kosong sudah pasti terjual). Tanpa status:
+   * ada userId -> DIHUNI_TETAP, tanpa userId -> KOSONG (pemilik belum terdaftar).
+   */
   @IsOptional()
   @IsEnum(StatusRumah)
   status?: StatusRumah;

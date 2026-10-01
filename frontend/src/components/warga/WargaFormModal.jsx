@@ -176,7 +176,9 @@ export default function WargaFormModal({
                   <select id="statusRumah" name="statusRumah" className="form-control" value={form.statusRumah} onChange={handleChange}>
                     <option value="DIHUNI_TETAP">Dihuni (tetap)</option>
                     <option value="DIHUNI_KONTRAK">Dihuni (kontrak)</option>
+                    <option value="KOSONG">Kosong (ada pemilik)</option>
                   </select>
+                  <span className="field-hint">Rumah kosong tetap ditagih IPL dan masuk kas RT, tidak disetor ke RW.</span>
                 </div>
               </>
             )}

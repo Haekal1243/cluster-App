@@ -144,7 +144,8 @@ export const wargaApi = {
   getRumahKosong: (rt) => request(`/warga/rumah-kosong${qs({ rt })}`),
   daftarMandiri: (payload) => request("/warga/daftar", json("POST", payload)),
   getPendaftaran: (status) => request(`/warga/pendaftaran${qs({ status })}`),
-  setujuiPendaftaran: (id) => request(`/warga/pendaftaran/${id}/setuju`, { method: "PATCH" }),
+  setujuiPendaftaran: (id, status) =>
+    request(`/warga/pendaftaran/${id}/setuju`, json("PATCH", status ? { status } : {})),
   tolakPendaftaran: (id, alasan) =>
     request(`/warga/pendaftaran/${id}/tolak`, json("PATCH", { alasan })),
 };

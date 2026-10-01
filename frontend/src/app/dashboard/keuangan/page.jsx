@@ -682,7 +682,14 @@ function AdminKeuanganView({ user }) {
               <p className="keu-rincian-title">Pemasukan otomatis</p>
               <ul className="keu-rincian-list">
                 {ringkasan.pemasukanOtomatis.kasRt > 0 || ringkasan.areas.some((a) => a !== "RW") ? (
-                  <li><span>Kas RT (dari tagihan warga yang lunas)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.kasRt)}</strong></li>
+                  <li>
+                    <span>Kas RT (dari tagihan warga yang lunas)
+                      {ringkasan.pemasukanOtomatis.kasRtDariRumahKosong > 0 && (
+                        <> termasuk {formatRupiah(ringkasan.pemasukanOtomatis.kasRtDariRumahKosong)} dari rumah kosong</>
+                      )}
+                    </span>
+                    <strong>{formatRupiah(ringkasan.pemasukanOtomatis.kasRt)}</strong>
+                  </li>
                 ) : null}
                 {ringkasan.areas.includes("RW") && (
                   <li><span>Setoran IPL dari RT (sudah dikonfirmasi)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.setoranIpl)}</strong></li>

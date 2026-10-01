@@ -37,9 +37,25 @@ export class SetoranService {
     return area;
   }
 
-  /** Tagihan lunas yang porsi IPL-nya belum pernah disetor. */
+  /**
+   * Tagihan lunas yang porsi IPL-nya belum pernah disetor. Rumah KOSONG
+   * dikecualikan: porsi IPL-nya dialihkan menjadi kas RT (tidak disetor ke RW).
+   */
   private tagihanSiapSetor(rt: RT): Prisma.IplWhereInput {
-    return { statusPembayaran: 'LUNAS', setoranId: null, rumah: { rt } };
+    return {
+      statusPembayaran: 'LUNAS',
+      setoranId: null,
+      rumah: { rt, status: { not: 'KOSONG' } },
+    };
+  }
+
+  /** Tagihan lunas rumah KOSONG: tetap dibayar pemiliknya tapi masuk kas RT. */
+  private tagihanKosongDikecualikan(rt: RT): Prisma.IplWhereInput {
+    return {
+      statusPembayaran: 'LUNAS',
+      setoranId: null,
+      rumah: { rt, status: 'KOSONG' },
+    };
   }
 
   // ================================================================
@@ -48,14 +64,24 @@ export class SetoranService {
 
   async siapSetor(ctx: AccessContext, rt?: RT) {
     const target = this.resolveRt(ctx, rt);
-    const rows = await this.prisma.ipl.findMany({
-      where: this.tagihanSiapSetor(target),
-      select: { nominalIpl: true },
-    });
+    const [rows, dikecualikan] = await Promise.all([
+      this.prisma.ipl.findMany({
+        where: this.tagihanSiapSetor(target),
+        select: { nominalIpl: true },
+      }),
+      this.prisma.ipl.findMany({
+        where: this.tagihanKosongDikecualikan(target),
+        select: { nominalIpl: true, nominalKas: true },
+      }),
+    ]);
     return {
       rt: target,
       jumlahTagihan: rows.length,
       totalIpl: rows.reduce((s, r) => s + r.nominalIpl, 0),
+      dikecualikanRumahKosong: {
+        jumlahTagihan: dikecualikan.length,
+        totalMasukKasRt: dikecualikan.reduce((s, r) => s + r.nominalIpl + r.nominalKas, 0),
+      },
     };
   }
 
@@ -74,8 +100,13 @@ export class SetoranService {
         select: { id: true, nominalIpl: true },
       });
       if (tagihan.length === 0) {
+        const kosong = await tx.ipl.count({
+          where: this.tagihanKosongDikecualikan(target),
+        });
         throw new BadRequestException(
-          `Belum ada tagihan lunas ${labelRt(target)} yang perlu disetor.`,
+          kosong > 0
+            ? `Belum ada tagihan lunas ${labelRt(target)} yang perlu disetor. ${kosong} tagihan rumah kosong dikecualikan dan masuk kas RT.`
+            : `Belum ada tagihan lunas ${labelRt(target)} yang perlu disetor.`,
         );
       }
 

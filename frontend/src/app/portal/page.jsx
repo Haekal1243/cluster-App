@@ -394,7 +394,7 @@ export default function PortalDashboardPage() {
               <h3>Rincian Tunggakan</h3>
               <span className="warga-detail-sub">Belum ada data rumah</span>
             </div>
-            <span className="warga-tunggakan-total muted">—</span>
+            <span className="warga-tunggakan-total muted">-</span>
           </div>
           <div className="portal-empty-notice">
             <Home size={32} />
@@ -409,7 +409,7 @@ export default function PortalDashboardPage() {
               <h3>Rincian Tunggakan</h3>
               <span className="warga-detail-sub">{rumahList.length} unit rumah · belum ada tagihan</span>
             </div>
-            <span className="warga-tunggakan-total muted" style={{ fontSize: "1rem", color: "#64748b" }}>—</span>
+            <span className="warga-tunggakan-total muted" style={{ fontSize: "1rem", color: "#64748b" }}>-</span>
           </div>
           <div className="warga-tunggakan-success">
             <p>Tagihan IPL belum diterbitkan.</p>

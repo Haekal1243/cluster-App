@@ -89,7 +89,7 @@ export default function FilterPopover({
 
       {open && (
         <div className="filter-popover-panel" role="dialog" aria-label={label}>
-          {children}
+          <div className="filter-popover-fields">{children}</div>
           <div className="filter-popover-footer">
             {active && (
               <button type="button" className="filter-popover-reset" onClick={handleReset}>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { X, Upload, Image as ImageIcon, Send } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
+import Select from "@/components/ui/Select";
 
 const KATEGORI_OPTIONS = [
   { value: "KEBERSIHAN", label: "Kebersihan" },
@@ -102,7 +103,7 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
         <div className="modal-header">
           <h3>Ajukan Pengaduan</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">
@@ -143,16 +144,11 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
                   Akun Anda tidak memiliki tujuan pengaduan yang valid. Hubungi pengurus.
                 </span>
               ) : (
-                <select
-                  name="tujuan"
-                  className="form-control custom-select"
+                <Select
                   value={form.tujuan}
-                  onChange={handleChange}
-                >
-                  {tujuanPilihan.map(({ value, label }) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setForm((prev) => ({ ...prev, tujuan: v }))}
+                  options={tujuanPilihan.map(({ value, label }) => ({ value, label }))}
+                />
               )}
             </div>
 
@@ -160,17 +156,12 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
               <label htmlFor="kategori">
                 Kategori <span className="required-star">*</span>
               </label>
-              <select
+              <Select
                 id="kategori"
-                name="kategori"
-                className="form-control custom-select"
                 value={form.kategori}
-                onChange={handleChange}
-              >
-                {KATEGORI_OPTIONS.map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
+                onChange={(v) => setForm((prev) => ({ ...prev, kategori: v }))}
+                options={KATEGORI_OPTIONS}
+              />
             </div>
 
             <div className="form-group">

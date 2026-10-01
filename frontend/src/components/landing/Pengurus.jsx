@@ -33,7 +33,7 @@ function petakanDariDb(slots) {
     warna: WARNA_JABATAN[s.kode] ?? "#64748B",
     jabatan: s.jabatan,
     nama: s.nama ?? "Belum ditetapkan",
-    kontak: s.nama ? "Hubungi Sekretariat RW" : "—",
+    kontak: s.nama ? "Hubungi Sekretariat RW" : "-",
     wa: s.nama && s.kontak ? `https://wa.me/${s.kontak}?text=${encodeURIComponent(`Halo, saya warga Cluster ingin bertanya kepada ${s.jabatan}.`)}` : null,
   }));
 }

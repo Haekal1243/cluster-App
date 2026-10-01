@@ -7,6 +7,7 @@ import { saveUser, getUser } from "@/lib/session";
 import { authApi } from "@/lib/api";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
+import Select from "@/components/ui/Select";
 
 // Jangkauan data yang boleh diakses sebuah permission
 const SCOPE_OPTIONS = [
@@ -69,7 +70,7 @@ function TambahRoleModal({ onClose, onSubmit }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 380 }}>
         <div className="modal-header">
           <h3>Tambah Peran</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">✕</button>
@@ -89,11 +90,16 @@ function TambahRoleModal({ onClose, onSubmit }) {
             </div>
             <div className="form-group">
               <label htmlFor="level">Tingkat</label>
-              <select id="level" className="form-control" value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })}>
-                <option value="1">Level RW (jabatan tingkat RW)</option>
-                <option value="2">Level RT (jabatan di tiap RT)</option>
-                <option value="3">Level warga (tampilan portal warga)</option>
-              </select>
+              <Select
+                id="level"
+                value={form.level}
+                onChange={(v) => setForm({ ...form, level: v })}
+                options={[
+                  { value: "1", label: "Level RW (jabatan tingkat RW)" },
+                  { value: "2", label: "Level RT (jabatan di tiap RT)" },
+                  { value: "3", label: "Level warga (tampilan portal warga)" },
+                ]}
+              />
               <span className="field-hint">Menentukan di mana jabatan ini bisa ditetapkan pada menu Pengurus.</span>
             </div>
           </div>
@@ -338,17 +344,13 @@ export default function RolePermissionPage() {
                               <code className="rbac-perm-kode">{p.kode}</code>
                             </td>
                             <td className="rbac-perm-scope">
-                              <select
+                              <Select
                                 className={`ipl-select ipl-select-sm rbac-scope scope-${nilai || "none"}`}
                                 value={nilai}
                                 disabled={terkunci}
-                                onChange={(e) => setScope(p.kode, e.target.value)}
-                                aria-label={`Akses ${p.kode}`}
-                              >
-                                {SCOPE_OPTIONS.map((o) => (
-                                  <option key={o.val} value={o.val}>{o.label}</option>
-                                ))}
-                              </select>
+                                onChange={(v) => setScope(p.kode, v)}
+                                options={SCOPE_OPTIONS.map((o) => ({ value: o.val, label: o.label }))}
+                              />
                             </td>
                           </tr>
                         );
@@ -384,9 +386,9 @@ export default function RolePermissionPage() {
                 {audit.map((a) => (
                   <tr key={a.id}>
                     <td>{waktu(a.createdAt)}</td>
-                    <td>{a.pelaku || "—"}</td>
+                    <td>{a.pelaku || "-"}</td>
                     <td>{AUDIT_LABEL[a.aksi] ?? a.aksi}</td>
-                    <td>{a.keterangan || "—"}</td>
+                    <td>{a.keterangan || "-"}</td>
                   </tr>
                 ))}
               </tbody>

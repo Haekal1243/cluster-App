@@ -62,76 +62,78 @@ export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
         {/* Header */}
         <div className="modal-header">
-          <h2>Unggah Bukti Pembayaran</h2>
-          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Tutup">
+          <h3>Unggah Bukti Pembayaran</h3>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">
             <X size={18} />
           </button>
         </div>
 
-        {/* Info Tagihan */}
-        <div className="bukti-info-card">
-          <div className="bukti-info-row">
-            <span className="bukti-info-label">Periode</span>
-            <span className="bukti-info-value">{bulanLabel}</span>
-          </div>
-          <div className="bukti-info-row">
-            <span className="bukti-info-label">Rumah</span>
-            <span className="bukti-info-value">{rumah?.blokRumah} ({rumah?.rt?.replace("_", " ")})</span>
-          </div>
-          <div className="bukti-info-row">
-            <span className="bukti-info-label">Nominal</span>
-            <span className="bukti-info-value bukti-nominal">
-              Rp {ipl.nominal.toLocaleString("id-ID")}
-            </span>
-          </div>
-        </div>
-
         <form onSubmit={handleSubmit}>
-          {/* Drop Zone */}
-          <div
-            className={`bukti-dropzone ${preview ? "has-preview" : ""}`}
-            onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={(e) => e.preventDefault()}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-          >
-            {preview ? (
-              <div className="bukti-preview-wrap">
-                <img src={preview} alt="Preview bukti" className="bukti-preview-img" />
-                <p className="bukti-preview-name">{file.name}</p>
+          <div className="modal-body">
+            {/* Info Tagihan */}
+            <div className="bukti-info-card">
+              <div className="bukti-info-row">
+                <span className="bukti-info-label">Periode</span>
+                <span className="bukti-info-value">{bulanLabel}</span>
               </div>
-            ) : (
-              <div className="bukti-drop-placeholder">
-                <ImageIcon size={40} strokeWidth={1.2} />
-                <p>Klik atau seret foto bukti transfer ke sini</p>
-                <span>JPG / PNG · Maks. 5 MB</span>
+              <div className="bukti-info-row">
+                <span className="bukti-info-label">Rumah</span>
+                <span className="bukti-info-value">{rumah?.blokRumah} ({rumah?.rt?.replace("_", " ")})</span>
               </div>
+              <div className="bukti-info-row">
+                <span className="bukti-info-label">Nominal</span>
+                <span className="bukti-info-value bukti-nominal">
+                  Rp {ipl.nominal.toLocaleString("id-ID")}
+                </span>
+              </div>
+            </div>
+
+            {/* Drop Zone */}
+            <div
+              className={`bukti-dropzone ${preview ? "has-preview" : ""}`}
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+            >
+              {preview ? (
+                <div className="bukti-preview-wrap">
+                  <img src={preview} alt="Preview bukti" className="bukti-preview-img" />
+                  <p className="bukti-preview-name">{file.name}</p>
+                </div>
+              ) : (
+                <div className="bukti-drop-placeholder">
+                  <ImageIcon size={40} strokeWidth={1.2} />
+                  <p>Klik atau seret foto bukti transfer ke sini</p>
+                  <span>JPG / PNG · Maks. 5 MB</span>
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpg,image/jpeg,image/png"
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+            />
+
+            {preview && (
+              <button
+                type="button"
+                className="bukti-ganti-btn"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload size={14} /> Ganti Foto
+              </button>
             )}
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpg,image/jpeg,image/png"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
 
-          {preview && (
-            <button
-              type="button"
-              className="bukti-ganti-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload size={14} /> Ganti Foto
-            </button>
-          )}
-
-          <div className="modal-actions">
+          <div className="modal-footer">
             <button type="button" className="btn-secondary" onClick={onClose}>
               Batal
             </button>

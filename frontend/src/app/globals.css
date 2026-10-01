@@ -300,6 +300,18 @@ select {
   text-align: center;
 }
 
+.register-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.register-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
 /* ========================================= */
 /* LAYOUT HALAMAN REGISTER (STEPPER & BOX)   */
 /* ========================================= */
@@ -419,9 +431,9 @@ select {
   -moz-appearance: none;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 14px top 50%;
+  background-position: right 26px top 50%;
   background-size: 11px;
-  padding-right: 32px;
+  padding-right: 46px;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -1502,6 +1514,7 @@ select {
   z-index: 40;
   width: 260px;
   max-width: 82vw;
+  max-height: min(70vh, 440px);
   background: var(--db-surface);
   border: 1px solid var(--db-border);
   border-radius: 12px;
@@ -1509,15 +1522,85 @@ select {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   animation: dropdown-pop 0.15s ease-out;
   user-select: none;
   -webkit-user-select: none;
 }
 
+/* Field-field filter di-scroll sendiri kalau kepanjangan, biar halaman di belakangnya
+   nggak ikut turun — tombol Terapkan/Reset tetap nempel kelihatan di bawah. */
+.filter-popover-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
 .filter-popover-field {
   display: flex;
   flex-direction: column;  gap: 6px;
+}
+
+/* Combobox: input teks bebas + dropdown suggestion (mis. Blok Rumah di Tambah Warga) */
+.combobox {
+  position: relative;
+}
+.combobox-input-open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.combobox-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: -1px;
+  z-index: 40;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-top: 1px solid var(--db-bg);
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+  padding: 4px;
+  list-style: none;
+}
+.combobox-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.875rem;
+  color: var(--db-slate-700);
+  cursor: pointer;
+}
+.combobox-option:hover {
+  background: var(--db-bg);
+}
+.combobox-option.is-selected {
+  background: var(--db-bg);
+  font-weight: 600;
+  color: var(--db-primary);
+}
+
+.ui-select-trigger {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: #333;
+}
+.ui-select-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .filter-popover-field label {
@@ -1528,6 +1611,11 @@ select {
 
 .filter-popover-field select {
   width: 100%;
+}
+
+.filter-popover-field input.form-control {
+  padding: 8px 10px;
+  font-size: 0.85rem;
 }
 
 /* Placeholder "Semua Periode" pakai generated content (::before), bukan
@@ -1561,10 +1649,12 @@ select {
 
 .filter-popover-footer {
   display: flex;
+  flex-shrink: 0;
   gap: 8px;
 }
 
 .filter-popover-hint {
+  flex-shrink: 0;
   font-size: 0.72rem;
   color: var(--db-slate-400);
   text-align: center;
@@ -1912,8 +2002,9 @@ select {
 }
 
 .warga-grid-penghuni {
-  font-size: 0.68rem;
-  color: var(--db-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--db-slate-600);
 }
 
 .warga-grid-footer {
@@ -1923,7 +2014,7 @@ select {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 4px;
+  margin-top: auto;
   padding-top: 8px;
   border-top: 1px solid var(--db-border);
 }
@@ -1934,8 +2025,8 @@ select {
 }
 
 .warga-grid-footer .btn-icon {
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
 }
 
 .warga-grid-footer .status-badge {
@@ -2143,11 +2234,11 @@ select {
 
 .modal-box {
   width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
+  max-width: 440px;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--db-surface);
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25);
   overflow: hidden;
@@ -2158,12 +2249,12 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 24px;
+  padding: 14px 20px;
   border-bottom: 1px solid var(--db-border);
 }
 
 .modal-header h3 {
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: var(--db-slate-700);
 }
@@ -2196,12 +2287,12 @@ select {
 .modal-body {
   flex: 1;
   min-height: 0;
-  padding: 20px 24px;
+  padding: 16px 20px;
   overflow-y: auto;
 }
 
 .modal-body textarea.form-control {
-  min-height: 90px;
+  min-height: 80px;
   resize: vertical;
 }
 
@@ -2209,7 +2300,7 @@ select {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 16px 24px;
+  padding: 14px 20px;
   border-top: 1px solid var(--db-border);
   background: var(--db-bg);
 }
@@ -2503,6 +2594,11 @@ select {
   min-width: 0;
 }
 
+@media (max-width: 640px) {
+  /* Tombol Tambah tampil di atas search+filter di mobile */
+  .warga-toolbar-row { flex-direction: column-reverse; }
+}
+
 /* Stats row */
 .warga-stat-row {
   display: grid;
@@ -2657,6 +2753,13 @@ select {
   font-weight: 600;
   font-size: 0.88rem;
   color: var(--db-slate-700);
+}
+
+.penghuni-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .penghuni-email {
@@ -3565,6 +3668,22 @@ select {
 
 .db-toggle-btn:hover:not(.is-active) {
   color: #334155;
+}
+
+@media (max-width: 640px) {
+  .db-section-toggle {
+    display: flex;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .db-section-toggle::-webkit-scrollbar { display: none; }
+  .db-toggle-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+  }
 }
 
 .portal-stat-value.success {
@@ -5175,8 +5294,9 @@ select {
 }
 .keu-card {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
   padding: 16px 18px;
   border-radius: 14px;
   border: 1.5px solid var(--keu-border);
@@ -5192,14 +5312,9 @@ select {
 .keu-card.keu-muted { --keu-tint: #f1f5f9; --keu-border: #cbd5e1; --keu-icon: #94a3b8; }
 /* override flat white + border-left lama hanya untuk keu-card */
 .keu-card.ipl-summary-card { border-left: 0; background: linear-gradient(135deg, var(--keu-tint) 0%, var(--keu-tint) 42%, #ffffff 88%); }
-.keu-card-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
 .keu-icon-circle {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--keu-icon);
   color: #fff;
@@ -5209,18 +5324,23 @@ select {
   flex-shrink: 0;
 }
 .keu-icon-circle svg { stroke: #fff; }
+.keu-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 .keu-card .ipl-summary-label {
-  flex: 1;
-  text-align: right;
+  text-align: left;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--db-slate-500);
+  color: var(--db-slate-600);
   line-height: 1.25;
 }
 .keu-card .ipl-summary-value {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--db-slate-700);
   line-height: 1.1;
@@ -5234,6 +5354,18 @@ select {
 }
 @media (max-width: 640px) {
   .keu-summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .keu-card { padding: 12px; gap: 8px; }
+  .keu-icon-circle { width: 34px; height: 34px; }
+  .keu-icon-circle svg { width: 16px; height: 16px; }
+  .keu-card-text { gap: 2px; }
+  .keu-card .ipl-summary-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+  .keu-card .ipl-summary-value {
+    font-size: 17px;
+  }
 }
 
 /* Table */
@@ -5310,8 +5442,8 @@ select {
 .pengaduan-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px;
+  gap: 10px;
+  padding: 16px;
   background: var(--db-surface);
   border: 1px solid var(--db-border);
   border-radius: 14px;
@@ -5345,21 +5477,42 @@ select {
 
 .pengaduan-card-top .ipl-status-badge { flex: none; }
 
-.pengaduan-card-desc {
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: var(--db-muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Meta jadi "chip" yang tidak pernah patah di tengah (mis. "28 Sep 2026" tetap satu baris). */
+/* Meta mengalir sebagai teks + ikon kecil, dipisah titik — lebih elegan daripada
+   deretan chip kotak, dan tetap rapi saat wrap ke baris baru. */
 .pengaduan-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  row-gap: 4px;
+  font-size: 0.78rem;
+  color: var(--db-slate-500);
+}
+
+.pengaduan-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--db-slate-500);
+  white-space: nowrap;
+}
+
+.pengaduan-meta-item svg {
+  color: var(--db-slate-400);
+  flex-shrink: 0;
+}
+
+.pengaduan-meta-date {
+  margin-top: 2px;
+}
+
+.pengaduan-meta-item + .pengaduan-meta-item::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--db-slate-400);
+  margin: 0 7px;
 }
 
 .pengaduan-chip {
@@ -5661,6 +5814,19 @@ select {
 .ipl-dashboard-alert:hover { background: #fef3c7; }
 .ipl-dashboard-alert strong { font-weight: 700; }
 
+@media (max-width: 640px) {
+  .ipl-dashboard-alert {
+    padding: 10px 14px;
+    font-size: 0.7rem;
+  }
+  .ipl-dashboard-alert span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ipl-dashboard-alert svg { flex-shrink: 0; }
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .ipl-summary-grid { grid-template-columns: repeat(2, 1fr); }
@@ -5668,7 +5834,7 @@ select {
 @media (max-width: 600px) {
   .ipl-summary-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 
-  .ipl-summary-card {
+  .ipl-summary-card:not(.keu-card) {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
@@ -5880,13 +6046,19 @@ select {
   margin-bottom: 16px;
   color: var(--db-slate-600);
 }
+.db-section-header > svg {
+  flex-shrink: 0;
+}
 .db-section-header h3 {
+  margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
+  line-height: 1;
   color: var(--db-slate-700);
 }
 .db-section-sub {
   font-size: 0.78rem;
+  line-height: 1;
   color: var(--db-slate-400);
   margin-left: 2px;
 }
@@ -5896,12 +6068,51 @@ select {
   align-items: center;
   gap: 4px;
   font-size: 0.78rem;
+  line-height: 1;
   font-weight: 600;
   color: var(--db-primary);
   text-decoration: none;
   transition: color 0.15s;
 }
 .db-section-link:hover { color: var(--db-primary-hover); }
+
+/* Grup "periode + Lihat semua" — dibungkus 1 unit biar kalau wrap, turun bareng
+   (nggak kepisah dari h3-nya, yang bikin "Lihat semua" nyasar sendirian). */
+.db-chart-card .db-section-header,
+.db-recent-card .db-section-header {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.db-chart-card .db-section-header h3,
+.db-recent-card .db-section-header h3 {
+  white-space: nowrap;
+}
+.db-section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.db-section-header-right .db-section-sub { margin-left: 0; }
+.db-section-header-right .db-section-link { margin-left: 0; }
+
+@media (max-width: 640px) {
+  .db-chart-card .db-section-header,
+  .db-recent-card .db-section-header {
+    flex-wrap: nowrap;
+    margin-bottom: 12px;
+  }
+  .db-section-header h3 {
+    font-size: 0.82rem;
+  }
+  .db-recent-card .db-section-header-right .db-section-sub {
+    display: none;
+  }
+  .db-recent-card .db-section-header-right .db-section-link {
+    font-size: 0.74rem;
+  }
+}
 
 /* Bar Chart */
 .db-chart-wrap {

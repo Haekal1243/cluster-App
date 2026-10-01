@@ -48,7 +48,7 @@ export default function GantiPasswordModal({ wajib = false, onClose, onSuccess }
 
   return createPortal(
     <div className="modal-overlay" onClick={wajib ? undefined : onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
         <div className="modal-header">
           <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <KeyRound size={18} /> {wajib ? "Buat Kata Sandi Baru" : "Ganti Kata Sandi"}

@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { can } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
 
 export default function WargaLayout({ children }) {
   const pathname = usePathname();
+  const { user } = useUser();
+  const bolehApprove = can(user, "warga.approve_registrasi");
+
   const isRumah = pathname?.includes("/blok-rumah");
+  const isPendaftaran = pathname?.includes("/pendaftaran");
+  const isDataWarga = !isRumah && !isPendaftaran;
 
   return (
     <div className="page-stack">
@@ -20,8 +27,8 @@ export default function WargaLayout({ children }) {
         <Link
           href="/dashboard/warga"
           role="tab"
-          aria-selected={!isRumah}
-          className={`db-toggle-btn ${!isRumah ? "is-active" : ""}`}
+          aria-selected={isDataWarga}
+          className={`db-toggle-btn ${isDataWarga ? "is-active" : ""}`}
         >
           Data Warga
         </Link>
@@ -33,6 +40,16 @@ export default function WargaLayout({ children }) {
         >
           Blok Rumah
         </Link>
+        {bolehApprove && (
+          <Link
+            href="/dashboard/warga/pendaftaran"
+            role="tab"
+            aria-selected={isPendaftaran}
+            className={`db-toggle-btn ${isPendaftaran ? "is-active" : ""}`}
+          >
+            Pendaftaran Masuk
+          </Link>
+        )}
       </div>
 
       {children}

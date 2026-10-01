@@ -6,6 +6,7 @@ import { catatanRapatApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
+import Select from "@/components/ui/Select";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -64,7 +65,7 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
         <div className="modal-header">
           <h3>{mode === "edit" ? "Ubah Catatan Rapat" : "Tambah Catatan Rapat"}</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">
@@ -82,11 +83,12 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
             {pilihArea && (
               <div className="form-group">
                 <label htmlFor="area">Wilayah</label>
-                <select id="area" className="form-control" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })}>
-                  {["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => (
-                    <option key={a} value={a}>{areaLabel(a)}</option>
-                  ))}
-                </select>
+                <Select
+                  id="area"
+                  value={form.area}
+                  onChange={(v) => setForm({ ...form, area: v })}
+                  options={["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => ({ value: a, label: areaLabel(a) }))}
+                />
               </div>
             )}
 
@@ -145,7 +147,7 @@ function DetailModal({ item, onClose }) {
   };
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 640 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
         <div className="modal-header">
           <h3>{item.judul}</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup"><X size={18} /></button>
@@ -258,12 +260,15 @@ export default function CatatanRapatPage() {
             <input className="list-search-input" placeholder="Cari judul atau isi notulen..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           {lihatSemuaArea && (
-            <select className="ipl-select ipl-select-sm" value={filterArea} onChange={(e) => setFilterArea(e.target.value)}>
-              <option value="SEMUA">Semua Wilayah</option>
-              {["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => (
-                <option key={a} value={a}>{areaLabel(a)}</option>
-              ))}
-            </select>
+            <Select
+              className="ipl-select ipl-select-sm"
+              value={filterArea}
+              onChange={(v) => setFilterArea(v)}
+              options={[
+                { value: "SEMUA", label: "Semua Wilayah" },
+                ...["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => ({ value: a, label: areaLabel(a) })),
+              ]}
+            />
           )}
         </div>
       </div>

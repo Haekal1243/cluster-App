@@ -129,7 +129,11 @@ export default function LoginPage() {
       </form>
 
       <div className="register-section">
-        Belum punya akun? <Link href="/register">Daftar di sini</Link>.
+        Belum punya akun?{" "}
+        <Link href="/register" className="register-link">
+          Daftar di sini
+        </Link>
+        .
         <br />
         Lupa kata sandi? Hubungi sekretaris / ketua RT Anda.
       </div>

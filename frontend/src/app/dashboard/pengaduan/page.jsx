@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus, Eye, MessageSquareWarning, Megaphone, Calendar, Search, Forward,
+  Plus, Eye, MessageSquareWarning, Megaphone, Calendar, Search, Forward, User, MapPin, Tag,
 } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
+import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 import PengaduanFormModal from "@/components/pengaduan/PengaduanFormModal";
 import PengaduanDetailModal from "@/components/pengaduan/PengaduanDetailModal";
@@ -98,6 +99,12 @@ function formatDate(dateStr) {
 
 /** Kartu pengaduan untuk layar HP (desktop memakai tabel). Dipakai bersama oleh tampilan pengurus dan warga. */
 function PengaduanCard({ item, onOpen, pelapor, aksi }) {
+  const metaItems = [
+    pelapor && { icon: User, label: pelapor },
+    { icon: MapPin, label: areaLabel(item.tujuan) },
+    { icon: Tag, label: KATEGORI_LABELS[item.kategori] || item.kategori },
+  ].filter(Boolean);
+
   return (
     <div
       className="pengaduan-card"
@@ -110,16 +117,19 @@ function PengaduanCard({ item, onOpen, pelapor, aksi }) {
         <h3 className="pengaduan-card-title">{item.judul}</h3>
         <StatusBadge status={item.status} />
       </div>
-      {item.deskripsi && <p className="pengaduan-card-desc">{item.deskripsi}</p>}
       <div className="pengaduan-card-meta">
-        {pelapor && <span className="pengaduan-chip">{pelapor}</span>}
-        <span className="pengaduan-chip">{areaLabel(item.tujuan)}</span>
-        <span className="pengaduan-chip">{KATEGORI_LABELS[item.kategori] || item.kategori}</span>
-        <span className="pengaduan-chip"><Calendar size={12} /> {formatDate(item.createdAt)}</span>
-        {item.diteruskanAt && (
-          <span className="pengaduan-chip pengaduan-chip-info"><Forward size={12} /> Diteruskan ke RW</span>
-        )}
+        {metaItems.map((m, i) => (
+          <span key={i} className="pengaduan-meta-item">
+            <m.icon size={12} /> {m.label}
+          </span>
+        ))}
       </div>
+      <span className="pengaduan-meta-item pengaduan-meta-date">
+        <Calendar size={12} /> {formatDate(item.createdAt)}
+      </span>
+      {item.diteruskanAt && (
+        <span className="pengaduan-chip pengaduan-chip-info"><Forward size={12} /> Diteruskan ke RW</span>
+      )}
       {aksi && (
         <div className="pengaduan-card-actions" onClick={(e) => e.stopPropagation()}>{aksi}</div>
       )}
@@ -286,64 +296,59 @@ function AdminPengaduanView({ user }) {
           onReset={handleFilterReset}
         >
           <FilterField label="Bulan">
-            <select
+            <Select
               className="ipl-select ipl-select-sm"
               value={draftFilterBulan}
-              onChange={(e) => setDraftFilterBulan(e.target.value)}
-            >
-              <option value="SEMUA">Semua Bulan</option>
-              {availableBulan.map(({ val, label }) => (
-                <option key={val} value={val}>{label}</option>
-              ))}
-            </select>
+              onChange={(v) => setDraftFilterBulan(v)}
+              options={[
+                { value: "SEMUA", label: "Semua Bulan" },
+                ...availableBulan.map(({ val, label }) => ({ value: val, label })),
+              ]}
+            />
           </FilterField>
           <FilterField label="Tahun">
-            <select
+            <Select
               className="ipl-select ipl-select-sm"
               value={draftFilterTahun}
-              onChange={(e) => setDraftFilterTahun(e.target.value)}
-            >
-              <option value="SEMUA">Semua Tahun</option>
-              {availableTahun.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+              onChange={(v) => setDraftFilterTahun(v)}
+              options={[
+                { value: "SEMUA", label: "Semua Tahun" },
+                ...availableTahun.map((y) => ({ value: y, label: y })),
+              ]}
+            />
           </FilterField>
           <FilterField label="Kategori">
-            <select
+            <Select
               className="ipl-select ipl-select-sm"
               value={draftFilterKategori}
-              onChange={(e) => setDraftFilterKategori(e.target.value)}
-            >
-              <option value="SEMUA">Semua Kategori</option>
-              {Object.entries(KATEGORI_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+              onChange={(v) => setDraftFilterKategori(v)}
+              options={[
+                { value: "SEMUA", label: "Semua Kategori" },
+                ...Object.entries(KATEGORI_LABELS).map(([value, label]) => ({ value, label })),
+              ]}
+            />
           </FilterField>
           <FilterField label="Status">
-            <select
+            <Select
               className="ipl-select ipl-select-sm"
               value={draftFilterStatus}
-              onChange={(e) => setDraftFilterStatus(e.target.value)}
-            >
-              <option value="SEMUA">Semua Status</option>
-              {Object.entries(STATUS_LABELS).map(([value, { label }]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+              onChange={(v) => setDraftFilterStatus(v)}
+              options={[
+                { value: "SEMUA", label: "Semua Status" },
+                ...Object.entries(STATUS_LABELS).map(([value, { label }]) => ({ value, label })),
+              ]}
+            />
           </FilterField>
           <FilterField label="Urutan Tanggal">
-            <select
+            <Select
               className="ipl-select ipl-select-sm"
               value={draftUrutan}
-              onChange={(e) => setDraftUrutan(e.target.value)}
-            >
-              <option value="prioritas">Status dulu (default)</option>
-              {Object.entries(URUTAN_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+              onChange={(v) => setDraftUrutan(v)}
+              options={[
+                { value: "prioritas", label: "Status dulu (default)" },
+                ...Object.entries(URUTAN_LABELS).map(([value, label]) => ({ value, label })),
+              ]}
+            />
           </FilterField>
         </FilterPopover>
       </div>
@@ -383,7 +388,7 @@ function AdminPengaduanView({ user }) {
                 {paginatedItems.map((item) => (
                   <tr key={item.id}>
                     <td data-label="Judul">{item.judul}</td>
-                    <td data-label="Pelapor">{item.pelapor?.namaUser || "—"}</td>
+                    <td data-label="Pelapor">{item.pelapor?.namaUser || "-"}</td>
                     <td data-label="Tujuan">
                       {areaLabel(item.tujuan)}
                       {item.diteruskanAt && (
@@ -550,39 +555,34 @@ function WargaPengaduanView({ user }) {
               onReset={handleFilterReset}
             >
               <FilterField label="Status">
-                <select
+                <Select
                   className="ipl-select ipl-select-sm"
                   value={draftStatus}
-                  onChange={(e) => setDraftStatus(e.target.value)}
-                >
-                  <option value="SEMUA">Semua Status</option>
-                  {Object.entries(STATUS_LABELS).map(([value, { label }]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setDraftStatus(v)}
+                  options={[
+                    { value: "SEMUA", label: "Semua Status" },
+                    ...Object.entries(STATUS_LABELS).map(([value, { label }]) => ({ value, label })),
+                  ]}
+                />
               </FilterField>
               <FilterField label="Kategori">
-                <select
+                <Select
                   className="ipl-select ipl-select-sm"
                   value={draftKategori}
-                  onChange={(e) => setDraftKategori(e.target.value)}
-                >
-                  <option value="SEMUA">Semua Kategori</option>
-                  {Object.entries(KATEGORI_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setDraftKategori(v)}
+                  options={[
+                    { value: "SEMUA", label: "Semua Kategori" },
+                    ...Object.entries(KATEGORI_LABELS).map(([value, label]) => ({ value, label })),
+                  ]}
+                />
               </FilterField>
               <FilterField label="Urutan Tanggal">
-                <select
+                <Select
                   className="ipl-select ipl-select-sm"
                   value={draftUrutan}
-                  onChange={(e) => setDraftUrutan(e.target.value)}
-                >
-                  {Object.entries(URUTAN_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setDraftUrutan(v)}
+                  options={Object.entries(URUTAN_LABELS).map(([value, label]) => ({ value, label }))}
+                />
               </FilterField>
             </FilterPopover>
           </div>

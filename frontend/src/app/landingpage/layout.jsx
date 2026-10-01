@@ -16,7 +16,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata = {
-  title: "Portal Warga RW 21 — Cluster Topaz",
+  title: "Portal Warga RW 21 - Cluster Topaz",
   description: "Portal resmi administrasi warga RW 21 Cluster Topaz, Kota Depok.",
 };
 

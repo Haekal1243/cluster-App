@@ -201,6 +201,7 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
               </div>
               <p className="form-hint">
                 Pilih warga yang bertanggung jawab membayar IPL untuk rumah ini.
+                Rumah kosong pun sudah pasti ada pemiliknya - tetap pilih pemiliknya.
               </p>
             </div>
 
@@ -217,6 +218,7 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
                 ]}
               />
               <p className="form-hint">
+                Kosong = tidak dihuni, tetapi pemiliknya tetap membayar IPL dan masuk kas RT.
                 Tandai rumah yang dikontrakkan supaya terlihat berbeda dari rumah tetap.
               </p>
             </div>

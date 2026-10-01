@@ -4611,6 +4611,26 @@ select {
   border-color: #6366f1;
 }
 
+.bukti-dropzone.is-dragover {
+  border-color: #6366f1;
+  background: rgba(99,102,241,0.06);
+}
+
+.bukti-dropzone.has-error {
+  border-color: var(--db-danger);
+  background: rgba(220,38,38,0.04);
+}
+
+.bukti-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.bukti-file-actions .bukti-ganti-btn { margin-bottom: 0; }
+
+.spin { animation: spin 0.8s linear infinite; }
+
 .bukti-drop-placeholder {
   display: flex;
   flex-direction: column;

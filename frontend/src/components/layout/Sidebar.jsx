@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { X, LogOut } from "lucide-react";
 import { showConfirm } from "@/lib/message";
 import { clearSession } from "@/lib/session";
-import { NAV_ITEMS, resolveLabel } from "@/lib/nav";
+import { NAV_ITEMS, navItemFor, resolveLabel } from "@/lib/nav";
 import { useUser } from "@/lib/useUser";
 
 export default function Sidebar({
@@ -19,6 +19,11 @@ export default function Sidebar({
 
   // Menu mengikuti hak akses (permission) user dari database, bukan nama role.
   const navItems = user ? NAV_ITEMS.filter((item) => item.allow(user)) : [];
+
+  // Menu aktif mengikuti prefix path (mis. /dashboard/kelola-ipl/tagihan membuat
+  // menu Pengelolaan IPL aktif), konsisten dengan judul halaman & guard akses.
+  // Beranda ditangani khusus karena navItemFor() mengembalikannya null.
+  const activeHref = pathname === "/dashboard" ? "/dashboard" : navItemFor(pathname)?.href;
 
   const handleLogout = async () => {
     const confirmed = await showConfirm(
@@ -55,7 +60,7 @@ export default function Sidebar({
 
         <nav className="sidebar-nav">
           {navItems.map(({ label, href, icon: Icon }) => {
-            const isActive = pathname === href;
+            const isActive = href === activeHref;
             const resolvedLabel = resolveLabel(label, user);
             return (
               <Link

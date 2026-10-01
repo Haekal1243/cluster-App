@@ -20,6 +20,7 @@ import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
 import { UpdateRumahDto } from './dto/update-rumah.dto';
 import { DaftarMandiriDto } from './dto/daftar-mandiri.dto';
+import { SetujuiPendaftaranDto } from './dto/setujui-pendaftaran.dto';
 import { TolakPendaftaranDto } from './dto/tolak-pendaftaran.dto';
 import { buktiMulterOptions } from './bukti.multer';
 import { Access, RequirePermission } from '../auth/permission.decorators';
@@ -173,8 +174,12 @@ export class WargaController {
 
   @Patch('pendaftaran/:id/setuju')
   @RequirePermission('warga', 'approve_registrasi')
-  setujuiPendaftaran(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
-    return this.wargaService.setujuiPendaftaran(ctx, id);
+  setujuiPendaftaran(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto?: SetujuiPendaftaranDto,
+  ) {
+    return this.wargaService.setujuiPendaftaran(ctx, id, dto?.status);
   }
 
   @Patch('pendaftaran/:id/tolak')

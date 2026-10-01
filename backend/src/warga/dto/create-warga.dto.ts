@@ -1,7 +1,6 @@
 import {
   IsEmail,
   IsEnum,
-  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -52,8 +51,10 @@ export class CreateWargaDto {
   @Transform(blank)
   password?: string;
 
+  // KOSONG berarti tidak dihuni tetapi tetap ada pemilik/penanggung jawab IPL
+  // (rumah kosong sudah pasti terjual; tagihannya masuk kas RT).
   @IsOptional()
-  @IsIn([StatusRumah.DIHUNI_TETAP, StatusRumah.DIHUNI_KONTRAK])
+  @IsEnum(StatusRumah)
   @Transform(blank)
   statusRumah?: StatusRumah;
 }

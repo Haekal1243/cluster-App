@@ -219,8 +219,10 @@ export default function WargaFormModal({
                     options={[
                       { value: "DIHUNI_TETAP", label: "Dihuni (tetap)" },
                       { value: "DIHUNI_KONTRAK", label: "Dihuni (kontrak)" },
+                      { value: "KOSONG", label: "Kosong (ada pemilik)" },
                     ]}
                   />
+                  <span className="field-hint">Rumah kosong tetap ditagih IPL dan masuk kas RT, tidak disetor ke RW.</span>
                 </div>
               </>
             )}

@@ -278,7 +278,10 @@ function AdminKeuanganView({ user }) {
   const bolehHapus = can(user, "keuangan.delete");
   // Scope ALL (ketua/bendahara RW, admin) melihat RW + semua RT; scope AREA hanya wilayahnya.
   const semuaArea = scopeOf(user, "keuangan.read") === "ALL";
-  const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL";
+  // Isolasi kas per wilayah: hanya admin yang boleh memilih wilayah lain.
+  // Pengurus (RT maupun RW) terkunci ke kas areanya sendiri.
+  const isAdmin = user?.role === "ADMIN";
+  const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL" && isAdmin;
   const isBendaharaRT = user?.role === "BENDAHARA_RT";
   const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT", "BENDAHARA_RW"].includes(user?.role);
   const getCurrentYm = () => {
@@ -639,7 +642,7 @@ function AdminKeuanganView({ user }) {
                 ]}
               />
             </FilterField>
-            {semuaArea && (
+            {semuaArea && isAdmin && (
               <FilterField label="Wilayah">
                 <Select
                   className="ipl-select ipl-select-sm"
@@ -669,7 +672,14 @@ function AdminKeuanganView({ user }) {
               <p className="keu-rincian-title">Pemasukan otomatis</p>
               <ul className="keu-rincian-list">
                 {ringkasan.pemasukanOtomatis.kasRt > 0 || ringkasan.areas.some((a) => a !== "RW") ? (
-                  <li><span>Kas RT (dari tagihan warga yang lunas)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.kasRt)}</strong></li>
+                  <li>
+                    <span>Kas RT (dari tagihan warga yang lunas)
+                      {ringkasan.pemasukanOtomatis.kasRtDariRumahKosong > 0 && (
+                        <> termasuk {formatRupiah(ringkasan.pemasukanOtomatis.kasRtDariRumahKosong)} dari rumah kosong</>
+                      )}
+                    </span>
+                    <strong>{formatRupiah(ringkasan.pemasukanOtomatis.kasRt)}</strong>
+                  </li>
                 ) : null}
                 {ringkasan.areas.includes("RW") && (
                   <li><span>Setoran IPL dari RT (sudah dikonfirmasi)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.setoranIpl)}</strong></li>
@@ -770,7 +780,7 @@ function AdminKeuanganView({ user }) {
               </thead>
               <tbody>
                 {riwayatPage.map((t) => {
-                  const buktiUrl = getBuktiUrl(t);
+                  const buktiPath = getBuktiPath(t);
                   const isManual = t.sumber === "MANUAL" || !t.sumber;
                   const isIplKas = t.sumber === "IPL_KAS";
                   const canEdit = (isManual || isIplKas) && bolehUbah;

@@ -12,7 +12,6 @@ import {
   Wallet,
   TrendingUp,
   FileX,
-  CreditCard,
   Home,
   Upload,
   Pencil,
@@ -23,6 +22,7 @@ import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import { BillSummaryCard } from "@/components/ipl/BillSummaryCard";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
@@ -92,7 +92,7 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
     }
     const confirmed = await showConfirm(
       "Buat Tagihan?",
-      `Tagihan periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode}: IPL ${formatRupiah(form.nominalIpl)} + kas ${formatRupiah(form.nominalKas || 0)} = ${formatRupiah(total)} per rumah aktif.`,
+      `Tagihan periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode}: IPL ${formatRupiah(form.nominalIpl)} + kas ${formatRupiah(form.nominalKas || 0)} = ${formatRupiah(total)} per rumah ber-pemilik (termasuk rumah kosong — porsi IPL-nya masuk kas RT). Generate ulang periode yang sama hanya menagih rumah baru yang belum punya tagihan.`,
       "question",
       "Ya, Buat!"
     );
@@ -284,7 +284,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
     <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
       <div className="ipl-table-header">
         <span className="ipl-table-title">Rekap per RT - {periodeLabel}</span>
-        <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
+        <span className="ipl-table-count">IPL rumah dihuni disetor RT ke RW; rumah kosong masuk kas RT</span>
       </div>
       <div className="ipl-table-wrapper">
         <table className="ipl-table">
@@ -294,6 +294,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
               <th>Lunas / Tagihan</th>
               <th>IPL Terkumpul</th>
               <th>Kas RT</th>
+              <th>Rumah Kosong</th>
               <th>Sudah Disetor</th>
               <th>Belum Disetor</th>
             </tr>
@@ -305,6 +306,11 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
                 <td>{r.lunas} / {r.totalTagihan}</td>
                 <td className="ipl-nominal">{formatRupiah(r.terkumpulIpl)}</td>
                 <td>{formatRupiah(r.terkumpulKas)}</td>
+                <td>
+                  {r.terkumpulRumahKosong?.jumlahTagihan > 0
+                    ? `${r.terkumpulRumahKosong.jumlahTagihan} tagihan · ${formatRupiah(r.terkumpulRumahKosong.nominal)}`
+                    : <span className="text-muted">—</span>}
+                </td>
                 <td>{formatRupiah(r.sudahDisetor)}</td>
                 <td>
                   <span className={r.belumDisetor > 0 ? "ipl-badge badge-menunggu" : ""}>
@@ -1085,12 +1091,15 @@ export function WargaIuranView({ user }) {
     return tagihanGabungan.filter((t) => (t.rumah?.id ?? t.idRumah) === id);
   }, [tagihanGabungan, selectedRumahId]);
 
-  // Ringkasan tampilan (periode terpilih, sesuai filter rumah)
+  // Ringkasan tampilan (periode terpilih, sesuai filter rumah).
+  // Nominal hanya menjumlah tagihan yang belum lunas (BELUM_LUNAS + MENUNGGU_KONFIRMASI);
+  // yang sudah LUNAS dikecualikan.
   const ringkasan = useMemo(() => {
-    const total = displayData.reduce((s, t) => s + (t.nominal || 0), 0);
+    const tagihanAktif = displayData.filter((t) => t.statusPembayaran !== "LUNAS");
+    const total = tagihanAktif.reduce((s, t) => s + (Number(t.nominal) || 0), 0);
     return {
       totalNominal: total,
-      totalTagihan: displayData.length,
+      totalTagihan: tagihanAktif.length,
       lunas: displayData.filter((t) => t.statusPembayaran === "LUNAS").length,
       belumLunas: displayData.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length,
       menunggu: displayData.filter((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI").length,
@@ -1135,46 +1144,21 @@ export function WargaIuranView({ user }) {
   return (
     <div className="page-stack">
       {/* Ringkasan Total Gabungan */}
-      <section className="portal-tagihan-hero">
-        <div className="portal-tagihan-hero-left">
-          <div className="portal-tagihan-hero-icon">
-            <CreditCard size={28} />
-          </div>
-          <div>
-            <p className="portal-tagihan-period">
-              {selectedRumahId === "semua"
-                ? `Semua Unit (${rumahList.length} Rumah)`
-                : (() => {
-                  const r = rumahList.find((x) => x.id === Number(selectedRumahId));
-                  return r ? `${r.blokRumah} · ${formatRt(r.rt)}` : "";
-                })()}
-            </p>
-            <h3 className="portal-tagihan-month">
-              Total Tagihan {heroLabel}
-            </h3>
-            <p className="portal-stat-sub">
-              {ringkasan.lunas} lunas · {ringkasan.belumLunas} belum lunas
-              {ringkasan.menunggu > 0 ? ` · ${ringkasan.menunggu} menunggu` : ""}
-            </p>
-          </div>
-        </div>
-
-        {loadingTagihan ? (
-          <div className="portal-spinner-sm" />
-        ) : (
-          <div className="portal-tagihan-hero-right">
-            <span className="portal-tagihan-amount">
-              {rupiah(ringkasan.totalNominal)}
-            </span>
-            {ringkasan.totalTagihan > 0 && (
-              <span className="portal-stat-sub">
-                {ringkasan.totalTagihan} tagihan
-                {rumahList.length > 1 && selectedRumahId === "semua" ? ` · ${rumahList.length} unit` : ""}
-              </span>
-            )}
-          </div>
-        )}
-      </section>
+      <BillSummaryCard
+        unitLabel={
+          selectedRumahId === "semua"
+            ? `Semua Unit (${rumahList.length} Rumah)`
+            : (() => {
+              const r = rumahList.find((x) => x.id === Number(selectedRumahId));
+              return r ? `${r.blokRumah} · ${formatRt(r.rt)}` : "";
+            })()
+        }
+        periodLabel={heroLabel}
+        outstanding={ringkasan.totalNominal}
+        paidCount={ringkasan.lunas}
+        unpaidCount={ringkasan.belumLunas + ringkasan.menunggu}
+        loading={loadingTagihan}
+      />
 
       {/* ── Search + Filter (sama seperti Tagihan IPL admin) ── */}
       <div className="list-toolbar-row">

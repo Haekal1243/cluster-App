@@ -91,7 +91,7 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
     }
     const confirmed = await showConfirm(
       "Buat Tagihan?",
-      `Tagihan periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode}: IPL ${formatRupiah(form.nominalIpl)} + kas ${formatRupiah(form.nominalKas || 0)} = ${formatRupiah(total)} per rumah aktif.`,
+      `Tagihan periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode}: IPL ${formatRupiah(form.nominalIpl)} + kas ${formatRupiah(form.nominalKas || 0)} = ${formatRupiah(total)} per rumah ber-pemilik (termasuk rumah kosong — porsi IPL-nya masuk kas RT). Generate ulang periode yang sama hanya menagih rumah baru yang belum punya tagihan.`,
       "question",
       "Ya, Buat!"
     );
@@ -288,7 +288,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
     <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
       <div className="ipl-table-header">
         <span className="ipl-table-title">Rekap per RT — {periodeLabel}</span>
-        <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
+        <span className="ipl-table-count">IPL rumah dihuni disetor RT ke RW; rumah kosong masuk kas RT</span>
       </div>
       <div className="ipl-table-wrapper">
         <table className="ipl-table">
@@ -298,6 +298,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
               <th>Lunas / Tagihan</th>
               <th>IPL Terkumpul</th>
               <th>Kas RT</th>
+              <th>Rumah Kosong</th>
               <th>Sudah Disetor</th>
               <th>Belum Disetor</th>
             </tr>
@@ -309,6 +310,11 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
                 <td>{r.lunas} / {r.totalTagihan}</td>
                 <td className="ipl-nominal">{formatRupiah(r.terkumpulIpl)}</td>
                 <td>{formatRupiah(r.terkumpulKas)}</td>
+                <td>
+                  {r.terkumpulRumahKosong?.jumlahTagihan > 0
+                    ? `${r.terkumpulRumahKosong.jumlahTagihan} tagihan · ${formatRupiah(r.terkumpulRumahKosong.nominal)}`
+                    : <span className="text-muted">—</span>}
+                </td>
                 <td>{formatRupiah(r.sudahDisetor)}</td>
                 <td>
                   <span className={r.belumDisetor > 0 ? "ipl-badge badge-menunggu" : ""}>
@@ -594,7 +600,7 @@ function AdminIuranView({ user }) {
               <span className="ipl-summary-label">Total Tagihan</span>
             </div>
             <span className="ipl-summary-value">{formatRupiah(summary.totalNominal)}</span>
-            <span className="ipl-summary-sub">{summary.total} rumah aktif</span>
+            <span className="ipl-summary-sub">{summary.total} tagihan</span>
           </div>
           <div className="ipl-summary-card keu-card keu-green">
             <div className="keu-card-head">

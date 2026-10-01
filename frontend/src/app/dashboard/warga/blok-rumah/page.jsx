@@ -60,12 +60,14 @@ export default function BlokRumahPage() {
   }, []);
 
   const stats = useMemo(() => {
-    const dihuni = rumah.filter((r) => r.userId !== null);
+    const kosong = rumah.filter((r) => r.status === "KOSONG");
     return {
       total: rumah.length,
-      tetap: dihuni.filter((r) => r.status === "DIHUNI_TETAP").length,
-      kontrak: dihuni.filter((r) => r.status === "DIHUNI_KONTRAK").length,
-      kosong: rumah.length - dihuni.length,
+      tetap: rumah.filter((r) => r.status === "DIHUNI_TETAP").length,
+      kontrak: rumah.filter((r) => r.status === "DIHUNI_KONTRAK").length,
+      kosong: kosong.length,
+      kosongAdaPemilik: kosong.filter((r) => r.userId !== null).length,
+      kosongBelumDaftar: kosong.filter((r) => r.userId === null).length,
       warga: warga.length,
     };
   }, [rumah, warga]);
@@ -160,7 +162,7 @@ export default function BlokRumahPage() {
             <span className="ipl-summary-label">Rumah Kosong</span>
           </div>
           <span className="ipl-summary-value">{stats.kosong}</span>
-          <span className="ipl-summary-sub">belum berpenghuni</span>
+          <span className="ipl-summary-sub">{stats.kosongAdaPemilik} ada pemilik · {stats.kosongBelumDaftar} belum daftar</span>
         </div>
       </div>
 
@@ -261,7 +263,7 @@ export default function BlokRumahPage() {
                           <span className="penghuni-empty">—</span>
                         )}
                       </td>
-                      <td><span className={`status-badge ${st.cls}`}>{item.userId ? `Dihuni (${st.label.toLowerCase()})` : "Kosong"}</span></td>
+                      <td><span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span></td>
                       {(bolehUbah || bolehHapus) && (
                         <td>
                           <div className="table-actions">
@@ -295,9 +297,9 @@ export default function BlokRumahPage() {
                     {item.blokRumah}
                     <span className="rt-badge">{areaLabel(item.rt)}</span>
                   </h3>
-                  <span className="meta-item warga-grid-penghuni">
-                    {item.penghuni ? item.penghuni.namaUser : "Belum ada penghuni"}
-                  </span>
+                    <span className="meta-item warga-grid-penghuni">
+                      {item.penghuni ? item.penghuni.namaUser : "Pemilik belum terdaftar"}
+                    </span>
                   <div className="warga-grid-footer">
                     <div className="table-actions">
                       {bolehUbah && (
@@ -311,7 +313,7 @@ export default function BlokRumahPage() {
                         </button>
                       )}
                     </div>
-                    <span className={`status-badge ${st.cls}`}>{item.userId ? st.label : "Kosong"}</span>
+                    <span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span>
                   </div>
                 </div>
               );

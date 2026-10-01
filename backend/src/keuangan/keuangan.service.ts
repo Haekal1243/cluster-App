@@ -214,10 +214,11 @@ export class KeuanganService {
       const iplRows = await this.prisma.ipl.findMany({
         where: whereIpl,
         select: {
+          nominalIpl: true,
           nominalKas: true,
           bulanPeriode: true,
           tahunPeriode: true,
-          rumah: { select: { rt: true } },
+          rumah: { select: { rt: true, status: true } },
           pembayaran: {
             select: { tanggalKonfirmasi: true },
             orderBy: { tanggalKonfirmasi: 'desc' },
@@ -226,13 +227,14 @@ export class KeuanganService {
         },
       });
 
-      // group by RT + period (YYYY-MM) -> 1 baris/bulan/RT
+      // group by RT + period (YYYY-MM) -> 1 baris/bulan/RT.
+      // Rumah KOSONG: porsi IPL dialihkan ke kas RT, kontribusinya = IPL + Kas.
       const BULAN_LABEL: Record<string, string> = { "01":"Jan","02":"Feb","03":"Mar","04":"Apr","05":"Mei","06":"Jun","07":"Jul","08":"Agu","09":"Sep","10":"Okt","11":"Nov","12":"Des" };
       const groups = new Map<string, { rt: RT; bulan:string; tahun:string; total:number; count:number; latest: Date | null }>();
       for (const r of iplRows) {
         const key = `${r.rumah.rt}-${r.tahunPeriode}-${r.bulanPeriode}`;
         const g = groups.get(key) ?? { rt: r.rumah.rt, bulan: r.bulanPeriode, tahun: r.tahunPeriode, total:0, count:0, latest:null };
-        g.total += r.nominalKas;
+        g.total += r.nominalKas + (r.rumah.status === 'KOSONG' ? r.nominalIpl : 0);
         g.count += 1;
         const t = r.pembayaran[0]?.tanggalKonfirmasi ?? null;
         if (t && (!g.latest || t > g.latest)) g.latest = t;
@@ -284,9 +286,11 @@ export class KeuanganService {
       }
     }
     if (needSetor && setorRtList.length > 0) {
+      // Porsi IPL rumah KOSONG tidak disetor ke RW (masuk kas RT), jadi
+      // dikecualikan dari baris Setor IPL.
       const whereIplSetor: Prisma.IplWhereInput = {
         setoran: { status: 'DIKONFIRMASI' },
-        rumah: { rt: { in: setorRtList } },
+        rumah: { rt: { in: setorRtList }, status: { not: 'KOSONG' } },
       };
       if (range) (whereIplSetor as any).OR = range.periodeOr;
       const iplSetorRows = await this.prisma.ipl.findMany({
@@ -527,15 +531,28 @@ export class KeuanganService {
       if (!rt || !tahun || !bulan) throw new NotFoundException('ID IPL tidak valid.');
       assertInArea(ctx, rt as Area);
       if (dto.nominal !== undefined) {
-        const count = await this.prisma.ipl.count({ where: { statusPembayaran: 'LUNAS', bulanPeriode: bulan, tahunPeriode: tahun, rumah: { rt } } });
-        if (count === 0) throw new NotFoundException('Tidak ada tagihan LUNAS untuk periode tersebut.');
-        const nominalPerTagihan = Math.floor(Number(dto.nominal) / count);
-        let sisa = Number(dto.nominal) - nominalPerTagihan * count;
-        const rows = await this.prisma.ipl.findMany({ where: { statusPembayaran: 'LUNAS', bulanPeriode: bulan, tahunPeriode: tahun, rumah: { rt } }, select: { id: true } });
+        const rows = await this.prisma.ipl.findMany({
+          where: { statusPembayaran: 'LUNAS', bulanPeriode: bulan, tahunPeriode: tahun, rumah: { rt } },
+          select: { id: true, nominalIpl: true, rumah: { select: { status: true } } },
+        });
+        if (rows.length === 0) throw new NotFoundException('Tidak ada tagihan LUNAS untuk periode tersebut.');
+        const nominalPerTagihan = Math.floor(Number(dto.nominal) / rows.length);
+        let sisa = Number(dto.nominal) - nominalPerTagihan * rows.length;
         for (const r of rows) {
           const add = sisa > 0 ? 1 : 0;
           if (add) sisa--;
-          await this.prisma.ipl.update({ where: { id: r.id }, data: { nominalKas: nominalPerTagihan + add } });
+          const perTagihan = nominalPerTagihan + add;
+          // Rumah kosong: porsinya sudah menyatu sebagai kas RT sehingga
+          // split IPL/Kas tidak bermakna — normalisasi ke Kas semua agar
+          // totalnya tetap pas.
+          if (r.rumah.status === 'KOSONG') {
+            await this.prisma.ipl.update({
+              where: { id: r.id },
+              data: { nominalIpl: 0, nominalKas: perTagihan },
+            });
+          } else {
+            await this.prisma.ipl.update({ where: { id: r.id }, data: { nominalKas: perTagihan } });
+          }
         }
       }
       return { message: `Pemasukan Kas RT ${rt} periode ${bulan}/${tahun} berhasil diperbarui.` };
@@ -578,9 +595,19 @@ export class KeuanganService {
       const bulan = parts[2];
       if (!rt || !tahun || !bulan) throw new NotFoundException('ID IPL tidak valid.');
       assertInArea(ctx, rt as Area);
-      // Hapus pemasukan Kas RT bulan tersebut = set nominalKas 0 untuk tagihan LUNAS periode terkait
-      await this.prisma.ipl.updateMany({ where: { statusPembayaran: 'LUNAS', bulanPeriode: bulan, tahunPeriode: tahun, rumah: { rt } }, data: { nominalKas: 0 } });
-      return { message: `Pemasukan Kas RT ${rt} periode ${bulan}/${tahun} berhasil dihapus (nominalKas di-nol-kan).` };
+      // Hapus pemasukan Kas RT bulan tersebut = nol-kan kontribusi kas tiap
+      // tagihan LUNAS periode terkait (rumah kosong: IPL-nya pun ikut di-nol-kan
+      // karena sudah menyatu sebagai kas RT).
+      const base = { statusPembayaran: 'LUNAS', bulanPeriode: bulan, tahunPeriode: tahun, rumah: { rt } } as const;
+      await this.prisma.ipl.updateMany({
+        where: { ...base, rumah: { rt, status: { not: 'KOSONG' } } },
+        data: { nominalKas: 0 },
+      });
+      await this.prisma.ipl.updateMany({
+        where: { ...base, rumah: { rt, status: 'KOSONG' } },
+        data: { nominalIpl: 0, nominalKas: 0 },
+      });
+      return { message: `Pemasukan Kas RT ${rt} periode ${bulan}/${tahun} berhasil dihapus (kontribusi kas di-nol-kan).` };
     }
     if (sid.startsWith('setoran-')) throw new ForbiddenException('Setoran tidak dapat dihapus dari menu Keuangan.');
     const existing = await this.findForWrite(ctx, sid);
@@ -639,19 +666,28 @@ export class KeuanganService {
     if (userRt && (['RT_01','RT_02','RT_03','RT_04'] as string[]).includes(userRt)) {
       setorRtList = setorRtList.filter((r) => r === userRt);
     }
-    const setorRtSaja = setorRtList.length ? { rumah: { rt: { in: setorRtList } } } : tanpaRw;
-    const setorRtSajaAll = setorRtList.length ? { rumah: { rt: { in: setorRtList } } } : tanpaRw;
+    const setorRtSaja = setorRtList.length
+      ? { rumah: { rt: { in: setorRtList }, status: { not: 'KOSONG' as const } } }
+      : tanpaRw;
+    const setorRtSajaAll = setorRtList.length
+      ? { rumah: { rt: { in: setorRtList }, status: { not: 'KOSONG' as const } } }
+      : tanpaRw;
+
+    // Kontribusi kas RT per tagihan: rumah KOSONG menyumbang IPL + Kas
+    // (porsi IPL-nya dialihkan ke kas RT, tidak disetor ke RW).
+    const kasRt = (r: { nominalIpl: number; nominalKas: number; rumah: { status: string } }) =>
+      r.nominalKas + (r.rumah.status === 'KOSONG' ? r.nominalIpl : 0);
 
     const [kasRtPeriode, kasRtSemua, setoranPeriode, setoranSemua, kasPeriode, kasSemua, titipan] =
       await Promise.all([
         // Kas RT yang terkumpul pada periode tagihan
         this.prisma.ipl.findMany({
           where: { OR: resolved.periodeOr, statusPembayaran: 'LUNAS', ...rtSaja },
-          select: { nominalKas: true, bulanPeriode: true, tahunPeriode: true, rumah: { select: { rt: true } } },
+          select: { nominalIpl: true, nominalKas: true, bulanPeriode: true, tahunPeriode: true, rumah: { select: { rt: true, status: true } } },
         }),
         this.prisma.ipl.findMany({
           where: { statusPembayaran: 'LUNAS', ...rtSaja },
-          select: { nominalKas: true },
+          select: { nominalIpl: true, nominalKas: true, rumah: { select: { status: true } } },
         }),
         // Setoran RT yang dikonfirmasi RW menjadi pemasukan kas RW — filter by periode tagihan (bukan tanggalKonfirmasi), per RT
         this.prisma.ipl.findMany({
@@ -670,18 +706,20 @@ export class KeuanganService {
           where: { area: { in: areas } },
           select: { tipe: true, nominal: true },
         }),
-        // Porsi IPL yang dipegang RT: lunas tapi setorannya belum dikonfirmasi RW
+        // Porsi IPL yang dipegang RT: lunas tapi setorannya belum dikonfirmasi RW.
+        // Rumah KOSONG dikecualikan (porsinya memang hak kas RT, bukan titipan).
         this.prisma.ipl.findMany({
           where: {
             statusPembayaran: 'LUNAS',
             ...rtSaja,
+            rumah: { rt: { in: rtDipilih }, status: { not: 'KOSONG' } },
             OR: [{ setoranId: null }, { setoran: { status: { not: 'DIKONFIRMASI' } } }],
           },
           select: { nominalIpl: true },
         }),
       ]);
 
-    const kasRtTotal = kasRtPeriode.reduce((s, r) => s + r.nominalKas, 0);
+    const kasRtTotal = kasRtPeriode.reduce((s, r) => s + kasRt(r as any), 0);
     const setoranTotal = setoranPeriode.reduce((s, r) => s + (r as any).nominalIpl, 0);
     const pemasukanOtomatis = kasRtTotal + setoranTotal;
     const pemasukanManual = sum(kasPeriode.filter((t) => t.tipe === 'PEMASUKAN'));
@@ -702,7 +740,7 @@ export class KeuanganService {
 
     // Saldo kas saat ini (kumulatif sepanjang waktu)
     const saldoKas =
-      kasRtSemua.reduce((s, r) => s + r.nominalKas, 0) +
+      kasRtSemua.reduce((s, r) => s + kasRt(r as any), 0) +
       setoranSemua.reduce((s, r) => s + (r as any).nominalIpl, 0) +
       sum(kasSemua.filter((t) => t.tipe === 'PEMASUKAN')) -
       sum(kasSemua.filter((t) => t.tipe === 'PENGELUARAN'));
@@ -714,7 +752,7 @@ export class KeuanganService {
       const key = `${tahun}-${bulan}`;
       const kasBulanIni = kasRtPeriode
         .filter((t) => t.bulanPeriode === bulan && t.tahunPeriode === tahun)
-        .reduce((s, t) => s + t.nominalKas, 0);
+        .reduce((s, t) => s + kasRt(t as any), 0);
       const setoranBulanIni = (setoranPeriode as any[])
         .filter((s) => (s as any).bulanPeriode === bulan && (s as any).tahunPeriode === tahun)
         .reduce((s, r) => s + (r as any).nominalIpl, 0);
@@ -729,13 +767,14 @@ export class KeuanganService {
       };
     });
 
-    // Rincian per area supaya ketua RW bisa membandingkan RW dan tiap RT
+    // Rincian per area supaya ketua RW bisa membandingkan RW dan tiap RT.
+    // Rumah kosong tidak punya area sendiri: kontribusinya ikut kas RT-nya.
     const perArea = areas.map((area) => {
       const manual = kasPeriode.filter((t) => t.area === area);
       const otomatis =
         area === 'RW'
           ? setoranTotal
-          : kasRtPeriode.filter((r) => r.rumah.rt === area).reduce((s, r) => s + r.nominalKas, 0);
+          : kasRtPeriode.filter((r) => r.rumah.rt === area).reduce((s, r) => s + kasRt(r as any), 0);
       const pemasukan = otomatis + sum(manual.filter((t) => t.tipe === 'PEMASUKAN'));
       const pengeluaran = sum(manual.filter((t) => t.tipe === 'PENGELUARAN'));
       return { area, pemasukan, pengeluaran, saldo: pemasukan - pengeluaran };
@@ -751,6 +790,10 @@ export class KeuanganService {
       pemasukanOtomatis: {
         total: pemasukanOtomatis,
         kasRt: kasRtTotal,
+        // Bagian kas RT yang berasal dari pengalihan porsi IPL rumah kosong.
+        kasRtDariRumahKosong: kasRtPeriode
+          .filter((r) => (r as any).rumah.status === 'KOSONG')
+          .reduce((s, r) => s + (r as any).nominalIpl + (r as any).nominalKas, 0),
         setoranIpl: setoranTotal,
       },
       pemasukanManual,

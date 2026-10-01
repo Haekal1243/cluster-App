@@ -88,16 +88,24 @@ export default function WargaPage() {
   }, [bolehApprove]);
 
   const handleSetujuiPendaftaran = async (item) => {
-    const ok = await showConfirm(
-      "Setujui pendaftaran?",
-      `${item.namaUser} akan dibuatkan akun warga untuk blok ${item.rumah?.blokRumah}.`,
-      "question",
-      "Ya, setujui",
-      "Batal",
-    );
-    if (!ok) return;
+    const { value: statusHunian } = await Swal.fire({
+      title: `Setujui pendaftaran ${item.namaUser}?`,
+      html: `Akun warga akan dibuat untuk blok ${item.rumah?.blokRumah}.`,
+      input: "select",
+      inputLabel: "Status hunian rumah",
+      inputOptions: {
+        KOSONG: "Kosong — tidak dihuni (tetap bayar IPL, masuk kas RT)",
+        DIHUNI_TETAP: "Dihuni tetap",
+        DIHUNI_KONTRAK: "Dihuni kontrak",
+      },
+      inputValue: "KOSONG",
+      showCancelButton: true,
+      confirmButtonText: "Ya, setujui",
+      cancelButtonText: "Batal",
+    });
+    if (!statusHunian) return;
     try {
-      const res = await wargaApi.setujuiPendaftaran(item.id);
+      const res = await wargaApi.setujuiPendaftaran(item.id, statusHunian);
       showMessage("Berhasil", res.message, "success");
       loadPendaftaran();
       loadData();

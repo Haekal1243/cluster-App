@@ -8,7 +8,8 @@ export default function AuthShell({
   leftClassName = "auth-left",
   rightClassName = "auth-right",
   headerClassName = "auth-header",
-}) {
+}) 
+{
   return (
     <div className={containerClassName}>
       <div className={cardClassName}>

@@ -205,6 +205,12 @@ export const setoranApi = {
   buktiPath: (id) => (id ? `/setoran/${id}/bukti` : null),
 };
 
+export const auditApi = {
+  // Riwayat aktivitas sensitif (filter: aksi, search, periode YYYY-MM)
+  getAll: ({ aksi, search, dari, sampai, limit } = {}) =>
+    request(`/audit${qs({ aksi, search, dari, sampai, limit })}`),
+};
+
 export const keuanganApi = {
   // Riwayat transaksi kas manual dengan filter opsional
   getAll: ({ dari, sampai, tipe, kategori, search, area } = {}) =>

@@ -76,6 +76,9 @@ export const PERMISSIONS: Record<string, Record<string, string>> = {
   role: {
     manage: 'Kelola role dan matriks permission',
   },
+  audit: {
+    read: 'Lihat riwayat aktivitas (jejak audit)',
+  },
   pengurus: {
     manage: 'Tetapkan jabatan pengurus RW/RT',
   },
@@ -104,6 +107,7 @@ export const MATRIX: Record<string, Grant[]> = {
     ['ipl.bayar', 'OWN'],
     ['setoran.read', 'ALL'],
     ['keuangan.read', 'ALL'],
+    ['audit.read', 'ALL'],
     // AREA (bukan ALL): pengurus RW tidak boleh melihat/menanggapi pengaduan bertujuan RT
     // (lihat Bagian 2 rencana). Ke RT tetap bisa mengadu (dia warga RT tempat rumahnya).
     ['pengaduan.read', 'AREA'],
@@ -122,6 +126,7 @@ export const MATRIX: Record<string, Grant[]> = {
     ['setoran.read', 'ALL'],
     ['setoran.konfirmasi', 'ALL'],
     ['keuangan.read', 'ALL'],
+    ['audit.read', 'ALL'],
     ['keuangan.create', 'AREA'],
     ['keuangan.update', 'AREA'],
     ['keuangan.delete', 'AREA'],
@@ -207,6 +212,7 @@ export const MATRIX: Record<string, Grant[]> = {
   // pengurus, dan data warga. Tidak punya akses tagihan, keuangan, pengaduan, kegiatan, dll.
   ADMIN: [
     ['role.manage', 'ALL'],
+    ['audit.read', 'ALL'],
     ['pengurus.manage', 'ALL'],
     ['warga.read', 'ALL'],
     ['warga.create', 'ALL'],

@@ -109,6 +109,7 @@ enum TipeNotifikasi {
   PENGAJUAN_MASUK
   PENGAJUAN_DISETUJUI
   PENGAJUAN_DITOLAK
+  PERUBAHAN_DATA
 }
 
 // ==========================================

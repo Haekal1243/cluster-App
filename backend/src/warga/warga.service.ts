@@ -617,16 +617,28 @@ export class WargaService {
     const include = { penghuni: { select: PENGHUNI_SELECT } };
     // Blok yang pernah dihapus (soft delete) dihidupkan lagi, karena kombinasi RT+blok unik.
     if (existing) {
-      return this.prisma.rumah.update({
+      const revived = await this.prisma.rumah.update({
         where: { id: existing.id },
         data: { userId, status, isDelete: false, updateBy: ctx.user.nama, updateDate: new Date() },
         include,
       });
+      await this.audit.catat(ctx.user.sub, 'rumah.ubah_status', {
+        target: 'Rumah',
+        targetId: existing.id,
+        keterangan: `Blok ${existing.blokRumah} (${dto.rt.replace('_', ' ')}) diaktifkan lagi: ${status}${userId ? '' : ' (tanpa pemilik)'}`,
+      });
+      return revived;
     }
-    return this.prisma.rumah.create({
+    const created = await this.prisma.rumah.create({
       data: { rt: dto.rt, blokRumah: dto.blokRumah, userId, status, createBy: ctx.user.nama },
       include,
     });
+    await this.audit.catat(ctx.user.sub, 'rumah.ubah_status', {
+      target: 'Rumah',
+      targetId: created.id,
+      keterangan: `Blok ${dto.blokRumah} (${dto.rt.replace('_', ' ')}) didaftarkan: ${status}${userId ? '' : ' (tanpa pemilik)'}`,
+    });
+    return created;
   }
 
   async updateRumah(ctx: AccessContext, id: number, dto: UpdateRumahDto) {
@@ -647,7 +659,7 @@ export class WargaService {
     const status = this.resolveStatus(userId, statusDiminta);
 
     try {
-      return await this.prisma.rumah.update({
+      const updated = await this.prisma.rumah.update({
         where: { id },
         data: {
           ...(dto.blokRumah !== undefined && { blokRumah: dto.blokRumah }),
@@ -659,6 +671,29 @@ export class WargaService {
         },
         include: { penghuni: { select: PENGHUNI_SELECT } },
       });
+      // Jejak audit anti-kecurangan: perubahan status/pemilik selalu tercatat.
+      // Flip ke KOSONG diteruskan ke pimpinan RW karena porsi IPL rumah itu
+      // berhenti disetor ke RW dan masuk kas RT.
+      if (existing.status !== status || existing.userId !== userId) {
+        const rtLabel = (existing.rt as string).replace('_', ' ');
+        await this.audit.catat(ctx.user.sub, 'rumah.ubah_status', {
+          target: 'Rumah',
+          targetId: id,
+          keterangan: `Blok ${existing.blokRumah} (${rtLabel}): ${existing.status}${existing.userId ? '' : ' (tanpa pemilik)'} -> ${status}${userId ? '' : ' (tanpa pemilik)'}`,
+        });
+        if (status === 'KOSONG' && existing.status !== 'KOSONG') {
+          await this.notifikasiService.kirimKePermissionAreaPersis(
+            'setoran.read',
+            'RW',
+            'PERUBAHAN_DATA',
+            'Rumah Diubah Kosong',
+            `${ctx.user.nama} mengubah blok ${existing.blokRumah} (${rtLabel}) dari ${existing.status} menjadi KOSONG. Tagihan rumah ini masuk kas RT dan tidak disetor ke RW.`,
+            '/dashboard/warga/blok-rumah',
+            ctx.user.sub,
+          );
+        }
+      }
+      return updated;
     } catch (error: any) {
       if (error?.code === 'P2002') {
         throw new ConflictException('Blok rumah tersebut sudah terdaftar di RT ini.');

@@ -204,16 +204,26 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
   const [form, setForm] = useState({
     nominalIpl: String(tagihan.nominalIpl),
     nominalKas: String(tagihan.nominalKas),
+    alasan: "",
   });
   const [loading, setLoading] = useState(false);
 
+  const nominalBerubah =
+    Number(form.nominalIpl) !== tagihan.nominalIpl ||
+    Number(form.nominalKas || 0) !== tagihan.nominalKas;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (nominalBerubah && !form.alasan.trim()) {
+      showMessage("Validasi", "Alasan koreksi wajib diisi bila nominal berubah.", "warning");
+      return;
+    }
     setLoading(true);
     try {
       await iplApi.update(tagihan.id, {
         nominalIpl: Number(form.nominalIpl),
         nominalKas: Number(form.nominalKas || 0),
+        ...(nominalBerubah ? { alasan: form.alasan.trim() } : {}),
       });
       showMessage("Berhasil", "Tagihan berhasil diperbarui.", "success");
       onSuccess();
@@ -247,6 +257,17 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
               <input type="number" min="0" className="ipl-input" value={form.nominalKas}
                 onChange={(e) => setForm({ ...form, nominalKas: e.target.value })} />
             </div>
+          </div>
+          <div className="ipl-form-group">
+            <label>Alasan koreksi {nominalBerubah && <span className="required-star">*</span>}</label>
+            <textarea
+              rows={2}
+              className="ipl-textarea"
+              placeholder="Wajib diisi bila nominal berubah. Contoh: tarif kas RT naik per kesepakatan warga…"
+              value={form.alasan}
+              onChange={(e) => setForm({ ...form, alasan: e.target.value })}
+            />
+            <span className="field-hint">Koreksi tercatat di riwayat aktivitas dan diteruskan ke RW.</span>
           </div>
           <div className="ipl-modal-footer">
             <button type="button" className="btn-ipl-secondary" onClick={onClose} disabled={loading}>Batal</button>
@@ -284,7 +305,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
     <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
       <div className="ipl-table-header">
         <span className="ipl-table-title">Rekap per RT - {periodeLabel}</span>
-        <span className="ipl-table-count">IPL rumah dihuni disetor RT ke RW; rumah kosong masuk kas RT</span>
+        <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
       </div>
       <div className="ipl-table-wrapper">
         <table className="ipl-table">
@@ -293,6 +314,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
               <th>No</th>
               <th>RT</th>
               <th>Lunas / Tagihan</th>
+              <th>Menunggu</th>
               <th>IPL Terkumpul</th>
               <th>Kas RT</th>
               <th>Rumah Kosong</th>
@@ -306,6 +328,11 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
                 <td>{index + 1}</td>
                 <td><span className="rt-badge">{areaLabel(r.rt)}</span></td>
                 <td>{r.lunas} / {r.totalTagihan}</td>
+                <td>
+                  {r.menungguKonfirmasi > 0
+                    ? <span className="ipl-badge badge-menunggu">{r.menungguKonfirmasi}</span>
+                    : <span className="text-muted">0</span>}
+                </td>
                 <td className="ipl-nominal">{formatRupiah(r.terkumpulIpl)}</td>
                 <td>{formatRupiah(r.terkumpulKas)}</td>
                 <td>

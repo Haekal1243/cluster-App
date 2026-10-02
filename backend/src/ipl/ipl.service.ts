@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, RT, ScopeAkses } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { GenerateIplDto } from './dto/generate-ipl.dto';
 import { UpdateIplDto } from './dto/update-ipl.dto';
 import { KonfirmasiIplDto } from './dto/konfirmasi-ipl.dto';
@@ -24,6 +25,7 @@ export class IplService {
     private prisma: PrismaService,
     private notifikasiService: NotifikasiService,
     private permissions: PermissionsService,
+    private audit: AuditService,
   ) {}
 
   /** Batasan data tagihan sesuai scope: OWN = rumah sendiri, AREA = RT sendiri, ALL = semua. */
@@ -97,6 +99,11 @@ export class IplService {
       `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${total.toLocaleString('id-ID')} telah diterbitkan.`,
       '/dashboard/iuran',
     );
+
+    await this.audit.catat(ctx.user.sub, 'ipl.generate', {
+      target: 'Ipl',
+      keterangan: `${rt.replace('_', ' ')} periode ${bulanPeriode}/${tahunPeriode}: ${rumahBaru.length} tagihan baru (IPL Rp ${nominalIpl.toLocaleString('id-ID')} + kas Rp ${nominalKas.toLocaleString('id-ID')})`,
+    });
 
     const dilewati = rumahAktif.length - rumahBaru.length;
     return {
@@ -269,6 +276,7 @@ export class IplService {
     const perRt = daftarRt.map((rt) => {
       const list = rows.filter((r) => r.rumah.rt === rt);
       const lunas = list.filter((r) => r.statusPembayaran === 'LUNAS');
+      const menunggu = list.filter((r) => r.statusPembayaran === 'MENUNGGU_KONFIRMASI').length;
       const lunasDihuni = lunas.filter((r) => !kosong(r));
       const lunasKosong = lunas.filter((r) => kosong(r));
       const disetor = lunasDihuni.filter((r) => r.setoranId !== null && r.setoran?.status !== 'DITOLAK');
@@ -278,6 +286,7 @@ export class IplService {
         rt,
         totalTagihan: list.length,
         lunas: lunas.length,
+        menungguKonfirmasi: menunggu,
         belumLunas: list.length - lunas.length,
         nominalTagihan: sum(list, totalTagihan),
         terkumpulIpl: sum(lunasDihuni, (r) => r.nominalIpl),
@@ -296,6 +305,7 @@ export class IplService {
       (t, r) => ({
         totalTagihan: t.totalTagihan + r.totalTagihan,
         lunas: t.lunas + r.lunas,
+        menungguKonfirmasi: t.menungguKonfirmasi + r.menungguKonfirmasi,
         belumLunas: t.belumLunas + r.belumLunas,
         nominalTagihan: t.nominalTagihan + r.nominalTagihan,
         terkumpulIpl: t.terkumpulIpl + r.terkumpulIpl,
@@ -310,6 +320,7 @@ export class IplService {
       {
         totalTagihan: 0,
         lunas: 0,
+        menungguKonfirmasi: 0,
         belumLunas: 0,
         nominalTagihan: 0,
         terkumpulIpl: 0,
@@ -348,6 +359,12 @@ export class IplService {
     if (ipl.statusPembayaran !== 'BELUM_LUNAS') {
       throw new BadRequestException('Hanya tagihan berstatus BELUM LUNAS yang bisa diubah.');
     }
+    const nominalBerubah =
+      (dto.nominalIpl !== undefined && dto.nominalIpl !== ipl.nominalIpl) ||
+      (dto.nominalKas !== undefined && dto.nominalKas !== ipl.nominalKas);
+    if (nominalBerubah && !dto.alasan?.trim()) {
+      throw new BadRequestException('Alasan koreksi wajib diisi bila nominal berubah.');
+    }
     const data = await this.prisma.ipl.update({
       where: { id },
       data: {
@@ -355,6 +372,25 @@ export class IplService {
         ...(dto.nominalKas !== undefined && { nominalKas: dto.nominalKas }),
       },
     });
+    if (nominalBerubah) {
+      const before = `IPL Rp ${ipl.nominalIpl.toLocaleString('id-ID')} + kas Rp ${ipl.nominalKas.toLocaleString('id-ID')}`;
+      const after = `IPL Rp ${data.nominalIpl.toLocaleString('id-ID')} + kas Rp ${data.nominalKas.toLocaleString('id-ID')}`;
+      await this.audit.catat(ctx.user.sub, 'ipl.koreksi', {
+        target: 'Ipl',
+        targetId: id,
+        keterangan: `${ipl.rumah.rt.replace('_', ' ')} periode ${ipl.bulanPeriode}/${ipl.tahunPeriode}: ${before} -> ${after}. Alasan: ${dto.alasan!.trim()}`,
+      });
+      // Koreksi nominal memengaruhi porsi setoran RW — selalu beri tahu pimpinan RW.
+      await this.notifikasiService.kirimKePermissionAreaPersis(
+        'setoran.read',
+        'RW',
+        'PERUBAHAN_DATA',
+        'Koreksi Nominal Tagihan',
+        `${ctx.user.nama} mengoreksi tagihan ${ipl.rumah.rt.replace('_', ' ')} periode ${ipl.bulanPeriode}/${ipl.tahunPeriode}: ${before} -> ${after}.`,
+        '/dashboard/kelola-ipl/tagihan',
+        ctx.user.sub,
+      );
+    }
     return { message: 'Tagihan berhasil diperbarui.', data: withTotal(data) };
   }
 
@@ -507,7 +543,16 @@ export class IplService {
   async konfirmasiPembayaran(user: AuthUser, pembayaranId: number, dto: KonfirmasiIplDto) {
     const pembayaran = await this.prisma.pembayaranIpl.findUnique({
       where: { idPembayaran: pembayaranId },
-      include: { ipl: { include: { rumah: { select: { rt: true } } } } },
+      include: {
+        ipl: {
+          select: {
+            statusPembayaran: true,
+            bulanPeriode: true,
+            tahunPeriode: true,
+            rumah: { select: { rt: true, blokRumah: true } },
+          },
+        },
+      },
     });
 
     if (!pembayaran) {
@@ -569,6 +614,12 @@ export class IplService {
         '/dashboard/iuran',
       );
 
+      await this.audit.catat(user.sub, 'ipl.konfirmasi', {
+        target: 'PembayaranIpl',
+        targetId: pembayaranId,
+        keterangan: `Terima pembayaran blok ${pembayaran.ipl.rumah.blokRumah} (${pembayaran.ipl.rumah.rt.replace('_', ' ')}) periode ${pembayaran.ipl.bulanPeriode}/${pembayaran.ipl.tahunPeriode}`,
+      });
+
       return { message: 'Pembayaran berhasil dikonfirmasi. Status menjadi LUNAS.' };
     }
 
@@ -591,6 +642,12 @@ export class IplService {
       `Pembayaran IPL kamu ditolak.${dto.catatan ? ` Catatan: ${dto.catatan}` : ''}`,
       '/dashboard/iuran',
     );
+
+    await this.audit.catat(user.sub, 'ipl.konfirmasi', {
+      target: 'PembayaranIpl',
+      targetId: pembayaranId,
+      keterangan: `Tolak pembayaran blok ${pembayaran.ipl.rumah.blokRumah} (${pembayaran.ipl.rumah.rt.replace('_', ' ')}) periode ${pembayaran.ipl.bulanPeriode}/${pembayaran.ipl.tahunPeriode}.${dto.catatan ? ` Alasan: ${dto.catatan}` : ''}`,
+    });
 
     return {
       message: 'Pembayaran ditolak. Status dikembalikan ke BELUM LUNAS.',

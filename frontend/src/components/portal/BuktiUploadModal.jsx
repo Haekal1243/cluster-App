@@ -116,16 +116,7 @@ export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="bukti-upload-title"
-        tabIndex={-1}
-        className="modal-box"
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: 400 }}
-      >
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
         {/* Header */}
         <div className="modal-header">
           <h3 id="bukti-upload-title">Unggah Bukti Pembayaran</h3>

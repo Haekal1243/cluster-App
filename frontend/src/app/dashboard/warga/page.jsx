@@ -63,6 +63,74 @@ export default function WargaPage() {
   const bolehReset = can(user, "warga.reset_password");
   const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
 
+  const [pendaftaran, setPendaftaran] = useState([]);
+  const [loadingPendaftaran, setLoadingPendaftaran] = useState(false);
+
+  const loadPendaftaran = async () => {
+    setLoadingPendaftaran(true);
+    try {
+      const data = await wargaApi.getPendaftaran();
+      setPendaftaran(Array.isArray(data) ? data : []);
+    } catch (error) {
+      showMessage("Gagal Memuat Data", error.message, "error");
+    } finally {
+      setLoadingPendaftaran(false);
+    }
+  };
+
+  useEffect(() => {
+    if (bolehApprove) loadPendaftaran();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bolehApprove]);
+
+  const handleSetujuiPendaftaran = async (item) => {
+    const { value: statusHunian } = await Swal.fire({
+      title: `Setujui pendaftaran ${item.namaUser}?`,
+      html: `Akun warga akan dibuat untuk blok ${item.rumah?.blokRumah}.`,
+      input: "select",
+      inputLabel: "Status hunian rumah",
+      inputOptions: {
+        KOSONG: "Kosong — tidak dihuni (tetap bayar IPL, masuk kas RT)",
+        DIHUNI_TETAP: "Dihuni tetap",
+        DIHUNI_KONTRAK: "Dihuni kontrak",
+      },
+      inputValue: "KOSONG",
+      showCancelButton: true,
+      confirmButtonText: "Ya, setujui",
+      cancelButtonText: "Batal",
+    });
+    if (!statusHunian) return;
+    try {
+      const res = await wargaApi.setujuiPendaftaran(item.id, statusHunian);
+      showMessage("Berhasil", res.message, "success");
+      loadPendaftaran();
+      loadData();
+    } catch (error) {
+      showMessage("Gagal", error.message, "error");
+    }
+  };
+
+  const handleTolakPendaftaran = async (item) => {
+    const { value: alasan } = await Swal.fire({
+      title: `Tolak pendaftaran ${item.namaUser}?`,
+      input: "textarea",
+      inputLabel: "Alasan penolakan",
+      inputPlaceholder: "Contoh: data tidak sesuai, atau rumah sudah dihuni warga lain",
+      showCancelButton: true,
+      confirmButtonText: "Tolak Pendaftaran",
+      cancelButtonText: "Batal",
+      inputValidator: (v) => (!v?.trim() ? "Alasan wajib diisi" : undefined),
+    });
+    if (!alasan) return;
+    try {
+      const res = await wargaApi.tolakPendaftaran(item.id, alasan.trim());
+      showMessage("Berhasil", res.message, "success");
+      loadPendaftaran();
+    } catch (error) {
+      showMessage("Gagal", error.message, "error");
+    }
+  };
+
   const loadData = async () => {
     setIsLoading(true);
     try {

@@ -213,7 +213,7 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
                 value={form.status}
                 onChange={(v) => setForm((prev) => ({ ...prev, status: v }))}
                 options={[
-                  { value: "", label: "Otomatis (ikut penghuni)" },
+                  ...(mode === "edit" ? [] : [{ value: "", label: "Otomatis (ikut penghuni)" }]),
                   ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
                 ]}
               />

@@ -61,19 +61,19 @@ export class WargaController {
   // RUMAH / BLOK RUMAH
   // -------------------------------------------------------
   @Get('rumah/list')
-  @RequirePermission('warga', 'read')
+  @RequirePermission('rumah', 'read')
   findAllRumah(@Access() ctx: AccessContext) {
     return this.wargaService.findAllRumah(ctx);
   }
 
   @Post('rumah')
-  @RequirePermission('warga', 'create')
+  @RequirePermission('rumah', 'create')
   createRumah(@Access() ctx: AccessContext, @Body() dto: CreateRumahDto) {
     return this.wargaService.createRumah(ctx, dto);
   }
 
   @Patch('rumah/:id')
-  @RequirePermission('warga', 'update')
+  @RequirePermission('rumah', 'update')
   updateRumah(
     @Access() ctx: AccessContext,
     @Param('id', ParseIntPipe) id: number,
@@ -83,7 +83,7 @@ export class WargaController {
   }
 
   @Delete('rumah/:id')
-  @RequirePermission('warga', 'delete')
+  @RequirePermission('rumah', 'delete')
   removeRumah(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
     return this.wargaService.removeRumah(ctx, id);
   }

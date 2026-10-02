@@ -10,6 +10,7 @@ import {
   NotebookText,
   ShieldCheck,
   UserCog,
+  Home,
 } from "lucide-react";
 import { can, canAny, isWargaView, scopeOf } from "./session";
 
@@ -79,6 +80,12 @@ export const NAV_ITEMS = [
     href: "/dashboard/admin/pengurus",
     icon: UserCog,
     allow: (u) => can(u, "pengurus.manage"),
+  },
+  {
+    label: "Kelola Rumah",
+    href: "/dashboard/admin/rumah",
+    icon: Home,
+    allow: (u) => can(u, "rumah.create"),
   },
 ];
 

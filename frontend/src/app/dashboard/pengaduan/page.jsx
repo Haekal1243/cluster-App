@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus, Eye, MessageSquareWarning, Megaphone, Calendar, Search, Forward, User, MapPin, Tag,
+  Plus, Eye, MessageSquareWarning, Calendar, Search, Forward, User, MapPin, Tag,
 } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
@@ -262,15 +262,6 @@ function AdminPengaduanView({ user }) {
 
   return (
     <div className="page-stack">
-      <div className="ipl-page-header">
-        <div>
-          <h2 className="ipl-page-title">Pengaduan Lingkungan</h2>
-          <p className="ipl-page-subtitle">
-            Tinjau dan tanggapi laporan kendala dari warga cluster
-          </p>
-        </div>
-      </div>
-
       <div className="list-toolbar-row">
         <div className="list-search-wrap">
           <Search size={15} className="list-search-icon" />
@@ -375,9 +366,9 @@ function AdminPengaduanView({ user }) {
             <table className="ipl-table pengaduan-table">
               <thead>
                 <tr>
+                  <th>No</th>
                   <th>Judul</th>
                   <th>Pelapor</th>
-                  <th>Tujuan</th>
                   <th>Kategori</th>
                   <th>Tanggal</th>
                   <th>Status</th>
@@ -385,18 +376,11 @@ function AdminPengaduanView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {paginatedItems.map((item) => (
+                {paginatedItems.map((item, index) => (
                   <tr key={item.id}>
-                    <td data-label="Judul">{item.judul}</td>
+                    <td data-label="No">{(page - 1) * 10 + index + 1}</td>
+                    <td data-label="Judul" className="pengaduan-col-judul">{item.judul}</td>
                     <td data-label="Pelapor">{item.pelapor?.namaUser || "-"}</td>
-                    <td data-label="Tujuan">
-                      {areaLabel(item.tujuan)}
-                      {item.diteruskanAt && (
-                        <span className="ipl-rt" title="Diteruskan ke RW (belum ditanggapi RT 7 hari)">
-                          <Forward size={11} /> diteruskan
-                        </span>
-                      )}
-                    </td>
                     <td data-label="Kategori">{KATEGORI_LABELS[item.kategori] || item.kategori}</td>
                     <td data-label="Tanggal">{formatDate(item.createdAt)}</td>
                     <td data-label="Status"><StatusBadge status={item.status} /></td>
@@ -511,99 +495,81 @@ function WargaPengaduanView({ user }) {
 
   return (
     <div className="page-stack">
-      <section className="portal-welcome-banner">
-        <div className="portal-welcome-text">
-          <h2>Pengaduan Lingkungan</h2>
-          <p>Laporkan kendala di lingkungan cluster dan pantau tindak lanjutnya</p>
-        </div>
-        <div className="portal-welcome-decoration" aria-hidden />
-      </section>
-
-      <section className="content-card">
-        <div className="db-section-header">
-          <MessageSquareWarning size={17} />
-          <h3>Pengaduan Saya</h3>
-        </div>
-
-        <div className="page-add-row" style={{ marginBottom: 16 }}>
-          <button
-            type="button"
-            className="btn-primary btn-sm"
-            onClick={() => setShowForm(true)}
-          >
-            <Plus size={14} /> Ajukan Pengaduan
-          </button>
-        </div>
-
-        {items.length > 0 && (
-          <div className="list-toolbar-row" style={{ marginBottom: 16 }}>
-            <div className="list-search-wrap">
-              <Search size={15} className="list-search-icon" />
-              <input
-                type="text"
-                placeholder="Cari judul atau deskripsi pengaduan..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="list-search-input"
-              />
-            </div>
-
-            <FilterPopover
-              active={filterStatus !== "SEMUA" || filterKategori !== "SEMUA" || urutan !== "terbaru"}
-              onOpen={handleFilterOpen}
-              onApply={handleFilterApply}
-              onReset={handleFilterReset}
-            >
-              <FilterField label="Status">
-                <Select
-                  className="ipl-select ipl-select-sm"
-                  value={draftStatus}
-                  onChange={(v) => setDraftStatus(v)}
-                  options={[
-                    { value: "SEMUA", label: "Semua Status" },
-                    ...Object.entries(STATUS_LABELS).map(([value, { label }]) => ({ value, label })),
-                  ]}
-                />
-              </FilterField>
-              <FilterField label="Kategori">
-                <Select
-                  className="ipl-select ipl-select-sm"
-                  value={draftKategori}
-                  onChange={(v) => setDraftKategori(v)}
-                  options={[
-                    { value: "SEMUA", label: "Semua Kategori" },
-                    ...Object.entries(KATEGORI_LABELS).map(([value, label]) => ({ value, label })),
-                  ]}
-                />
-              </FilterField>
-              <FilterField label="Urutan Tanggal">
-                <Select
-                  className="ipl-select ipl-select-sm"
-                  value={draftUrutan}
-                  onChange={(v) => setDraftUrutan(v)}
-                  options={Object.entries(URUTAN_LABELS).map(([value, label]) => ({ value, label }))}
-                />
-              </FilterField>
-            </FilterPopover>
+      <div className="page-toolbar-row warga-toolbar-row">
+        <div className="list-toolbar-row">
+          <div className="list-search-wrap">
+            <Search size={15} className="list-search-icon" />
+            <input
+              type="text"
+              placeholder="Cari judul atau deskripsi pengaduan..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="list-search-input"
+            />
           </div>
-        )}
+
+          <FilterPopover
+            active={filterStatus !== "SEMUA" || filterKategori !== "SEMUA" || urutan !== "terbaru"}
+            onOpen={handleFilterOpen}
+            onApply={handleFilterApply}
+            onReset={handleFilterReset}
+          >
+            <FilterField label="Status">
+              <Select
+                className="ipl-select ipl-select-sm"
+                value={draftStatus}
+                onChange={(v) => setDraftStatus(v)}
+                options={[
+                  { value: "SEMUA", label: "Semua Status" },
+                  ...Object.entries(STATUS_LABELS).map(([value, { label }]) => ({ value, label })),
+                ]}
+              />
+            </FilterField>
+            <FilterField label="Kategori">
+              <Select
+                className="ipl-select ipl-select-sm"
+                value={draftKategori}
+                onChange={(v) => setDraftKategori(v)}
+                options={[
+                  { value: "SEMUA", label: "Semua Kategori" },
+                  ...Object.entries(KATEGORI_LABELS).map(([value, label]) => ({ value, label })),
+                ]}
+              />
+            </FilterField>
+            <FilterField label="Urutan Tanggal">
+              <Select
+                className="ipl-select ipl-select-sm"
+                value={draftUrutan}
+                onChange={(v) => setDraftUrutan(v)}
+                options={Object.entries(URUTAN_LABELS).map(([value, label]) => ({ value, label }))}
+              />
+            </FilterField>
+          </FilterPopover>
+        </div>
+        <button type="button" className="btn-primary" onClick={() => setShowForm(true)}>
+          <Plus size={16} /> Ajukan Pengaduan
+        </button>
+      </div>
+
+      <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
+        <div className="ipl-table-header">
+          <span className="ipl-table-title">Pengaduan Saya</span>
+          <span className="ipl-table-count">{filteredItems.length} data</span>
+        </div>
 
         {loading ? (
-          <div className="portal-loading-inline">
-            <div className="portal-spinner-sm" />
-            <span>Memuat data...</span>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="portal-empty-notice">
-            <Megaphone size={32} />
-            <p><strong>Belum ada pengaduan</strong></p>
-            <p>Klik "Ajukan Pengaduan" kalau ada kendala di lingkungan cluster.</p>
+          <div className="ipl-loading">
+            <div className="ipl-spinner" />
+            <span>Memuat data pengaduan...</span>
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="portal-empty-notice">
-            <Megaphone size={32} />
-            <p><strong>Tidak ditemukan</strong></p>
-            <p>Tidak ada pengaduan yang cocok dengan pencarian atau filter.</p>
+          <div className="ipl-empty">
+            <MessageSquareWarning size={40} strokeWidth={1.2} />
+            <p>
+              {items.length === 0
+                ? 'Belum ada pengaduan. Klik "Ajukan Pengaduan" kalau ada kendala di lingkungan cluster.'
+                : "Tidak ada pengaduan yang cocok dengan filter."}
+            </p>
           </div>
         ) : (
           <>
@@ -611,8 +577,8 @@ function WargaPengaduanView({ user }) {
             <table className="ipl-table pengaduan-table">
               <thead>
                 <tr>
+                  <th>No</th>
                   <th>Judul</th>
-                  <th>Tujuan</th>
                   <th>Kategori</th>
                   <th>Tanggal</th>
                   <th>Status</th>
@@ -620,19 +586,12 @@ function WargaPengaduanView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {paginatedItems.map((item) => (
+                {paginatedItems.map((item, index) => (
                   <tr key={item.id}>
+                    <td>{(page - 1) * 10 + index + 1}</td>
                     <td className="pengaduan-col-judul">
                       <span className="pengaduan-judul">{item.judul}</span>
                       {item.deskripsi && <span className="pengaduan-judul-sub">{item.deskripsi}</span>}
-                    </td>
-                    <td>
-                      {areaLabel(item.tujuan)}
-                      {item.diteruskanAt && (
-                        <span className="ipl-rt" title="Diteruskan ke RW (belum ditanggapi RT 7 hari)">
-                          <Forward size={11} /> diteruskan
-                        </span>
-                      )}
                     </td>
                     <td>{KATEGORI_LABELS[item.kategori] || item.kategori}</td>
                     <td className="pengaduan-col-tanggal">{formatDate(item.createdAt)}</td>
@@ -656,7 +615,7 @@ function WargaPengaduanView({ user }) {
           <Pagination page={page} totalPages={totalPages} total={filteredItems.length} onPrev={prev} onNext={next} />
           </>
         )}
-      </section>
+      </div>
 
       {showForm && (
         <PengaduanFormModal onClose={() => setShowForm(false)} onSuccess={loadData} />
@@ -684,9 +643,24 @@ export default function PengaduanPage() {
     can(user, "pengaduan.create_rt") ||
     scopeOf(user, "pengaduan.read") === "OWN";
 
-  if (bisaLihatMasuk && bisaMengadu) {
-    return (
-      <div className="page-stack">
+  const showTabs = bisaLihatMasuk && bisaMengadu;
+
+  return (
+    <div className="page-stack">
+      <div className="ipl-page-header">
+        <div>
+          <h2 className="ipl-page-title">Pengaduan Lingkungan</h2>
+          <p className="ipl-page-subtitle">
+            {showTabs
+              ? "Tinjau dan tanggapi laporan warga, atau pantau pengaduan yang Anda ajukan sendiri"
+              : bisaLihatMasuk
+              ? "Tinjau dan tanggapi laporan kendala dari warga cluster"
+              : "Laporkan kendala di lingkungan cluster dan pantau tindak lanjutnya"}
+          </p>
+        </div>
+      </div>
+
+      {showTabs && (
         <div className="db-section-toggle" role="tablist" aria-label="Tampilan Pengaduan">
           <button
             type="button"
@@ -707,11 +681,15 @@ export default function PengaduanPage() {
             Pengaduan Saya
           </button>
         </div>
-        {activeView === "masuk" ? <AdminPengaduanView user={user} /> : <WargaPengaduanView user={user} />}
-      </div>
-    );
-  }
+      )}
 
-  if (bisaLihatMasuk) return <AdminPengaduanView user={user} />;
-  return <WargaPengaduanView user={user} />;
+      {showTabs ? (
+        activeView === "masuk" ? <AdminPengaduanView user={user} /> : <WargaPengaduanView user={user} />
+      ) : bisaLihatMasuk ? (
+        <AdminPengaduanView user={user} />
+      ) : (
+        <WargaPengaduanView user={user} />
+      )}
+    </div>
+  );
 }

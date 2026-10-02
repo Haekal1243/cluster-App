@@ -397,7 +397,12 @@ export class WargaService {
         const rumah = await tx.rumah.findUnique({
           where: { rt_blokRumah: { rt: dto.rt, blokRumah: dto.blokRumah } },
         });
-        if (rumah && !rumah.isDelete && rumah.userId) {
+        if (!rumah || rumah.isDelete) {
+          throw new NotFoundException(
+            `Blok ${dto.blokRumah} di ${dto.rt.replace('_', ' ')} belum terdaftar. Minta admin menambahkan rumah ini terlebih dahulu.`,
+          );
+        }
+        if (rumah.userId) {
           throw new ConflictException(`Blok ${dto.blokRumah} sudah ada pemilik/penanggung jawab lain.`);
         }
 
@@ -415,16 +420,10 @@ export class WargaService {
           select: { id: true },
         });
 
-        if (rumah) {
-          await tx.rumah.update({
-            where: { id: rumah.id },
-            data: { userId: created.id, status, isDelete: false, updateBy: actor, updateDate: new Date() },
-          });
-        } else {
-          await tx.rumah.create({
-            data: { rt: dto.rt, blokRumah: dto.blokRumah, userId: created.id, status, createBy: actor },
-          });
-        }
+        await tx.rumah.update({
+          where: { id: rumah.id },
+          data: { userId: created.id, status, isDelete: false, updateBy: actor, updateDate: new Date() },
+        });
         return created;
       });
 

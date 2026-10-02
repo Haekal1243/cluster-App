@@ -15,6 +15,7 @@ import {
 import { areaLabel, can } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
+import Select from "@/components/ui/Select";
 import {
   PENGAJUAN,
   bolehAjukan,
@@ -316,28 +317,39 @@ export default function PublikasiManager({
             }}
           >
             <FilterField label="Status">
-              <select className="ipl-select ipl-select-sm" value={draft.status} onChange={(e) => setDraft((d) => ({ ...d, status: e.target.value }))}>
-                <option value="SEMUA">Semua Status</option>
-                <option value="active">Aktif</option>
-                <option value="unactived">Nonaktif</option>
-              </select>
+              <Select
+                className="ipl-select ipl-select-sm"
+                value={draft.status}
+                onChange={(v) => setDraft((d) => ({ ...d, status: v }))}
+                options={[
+                  { value: "SEMUA", label: "Semua Status" },
+                  { value: "active", label: "Aktif" },
+                  { value: "unactived", label: "Nonaktif" },
+                ]}
+              />
             </FilterField>
             <FilterField label="Pengajuan ke RW">
-              <select className="ipl-select ipl-select-sm" value={draft.pengajuan} onChange={(e) => setDraft((d) => ({ ...d, pengajuan: e.target.value }))}>
-                <option value="SEMUA">Semua</option>
-                {Object.entries(PENGAJUAN).map(([val, p]) => (
-                  <option key={val} value={val}>{p.label}</option>
-                ))}
-              </select>
+              <Select
+                className="ipl-select ipl-select-sm"
+                value={draft.pengajuan}
+                onChange={(v) => setDraft((d) => ({ ...d, pengajuan: v }))}
+                options={[
+                  { value: "SEMUA", label: "Semua" },
+                  ...Object.entries(PENGAJUAN).map(([val, p]) => ({ value: val, label: p.label })),
+                ]}
+              />
             </FilterField>
             {lihatSemuaWilayah && (
               <FilterField label="Wilayah">
-                <select className="ipl-select ipl-select-sm" value={draft.area} onChange={(e) => setDraft((d) => ({ ...d, area: e.target.value }))}>
-                  <option value="SEMUA">Semua Wilayah</option>
-                  {["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => (
-                    <option key={a} value={a}>{areaLabel(a)}</option>
-                  ))}
-                </select>
+                <Select
+                  className="ipl-select ipl-select-sm"
+                  value={draft.area}
+                  onChange={(v) => setDraft((d) => ({ ...d, area: v }))}
+                  options={[
+                    { value: "SEMUA", label: "Semua Wilayah" },
+                    ...["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => ({ value: a, label: areaLabel(a) })),
+                  ]}
+                />
               </FilterField>
             )}
           </FilterPopover>

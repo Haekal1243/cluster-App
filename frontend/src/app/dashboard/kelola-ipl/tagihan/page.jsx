@@ -24,6 +24,7 @@ import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import { BillSummaryCard } from "@/components/ipl/BillSummaryCard";
 import Pagination from "@/components/ui/Pagination";
+import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
 import ProtectedImage from "@/components/ui/ProtectedImage";
@@ -51,7 +52,7 @@ function formatRupiah(nominal) {
 }
 
 function formatTanggal(dateStr) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 }
 
@@ -127,37 +128,32 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
           {pilihRt && (
             <div className="ipl-form-group">
               <label>RT</label>
-              <select value={form.rt} onChange={(e) => setForm({ ...form, rt: e.target.value })} className="ipl-select">
-                {["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => (
-                  <option key={rt} value={rt}>{areaLabel(rt)}</option>
-                ))}
-              </select>
+              <Select
+                value={form.rt}
+                onChange={(v) => setForm({ ...form, rt: v })}
+                className="ipl-select"
+                options={["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => ({ value: rt, label: areaLabel(rt) }))}
+              />
             </div>
           )}
           <div className="ipl-form-row">
             <div className="ipl-form-group">
               <label>Bulan</label>
-              <select
+              <Select
                 value={form.bulanPeriode}
-                onChange={(e) => setForm({ ...form, bulanPeriode: e.target.value })}
+                onChange={(v) => setForm({ ...form, bulanPeriode: v })}
                 className="ipl-select"
-              >
-                {BULAN_OPTIONS.map(({ val, label }) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
+                options={BULAN_OPTIONS.map(({ val, label }) => ({ value: val, label }))}
+              />
             </div>
             <div className="ipl-form-group">
               <label>Tahun</label>
-              <select
+              <Select
                 value={form.tahunPeriode}
-                onChange={(e) => setForm({ ...form, tahunPeriode: e.target.value })}
+                onChange={(v) => setForm({ ...form, tahunPeriode: v })}
                 className="ipl-select"
-              >
-                {TAHUN_OPTIONS.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+                options={TAHUN_OPTIONS.map((y) => ({ value: y, label: y }))}
+              />
             </div>
           </div>
           <div className="ipl-form-row">
@@ -248,7 +244,7 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
         </div>
         <form onSubmit={handleSubmit} className="ipl-modal-body">
           <p className="field-hint">
-            {BULAN_NAMES[tagihan.bulanPeriode]} {tagihan.tahunPeriode} · {tagihan.rumah?.penghuni?.namaUser || "—"}
+            {BULAN_NAMES[tagihan.bulanPeriode]} {tagihan.tahunPeriode} · {tagihan.rumah?.penghuni?.namaUser || "-"}
           </p>
           <div className="ipl-form-row">
             <div className="ipl-form-group">
@@ -299,7 +295,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
   if (!rekap) return null;
 
   const formatPeriode = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
     return `${BULAN_NAMES[m] || m} ${y}`;
   };
@@ -308,8 +304,8 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
   return (
     <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
       <div className="ipl-table-header">
-        <span className="ipl-table-title">Rekap per RT — {periodeLabel}</span>
-        <span className="ipl-table-count">IPL rumah dihuni disetor RT ke RW; rumah kosong masuk kas RT</span>
+        <span className="ipl-table-title">Rekap per RT - {periodeLabel}</span>
+        <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
       </div>
       <div className="ipl-table-wrapper">
         <table className="ipl-table">
@@ -407,7 +403,7 @@ function ReviewModal({ tagihan, onClose, onSuccess }) {
           <div className="review-info-grid">
             <div className="review-info-item">
               <span className="review-info-label">Penghuni</span>
-              <span className="review-info-value">{tagihan?.rumah?.penghuni?.namaUser || "—"}</span>
+              <span className="review-info-value">{tagihan?.rumah?.penghuni?.namaUser || "-"}</span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Blok / RT</span>
@@ -423,7 +419,7 @@ function ReviewModal({ tagihan, onClose, onSuccess }) {
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Nominal Dibayar</span>
-              <span className="review-info-value">{pembayaran ? formatRupiah(pembayaran.nominal) : "—"}</span>
+              <span className="review-info-value">{pembayaran ? formatRupiah(pembayaran.nominal) : "-"}</span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Tanggal Upload</span>
@@ -492,7 +488,7 @@ function AdminIuranView({ user }) {
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
   };
   const formatYmPanjang = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
     return `${BULAN_NAMES[m] || m} ${y}`;
   };
@@ -622,36 +618,36 @@ function AdminIuranView({ user }) {
       {summary && (
         <div className="ipl-summary-grid keu-summary-grid">
           <div className="ipl-summary-card keu-card keu-teal">
-            <div className="keu-card-head">
-              <div className="keu-icon-circle"><Wallet size={18} strokeWidth={2} /></div>
+            <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
               <span className="ipl-summary-label">Total Tagihan</span>
+              <span className="ipl-summary-value">{formatRupiah(summary.totalNominal)}</span>
+              <span className="ipl-summary-sub">{summary.total} rumah aktif</span>
             </div>
-            <span className="ipl-summary-value">{formatRupiah(summary.totalNominal)}</span>
-            <span className="ipl-summary-sub">{summary.total} tagihan</span>
           </div>
           <div className="ipl-summary-card keu-card keu-green">
-            <div className="keu-card-head">
-              <div className="keu-icon-circle"><CheckCircle size={18} strokeWidth={2} /></div>
+            <div className="keu-icon-circle"><CheckCircle size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
               <span className="ipl-summary-label">Terkumpul</span>
+              <span className="ipl-summary-value">{formatRupiah(summary.totalTerkumpul)}</span>
+              <span className="ipl-summary-sub">{summary.lunas} lunas · IPL {formatRupiah(summary.terkumpulIpl)} · kas {formatRupiah(summary.terkumpulKas)}</span>
             </div>
-            <span className="ipl-summary-value">{formatRupiah(summary.totalTerkumpul)}</span>
-            <span className="ipl-summary-sub">{summary.lunas} lunas · IPL {formatRupiah(summary.terkumpulIpl)} · kas {formatRupiah(summary.terkumpulKas)}</span>
           </div>
           <div className={`ipl-summary-card keu-card ${summary.menungguKonfirmasi > 0 ? "keu-amber" : "keu-muted"}`}>
-            <div className="keu-card-head">
-              <div className="keu-icon-circle">{summary.menungguKonfirmasi > 0 ? <AlertTriangle size={18} strokeWidth={2} /> : <Clock size={18} strokeWidth={2} />}</div>
+            <div className="keu-icon-circle">{summary.menungguKonfirmasi > 0 ? <AlertTriangle size={22} strokeWidth={2} /> : <Clock size={22} strokeWidth={2} />}</div>
+            <div className="keu-card-text">
               <span className="ipl-summary-label">Menunggu Konfirmasi</span>
+              <span className="ipl-summary-value">{summary.menungguKonfirmasi}</span>
+              <span className="ipl-summary-sub">perlu ditinjau</span>
             </div>
-            <span className="ipl-summary-value">{summary.menungguKonfirmasi}</span>
-            <span className="ipl-summary-sub">perlu ditinjau</span>
           </div>
           <div className="ipl-summary-card keu-card keu-red">
-            <div className="keu-card-head">
-              <div className="keu-icon-circle"><FileX size={18} strokeWidth={2} /></div>
+            <div className="keu-icon-circle"><FileX size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
               <span className="ipl-summary-label">Belum Lunas</span>
+              <span className="ipl-summary-value">{formatRupiah(summary.totalTertunggak)}</span>
+              <span className="ipl-summary-sub">{summary.belumLunas} rumah tertunggak</span>
             </div>
-            <span className="ipl-summary-value">{formatRupiah(summary.totalTertunggak)}</span>
-            <span className="ipl-summary-sub">{summary.belumLunas} rumah tertunggak</span>
           </div>
         </div>
       )}
@@ -707,28 +703,24 @@ function AdminIuranView({ user }) {
               <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftRangeError}</p>
             )}
             <FilterField label="Status">
-              <select
+              <Select
                 className="ipl-select ipl-select-sm"
                 value={draftFilterStatus}
-                onChange={(e) => setDraftFilterStatus(e.target.value)}
-              >
-                {STATUS_FILTER_OPTIONS.map(({ val, label }) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
+                onChange={(v) => setDraftFilterStatus(v)}
+                options={STATUS_FILTER_OPTIONS.map(({ val, label }) => ({ value: val, label }))}
+              />
             </FilterField>
             {semuaRt && (
               <FilterField label="RT">
-                <select
+                <Select
                   className="ipl-select ipl-select-sm"
                   value={draftFilterRt}
-                  onChange={(e) => setDraftFilterRt(e.target.value)}
-                >
-                  <option value="SEMUA">Semua RT</option>
-                  {["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => (
-                    <option key={rt} value={rt}>{areaLabel(rt)}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setDraftFilterRt(v)}
+                  options={[
+                    { value: "SEMUA", label: "Semua RT" },
+                    ...["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => ({ value: rt, label: areaLabel(rt) })),
+                  ]}
+                />
               </FilterField>
             )}
           </FilterPopover>
@@ -742,7 +734,7 @@ function AdminIuranView({ user }) {
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
           <span className="ipl-table-title">
-            Data Tagihan — {periodeLabel}
+            Data Tagihan - {periodeLabel}
           </span>
           <span className="ipl-table-count">{tagihan.length} data</span>
         </div>
@@ -826,7 +818,7 @@ function AdminIuranView({ user }) {
                             </button>
                           )}
                           {t.statusPembayaran === "BELUM_LUNAS" && !bolehUbah && !bolehHapus && (
-                            <span className="text-muted">—</span>
+                            <span className="text-muted">-</span>
                           )}
                         </div>
                       </td>
@@ -926,7 +918,7 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Nominal Dibayar</span>
-              <span className="review-info-value">{pembayaran ? rupiah(pembayaran.nominal) : "—"}</span>
+              <span className="review-info-value">{pembayaran ? rupiah(pembayaran.nominal) : "-"}</span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Tanggal Bayar</span>
@@ -958,7 +950,7 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
 // Diekspor agar dipakai ulang oleh route /kelola-ipl/tagihan-saya tanpa duplikasi kode.
 export function WargaIuranView({ user }) {
   const formatYmPanjang = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
     return `${BULAN_NAMES[m] || m} ${y}`;
   };
@@ -1251,30 +1243,24 @@ export function WargaIuranView({ user }) {
             <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>
           )}
           <FilterField label="Status">
-            <select
+            <Select
               className="ipl-select ipl-select-sm"
               value={draftStatus}
-              onChange={(e) => setDraftStatus(e.target.value)}
-            >
-              {STATUS_FILTER_OPTIONS.map(({ val, label }) => (
-                <option key={val} value={val}>{label}</option>
-              ))}
-            </select>
+              onChange={(v) => setDraftStatus(v)}
+              options={STATUS_FILTER_OPTIONS.map(({ val, label }) => ({ value: val, label }))}
+            />
           </FilterField>
           {rumahList.length > 1 && (
             <FilterField label="Unit">
-              <select
+              <Select
                 className="ipl-select ipl-select-sm"
                 value={draftUnit}
-                onChange={(e) => setDraftUnit(e.target.value)}
-              >
-                <option value="semua">Semua Unit ({rumahList.length})</option>
-                {rumahList.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.blokRumah} — {formatRt(r.rt)}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setDraftUnit(v)}
+                options={[
+                  { value: "semua", label: `Semua Unit (${rumahList.length})` },
+                  ...rumahList.map((r) => ({ value: String(r.id), label: `${r.blokRumah} - ${formatRt(r.rt)}` })),
+                ]}
+              />
             </FilterField>
           )}
         </FilterPopover>
@@ -1344,7 +1330,7 @@ export function WargaIuranView({ user }) {
                             <Eye size={14} /> Riwayat
                           </button>
                         ) : (
-                          <span className="text-muted">—</span>
+                          <span className="text-muted">-</span>
                         )}
                       </td>
                     </tr>

@@ -80,12 +80,12 @@ export default function PanelSistem({ user }) {
             const keuTone = tone === "tone-info" ? "keu-teal" : tone === "tone-success" ? "keu-green" : tone === "tone-warning" ? "keu-amber" : tone === "tone-danger" ? "keu-red" : "keu-muted";
             return (
               <div key={label} className={`ipl-summary-card keu-card ${keuTone}`}>
-                <div className="keu-card-head">
-                  <div className="keu-icon-circle"><Icon size={18} strokeWidth={2} /></div>
+                <div className="keu-icon-circle"><Icon size={22} strokeWidth={2} /></div>
+                <div className="keu-card-text">
                   <span className="ipl-summary-label">{label}</span>
+                  <span className="ipl-summary-value">{nilai}</span>
+                  <span className="ipl-summary-sub">{sub}</span>
                 </div>
-                <span className="ipl-summary-value">{nilai}</span>
-                <span className="ipl-summary-sub">{sub}</span>
               </div>
             );
           })}

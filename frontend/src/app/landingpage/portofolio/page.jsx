@@ -4,7 +4,7 @@ import Footer from "@/components/landing/Footer";
 import { API_BASE_URL, fileUrl } from "@/lib/api";
 
 export const metadata = {
-  title: "Portofolio Kegiatan — Cluster Topaz",
+  title: "Portofolio Kegiatan - Cluster Topaz",
   description: "Rencana dan agenda kegiatan warga RW 21 Cluster Topaz untuk 5 tahun ke depan.",
 };
 

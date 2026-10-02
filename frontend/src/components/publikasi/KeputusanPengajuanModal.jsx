@@ -36,7 +36,7 @@ export default function KeputusanPengajuanModal({ open, item, noun = "kegiatan",
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
         <div className="modal-header">
           <h3>Pengajuan {noun} {areaLabel(item.area)}</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">

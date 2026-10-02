@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { isValidBlokRumah, sanitizePhoneInput } from "@/lib/validators";
+import Select from "@/components/ui/Select";
 
 const ALL_RT = ["RT_01", "RT_02", "RT_03", "RT_04"];
-const BLOK_RUMAH_REGEX = /^E\d{1,2}\/\d{1,2}$/;
 
 const EMPTY_FORM = {
   nama: "",
@@ -33,7 +34,25 @@ export default function WargaFormModal({
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
+  const [blokOpen, setBlokOpen] = useState(false);
+  const blokRef = useRef(null);
   const isEdit = mode === "edit";
+
+  useEffect(() => {
+    if (!blokOpen) return;
+    const onPointerDown = (e) => {
+      if (blokRef.current && !blokRef.current.contains(e.target)) setBlokOpen(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setBlokOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [blokOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -54,12 +73,18 @@ export default function WargaFormModal({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: name === "blokRumah" ? value.toUpperCase() : value }));
+    let next = value;
+    if (name === "blokRumah") next = value.toUpperCase();
+    if (name === "no_hp") next = sanitizePhoneInput(value);
+    setForm((p) => ({ ...p, [name]: next }));
   };
 
-  const blokValid = isEdit || BLOK_RUMAH_REGEX.test(form.blokRumah.trim());
+  const blokValid = isEdit || isValidBlokRumah(form.blokRumah);
   const showBlokError = !isEdit && form.blokRumah.trim() !== "" && !blokValid;
   const saranBlok = rumahKosong.filter((r) => r.rt === form.rt);
+  const filteredSaranBlok = saranBlok.filter((r) =>
+    r.blokRumah.toUpperCase().includes(form.blokRumah.trim().toUpperCase())
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,7 +142,9 @@ export default function WargaFormModal({
                 id="no_hp"
                 name="no_hp"
                 className="form-control"
-                inputMode="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={13}
                 placeholder="08xxxxxxxxxx"
                 value={form.no_hp}
                 onChange={handleChange}
@@ -133,52 +160,67 @@ export default function WargaFormModal({
                     <label htmlFor="rt">
                       RT <span className="required-star">*</span>
                     </label>
-                    <select
+                    <Select
                       id="rt"
-                      name="rt"
-                      className="form-control"
                       value={form.rt}
-                      onChange={handleChange}
+                      onChange={(v) => setForm((p) => ({ ...p, rt: v }))}
                       disabled={allowedRts.length === 1}
-                    >
-                      {allowedRts.map((rt) => (
-                        <option key={rt} value={rt}>
-                          {rt.replace("_", " ")}
-                        </option>
-                      ))}
-                    </select>
+                      options={allowedRts.map((rt) => ({ value: rt, label: rt.replace("_", " ") }))}
+                    />
                   </div>
                   <div className="form-group">
                     <label htmlFor="blokRumah">
                       Blok Rumah <span className="required-star">*</span>
                     </label>
-                    <input
-                      id="blokRumah"
-                      name="blokRumah"
-                      className="form-control"
-                      placeholder="Contoh: E7/15"
-                      list="saran-blok-kosong"
-                      value={form.blokRumah}
-                      onChange={handleChange}
-                      required
-                    />
-                    <datalist id="saran-blok-kosong">
-                      {saranBlok.map((r) => (
-                        <option key={r.id} value={r.blokRumah} />
-                      ))}
-                    </datalist>
+                    <div className="combobox" ref={blokRef}>
+                      <input
+                        id="blokRumah"
+                        name="blokRumah"
+                        className={`form-control ${blokOpen && filteredSaranBlok.length > 0 ? "combobox-input-open" : ""}`}
+                        placeholder="Contoh: E7/15"
+                        autoComplete="off"
+                        value={form.blokRumah}
+                        onChange={(e) => {
+                          handleChange(e);
+                          setBlokOpen(true);
+                        }}
+                        onFocus={() => setBlokOpen(true)}
+                        required
+                      />
+                      {blokOpen && filteredSaranBlok.length > 0 && (
+                        <ul className="combobox-list" role="listbox">
+                          {filteredSaranBlok.map((r) => (
+                            <li key={r.id}>
+                              <button
+                                type="button"
+                                className="combobox-option"
+                                onClick={() => {
+                                  setForm((p) => ({ ...p, blokRumah: r.blokRumah }));
+                                  setBlokOpen(false);
+                                }}
+                              >
+                                {r.blokRumah}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                     {showBlokError && <span className="field-error">Format blok rumah harus seperti E7/15</span>}
                   </div>
                 </div>
 
                 <div className="form-group">
                   <label htmlFor="statusRumah">Status Rumah</label>
-                  <select id="statusRumah" name="statusRumah" className="form-control" value={form.statusRumah} onChange={handleChange}>
-                    <option value="DIHUNI_TETAP">Dihuni (tetap)</option>
-                    <option value="DIHUNI_KONTRAK">Dihuni (kontrak)</option>
-                    <option value="KOSONG">Kosong (ada pemilik)</option>
-                  </select>
-                  <span className="field-hint">Rumah kosong tetap ditagih IPL dan masuk kas RT, tidak disetor ke RW.</span>
+                  <Select
+                    id="statusRumah"
+                    value={form.statusRumah}
+                    onChange={(v) => setForm((p) => ({ ...p, statusRumah: v }))}
+                    options={[
+                      { value: "DIHUNI_TETAP", label: "Dihuni (tetap)" },
+                      { value: "DIHUNI_KONTRAK", label: "Dihuni (kontrak)" },
+                    ]}
+                  />
                 </div>
               </>
             )}

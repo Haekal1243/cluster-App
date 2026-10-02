@@ -64,8 +64,8 @@ export default function DashboardShell({ children }) {
   const handleIdleTimeout = useCallback(async () => {
     clearSession();
     await showMessage(
-      "Sesi Berakhir",
-      "Kamu keluar otomatis karena tidak ada aktivitas selama 15 menit.",
+      "Sesi Telah Berakhir",
+      "Kamu otomatis keluar karena tidak ada aktivitas selama 15 menit. Silakan masuk kembali untuk melanjutkan.",
       "info"
     );
     router.replace("/login");

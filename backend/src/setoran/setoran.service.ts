@@ -135,6 +135,12 @@ export class SetoranService {
       throw err;
     });
 
+    await this.audit.catat(ctx.user.sub, 'setoran.buat', {
+      target: 'SetoranIpl',
+      targetId: setoran.id,
+      keterangan: `${labelRt(target)}: ${setoran.jumlahTagihan} tagihan, Rp ${setoran.totalIpl.toLocaleString('id-ID')}`,
+    });
+
     await this.notifikasiService.kirimKePermission(
       'setoran.konfirmasi',
       'RW',
@@ -208,7 +214,53 @@ export class SetoranService {
     });
     if (!setoran) throw new NotFoundException(`Setoran dengan ID ${id} tidak ditemukan.`);
     assertInArea(ctx, setoran.area);
-    return setoran;
+
+    // Konteks anti-kecurangan untuk RW: tagihan yang TIDAK ikut setoran ini —
+    // rumah kosong LUNAS (masuk kas RT) + pembayaran yang masih menunggu
+    // konfirmasi. RW mengkonfirmasi dengan data lengkap, bukan buta.
+    const [kosongDikecualikan, menunggu] = await Promise.all([
+      this.prisma.ipl.findMany({
+        where: {
+          statusPembayaran: 'LUNAS',
+          setoranId: null,
+          rumah: { rt: setoran.area as RT, status: 'KOSONG' },
+        },
+        select: {
+          id: true,
+          bulanPeriode: true,
+          tahunPeriode: true,
+          nominalIpl: true,
+          nominalKas: true,
+          rumah: {
+            select: { blokRumah: true, penghuni: { select: { namaUser: true } } },
+          },
+        },
+        orderBy: [{ tahunPeriode: 'asc' }, { bulanPeriode: 'asc' }],
+      }),
+      this.prisma.pembayaranIpl.findMany({
+        where: {
+          ipl: {
+            statusPembayaran: 'MENUNGGU_KONFIRMASI',
+            rumah: { rt: setoran.area as RT, status: { not: 'KOSONG' } },
+          },
+        },
+        select: {
+          idPembayaran: true,
+          nominal: true,
+          tanggalBayar: true,
+          user: { select: { namaUser: true } },
+          ipl: {
+            select: {
+              bulanPeriode: true,
+              tahunPeriode: true,
+              rumah: { select: { blokRumah: true } },
+            },
+          },
+        },
+        orderBy: { tanggalBayar: 'desc' },
+      }),
+    ]);
+    return { ...setoran, konteks: { kosongDikecualikan, menunggu } };
   }
 
   /** Id file bukti transfer setoran; dicek scope dulu, file ini tidak boleh diambil lewat GET /files/:id publik. */

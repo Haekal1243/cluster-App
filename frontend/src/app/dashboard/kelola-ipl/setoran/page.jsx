@@ -8,6 +8,7 @@ import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
+import ProtectedImage from "@/components/ui/ProtectedImage";
 import { usePagination } from "@/lib/usePagination";
 
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
@@ -204,6 +205,51 @@ function DetailModal({ id, bolehKonfirmasi, onClose, onSuccess }) {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {data.konteks && (
+              <div className="setoran-tagihan-list">
+                <p className="review-bukti-label">Tidak ikut setoran ini (untuk diteliti sebelum konfirmasi)</p>
+                {data.konteks.kosongDikecualikan?.length > 0 ? (
+                  <table className="ipl-table">
+                    <thead>
+                      <tr><th>Blok</th><th>Pemilik</th><th>Periode</th><th>Masuk kas RT</th></tr>
+                    </thead>
+                    <tbody>
+                      {data.konteks.kosongDikecualikan.map((t) => (
+                        <tr key={t.id}>
+                          <td>{t.rumah?.blokRumah} <span className="rt-badge">Kosong</span></td>
+                          <td>{t.rumah?.penghuni?.namaUser || "—"}</td>
+                          <td>{BULAN[Number(t.bulanPeriode) - 1]} {t.tahunPeriode}</td>
+                          <td>{rupiah((t.nominalIpl || 0) + (t.nominalKas || 0))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="field-hint">Tidak ada tagihan rumah kosong yang dikecualikan.</p>
+                )}
+                {data.konteks.menunggu?.length > 0 && (
+                  <>
+                    <p className="review-bukti-label" style={{ marginTop: 8 }}>Pembayaran menunggu konfirmasi RT</p>
+                    <table className="ipl-table">
+                      <thead>
+                        <tr><th>Blok</th><th>Pembayar</th><th>Periode</th><th>Nominal</th></tr>
+                      </thead>
+                      <tbody>
+                        {data.konteks.menunggu.map((p) => (
+                          <tr key={p.idPembayaran}>
+                            <td>{p.ipl?.rumah?.blokRumah}</td>
+                            <td>{p.user?.namaUser || "—"}</td>
+                            <td>{BULAN[Number(p.ipl?.bulanPeriode) - 1]} {p.ipl?.tahunPeriode}</td>
+                            <td>{rupiah(p.nominal)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
               </div>
             )}
 

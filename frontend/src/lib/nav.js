@@ -8,6 +8,7 @@ import {
   Megaphone,
   MessageSquareWarning,
   NotebookText,
+  History,
   ShieldCheck,
   UserCog,
 } from "lucide-react";
@@ -67,6 +68,12 @@ export const NAV_ITEMS = [
     href: "/dashboard/catatan-rapat",
     icon: NotebookText,
     allow: (u) => can(u, "catatan_rapat.read"),
+  },
+  {
+    label: "Riwayat Aktivitas",
+    href: "/dashboard/aktivitas",
+    icon: History,
+    allow: (u) => can(u, "audit.read"),
   },
   {
     label: "Peran & Hak Akses",

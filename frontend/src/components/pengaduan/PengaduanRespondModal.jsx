@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, Forward } from "lucide-react";
+import { Forward } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
 import { areaLabel } from "@/lib/session";
+import Select from "@/components/ui/Select";
 
 const KATEGORI_LABELS = {
   KEBERSIHAN: "Kebersihan",
@@ -68,7 +69,7 @@ export default function PengaduanRespondModal({ pengaduan, currentUserName, onCl
           <div className="review-info-grid">
             <div className="review-info-item">
               <span className="review-info-label">Pelapor</span>
-              <span className="review-info-value">{pengaduan.pelapor?.namaUser || "—"}</span>
+              <span className="review-info-value">{pengaduan.pelapor?.namaUser || "-"}</span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Kategori</span>
@@ -116,15 +117,12 @@ export default function PengaduanRespondModal({ pengaduan, currentUserName, onCl
 
           <div className="ipl-form-group">
             <label>Status Penanganan</label>
-            <select
+            <Select
               className="ipl-select"
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              {STATUS_OPTIONS.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+              onChange={(v) => setStatus(v)}
+              options={STATUS_OPTIONS.map(({ value, label }) => ({ value, label }))}
+            />
           </div>
 
           <div className="ipl-form-group">
@@ -145,7 +143,7 @@ export default function PengaduanRespondModal({ pengaduan, currentUserName, onCl
               Batal
             </button>
             <button className="btn-ipl-success" onClick={handleSubmit} disabled={loading}>
-              <CheckCircle size={16} /> Simpan Tanggapan
+              Simpan Tanggapan
             </button>
           </div>
         </div>

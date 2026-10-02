@@ -8,6 +8,7 @@ import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
+import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 import RumahFormModal from "@/components/warga/RumahFormModal";
 
@@ -41,6 +42,9 @@ export default function BlokRumahPage() {
   const bolehUbah = can(user, "warga.update");
   const bolehHapus = can(user, "warga.delete");
   const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
+  // Kolom RT cuma relevan buat pengurus RW (lihat lintas-RT); pengurus RT sudah pasti
+  // cuma lihat RT-nya sendiri jadi kolomnya cuma bikin sempit tanpa nambah info.
+  const tampilkanRT = !(scopeOf(user, "warga.read") === "AREA" && user?.area && user.area !== "RW");
 
   const loadData = async () => {
     setIsLoading(true);
@@ -133,40 +137,36 @@ export default function BlokRumahPage() {
     <div className="page-stack">
       <div className="ipl-summary-grid keu-summary-grid">
         <div className="ipl-summary-card keu-card keu-teal">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Users size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Users size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Penghuni Terdaftar</span>
+            <span className="ipl-summary-value">{stats.warga}</span>
           </div>
-          <span className="ipl-summary-value">{stats.warga}</span>
-          <span className="ipl-summary-sub">seluruh cluster</span>
         </div>
         <div className="ipl-summary-card keu-card keu-green">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Home size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Tetap</span>
+            <span className="ipl-summary-value">{stats.tetap}</span>
           </div>
-          <span className="ipl-summary-value">{stats.tetap}</span>
-          <span className="ipl-summary-sub">dihuni tetap</span>
         </div>
         <div className="ipl-summary-card keu-card keu-purple">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Home size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Kontrak</span>
+            <span className="ipl-summary-value">{stats.kontrak}</span>
           </div>
-          <span className="ipl-summary-value">{stats.kontrak}</span>
-          <span className="ipl-summary-sub">dihuni kontrak</span>
         </div>
         <div className="ipl-summary-card keu-card keu-muted">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Home size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Kosong</span>
+            <span className="ipl-summary-value">{stats.kosong}</span>
           </div>
-          <span className="ipl-summary-value">{stats.kosong}</span>
-          <span className="ipl-summary-sub">{stats.kosongAdaPemilik} ada pemilik · {stats.kosongBelumDaftar} belum daftar</span>
         </div>
       </div>
 
-      <div className="page-toolbar-row">
+      <div className="page-toolbar-row warga-toolbar-row">
         <div className="warga-filter-bar">
           <div className="warga-search-wrap">
             <Search size={15} className="warga-search-icon" />
@@ -196,20 +196,28 @@ export default function BlokRumahPage() {
             }}
           >
             <FilterField label="RT">
-              <select className="form-control warga-filter-select" value={draftRT} onChange={(e) => setDraftRT(e.target.value)}>
-                <option value="SEMUA">Semua RT</option>
-                {ALL_RT.map((rt) => (
-                  <option key={rt} value={rt}>{areaLabel(rt)}</option>
-                ))}
-              </select>
+              <Select
+                className="warga-filter-select"
+                value={draftRT}
+                onChange={(v) => setDraftRT(v)}
+                options={[
+                  { value: "SEMUA", label: "Semua RT" },
+                  ...ALL_RT.map((rt) => ({ value: rt, label: areaLabel(rt) })),
+                ]}
+              />
             </FilterField>
             <FilterField label="Status rumah">
-              <select className="form-control warga-filter-select" value={draftStatus} onChange={(e) => setDraftStatus(e.target.value)}>
-                <option value="SEMUA">Semua Status</option>
-                <option value="DIHUNI_TETAP">Dihuni (tetap)</option>
-                <option value="DIHUNI_KONTRAK">Dihuni (kontrak)</option>
-                <option value="KOSONG">Kosong</option>
-              </select>
+              <Select
+                className="warga-filter-select"
+                value={draftStatus}
+                onChange={(v) => setDraftStatus(v)}
+                options={[
+                  { value: "SEMUA", label: "Semua Status" },
+                  { value: "DIHUNI_TETAP", label: "Dihuni (tetap)" },
+                  { value: "DIHUNI_KONTRAK", label: "Dihuni (kontrak)" },
+                  { value: "KOSONG", label: "Kosong" },
+                ]}
+              />
             </FilterField>
           </FilterPopover>
         </div>
@@ -232,7 +240,7 @@ export default function BlokRumahPage() {
               <tr>
                 <th>No</th>
                 <th>Blok Rumah</th>
-                <th>RT</th>
+                {tampilkanRT && <th>RT</th>}
                 <th>Penghuni</th>
                 <th>Status</th>
                 {(bolehUbah || bolehHapus) && <th>Aksi</th>}
@@ -246,21 +254,12 @@ export default function BlokRumahPage() {
                     <tr key={item.id}>
                       <td>{(page - 1) * 10 + index + 1}</td>
                       <td className="col-judul">{item.blokRumah}</td>
-                      <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>
+                      {tampilkanRT && <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>}
                       <td>
                         {item.penghuni ? (
-                          <div className="penghuni-cell">
-                            <span className="penghuni-avatar">{item.penghuni.namaUser?.charAt(0).toUpperCase()}</span>
-                            <div>
-                              <span className="penghuni-name">{item.penghuni.namaUser}</span>
-                              {item.penghuni._count?.rumah > 1 && (
-                                <span className="penghuni-multi-badge">{item.penghuni._count.rumah} rumah</span>
-                              )}
-                              <span className="penghuni-email">{item.penghuni.username}</span>
-                            </div>
-                          </div>
+                          <span className="penghuni-name">{item.penghuni.namaUser}</span>
                         ) : (
-                          <span className="penghuni-empty">—</span>
+                          <span className="penghuni-empty">-</span>
                         )}
                       </td>
                       <td><span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span></td>
@@ -295,11 +294,11 @@ export default function BlokRumahPage() {
                 <div key={item.id} className="warga-grid-card">
                   <h3 className="warga-grid-title">
                     {item.blokRumah}
-                    <span className="rt-badge">{areaLabel(item.rt)}</span>
+                    {tampilkanRT && <span className="rt-badge">{areaLabel(item.rt)}</span>}
                   </h3>
-                    <span className="meta-item warga-grid-penghuni">
-                      {item.penghuni ? item.penghuni.namaUser : "Pemilik belum terdaftar"}
-                    </span>
+                  <span className="meta-item warga-grid-penghuni">
+                    {item.penghuni ? item.penghuni.namaUser : "-"}
+                  </span>
                   <div className="warga-grid-footer">
                     <div className="table-actions">
                       {bolehUbah && (

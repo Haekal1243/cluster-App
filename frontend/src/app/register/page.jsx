@@ -7,6 +7,7 @@ import { wargaApi } from "@/lib/api";
 import { areaLabel } from "@/lib/session";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
+import Select from "@/components/ui/Select";
 
 const RT_OPTIONS = ["RT_01", "RT_02", "RT_03", "RT_04"];
 
@@ -127,39 +128,27 @@ export default function DataDiriPage() {
                   <label htmlFor="rt">
                     RT <span className="required-star">*</span>
                   </label>
-                  <select
+                  <Select
                     id="rt"
-                    name="rt"
-                    className={`form-control custom-select ${formData.rt === "" ? "is-placeholder" : ""}`}
                     value={formData.rt}
-                    onChange={handleChange}
-                  >
-                    <option value="" disabled hidden>Pilih RT</option>
-                    {RT_OPTIONS.map((rt) => (
-                      <option key={rt} value={rt}>{areaLabel(rt)}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setFormData((prev) => ({ ...prev, rt: v }))}
+                    placeholder="Pilih RT"
+                    options={RT_OPTIONS.map((rt) => ({ value: rt, label: areaLabel(rt) }))}
+                  />
                 </div>
 
                 <div className="form-group blok-section">
                   <label htmlFor="rumahId">
                     Blok Rumah <span className="required-star">*</span>
                   </label>
-                  <select
+                  <Select
                     id="rumahId"
-                    name="rumahId"
-                    className={`form-control custom-select ${formData.rumahId === "" ? "is-placeholder" : ""}`}
                     value={formData.rumahId}
-                    onChange={handleChange}
+                    onChange={(v) => setFormData((prev) => ({ ...prev, rumahId: v }))}
                     disabled={!formData.rt || loadingRumah}
-                  >
-                    <option value="" disabled hidden>
-                      {!formData.rt ? "Pilih RT dulu" : loadingRumah ? "Memuat…" : "Pilih Blok"}
-                    </option>
-                    {rumahKosong.map((r) => (
-                      <option key={r.id} value={r.id}>{r.blokRumah}</option>
-                    ))}
-                  </select>
+                    placeholder={!formData.rt ? "Pilih RT dulu" : loadingRumah ? "Memuat…" : "Pilih Blok"}
+                    options={rumahKosong.map((r) => ({ value: String(r.id), label: r.blokRumah }))}
+                  />
                   {formData.rt && !loadingRumah && rumahKosong.length === 0 && (
                     <span className="field-hint" style={{ color: "var(--danger, #dc2626)" }}>
                       Tidak ada blok kosong di RT ini. Hubungi pengurus RT.

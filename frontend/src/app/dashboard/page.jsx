@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Users, Wallet, AlertTriangle, CheckCircle,
   TrendingUp, Clock, ArrowRight, Home, CreditCard, Megaphone, CalendarDays,
@@ -9,6 +9,7 @@ import {
 import { iplApi, portalApi, kegiatanApi, pengumumanApi } from "@/lib/api";
 import { can, isWargaView } from "@/lib/session";
 import PanelSistem from "@/components/dashboard/PanelSistem";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import { useUser } from "@/lib/useUser";
 import Link from "next/link";
 import KegiatanDetailModal from "@/components/kegiatan/KegiatanDetailModal";
@@ -16,14 +17,19 @@ import PengumumanDetailModal from "@/components/pengumuman/PengumumanDetailModal
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatRupiah(n) {
-  if (!n && n !== 0) return "—";
+  if (!n && n !== 0) return "-";
+  return `Rp ${n.toLocaleString("id-ID")}`;
+}
+
+function formatRupiahSingkat(n) {
+  if (!n && n !== 0) return "-";
   if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1)}jt`;
   if (n >= 1_000) return `Rp ${(n / 1_000).toFixed(0)}rb`;
   return `Rp ${n}`;
 }
 
 function formatRupiahFull(n) {
-  if (!n && n !== 0) return "—";
+  if (!n && n !== 0) return "-";
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 }
 
@@ -114,7 +120,7 @@ function AdminDashboardView({ user }) {
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
   };
   const formatYm = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
     return `${MONTHS[parseInt(m, 10) - 1] || m} ${y}`;
   };
@@ -131,7 +137,6 @@ function AdminDashboardView({ user }) {
   const [draftDari, setDraftDari] = useState(getCurrentYm);
   const [draftSampai, setDraftSampai] = useState(getCurrentYm);
   const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef(null);
 
   // Normalisasi + validasi turunan (tanpa setState di dalam effect)
   const [dari, sampai] = periodeDari > periodeSampai
@@ -157,23 +162,6 @@ function AdminDashboardView({ user }) {
       .catch(() => {})
       .finally(() => setLoadingStats(false));
   }, [dari, sampai, rangeError]);
-
-  // Tutup popover saat klik di luar / tekan Escape
-  useEffect(() => {
-    if (!filterOpen) return;
-    const onPointerDown = (e) => {
-      if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
-    };
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") setFilterOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [filterOpen]);
 
   const openFilter = () => {
     setDraftDari(periodeDari);
@@ -213,112 +201,37 @@ function AdminDashboardView({ user }) {
           <h2>Selamat datang kembali, {userName} 👋</h2>
           <p>Ini ringkasan aktivitas cluster Topaz periode {periodeLabel}.</p>
         </div>
-        <div ref={filterRef} style={{ position: "relative" }}>
-          <button
-            type="button"
-            onClick={() => (filterOpen ? setFilterOpen(false) : openFilter())}
-            aria-haspopup="dialog"
-            aria-expanded={filterOpen}
-            aria-pressed={!isDefaultPeriode}
-            title={isDefaultPeriode ? "Filter periode" : `Periode: ${periodeLabel} — klik untuk ubah`}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "8px 14px", borderRadius: 999, cursor: "pointer",
-              background: isDefaultPeriode ? "rgba(255,255,255,.14)" : "#fff",
-              border: `1px solid ${isDefaultPeriode ? "rgba(255,255,255,.45)" : "#fff"}`,
-              boxShadow: filterOpen
-                ? "0 0 0 3px rgba(255,255,255,.35)"
-                : isDefaultPeriode ? "none" : "0 4px 12px rgba(0,0,0,.25)",
-              fontSize: 13, fontWeight: 600,
-              color: isDefaultPeriode ? "#fff" : "#1d4ed8",
-              whiteSpace: "nowrap",
-              transition: "background .15s ease, border-color .15s ease, color .15s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (isDefaultPeriode) {
-                e.currentTarget.style.background = "rgba(255,255,255,.24)";
-              } else {
-                e.currentTarget.style.background = "#eff6ff";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (isDefaultPeriode) {
-                e.currentTarget.style.background = "rgba(255,255,255,.14)";
-              } else {
-                e.currentTarget.style.background = "#fff";
-              }
-            }}
-          >
-            <Calendar size={15} />
-            <span>{isDefaultPeriode ? "Filter periode" : periodeLabel}</span>
-          </button>
-          {filterOpen && (
-            <div
-              role="dialog"
-              aria-label="Filter periode"
-              style={{
-                position: "absolute", right: 0, top: "calc(100% + 8px)", zIndex: 30,
-                width: 260, background: "#fff", border: "1px solid #e2e8f0",
-                borderRadius: 12, boxShadow: "0 12px 32px rgba(15,23,42,.12)",
-                padding: 14, display: "flex", flexDirection: "column", gap: 10,
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label htmlFor="periode-dari" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
-                  Dari
-                </label>
-                <input
-                  id="periode-dari"
-                  type="month"
-                  value={draftDari}
-                  onChange={(e) => e.target.value && setDraftDari(e.target.value)}
-                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
-                />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <label htmlFor="periode-sampai" style={{ fontSize: 12, fontWeight: 600, opacity: 0.7 }}>
-                  Sampai
-                </label>
-                <input
-                  id="periode-sampai"
-                  type="month"
-                  value={draftSampai}
-                  onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
-                  style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 14, width: "100%" }}
-                />
-              </div>
-              {draftError && (
-                <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>
-              )}
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
-                {!isDefaultPeriode && (
-                  <button
-                    type="button"
-                    onClick={handleResetPeriode}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#64748b" }}
-                  >
-                    Reset
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={applyFilter}
-                  disabled={!!draftError}
-                  style={{
-                    background: draftError ? "#cbd5e1" : "#2563eb", color: "#fff",
-                    border: "none", borderRadius: 8, padding: "8px 16px",
-                    fontSize: 13, fontWeight: 600, cursor: draftError ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Terapkan
-                </button>
-              </div>
-              <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
-                Maksimal 12 bulan · Total Warga tidak ikut filter
-              </p>
-            </div>
+        <FilterPopover
+          active={!isDefaultPeriode}
+          label={isDefaultPeriode ? "Filter periode" : periodeLabel}
+          hint="Maksimal 12 bulan · Total Warga tidak ikut filter"
+          open={filterOpen}
+          onOpenChange={setFilterOpen}
+          onOpen={openFilter}
+          onApply={applyFilter}
+          onReset={handleResetPeriode}
+          applyDisabled={!!draftError}
+        >
+          <FilterField label="Dari">
+            <input
+              type="month"
+              className="form-control"
+              value={draftDari}
+              onChange={(e) => e.target.value && setDraftDari(e.target.value)}
+            />
+          </FilterField>
+          <FilterField label="Sampai">
+            <input
+              type="month"
+              className="form-control"
+              value={draftSampai}
+              onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
+            />
+          </FilterField>
+          {draftError && (
+            <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftError}</p>
           )}
-        </div>
+        </FilterPopover>
       </section>
 
       {/* ── Alert: menunggu konfirmasi ── */}
@@ -327,7 +240,6 @@ function AdminDashboardView({ user }) {
           <AlertTriangle size={18} />
           <span>
             Ada <strong>{stats.menungguKonfirmasi} pembayaran</strong> menunggu konfirmasi
-            — klik untuk meninjau.
           </span>
           <ArrowRight size={16} style={{ marginLeft: "auto" }} />
         </Link>
@@ -338,54 +250,46 @@ function AdminDashboardView({ user }) {
 
         {/* Kas Masuk */}
         <Link href="/dashboard/iuran" className="ipl-summary-card keu-card keu-teal">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Wallet size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Total Pembayaran IPL</span>
+            <span className="ipl-summary-value">
+              {loadingStats ? "-" : formatRupiahSingkat(stats?.totalKasMasukBulanIni ?? 0)}
+            </span>
           </div>
-          <span className="ipl-summary-value">
-            {loadingStats ? "—" : formatRupiah(stats?.totalKasMasukBulanIni ?? 0)}
-          </span>
-          <span className="ipl-summary-sub">{dari === sampai ? periodeLabel : `${formatYm(dari)} – ${formatYm(sampai)}`}</span>
         </Link>
 
         {/* Lunas */}
         <Link href="/dashboard/iuran" className="ipl-summary-card keu-card keu-green">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><CheckCircle size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><CheckCircle size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Lunas</span>
+            <span className="ipl-summary-value">
+              {loadingStats ? "-" : `${stats?.lunasBulanIni ?? 0} / ${stats?.totalTagihanBulanIni ?? 0}`}
+            </span>
           </div>
-          <span className="ipl-summary-value">
-            {loadingStats ? "—" : `${stats?.lunasBulanIni ?? 0} / ${stats?.totalTagihanBulanIni ?? 0}`}
-          </span>
-          <span className="ipl-summary-sub">
-            {stats?.totalTagihanBulanIni > 0
-              ? `${Math.round(((stats?.lunasBulanIni ?? 0) / stats.totalTagihanBulanIni) * 100)}% sudah lunas`
-              : "belum ada tagihan"}
-          </span>
         </Link>
 
         {/* Menunggu Konfirmasi */}
         <Link href="/dashboard/iuran" className={`ipl-summary-card keu-card ${stats?.menungguKonfirmasi > 0 ? "keu-amber" : "keu-muted"}`}>
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Clock size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Clock size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Menunggu Konfirmasi</span>
+            <span className="ipl-summary-value">
+              {loadingStats ? "-" : (stats?.menungguKonfirmasi ?? 0)}
+            </span>
           </div>
-          <span className="ipl-summary-value">
-            {loadingStats ? "—" : (stats?.menungguKonfirmasi ?? 0)}
-          </span>
-          <span className="ipl-summary-sub">bukti transfer perlu ditinjau</span>
         </Link>
 
         {/* Total Warga */}
         <Link href="/dashboard/warga" className="ipl-summary-card keu-card keu-teal">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Users size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Users size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Total Warga</span>
+            <span className="ipl-summary-value">
+              {loadingStats ? "-" : (stats?.totalWarga ?? "-")}
+            </span>
           </div>
-          <span className="ipl-summary-value">
-            {loadingStats ? "—" : (stats?.totalWarga ?? "—")}
-          </span>
-          <span className="ipl-summary-sub">akun terdaftar</span>
         </Link>
 
       </section>
@@ -423,10 +327,12 @@ function AdminDashboardView({ user }) {
           <div className="db-section-header">
             <Clock size={17} />
             <h3>Pembayaran Terbaru</h3>
-            <span className="db-section-sub">{periodeLabel}</span>
-            <Link href="/dashboard/iuran" className="db-section-link">
-              Lihat semua <ArrowRight size={13} />
-            </Link>
+            <div className="db-section-header-right">
+              <span className="db-section-sub">{periodeLabel}</span>
+              <Link href="/dashboard/iuran" className="db-section-link">
+                Lihat semua <ArrowRight size={13} />
+              </Link>
+            </div>
           </div>
 
           {loadingStats ? (
@@ -441,7 +347,7 @@ function AdminDashboardView({ user }) {
                     {p.user?.namaUser?.[0]?.toUpperCase() ?? "?"}
                   </div>
                   <div className="db-recent-info">
-                    <span className="db-recent-name">{p.user?.namaUser ?? "—"}</span>
+                    <span className="db-recent-name">{p.user?.namaUser ?? "-"}</span>
                     <span className="db-recent-sub">
                       {p.ipl?.rumah?.blokRumah} · {BULAN_NAMES[p.ipl?.bulanPeriode]} {p.ipl?.tahunPeriode}
                     </span>
@@ -815,7 +721,7 @@ function WargaDashboardView({ user }) {
               <h3>Rincian Tunggakan</h3>
               <span className="warga-detail-sub">Belum ada data rumah</span>
             </div>
-            <span className="warga-tunggakan-total muted">—</span>
+            <span className="warga-tunggakan-total muted">-</span>
           </div>
           <div className="portal-empty-notice">
             <Home size={32} />
@@ -830,7 +736,7 @@ function WargaDashboardView({ user }) {
               <h3>Rincian Tunggakan</h3>
               <span className="warga-detail-sub">{rumahList.length} unit rumah · belum ada tagihan</span>
             </div>
-            <span className="warga-tunggakan-total muted" style={{ fontSize: "1rem", color: "#64748b" }}>—</span>
+            <span className="warga-tunggakan-total muted" style={{ fontSize: "1rem", color: "#64748b" }}>-</span>
           </div>
           <div className="warga-tunggakan-success">
             <p>Tagihan IPL belum diterbitkan.</p>

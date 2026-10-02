@@ -5,6 +5,7 @@ import { Camera, ImageOff, MessageCircle, UserCog, UserMinus, UserPlus, X } from
 import { pengurusApi } from "@/lib/api";
 import { areaLabel } from "@/lib/session";
 import { showConfirm, showMessage } from "@/lib/message";
+import Select from "@/components/ui/Select";
 
 const URUTAN_AREA = ["RW", "RT_01", "RT_02", "RT_03", "RT_04"];
 const MAKS_FOTO = 5 * 1024 * 1024;
@@ -43,7 +44,7 @@ function KontakModal({ pemegang, jabatan, onClose, onSubmit }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
         <div className="modal-header">
           <h3>Kontak {jabatan}</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup"><X size={18} /></button>
@@ -124,7 +125,7 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
         <div className="modal-header">
           <h3>{slot.role.nama} {areaLabel(slot.area)}</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup"><X size={18} /></button>
@@ -139,14 +140,17 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
             )}
             <div className="form-group">
               <label htmlFor="kandidat">Pilih warga <span className="required-star">*</span></label>
-              <select id="kandidat" className="form-control" value={userId} onChange={(e) => setUserId(e.target.value)} disabled={!kandidat} required>
-                <option value="">{kandidat ? "— Pilih warga —" : "Memuat..."}</option>
-                {(kandidat ?? []).map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {k.namaUser} · {areaLabel(k.area)}{k.rumah?.length ? ` · ${k.rumah.map((r) => r.blokRumah).join(", ")}` : ""}
-                  </option>
-                ))}
-              </select>
+              <Select
+                id="kandidat"
+                value={userId}
+                onChange={(v) => setUserId(v)}
+                disabled={!kandidat}
+                placeholder={kandidat ? "- Pilih warga -" : "Memuat..."}
+                options={(kandidat ?? []).map((k) => ({
+                  value: String(k.id),
+                  label: `${k.namaUser} · ${areaLabel(k.area)}${k.rumah?.length ? ` · ${k.rumah.map((r) => r.blokRumah).join(", ")}` : ""}`,
+                }))}
+              />
               <span className="field-hint">
                 {slot.role.level === 2
                   ? `Hanya warga ${areaLabel(slot.area)} yang bisa menjadi ${slot.role.nama}.`

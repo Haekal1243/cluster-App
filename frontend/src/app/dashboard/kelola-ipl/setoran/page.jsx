@@ -8,7 +8,7 @@ import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
-import ProtectedImage from "@/components/ui/ProtectedImage";
+import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
@@ -17,7 +17,7 @@ const rupiah = (n) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
 
 const tanggal = (d) =>
-  d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+  d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-";
 
 const STATUS = {
   MENUNGGU_KONFIRMASI: { label: "Menunggu Konfirmasi", cls: "badge-menunggu" },
@@ -162,7 +162,7 @@ function DetailModal({ id, bolehKonfirmasi, onClose, onSuccess }) {
               </div>
               <div className="review-info-item">
                 <span className="review-info-label">Disetor oleh</span>
-                <span className="review-info-value">{data.createBy || "—"} · {tanggal(data.createDate)}</span>
+                <span className="review-info-value">{data.createBy || "-"} · {tanggal(data.createDate)}</span>
               </div>
               <div className="review-info-item">
                 <span className="review-info-label">Status</span>
@@ -198,7 +198,7 @@ function DetailModal({ id, bolehKonfirmasi, onClose, onSuccess }) {
                     {data.tagihan.map((t) => (
                       <tr key={t.id}>
                         <td>{t.rumah?.blokRumah}</td>
-                        <td>{t.rumah?.penghuni?.namaUser || "—"}</td>
+                        <td>{t.rumah?.penghuni?.namaUser || "-"}</td>
                         <td>{BULAN[Number(t.bulanPeriode) - 1]} {t.tahunPeriode}</td>
                         <td>{rupiah(t.nominalIpl)}</td>
                       </tr>
@@ -307,7 +307,7 @@ export default function SetoranPage() {
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
   };
   const formatYmPanjang = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
     return `${BULAN_NAMES[m] || m} ${y}`;
   };
@@ -409,44 +409,39 @@ export default function SetoranPage() {
         <div className="ipl-summary-grid keu-summary-grid">
           {bolehSetor && siap && (
             <div className={`ipl-summary-card keu-card ${siap.jumlahTagihan > 0 ? "keu-teal" : "keu-muted"}`}>
-              <div className="keu-card-head">
-                <div className="keu-icon-circle"><Landmark size={18} strokeWidth={2} /></div>
+              <div className="keu-icon-circle"><Landmark size={22} strokeWidth={2} /></div>
+              <div className="keu-card-text">
                 <span className="ipl-summary-label">Siap Disetor {pilihRtSetor ? areaLabel(siap.rt) : ""}</span>
+                <span className="ipl-summary-value">{rupiah(siap.totalIpl)}</span>
+                <span className="ipl-summary-sub">{siap.jumlahTagihan} tagihan lunas belum disetor</span>
               </div>
-              <span className="ipl-summary-value">{rupiah(siap.totalIpl)}</span>
-              <span className="ipl-summary-sub">{siap.jumlahTagihan} tagihan lunas belum disetor</span>
-              {siap.dikecualikanRumahKosong?.jumlahTagihan > 0 && (
-                <span className="ipl-summary-sub">
-                  {siap.dikecualikanRumahKosong.jumlahTagihan} tagihan rumah kosong masuk kas RT
-                </span>
-              )}
             </div>
           )}
           {summary && (
             <>
               <div className="ipl-summary-card keu-card keu-green">
-                <div className="keu-card-head">
-                  <div className="keu-icon-circle"><CheckCircle size={18} strokeWidth={2} /></div>
+                <div className="keu-icon-circle"><CheckCircle size={22} strokeWidth={2} /></div>
+                <div className="keu-card-text">
                   <span className="ipl-summary-label">Sudah Dikonfirmasi</span>
+                  <span className="ipl-summary-value">{rupiah(summary.totalDikonfirmasi)}</span>
+                  <span className="ipl-summary-sub">{summary.dikonfirmasi} setoran</span>
                 </div>
-                <span className="ipl-summary-value">{rupiah(summary.totalDikonfirmasi)}</span>
-                <span className="ipl-summary-sub">{summary.dikonfirmasi} setoran</span>
               </div>
               <div className={`ipl-summary-card keu-card ${summary.menunggu > 0 ? "keu-amber" : "keu-muted"}`}>
-                <div className="keu-card-head">
-                  <div className="keu-icon-circle"><Clock size={18} strokeWidth={2} /></div>
+                <div className="keu-icon-circle"><Clock size={22} strokeWidth={2} /></div>
+                <div className="keu-card-text">
                   <span className="ipl-summary-label">Menunggu Konfirmasi</span>
+                  <span className="ipl-summary-value">{rupiah(summary.totalMenunggu)}</span>
+                  <span className="ipl-summary-sub">{summary.menunggu} setoran</span>
                 </div>
-                <span className="ipl-summary-value">{rupiah(summary.totalMenunggu)}</span>
-                <span className="ipl-summary-sub">{summary.menunggu} setoran</span>
               </div>
               <div className={`ipl-summary-card keu-card ${summary.ditolak > 0 ? "keu-red" : "keu-muted"}`}>
-                <div className="keu-card-head">
-                  <div className="keu-icon-circle"><XCircle size={18} strokeWidth={2} /></div>
+                <div className="keu-icon-circle"><XCircle size={22} strokeWidth={2} /></div>
+                <div className="keu-card-text">
                   <span className="ipl-summary-label">Ditolak</span>
+                  <span className="ipl-summary-value">{summary.ditolak}</span>
+                  <span className="ipl-summary-sub">tagihan kembali ke antrean</span>
                 </div>
-                <span className="ipl-summary-value">{summary.ditolak}</span>
-                <span className="ipl-summary-sub">tagihan kembali ke antrean</span>
               </div>
             </>
           )}
@@ -457,11 +452,12 @@ export default function SetoranPage() {
         {bolehSetor && siap && (
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {pilihRtSetor && (
-              <select className="ipl-select ipl-select-sm" value={siapRt} onChange={(e) => setSiapRt(e.target.value)}>
-                {["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => (
-                  <option key={rt} value={rt}>{areaLabel(rt)}</option>
-                ))}
-              </select>
+              <Select
+                className="ipl-select ipl-select-sm"
+                value={siapRt}
+                onChange={(v) => setSiapRt(v)}
+                options={["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => ({ value: rt, label: areaLabel(rt) }))}
+              />
             )}
             <button
               type="button"
@@ -501,29 +497,29 @@ export default function SetoranPage() {
               <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftRangeError}</p>
             )}
             <FilterField label="Status">
-              <select
+              <Select
                 className="ipl-select ipl-select-sm"
                 value={draftFilterStatus}
-                onChange={(e) => setDraftFilterStatus(e.target.value)}
-              >
-                <option value="SEMUA">Semua Status</option>
-                <option value="MENUNGGU_KONFIRMASI">Menunggu Konfirmasi</option>
-                <option value="DIKONFIRMASI">Dikonfirmasi</option>
-                <option value="DITOLAK">Ditolak</option>
-              </select>
+                onChange={(v) => setDraftFilterStatus(v)}
+                options={[
+                  { value: "SEMUA", label: "Semua Status" },
+                  { value: "MENUNGGU_KONFIRMASI", label: "Menunggu Konfirmasi" },
+                  { value: "DIKONFIRMASI", label: "Dikonfirmasi" },
+                  { value: "DITOLAK", label: "Ditolak" },
+                ]}
+              />
             </FilterField>
             {semuaRt && (
               <FilterField label="Wilayah">
-                <select
+                <Select
                   className="ipl-select ipl-select-sm"
                   value={draftFilterRt}
-                  onChange={(e) => setDraftFilterRt(e.target.value)}
-                >
-                  <option value="SEMUA">Semua Wilayah</option>
-                  {["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => (
-                    <option key={rt} value={rt}>{areaLabel(rt)}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setDraftFilterRt(v)}
+                  options={[
+                    { value: "SEMUA", label: "Semua Wilayah" },
+                    ...["RT_01", "RT_02", "RT_03", "RT_04"].map((rt) => ({ value: rt, label: areaLabel(rt) })),
+                  ]}
+                />
               </FilterField>
             )}
           </FilterPopover>
@@ -536,7 +532,7 @@ export default function SetoranPage() {
 
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
-          <span className="ipl-table-title">Riwayat Setoran — {rangeError ? "—" : periodeLabel}</span>
+          <span className="ipl-table-title">Riwayat Setoran - {rangeError ? "-" : periodeLabel}</span>
           <span className="ipl-table-count">{list.length} data</span>
         </div>
 
@@ -577,7 +573,7 @@ export default function SetoranPage() {
                           <span className="ipl-nominal-split">{tanggal(s.tanggalKonfirmasi)}</span>
                         </>
                       ) : (
-                        <span className="text-muted">—</span>
+                        <span className="text-muted">-</span>
                       )}
                     </td>
                     <td>

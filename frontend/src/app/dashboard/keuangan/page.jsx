@@ -21,6 +21,7 @@ import { useUser } from "@/lib/useUser";
 import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
+import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 
 // ── Helpers & opsi ────────────────────────────────────────────────────────────
@@ -44,7 +45,7 @@ function formatRupiah(nominal) {
 }
 
 function formatTanggal(dateStr) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 }
 
@@ -171,42 +172,36 @@ function KasFormModal({ initial, pilihArea = false, onClose, onSuccess }) {
           {pilihArea && (
             <div className="ipl-form-group">
               <label>Wilayah kas</label>
-              <select
+              <Select
                 value={form.area}
-                onChange={(e) => setForm({ ...form, area: e.target.value })}
+                onChange={(v) => setForm({ ...form, area: v })}
                 className="ipl-select"
-              >
-                {["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => (
-                  <option key={a} value={a}>{areaLabel(a)}</option>
-                ))}
-              </select>
+                options={["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => ({ value: a, label: areaLabel(a) }))}
+              />
             </div>
           )}
           <div className="ipl-form-row">
             <div className="ipl-form-group">
               <label>Tipe</label>
-              <select
+              <Select
                 value={form.tipe}
-                onChange={(e) => handleTipeChange(e.target.value)}
+                onChange={handleTipeChange}
                 className="ipl-select"
-              >
-                <option value="PEMASUKAN">Pemasukan</option>
-                <option value="PENGELUARAN">Pengeluaran</option>
-              </select>
+                options={[
+                  { value: "PEMASUKAN", label: "Pemasukan" },
+                  { value: "PENGELUARAN", label: "Pengeluaran" },
+                ]}
+              />
             </div>
             <div className="ipl-form-group">
               <label>Kategori</label>
-              <select
+              <Select
                 value={form.kategori}
-                onChange={(e) => setForm({ ...form, kategori: e.target.value })}
+                onChange={(v) => setForm({ ...form, kategori: v })}
                 className="ipl-select"
-                required
-              >
-                <option value="">— Pilih —</option>
-                {kategoriOptions.map((k) => (
-                  <option key={k} value={k}>{k}</option>
-                ))}
-              </select>
+                placeholder="- Pilih -"
+                options={kategoriOptions.map((k) => ({ value: k, label: k }))}
+              />
             </div>
           </div>
           <div className="ipl-form-row">
@@ -294,7 +289,7 @@ function AdminKeuanganView({ user }) {
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
   };
   const formatYmPanjang = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "—";
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
     return `${BULAN_NAMES[m] || m} ${y}`;
   };
@@ -497,36 +492,36 @@ function AdminKeuanganView({ user }) {
       {ringkasan && (
         <div className="ipl-summary-grid keu-summary-grid">
           <div className="ipl-summary-card keu-card keu-teal">
-            <div className="keu-card-head">
-              <div className="keu-icon-circle"><Wallet size={18} strokeWidth={2} /></div>
+            <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
               <span className="ipl-summary-label">Saldo Kas Saat Ini</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
+              <span className="ipl-summary-sub">kumulatif sepanjang waktu</span>
             </div>
-            <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
-            <span className="ipl-summary-sub">kumulatif sepanjang waktu</span>
           </div>
           <div className="ipl-summary-card keu-card keu-green">
-            <div className="keu-card-head">
-              <div className="keu-icon-circle"><TrendingUp size={18} strokeWidth={2} /></div>
+            <div className="keu-icon-circle"><TrendingUp size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
               <span className="ipl-summary-label">Pemasukan Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
+              <span className="ipl-summary-sub">{periodeLabel}</span>
             </div>
-            <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
-            <span className="ipl-summary-sub">{periodeLabel}</span>
           </div>
           <div className="ipl-summary-card keu-card keu-red">
-            <div className="keu-card-head">
-              <div className="keu-icon-circle"><TrendingDown size={18} strokeWidth={2} /></div>
+            <div className="keu-icon-circle"><TrendingDown size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
               <span className="ipl-summary-label">Pengeluaran Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
+              <span className="ipl-summary-sub">{periodeLabel}</span>
             </div>
-            <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
-            <span className="ipl-summary-sub">{periodeLabel}</span>
           </div>
           <div className="ipl-summary-card keu-card keu-teal">
-            <div className="keu-card-head">
-              <div className="keu-icon-circle"><List size={18} strokeWidth={2} /></div>
+            <div className="keu-icon-circle"><List size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
               <span className="ipl-summary-label">Selisih Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
+              <span className="ipl-summary-sub">masuk − keluar {periodeLabel}</span>
             </div>
-            <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
-            <span className="ipl-summary-sub">masuk − keluar {periodeLabel}</span>
           </div>
         </div>
       )}
@@ -629,40 +624,35 @@ function AdminKeuanganView({ user }) {
               <p style={{ color: "#dc2626", fontSize: 12, margin: 0 }}>{draftRangeError}</p>
             )}
             <FilterField label="Tipe">
-              <select
+              <Select
                 className="ipl-select ipl-select-sm"
                 value={draftFilterTipe}
-                onChange={(e) => { setDraftFilterTipe(e.target.value); setDraftFilterKategori("SEMUA"); }}
-              >
-                {TIPE_FILTER_OPTIONS.map(({ val, label }) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
+                onChange={(v) => { setDraftFilterTipe(v); setDraftFilterKategori("SEMUA"); }}
+                options={TIPE_FILTER_OPTIONS.map(({ val, label }) => ({ value: val, label }))}
+              />
             </FilterField>
             <FilterField label="Kategori">
-              <select
+              <Select
                 className="ipl-select ipl-select-sm"
                 value={draftFilterKategori}
-                onChange={(e) => setDraftFilterKategori(e.target.value)}
-              >
-                <option value="SEMUA">Semua Kategori</option>
-                {kategoriOptions.map((k, i) => (
-                  <option key={`filter-${i}-${k}`} value={k}>{k}</option>
-                ))}
-              </select>
+                onChange={(v) => setDraftFilterKategori(v)}
+                options={[
+                  { value: "SEMUA", label: "Semua Kategori" },
+                  ...kategoriOptions.map((k) => ({ value: k, label: k })),
+                ]}
+              />
             </FilterField>
             {semuaArea && isAdmin && (
               <FilterField label="Wilayah">
-                <select
+                <Select
                   className="ipl-select ipl-select-sm"
                   value={draftFilterArea}
-                  onChange={(e) => setDraftFilterArea(e.target.value)}
-                >
-                  <option value="SEMUA">Semua Wilayah</option>
-                  {["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => (
-                    <option key={a} value={a}>{areaLabel(a)}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setDraftFilterArea(v)}
+                  options={[
+                    { value: "SEMUA", label: "Semua Wilayah" },
+                    ...["RW", "RT_01", "RT_02", "RT_03", "RT_04"].map((a) => ({ value: a, label: areaLabel(a) })),
+                  ]}
+                />
               </FilterField>
             )}
           </FilterPopover>
@@ -757,7 +747,7 @@ function AdminKeuanganView({ user }) {
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
           <span className="ipl-table-title">
-            Riwayat Kas — {periodeLabel}
+            Riwayat Kas - {periodeLabel}
           </span>
           <span className="ipl-table-count">{riwayat.length} data</span>
         </div>
@@ -800,7 +790,7 @@ function AdminKeuanganView({ user }) {
                     <td>{formatTanggal(t.tanggal)}</td>
                     {semuaArea && <td><span className="rt-badge">{areaLabel(t.area)}</span></td>}
                     <td>{t.kategori}</td>
-                    <td>{t.keterangan || <em className="text-muted">—</em>}</td>
+                    <td>{t.keterangan || <em className="text-muted">-</em>}</td>
                     <td><KasTipeBadge tipe={t.tipe} /></td>
                     <td
                       className="ipl-nominal"
@@ -818,7 +808,7 @@ function AdminKeuanganView({ user }) {
                           <Eye size={14} /> Lihat
                         </button>
                       ) : (
-                        <span className="text-muted">—</span>
+                        <span className="text-muted">-</span>
                       )}
                     </td>
                     {(bolehUbah || bolehHapus) && (
@@ -846,7 +836,7 @@ function AdminKeuanganView({ user }) {
                               <Trash2 size={16} />
                             </button>
                           )}
-                          {!canEdit && !canDelete && <span className="text-muted">—</span>}
+                          {!canEdit && !canDelete && <span className="text-muted">-</span>}
                         </div>
                       </td>
                     )}

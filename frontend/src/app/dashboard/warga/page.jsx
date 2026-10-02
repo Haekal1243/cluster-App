@@ -11,16 +11,14 @@ import {
   PhoneCall,
   KeyRound,
   UserCheck,
-  Check,
-  X as XIcon,
 } from "lucide-react";
-import Swal from "sweetalert2";
 import { wargaApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showCredentials, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
+import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 import RumahFormModal from "@/components/warga/RumahFormModal";
 import WargaFormModal from "@/components/warga/WargaFormModal";
@@ -46,7 +44,6 @@ function rtYangBoleh(user, kode) {
 
 export default function WargaPage() {
   const { user } = useUser();
-  const [tab, setTab] = useState("warga");
   const [warga, setWarga] = useState([]);
   const [rumah, setRumah] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,7 +61,6 @@ export default function WargaPage() {
   const bolehUbah = can(user, "warga.update");
   const bolehHapus = can(user, "warga.delete");
   const bolehReset = can(user, "warga.reset_password");
-  const bolehApprove = can(user, "warga.approve_registrasi");
   const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
 
   const [pendaftaran, setPendaftaran] = useState([]);
@@ -308,140 +304,41 @@ export default function WargaPage() {
     paginatedItems: wargaPage,
     prev: prevWarga,
     next: nextWarga,
-  } = usePagination(wargaFiltered, [q, filterRT, tab]);
-  const {
-    page: pagePendaftaran,
-    totalPages: totalPagesPendaftaran,
-    paginatedItems: pendaftaranPage,
-    prev: prevPendaftaran,
-    next: nextPendaftaran,
-  } = usePagination(pendaftaran, [tab]);
-
+  } = usePagination(wargaFiltered, [q, filterRT]);
   return (
     <div className="page-stack">
-      {bolehApprove && (
-        <div className="db-section-toggle" role="tablist" aria-label="Tampilan Data Warga">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "warga"}
-            className={`db-toggle-btn ${tab === "warga" ? "is-active" : ""}`}
-            onClick={() => setTab("warga")}
-          >
-            Data Warga
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "pendaftaran"}
-            className={`db-toggle-btn ${tab === "pendaftaran" ? "is-active" : ""}`}
-            onClick={() => setTab("pendaftaran")}
-          >
-            Pendaftaran Masuk{pendaftaran.length > 0 ? ` (${pendaftaran.length})` : ""}
-          </button>
-        </div>
-      )}
-
-      {tab === "pendaftaran" && bolehApprove ? (
-        <div className="table-card">
-          <div className="ipl-table-header">
-            <span className="ipl-table-title">Pendaftaran Menunggu Persetujuan</span>
-            <span className="ipl-table-count">{pendaftaran.length} data</span>
-          </div>
-          <div className="table-wrapper warga-table-wrapper">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Nama</th>
-                  <th>No. HP</th>
-                  <th>Rumah</th>
-                  <th>Tanggal Daftar</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {!loadingPendaftaran &&
-                  pendaftaranPage.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        <div className="penghuni-cell">
-                          <span className="penghuni-avatar">{p.namaUser.charAt(0).toUpperCase()}</span>
-                          <div>
-                            <span className="penghuni-name">{p.namaUser}</span>
-                            <span className="penghuni-email">{p.email || "—"}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        {p.noTelp ? (
-                          <a href={waLink(p.noTelp)} target="_blank" rel="noopener noreferrer" className="wa-link">
-                            <PhoneCall size={13} /> {p.noTelp}
-                          </a>
-                        ) : "—"}
-                      </td>
-                      <td>{p.rumah?.blokRumah} · {areaLabel(p.rumah?.rt)}</td>
-                      <td>{new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</td>
-                      <td>
-                        <div className="table-actions">
-                          <button type="button" className="btn-icon" title="Setujui" aria-label="Setujui pendaftaran" onClick={() => handleSetujuiPendaftaran(p)}>
-                            <Check size={15} />
-                          </button>
-                          <button type="button" className="btn-icon danger" title="Tolak" aria-label="Tolak pendaftaran" onClick={() => handleTolakPendaftaran(p)}>
-                            <XIcon size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-          {loadingPendaftaran && <div className="table-loading">Memuat data pendaftaran…</div>}
-          {!loadingPendaftaran && pendaftaran.length === 0 && (
-            <div className="table-empty">Tidak ada pendaftaran yang menunggu persetujuan.</div>
-          )}
-          {!loadingPendaftaran && (
-            <Pagination page={pagePendaftaran} totalPages={totalPagesPendaftaran} total={pendaftaran.length} onPrev={prevPendaftaran} onNext={nextPendaftaran} />
-          )}
-        </div>
-      ) : (
-      <>
       <div className="ipl-summary-grid keu-summary-grid">
         <div className="ipl-summary-card keu-card keu-teal">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Users size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Users size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Penghuni Terdaftar</span>
+            <span className="ipl-summary-value">{stats.warga}</span>
           </div>
-          <span className="ipl-summary-value">{stats.warga}</span>
-          <span className="ipl-summary-sub">seluruh cluster</span>
         </div>
         <div className="ipl-summary-card keu-card keu-green">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Home size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Tetap</span>
+            <span className="ipl-summary-value">{stats.tetap}</span>
           </div>
-          <span className="ipl-summary-value">{stats.tetap}</span>
-          <span className="ipl-summary-sub">dihuni tetap</span>
         </div>
         <div className="ipl-summary-card keu-card keu-purple">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Home size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Kontrak</span>
+            <span className="ipl-summary-value">{stats.kontrak}</span>
           </div>
-          <span className="ipl-summary-value">{stats.kontrak}</span>
-          <span className="ipl-summary-sub">dihuni kontrak</span>
         </div>
         <div className="ipl-summary-card keu-card keu-muted">
-          <div className="keu-card-head">
-            <div className="keu-icon-circle"><Home size={18} strokeWidth={2} /></div>
+          <div className="keu-icon-circle"><Home size={22} strokeWidth={2} /></div>
+          <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Kosong</span>
+            <span className="ipl-summary-value">{stats.kosong}</span>
           </div>
-          <span className="ipl-summary-value">{stats.kosong}</span>
-          <span className="ipl-summary-sub">belum berpenghuni</span>
         </div>
       </div>
 
-      <div className="page-toolbar-row">
+      <div className="page-toolbar-row warga-toolbar-row">
         <div className="warga-filter-bar">
           <div className="warga-search-wrap">
             <Search size={15} className="warga-search-icon" />
@@ -467,12 +364,15 @@ export default function WargaPage() {
             }}
           >
             <FilterField label="RT">
-              <select className="form-control warga-filter-select" value={draftRT} onChange={(e) => setDraftRT(e.target.value)}>
-                <option value="SEMUA">Semua RT</option>
-                {ALL_RT.map((rt) => (
-                  <option key={rt} value={rt}>{areaLabel(rt)}</option>
-                ))}
-              </select>
+              <Select
+                className="warga-filter-select"
+                value={draftRT}
+                onChange={(v) => setDraftRT(v)}
+                options={[
+                  { value: "SEMUA", label: "Semua RT" },
+                  ...ALL_RT.map((rt) => ({ value: rt, label: areaLabel(rt) })),
+                ]}
+              />
             </FilterField>
           </FilterPopover>
         </div>
@@ -496,8 +396,7 @@ export default function WargaPage() {
                 <tr>
                   <th>No</th>
                   <th>Nama</th>
-                  <th>Akun Masuk</th>
-                  <th>Rumah</th>
+                  <th>Blok Rumah</th>
                   <th>Kontak</th>
                   <th>Aksi</th>
                 </tr>
@@ -512,22 +411,18 @@ export default function WargaPage() {
                         <td>{(pageWarga - 1) * 10 + index + 1}</td>
                         <td>
                           <div className="penghuni-cell">
-                            <span className="penghuni-avatar">{w.namaUser.charAt(0).toUpperCase()}</span>
                             <div>
-                              <span className="penghuni-name">{w.namaUser}</span>
-                              {!bisaDiubah && <span className="penghuni-multi-badge">{w.role?.nama}</span>}
-                              {w.rumah.length > 1 && <span className="penghuni-multi-badge">{w.rumah.length} rumah</span>}
-                              <span className="penghuni-email">{w.email || "—"}</span>
+                              <div className="penghuni-name-row">
+                                <span className="penghuni-name">{w.namaUser}</span>
+                                {!bisaDiubah && <span className="penghuni-multi-badge">{w.role?.nama}</span>}
+                              </div>
+                              {w.email && <span className="penghuni-email">{w.email}</span>}
                             </div>
                           </div>
                         </td>
                         <td>
-                          <span className="penghuni-name">{w.username}</span>
-                          {w.wajibGantiPassword && <span className="penghuni-email">Belum ganti kata sandi</span>}
-                        </td>
-                        <td>
                           <div className="rumah-chip-list">
-                            {w.rumah.length === 0 && <span className="penghuni-empty">—</span>}
+                            {w.rumah.length === 0 && <span className="penghuni-empty">-</span>}
                             {w.rumah.map((r) => (
                               <span key={r.id} className={`rumah-chip ${STATUS_RUMAH[r.status]?.cls}`} title={`${areaLabel(r.rt)} · ${STATUS_RUMAH[r.status]?.label}`}>
                                 {r.blokRumah}
@@ -543,7 +438,7 @@ export default function WargaPage() {
                               {w.noTelp}
                             </a>
                           ) : (
-                            <span style={{ color: "var(--db-slate-400)" }}>—</span>
+                            <span style={{ color: "var(--db-slate-400)" }}>-</span>
                           )}
                         </td>
                         <td>
@@ -585,23 +480,22 @@ export default function WargaPage() {
                       </span>
                     ))}
                   </div>
-                  <span className="meta-item warga-grid-penghuni">{w.username}</span>
                   {w.role?.level === 3 && (
                     <div className="warga-grid-footer">
-                      <div className="table-actions">
+                      <div className="table-actions warga-grid-actions">
                         {bolehUbah && (
                           <button type="button" className="btn-icon" aria-label="Ubah warga" onClick={() => setWargaModal({ open: true, mode: "edit", data: w })}>
-                            <Pencil size={14} />
+                            <Pencil size={16} />
                           </button>
                         )}
                         {bolehReset && (
                           <button type="button" className="btn-icon" aria-label="Atur ulang kata sandi" onClick={() => handleResetPassword(w)}>
-                            <KeyRound size={14} />
+                            <KeyRound size={16} />
                           </button>
                         )}
                         {bolehHapus && (
                           <button type="button" className="btn-icon danger" aria-label="Hapus warga" onClick={() => handleDeleteWarga(w)}>
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                           </button>
                         )}
                       </div>
@@ -625,8 +519,6 @@ export default function WargaPage() {
             <Pagination page={pageWarga} totalPages={totalPagesWarga} total={wargaFiltered.length} onPrev={prevWarga} onNext={nextWarga} />
           )}
         </div>
-      </>
-      )}
 
       <WargaFormModal
         open={wargaModal.open}

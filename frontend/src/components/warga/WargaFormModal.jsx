@@ -222,7 +222,6 @@ export default function WargaFormModal({
                       { value: "KOSONG", label: "Kosong (ada pemilik)" },
                     ]}
                   />
-                  <span className="field-hint">Rumah kosong tetap ditagih IPL dan masuk kas RT, tidak disetor ke RW.</span>
                 </div>
               </>
             )}

@@ -73,6 +73,12 @@ export const PERMISSIONS: Record<string, Record<string, string>> = {
     update: 'Ubah catatan rapat',
     delete: 'Hapus catatan rapat',
   },
+  rumah: {
+    read: 'Lihat data rumah',
+    create: 'Tambah rumah baru',
+    update: 'Ubah data rumah (pemilik/status)',
+    delete: 'Hapus rumah',
+  },
   role: {
     manage: 'Kelola role dan matriks permission',
   },
@@ -100,6 +106,7 @@ const CRUD = (menu: string, scope: ScopeKode): Grant[] => [
 export const MATRIX: Record<string, Grant[]> = {
   KETUA_RW: [
     ['warga.read', 'ALL'],
+    ['rumah.read', 'ALL'],
     ['ipl.read', 'ALL'],
     ['ipl.bayar', 'OWN'],
     ['setoran.read', 'ALL'],
@@ -117,6 +124,7 @@ export const MATRIX: Record<string, Grant[]> = {
   ],
   BENDAHARA_RW: [
     ['warga.read', 'ALL'],
+    ['rumah.read', 'ALL'],
     ['ipl.read', 'ALL'],
     ['ipl.bayar', 'OWN'],
     ['setoran.read', 'ALL'],
@@ -133,6 +141,7 @@ export const MATRIX: Record<string, Grant[]> = {
   ],
   SEKRE_RW: [
     ['warga.read', 'ALL'],
+    ['rumah.read', 'ALL'],
     ['ipl.read', 'ALL'],
     ['ipl.bayar', 'OWN'],
     ['keuangan.read', 'AREA'],
@@ -149,6 +158,8 @@ export const MATRIX: Record<string, Grant[]> = {
     ...CRUD('warga', 'AREA'),
     ['warga.reset_password', 'AREA'],
     ['warga.approve_registrasi', 'AREA'],
+    ['rumah.read', 'AREA'],
+    ['rumah.update', 'AREA'],
     ['ipl.read', 'AREA'],
     ['ipl.bayar', 'OWN'],
     ['ipl.konfirmasi_pengurus', 'AREA'],
@@ -163,6 +174,7 @@ export const MATRIX: Record<string, Grant[]> = {
   ],
   BENDAHARA_RT: [
     ['warga.read', 'AREA'],
+    ['rumah.read', 'AREA'],
     ['ipl.read', 'AREA'],
     ['ipl.generate', 'AREA'],
     ['ipl.update', 'AREA'],
@@ -183,6 +195,8 @@ export const MATRIX: Record<string, Grant[]> = {
     ...CRUD('warga', 'AREA'),
     ['warga.reset_password', 'AREA'],
     ['warga.approve_registrasi', 'AREA'],
+    ['rumah.read', 'AREA'],
+    ['rumah.update', 'AREA'],
     ['ipl.read', 'AREA'],
     ['ipl.bayar', 'OWN'],
     ['keuangan.read', 'AREA'],
@@ -213,5 +227,6 @@ export const MATRIX: Record<string, Grant[]> = {
     ['warga.update', 'ALL'],
     ['warga.delete', 'ALL'],
     ['warga.reset_password', 'ALL'],
+    ...CRUD('rumah', 'ALL'),
   ],
 };

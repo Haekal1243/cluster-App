@@ -109,6 +109,7 @@ export default function PendaftaranPage() {
         <table className="data-table">
           <thead>
             <tr>
+              <th>No</th>
               <th>Nama</th>
               <th>No. HP</th>
               <th>Rumah</th>
@@ -118,8 +119,9 @@ export default function PendaftaranPage() {
           </thead>
           <tbody>
             {!loadingPendaftaran &&
-              pendaftaranPage.map((p) => (
+              pendaftaranPage.map((p, index) => (
                 <tr key={p.id}>
+                  <td>{(pagePendaftaran - 1) * 10 + index + 1}</td>
                   <td>
                     <div className="penghuni-cell">
                       <span className="penghuni-avatar">{p.namaUser.charAt(0).toUpperCase()}</span>
@@ -153,6 +155,35 @@ export default function PendaftaranPage() {
           </tbody>
         </table>
       </div>
+
+      <div className="warga-grid">
+        {!loadingPendaftaran &&
+          pendaftaranPage.map((p) => (
+            <div key={p.id} className="warga-grid-card">
+              <h3 className="warga-grid-title">{p.namaUser}</h3>
+              <span className="warga-grid-penghuni">{p.rumah?.blokRumah} · {areaLabel(p.rumah?.rt)}</span>
+              {p.noTelp && (
+                <a href={waLink(p.noTelp)} target="_blank" rel="noopener noreferrer" className="wa-link" style={{ fontSize: "0.78rem" }}>
+                  <PhoneCall size={12} /> {p.noTelp}
+                </a>
+              )}
+              <div className="warga-grid-footer">
+                <div className="table-actions">
+                  <button type="button" className="btn-icon" title="Setujui" aria-label="Setujui pendaftaran" onClick={() => handleSetujuiPendaftaran(p)}>
+                    <Check size={14} />
+                  </button>
+                  <button type="button" className="btn-icon danger" title="Tolak" aria-label="Tolak pendaftaran" onClick={() => handleTolakPendaftaran(p)}>
+                    <XIcon size={14} />
+                  </button>
+                </div>
+                <span className="text-muted" style={{ fontSize: "0.68rem" }}>
+                  {new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+                </span>
+              </div>
+            </div>
+          ))}
+      </div>
+
       {loadingPendaftaran && <div className="table-loading">Memuat data pendaftaran…</div>}
       {!loadingPendaftaran && pendaftaran.length === 0 && (
         <div className="table-empty">Tidak ada pendaftaran yang menunggu persetujuan.</div>

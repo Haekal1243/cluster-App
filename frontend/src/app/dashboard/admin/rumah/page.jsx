@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Home, Users, Search } from "lucide-react";
 import { wargaApi } from "@/lib/api";
-import { areaLabel, can, scopeOf } from "@/lib/session";
-import { useUser } from "@/lib/useUser";
+import { areaLabel } from "@/lib/session";
 import { showConfirm, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
@@ -19,13 +18,7 @@ const STATUS_RUMAH = {
   DIHUNI_KONTRAK: { label: "Kontrak", cls: "kontrak" },
 };
 
-function rtYangBoleh(user, kode) {
-  if (scopeOf(user, kode) === "AREA" && user?.area && user.area !== "RW") return [user.area];
-  return ALL_RT;
-}
-
-export default function BlokRumahPage() {
-  const { user } = useUser();
+export default function AdminRumahPage() {
   const [warga, setWarga] = useState([]);
   const [rumah, setRumah] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,14 +30,6 @@ export default function BlokRumahPage() {
   const [draftStatus, setDraftStatus] = useState("SEMUA");
 
   const [rumahModal, setRumahModal] = useState({ open: false, mode: "create", data: null });
-
-  const bolehTambah = can(user, "rumah.create");
-  const bolehUbah = can(user, "rumah.update");
-  const bolehHapus = can(user, "rumah.delete");
-  const rtTulis = useMemo(() => rtYangBoleh(user, "rumah.update"), [user]);
-  // Kolom RT cuma relevan buat pengurus RW (lihat lintas-RT); pengurus RT sudah pasti
-  // cuma lihat RT-nya sendiri jadi kolomnya cuma bikin sempit tanpa nambah info.
-  const tampilkanRT = !(scopeOf(user, "rumah.read") === "AREA" && user?.area && user.area !== "RW");
 
   const loadData = async () => {
     setIsLoading(true);
@@ -135,6 +120,13 @@ export default function BlokRumahPage() {
 
   return (
     <div className="page-stack">
+      <div className="page-toolbar">
+        <div>
+          <h2>Kelola Rumah</h2>
+          <p>Data master blok rumah cluster. Hanya admin yang bisa menambah atau menghapus rumah.</p>
+        </div>
+      </div>
+
       <div className="ipl-summary-grid keu-summary-grid">
         <div className="ipl-summary-card keu-card keu-teal">
           <div className="keu-icon-circle"><Users size={22} strokeWidth={2} /></div>
@@ -223,11 +215,9 @@ export default function BlokRumahPage() {
           </FilterPopover>
         </div>
 
-        {bolehTambah && (
-          <button type="button" className="btn-primary" onClick={() => setRumahModal({ open: true, mode: "create", data: null })}>
-            <Plus size={16} /> Tambah Rumah
-          </button>
-        )}
+        <button type="button" className="btn-primary" onClick={() => setRumahModal({ open: true, mode: "create", data: null })}>
+          <Plus size={16} /> Tambah Rumah
+        </button>
       </div>
 
       <div className="table-card">
@@ -241,10 +231,10 @@ export default function BlokRumahPage() {
               <tr>
                 <th>No</th>
                 <th>Blok Rumah</th>
-                {tampilkanRT && <th>RT</th>}
+                <th>RT</th>
                 <th>Penghuni</th>
                 <th>Status</th>
-                {(bolehUbah || bolehHapus) && <th>Aksi</th>}
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -255,7 +245,7 @@ export default function BlokRumahPage() {
                     <tr key={item.id}>
                       <td>{(page - 1) * 10 + index + 1}</td>
                       <td className="col-judul">{item.blokRumah}</td>
-                      {tampilkanRT && <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>}
+                      <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>
                       <td>
                         {item.penghuni ? (
                           <span className="penghuni-name">{item.penghuni.namaUser}</span>
@@ -264,22 +254,16 @@ export default function BlokRumahPage() {
                         )}
                       </td>
                       <td><span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span></td>
-                      {(bolehUbah || bolehHapus) && (
-                        <td>
-                          <div className="table-actions">
-                            {bolehUbah && (
-                              <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
-                                <Pencil size={15} />
-                              </button>
-                            )}
-                            {bolehHapus && (
-                              <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
-                                <Trash2 size={15} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      )}
+                      <td>
+                        <div className="table-actions">
+                          <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
+                            <Pencil size={15} />
+                          </button>
+                          <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -295,23 +279,19 @@ export default function BlokRumahPage() {
                 <div key={item.id} className="warga-grid-card">
                   <h3 className="warga-grid-title">
                     {item.blokRumah}
-                    {tampilkanRT && <span className="rt-badge">{areaLabel(item.rt)}</span>}
+                    <span className="rt-badge">{areaLabel(item.rt)}</span>
                   </h3>
                   <span className="meta-item warga-grid-penghuni">
                     {item.penghuni ? item.penghuni.namaUser : "-"}
                   </span>
                   <div className="warga-grid-footer">
                     <div className="table-actions">
-                      {bolehUbah && (
-                        <button type="button" className="btn-icon" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
-                          <Pencil size={14} />
-                        </button>
-                      )}
-                      {bolehHapus && (
-                        <button type="button" className="btn-icon danger" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
-                          <Trash2 size={14} />
-                        </button>
-                      )}
+                      <button type="button" className="btn-icon" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
+                        <Pencil size={14} />
+                      </button>
+                      <button type="button" className="btn-icon danger" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                     <span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span>
                   </div>
@@ -335,7 +315,7 @@ export default function BlokRumahPage() {
         open={rumahModal.open}
         mode={rumahModal.mode}
         initialData={rumahModal.data}
-        allowedRts={rtTulis}
+        allowedRts={ALL_RT}
         onClose={() => setRumahModal({ open: false, mode: "create", data: null })}
         onSubmit={handleSubmitRumah}
       />

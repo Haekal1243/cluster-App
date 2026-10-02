@@ -290,6 +290,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
         <table className="ipl-table">
           <thead>
             <tr>
+              <th>No</th>
               <th>RT</th>
               <th>Lunas / Tagihan</th>
               <th>IPL Terkumpul</th>
@@ -300,8 +301,9 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
             </tr>
           </thead>
           <tbody>
-            {rekap.perRt.map((r) => (
+            {rekap.perRt.map((r, index) => (
               <tr key={r.rt}>
+                <td>{index + 1}</td>
                 <td><span className="rt-badge">{areaLabel(r.rt)}</span></td>
                 <td>{r.lunas} / {r.totalTagihan}</td>
                 <td className="ipl-nominal">{formatRupiah(r.terkumpulIpl)}</td>
@@ -724,10 +726,11 @@ function AdminIuranView({ user }) {
           </div>
         ) : (
           <>
-          <div className="ipl-table-wrapper">
+          <div className="ipl-table-wrapper pengaduan-table-wrapper">
             <table className="ipl-table">
               <thead>
                 <tr>
+                  <th>No</th>
                   <th>Blok / RT</th>
                   <th>Penghuni</th>
                   <th>Periode</th>
@@ -738,12 +741,13 @@ function AdminIuranView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {tagihanPage.map((t) => {
+                {tagihanPage.map((t, index) => {
                   const pembayaran = t.pembayaran?.[0];
                   const penghuniPengurus = (t.rumah?.penghuni?.role?.level ?? 3) < 3;
                   const bisaKonfirmasiBaris = bolehKonfirmasi || (bolehKonfirmasiPengurus && penghuniPengurus);
                   return (
                     <tr key={t.id}>
+                      <td>{(page - 1) * 10 + index + 1}</td>
                       <td>
                         <span className="ipl-blok">{t.rumah?.blokRumah}</span>
                         <span className="ipl-rt">{t.rumah?.rt?.replace("_", " ")}</span>
@@ -801,6 +805,60 @@ function AdminIuranView({ user }) {
               </tbody>
             </table>
           </div>
+
+          <div className="pengaduan-cards">
+            {tagihanPage.map((t) => {
+              const pembayaran = t.pembayaran?.[0];
+              const penghuniPengurus = (t.rumah?.penghuni?.role?.level ?? 3) < 3;
+              const bisaKonfirmasiBaris = bolehKonfirmasi || (bolehKonfirmasiPengurus && penghuniPengurus);
+              return (
+                <div key={t.id} className="pengaduan-card" style={{ cursor: "default" }}>
+                  <div className="pengaduan-card-top">
+                    <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
+                      {t.rumah?.blokRumah} <span className="rt-badge">{t.rumah?.rt?.replace("_", " ")}</span>
+                    </h3>
+                    <AdminStatusBadge status={t.statusPembayaran} />
+                  </div>
+                  <div className="pengaduan-card-meta">
+                    <span className="pengaduan-meta-item">{t.rumah?.penghuni?.namaUser || "Kosong"}</span>
+                    <span className="pengaduan-meta-item">{BULAN_NAMES[t.bulanPeriode]} {t.tahunPeriode}</span>
+                    {pembayaran?.tanggalBayar && <span className="pengaduan-meta-item">{formatTanggal(pembayaran.tanggalBayar)}</span>}
+                  </div>
+                  <span className="warga-grid-penghuni">
+                    {formatRupiah(t.nominal)} <span className="text-muted" style={{ fontWeight: 400 }}>(IPL {formatRupiah(t.nominalIpl)} + kas {formatRupiah(t.nominalKas)})</span>
+                  </span>
+                  <div className="pengaduan-card-actions">
+                    <div className="table-actions">
+                      {t.statusPembayaran === "MENUNGGU_KONFIRMASI" && bisaKonfirmasiBaris ? (
+                        <button className="btn-ipl-review" onClick={() => setReviewItem(t)} title="Review bukti pembayaran">
+                          <Eye size={14} /> Review
+                        </button>
+                      ) : pembayaran?.buktiTransaksi && t.statusPembayaran !== "BELUM_LUNAS" ? (
+                        <button
+                          type="button"
+                          className="btn-ipl-view"
+                          onClick={() => openProtectedFile(portalApi.buktiPath(pembayaran.idPembayaran))}
+                        >
+                          <Eye size={14} /> Lihat Bukti
+                        </button>
+                      ) : null}
+                      {t.statusPembayaran === "BELUM_LUNAS" && bolehUbah && (
+                        <button type="button" className="btn-icon" title="Koreksi nominal" aria-label="Koreksi nominal" onClick={() => setEditItem(t)}>
+                          <Pencil size={15} />
+                        </button>
+                      )}
+                      {t.statusPembayaran === "BELUM_LUNAS" && bolehHapus && !pembayaran && (
+                        <button type="button" className="btn-icon danger" title="Hapus tagihan" aria-label="Hapus tagihan" onClick={() => handleHapus(t)}>
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           <Pagination page={page} totalPages={totalPages} total={tagihan.length} onPrev={prev} onNext={next} />
           </>
         )}
@@ -1266,6 +1324,7 @@ export function WargaIuranView({ user }) {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th>No</th>
                     {rumahList.length > 1 && selectedRumahId === "semua" && <th>Unit</th>}
                     <th>Periode</th>
                     <th>Nominal</th>
@@ -1274,8 +1333,9 @@ export function WargaIuranView({ user }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {riwayatPage.map((ipl) => (
+                  {riwayatPage.map((ipl, index) => (
                     <tr key={ipl.id}>
+                      <td>{(pageRiwayat - 1) * 10 + index + 1}</td>
                       {rumahList.length > 1 && selectedRumahId === "semua" && (
                         <td>{ipl.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl.idRumah}`}</td>
                       )}

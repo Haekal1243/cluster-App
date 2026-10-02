@@ -192,11 +192,12 @@ function DetailModal({ id, bolehKonfirmasi, onClose, onSuccess }) {
                 <p className="review-bukti-label">Tagihan yang disetor</p>
                 <table className="ipl-table">
                   <thead>
-                    <tr><th>Blok</th><th>Penghuni</th><th>Periode</th><th>IPL</th></tr>
+                    <tr><th>No</th><th>Blok</th><th>Penghuni</th><th>Periode</th><th>IPL</th></tr>
                   </thead>
                   <tbody>
-                    {data.tagihan.map((t) => (
+                    {data.tagihan.map((t, index) => (
                       <tr key={t.id}>
+                        <td>{index + 1}</td>
                         <td>{t.rumah?.blokRumah}</td>
                         <td>{t.rumah?.penghuni?.namaUser || "-"}</td>
                         <td>{BULAN[Number(t.bulanPeriode) - 1]} {t.tahunPeriode}</td>
@@ -505,10 +506,11 @@ export default function SetoranPage() {
           </div>
         ) : (
           <>
-          <div className="ipl-table-wrapper">
+          <div className="ipl-table-wrapper pengaduan-table-wrapper">
             <table className="ipl-table">
               <thead>
                 <tr>
+                  <th>No</th>
                   <th>Tanggal</th>
                   <th>RT</th>
                   <th>Tagihan</th>
@@ -519,8 +521,9 @@ export default function SetoranPage() {
                 </tr>
               </thead>
               <tbody>
-                {listPage.map((s) => (
+                {listPage.map((s, index) => (
                   <tr key={s.id}>
+                    <td>{(page - 1) * 10 + index + 1}</td>
                     <td>{tanggal(s.createDate)}</td>
                     <td><span className="rt-badge">{areaLabel(s.area)}</span></td>
                     <td>{s.jumlahTagihan}</td>
@@ -550,6 +553,38 @@ export default function SetoranPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="pengaduan-cards">
+            {listPage.map((s) => (
+              <div key={s.id} className="pengaduan-card" style={{ cursor: "default" }}>
+                <div className="pengaduan-card-top">
+                  <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
+                    <span className="rt-badge">{areaLabel(s.area)}</span> {tanggal(s.createDate)}
+                  </h3>
+                  <StatusBadge status={s.status} />
+                </div>
+                <div className="pengaduan-card-meta">
+                  <span className="pengaduan-meta-item">{s.jumlahTagihan} tagihan</span>
+                  <span className="pengaduan-meta-item">{rupiah(s.totalIpl)}</span>
+                </div>
+                {s.konfirmasiBy && (
+                  <span className="warga-grid-penghuni">
+                    {s.konfirmasiBy} <span className="text-muted" style={{ fontWeight: 400 }}>· {tanggal(s.tanggalKonfirmasi)}</span>
+                  </span>
+                )}
+                <div className="pengaduan-card-actions">
+                  <button
+                    type="button"
+                    className={s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "btn-ipl-review" : "btn-ipl-view"}
+                    onClick={() => setDetailId(s.id)}
+                  >
+                    <Eye size={14} /> {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "Review" : "Detail"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <Pagination page={page} totalPages={totalPages} total={list.length} onPrev={prev} onNext={next} />
           </>
         )}

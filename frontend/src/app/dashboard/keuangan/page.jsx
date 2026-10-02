@@ -698,11 +698,12 @@ function AdminKeuanganView({ user }) {
                 <p className="keu-rincian-title">Per wilayah</p>
                 <table className="ipl-table keu-area-table">
                   <thead>
-                    <tr><th>Wilayah</th><th>Masuk</th><th>Keluar</th><th>Selisih</th></tr>
+                    <tr><th>No</th><th>Wilayah</th><th>Masuk</th><th>Keluar</th><th>Selisih</th></tr>
                   </thead>
                   <tbody>
-                    {ringkasan.perArea.map((a) => (
+                    {ringkasan.perArea.map((a, index) => (
                       <tr key={a.area}>
+                        <td>{index + 1}</td>
                         <td><span className="rt-badge">{areaLabel(a.area)}</span></td>
                         <td>{formatRupiah(a.pemasukan)}</td>
                         <td>{formatRupiah(a.pengeluaran)}</td>
@@ -764,10 +765,11 @@ function AdminKeuanganView({ user }) {
           </div>
         ) : (
           <>
-          <div className="ipl-table-wrapper">
+          <div className="ipl-table-wrapper pengaduan-table-wrapper">
             <table className="ipl-table">
               <thead>
                 <tr>
+                  <th>No</th>
                   <th>Tanggal</th>
                   {semuaArea && <th>Wilayah</th>}
                   <th>Kategori</th>
@@ -779,7 +781,7 @@ function AdminKeuanganView({ user }) {
                 </tr>
               </thead>
               <tbody>
-                {riwayatPage.map((t) => {
+                {riwayatPage.map((t, index) => {
                   const buktiPath = getBuktiPath(t);
                   const isManual = t.sumber === "MANUAL" || !t.sumber;
                   const isIplKas = t.sumber === "IPL_KAS";
@@ -787,6 +789,7 @@ function AdminKeuanganView({ user }) {
                   const canDelete = (isManual || isIplKas) && bolehHapus;
                   return (
                   <tr key={t.id}>
+                    <td>{(page - 1) * 10 + index + 1}</td>
                     <td>{formatTanggal(t.tanggal)}</td>
                     {semuaArea && <td><span className="rt-badge">{areaLabel(t.area)}</span></td>}
                     <td>{t.kategori}</td>
@@ -846,6 +849,52 @@ function AdminKeuanganView({ user }) {
               </tbody>
             </table>
           </div>
+
+          <div className="pengaduan-cards">
+            {riwayatPage.map((t) => {
+              const buktiPath = getBuktiPath(t);
+              const isManual = t.sumber === "MANUAL" || !t.sumber;
+              const isIplKas = t.sumber === "IPL_KAS";
+              const canEdit = (isManual || isIplKas) && bolehUbah;
+              const canDelete = (isManual || isIplKas) && bolehHapus;
+              return (
+                <div key={t.id} className="pengaduan-card" style={{ cursor: "default" }}>
+                  <div className="pengaduan-card-top">
+                    <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>{t.kategori}</h3>
+                    <KasTipeBadge tipe={t.tipe} />
+                  </div>
+                  <div className="pengaduan-card-meta">
+                    <span className="pengaduan-meta-item">{formatTanggal(t.tanggal)}</span>
+                    {semuaArea && <span className="pengaduan-meta-item">{areaLabel(t.area)}</span>}
+                  </div>
+                  {t.keterangan && <span className="warga-grid-penghuni">{t.keterangan}</span>}
+                  <div className="pengaduan-card-actions" style={{ justifyContent: "space-between" }}>
+                    <span style={{ fontWeight: 700, color: t.tipe === "PEMASUKAN" ? "#15803d" : "#dc2626" }}>
+                      {t.tipe === "PEMASUKAN" ? "+" : "−"}{formatRupiah(t.nominal)}
+                    </span>
+                    <div className="table-actions">
+                      {buktiPath && (
+                        <button type="button" className="btn-icon" onClick={() => openProtectedFile(buktiPath)} aria-label="Lihat bukti" title="Lihat bukti">
+                          <Eye size={15} />
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button type="button" className="btn-icon" onClick={() => { setEditItem(t); setShowForm(true); }} aria-label="Ubah transaksi" title="Ubah transaksi">
+                          <Pencil size={15} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button type="button" className="btn-icon danger" onClick={() => handleDelete(t)} aria-label="Hapus transaksi" title="Hapus transaksi">
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           <Pagination page={page} totalPages={totalPages} total={riwayat.length} onPrev={prev} onNext={next} />
           </>
         )}

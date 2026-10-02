@@ -9,6 +9,9 @@ export default function WargaLayout({ children }) {
   const pathname = usePathname();
   const { user } = useUser();
   const bolehApprove = can(user, "warga.approve_registrasi");
+  // Yang punya rumah.create (CRUD penuh) dikelola lewat menu Admin > Kelola Rumah,
+  // bukan tab ini (tab ini untuk pengurus RT/RW yang cuma boleh lihat & ubah).
+  const bolehLihatTabRumah = can(user, "rumah.read") && !can(user, "rumah.create");
 
   const isRumah = pathname?.includes("/blok-rumah");
   const isPendaftaran = pathname?.includes("/pendaftaran");
@@ -32,14 +35,16 @@ export default function WargaLayout({ children }) {
         >
           Data Warga
         </Link>
-        <Link
-          href="/dashboard/warga/blok-rumah"
-          role="tab"
-          aria-selected={isRumah}
-          className={`db-toggle-btn ${isRumah ? "is-active" : ""}`}
-        >
-          Blok Rumah
-        </Link>
+        {bolehLihatTabRumah && (
+          <Link
+            href="/dashboard/warga/blok-rumah"
+            role="tab"
+            aria-selected={isRumah}
+            className={`db-toggle-btn ${isRumah ? "is-active" : ""}`}
+          >
+            Blok Rumah
+          </Link>
+        )}
         {bolehApprove && (
           <Link
             href="/dashboard/warga/pendaftaran"

@@ -373,18 +373,20 @@ export default function RolePermissionPage() {
             {audit ? "Segarkan" : "Tampilkan"}
           </button>
         </div>
-        {audit && (
-          <div className="ipl-table-wrapper">
+        {audit && audit.length === 0 && (
+          <p className="text-muted" style={{ padding: "12px 0 0" }}>Belum ada catatan.</p>
+        )}
+        {audit && audit.length > 0 && (
+          <>
+          <div className="ipl-table-wrapper pengaduan-table-wrapper">
             <table className="ipl-table">
               <thead>
-                <tr><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Keterangan</th></tr>
+                <tr><th>No</th><th>Waktu</th><th>Pelaku</th><th>Aksi</th><th>Keterangan</th></tr>
               </thead>
               <tbody>
-                {audit.length === 0 && (
-                  <tr><td colSpan={4} className="text-muted">Belum ada catatan.</td></tr>
-                )}
-                {audit.map((a) => (
+                {audit.map((a, index) => (
                   <tr key={a.id}>
+                    <td>{index + 1}</td>
                     <td>{waktu(a.createdAt)}</td>
                     <td>{a.pelaku || "-"}</td>
                     <td>{AUDIT_LABEL[a.aksi] ?? a.aksi}</td>
@@ -394,6 +396,22 @@ export default function RolePermissionPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="pengaduan-cards">
+            {audit.map((a) => (
+              <div key={a.id} className="pengaduan-card" style={{ cursor: "default" }}>
+                <div className="pengaduan-card-top">
+                  <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>{AUDIT_LABEL[a.aksi] ?? a.aksi}</h3>
+                </div>
+                <div className="pengaduan-card-meta">
+                  <span className="pengaduan-meta-item">{a.pelaku || "-"}</span>
+                  <span className="pengaduan-meta-item">{waktu(a.createdAt)}</span>
+                </div>
+                {a.keterangan && <span className="warga-grid-penghuni">{a.keterangan}</span>}
+              </div>
+            ))}
+          </div>
+          </>
         )}
       </div>
 

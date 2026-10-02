@@ -5442,7 +5442,9 @@ select {
 /* Pengaduan: tabel di desktop, kartu di HP (lihat @media max-width:600px). */
 .pengaduan-cards { display: none; }
 
-.pengaduan-col-judul { max-width: 380px; }
+.pengaduan-table th:first-child,
+.pengaduan-table td:first-child { width: 1%; white-space: nowrap; }
+.pengaduan-col-judul { width: 32%; max-width: 380px; }
 .pengaduan-judul {
   display: block;
   font-weight: 600;

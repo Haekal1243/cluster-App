@@ -74,7 +74,7 @@ export default function PengumumanFormModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box pengumuman-modal" onClick={(event) => event.stopPropagation()}>
+      <div className="modal-box" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h3>
             {mode === "edit" ? "Ubah Pengumuman" : "Tambah Pengumuman"}

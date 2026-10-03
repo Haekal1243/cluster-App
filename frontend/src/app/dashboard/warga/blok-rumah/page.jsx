@@ -162,7 +162,6 @@ export default function BlokRumahPage() {
           <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Kosong</span>
             <span className="ipl-summary-value">{stats.kosong}</span>
-            <span className="ipl-summary-sub">{stats.kosongAdaPemilik} ada pemilik · {stats.kosongBelumDaftar} belum daftar</span>
           </div>
         </div>
       </div>

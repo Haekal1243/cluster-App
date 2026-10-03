@@ -624,7 +624,6 @@ function AdminIuranView({ user }) {
             <div className="keu-card-text">
               <span className="ipl-summary-label">Total Tagihan</span>
               <span className="ipl-summary-value">{formatRupiah(summary.totalNominal)}</span>
-              <span className="ipl-summary-sub">{summary.total} rumah aktif</span>
             </div>
           </div>
           <div className="ipl-summary-card keu-card keu-green">
@@ -632,7 +631,6 @@ function AdminIuranView({ user }) {
             <div className="keu-card-text">
               <span className="ipl-summary-label">Terkumpul</span>
               <span className="ipl-summary-value">{formatRupiah(summary.totalTerkumpul)}</span>
-              <span className="ipl-summary-sub">{summary.lunas} lunas · IPL {formatRupiah(summary.terkumpulIpl)} · kas {formatRupiah(summary.terkumpulKas)}</span>
             </div>
           </div>
           <div className={`ipl-summary-card keu-card ${summary.menungguKonfirmasi > 0 ? "keu-amber" : "keu-muted"}`}>
@@ -640,15 +638,13 @@ function AdminIuranView({ user }) {
             <div className="keu-card-text">
               <span className="ipl-summary-label">Menunggu Konfirmasi</span>
               <span className="ipl-summary-value">{summary.menungguKonfirmasi}</span>
-              <span className="ipl-summary-sub">perlu ditinjau</span>
             </div>
           </div>
           <div className="ipl-summary-card keu-card keu-red">
             <div className="keu-icon-circle"><FileX size={22} strokeWidth={2} /></div>
             <div className="keu-card-text">
               <span className="ipl-summary-label">Belum Lunas</span>
-              <span className="ipl-summary-value">{formatRupiah(summary.totalTertunggak)}</span>
-              <span className="ipl-summary-sub">{summary.belumLunas} rumah tertunggak</span>
+              <span className="ipl-summary-value">{summary.belumLunas}</span>
             </div>
           </div>
         </div>

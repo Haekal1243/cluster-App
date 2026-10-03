@@ -157,7 +157,7 @@ export default function BlokRumahPage() {
             <span className="ipl-summary-value">{stats.kontrak}</span>
           </div>
         </div>
-        <div className="ipl-summary-card keu-card keu-muted">
+        <div className="ipl-summary-card keu-card keu-amber">
           <div className="keu-icon-circle"><Home size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Kosong</span>

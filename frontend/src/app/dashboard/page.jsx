@@ -271,7 +271,7 @@ function AdminDashboardView({ user }) {
         </Link>
 
         {/* Menunggu Konfirmasi */}
-        <Link href="/dashboard/iuran" className={`ipl-summary-card keu-card ${stats?.menungguKonfirmasi > 0 ? "keu-amber" : "keu-muted"}`}>
+        <Link href="/dashboard/iuran" className="ipl-summary-card keu-card keu-amber">
           <div className="keu-icon-circle"><Clock size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
             <span className="ipl-summary-label">Menunggu Konfirmasi</span>
@@ -282,7 +282,7 @@ function AdminDashboardView({ user }) {
         </Link>
 
         {/* Total Warga */}
-        <Link href="/dashboard/warga" className="ipl-summary-card keu-card keu-teal">
+        <Link href="/dashboard/warga" className="ipl-summary-card keu-card keu-purple">
           <div className="keu-icon-circle"><Users size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
             <span className="ipl-summary-label">Total Warga</span>

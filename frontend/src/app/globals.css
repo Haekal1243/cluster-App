@@ -1452,12 +1452,40 @@ select {
   flex-shrink: 0;
 }
 
+/* Outline teal: beda dari .btn-ipl-secondary abu-abu generik, tapi lebih ringan dari tombol primary solid */
+.btn-ipl-outline-teal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--db-primary, #0d9488);
+  border: 1.5px solid var(--db-primary, #0d9488);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.btn-ipl-outline-teal:hover:not(:disabled) {
+  background: rgba(13, 148, 136, 0.1);
+}
+.btn-ipl-outline-teal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-ipl-outline-teal-icon {
+  padding: 8px 10px;
+}
+
 .export-menu {
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
   z-index: 40;
   min-width: 230px;
+  max-width: 85vw;
   background: var(--db-surface);
   border: 1px solid var(--db-border);
   border-radius: 12px;
@@ -4958,7 +4986,7 @@ select {
 /* Page Header */
 .ipl-page-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
@@ -5289,8 +5317,8 @@ select {
 .keu-card.keu-green { --keu-tint: #bbf7d0; --keu-border: #4ade80; --keu-icon: #16a34a; }
 .keu-card.keu-red   { --keu-tint: #fecaca; --keu-border: #f87171; --keu-icon: #dc2626; }
 .keu-card.keu-amber { --keu-tint: #fde68a; --keu-border: #f59e0b; --keu-icon: #d97706; }
-.keu-card.keu-purple { --keu-tint: #f5f3ff; --keu-border: #ddd6fe; --keu-icon: #7c3aed; }
-.keu-card.keu-muted { --keu-tint: #f1f5f9; --keu-border: #cbd5e1; --keu-icon: #94a3b8; }
+.keu-card.keu-purple { --keu-tint: #ddd6fe; --keu-border: #a78bfa; --keu-icon: #7c3aed; }
+.keu-card.keu-muted { --keu-tint: #e2e8f0; --keu-border: #94a3b8; --keu-icon: #475569; }
 /* override flat white + border-left lama hanya untuk keu-card */
 .keu-card.ipl-summary-card { border-left: 0; background: linear-gradient(135deg, var(--keu-tint) 0%, var(--keu-tint) 42%, #ffffff 88%); }
 .keu-icon-circle {
@@ -6369,7 +6397,9 @@ select {
   .ipl-filter-search { min-width: unset; }
   .ipl-page-title { font-size: 1.1rem; }
   .ipl-page-subtitle { font-size: 0.78rem; }
-  .ipl-page-header { flex-direction: column; }
+  /* Tombol aksi (mis. Export) tetap di samping kanan judul, bukan ketimpa ke bawah */
+  .ipl-page-header { flex-wrap: nowrap; }
+  .ipl-page-header > div:first-child { min-width: 0; flex: 1 1 auto; }
   .page-toolbar h2 { font-size: 1.1rem; margin-bottom: 2px; }
   .page-toolbar p { font-size: 0.78rem; }
   .page-toolbar,

@@ -2067,50 +2067,6 @@ select {
   }
   .list-pagination-actions { justify-content: center; }
 
-  /* Pop up Tambah/Edit Pengumuman: dikecilin biar gak penuh layar */
-  .pengumuman-modal {
-    max-width: 92vw;
-  }
-  .pengumuman-modal .modal-header {
-    padding: 12px 16px;
-  }
-  .pengumuman-modal .modal-header h3 {
-    font-size: 0.92rem;
-  }
-  .pengumuman-modal .modal-body {
-    padding: 14px 16px;
-    max-height: 70vh;
-  }
-  .pengumuman-modal .form-group {
-    margin-bottom: 12px;
-  }
-  .pengumuman-modal .form-group label {
-    font-size: 0.8rem;
-    margin-bottom: 5px;
-  }
-  .pengumuman-modal .form-control {
-    padding: 9px 12px;
-    font-size: 0.82rem;
-  }
-  .pengumuman-modal .file-input-label {
-    padding: 8px 12px;
-    font-size: 0.8rem;
-  }
-  .pengumuman-modal .file-current {
-    font-size: 0.76rem;
-  }
-  .pengumuman-modal .field-hint {
-    font-size: 0.7rem;
-  }
-  .pengumuman-modal .modal-footer {
-    padding: 12px 16px;
-  }
-  .pengumuman-modal .btn-outline-neutral,
-  .pengumuman-modal .btn-primary {
-    padding: 8px 14px;
-    font-size: 0.82rem;
-  }
-
   /* Tabel Kegiatan: diganti grid kartu 2 kolom, tanpa scroll horizontal */
   .kegiatan-table-wrapper { display: none; }
 
@@ -2121,46 +2077,51 @@ select {
     padding: 14px;
   }
 
-  /* Pop up Tambah/Edit Kegiatan: dikecilin biar gak penuh layar */
-  .kegiatan-modal {
+  /* Semua pop up Tambah/Ubah (modal-box): dikecilin biar gak penuh layar di HP.
+     Berlaku untuk semua modal form di seluruh app, bukan cuma yang dikasih class khusus. */
+  .modal-box {
     max-width: 92vw;
   }
-  .kegiatan-modal .modal-header {
+  .modal-box .modal-header {
     padding: 12px 16px;
   }
-  .kegiatan-modal .modal-header h3 {
+  .modal-box .modal-header h3 {
     font-size: 0.92rem;
   }
-  .kegiatan-modal .modal-body {
+  .modal-box .modal-body {
     padding: 14px 16px;
     max-height: 70vh;
   }
-  .kegiatan-modal .form-group {
+  .modal-box .form-group {
     margin-bottom: 12px;
   }
-  .kegiatan-modal .form-group label {
+  .modal-box .form-group label {
     font-size: 0.8rem;
     margin-bottom: 5px;
   }
-  .kegiatan-modal .form-control {
+  .modal-box .form-control {
     padding: 9px 12px;
     font-size: 0.82rem;
   }
-  .kegiatan-modal .file-input-label {
+  .modal-box .file-input-label {
     padding: 8px 12px;
     font-size: 0.8rem;
   }
-  .kegiatan-modal .file-current {
+  .modal-box .file-current {
     font-size: 0.76rem;
   }
-  .kegiatan-modal .field-hint {
+  .modal-box .field-hint,
+  .modal-box .field-error {
     font-size: 0.7rem;
   }
-  .kegiatan-modal .modal-footer {
+  .modal-box .form-row-2 {
+    gap: 10px;
+  }
+  .modal-box .modal-footer {
     padding: 12px 16px;
   }
-  .kegiatan-modal .btn-outline-neutral,
-  .kegiatan-modal .btn-primary {
+  .modal-box .btn-outline-neutral,
+  .modal-box .btn-primary {
     padding: 8px 14px;
     font-size: 0.82rem;
   }
@@ -6316,6 +6277,19 @@ select {
   }
   .welcome-banner p {
     font-size: 0.8rem;
+  }
+  /* Jangan sampai tombol Filter periode wrap ke baris baru lalu nempel di kiri
+     (bikin panel dropdown-nya "right: 0" ikut geser ke kiri dan kepotong layar).
+     Biarkan teks sambutan yang menyusut, tombol filter tetap di kanan. */
+  .welcome-banner {
+    flex-wrap: nowrap !important;
+  }
+  .welcome-banner > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .welcome-banner .filter-popover {
+    flex-shrink: 0;
   }
 
   .page-stack {

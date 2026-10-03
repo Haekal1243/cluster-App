@@ -10,6 +10,7 @@ import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
+import ProtectedImage from "@/components/ui/ProtectedImage";
 
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -430,23 +431,20 @@ export default function SetoranPage() {
                 <div className="keu-card-text">
                   <span className="ipl-summary-label">Sudah Dikonfirmasi</span>
                   <span className="ipl-summary-value">{rupiah(summary.totalDikonfirmasi)}</span>
-                  <span className="ipl-summary-sub">{summary.dikonfirmasi} setoran</span>
                 </div>
               </div>
-              <div className={`ipl-summary-card keu-card ${summary.menunggu > 0 ? "keu-amber" : "keu-muted"}`}>
+              <div className="ipl-summary-card keu-card keu-amber">
                 <div className="keu-icon-circle"><Clock size={22} strokeWidth={2} /></div>
                 <div className="keu-card-text">
                   <span className="ipl-summary-label">Menunggu Konfirmasi</span>
                   <span className="ipl-summary-value">{rupiah(summary.totalMenunggu)}</span>
-                  <span className="ipl-summary-sub">{summary.menunggu} setoran</span>
                 </div>
               </div>
-              <div className={`ipl-summary-card keu-card ${summary.ditolak > 0 ? "keu-red" : "keu-muted"}`}>
+              <div className="ipl-summary-card keu-card keu-red">
                 <div className="keu-icon-circle"><XCircle size={22} strokeWidth={2} /></div>
                 <div className="keu-card-text">
                   <span className="ipl-summary-label">Ditolak</span>
                   <span className="ipl-summary-value">{summary.ditolak}</span>
-                  <span className="ipl-summary-sub">tagihan kembali ke antrean</span>
                 </div>
               </div>
             </>

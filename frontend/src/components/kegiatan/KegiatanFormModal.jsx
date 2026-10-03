@@ -88,7 +88,7 @@ export default function KegiatanFormModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box kegiatan-modal" onClick={(event) => event.stopPropagation()}>
+      <div className="modal-box" onClick={(event) => event.stopPropagation()}>
         <div className="modal-header">
           <h3>{mode === "edit" ? "Ubah Kegiatan" : "Tambah Kegiatan"}</h3>
           <button

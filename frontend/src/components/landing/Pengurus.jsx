@@ -231,11 +231,6 @@ export default function Pengurus({ items: itemsProp }) {
               onMouseLeave={e => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.color = "#64748B"; }}
             >&#8250;</button>
           </div>
-
-          <p style={{ maxWidth: 560, margin: "20px auto 0", textAlign: "center", fontSize: 12, lineHeight: 1.6, color: "#64748B" }}>
-            Pengurus tidak pernah meminta transfer uang atau kode verifikasi lewat chat pribadi. Ragu dengan
-            sebuah pesan? Tanyakan langsung ke sekretariat RW sebelum membalas.
-          </p>
         </Reveal>
       </div>
     </section>

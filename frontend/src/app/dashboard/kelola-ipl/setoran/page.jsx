@@ -5,14 +5,12 @@ import { CheckCircle, XCircle, Clock, Eye, Landmark, Upload, Wallet } from "luci
 import { setoranApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
-import { showConfirm, showMessage } from "@/lib/message";
+import { showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
-import ProtectedImage from "@/components/ui/ProtectedImage";
-
-const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+import SetoranDetailModal from "@/components/setoran/SetoranDetailModal";
 
 const rupiah = (n) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
@@ -92,193 +90,6 @@ function SetorModal({ siap, pilihRt, onClose, onSuccess }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-}
-
-// ── Modal: detail + konfirmasi/tolak ──────────────────────────────────────────
-function DetailModal({ id, bolehKonfirmasi, onClose, onSuccess }) {
-  const [data, setData] = useState(null);
-  const [alasan, setAlasan] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setoranApi.getById(id).then(setData).catch((e) => {
-      showMessage("Gagal Memuat", e.message, "error");
-      onClose();
-    });
-    // onClose dibuat ulang tiap render induk; efek ini cukup jalan sekali per id.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  const proses = async (action) => {
-    if (action === "TOLAK" && !alasan.trim()) {
-      return showMessage("Validasi", "Alasan penolakan wajib diisi.", "warning");
-    }
-    const ok = await showConfirm(
-      action === "TERIMA" ? "Konfirmasi setoran?" : "Tolak setoran?",
-      action === "TERIMA"
-        ? `Setoran ${rupiah(data.totalIpl)} dari ${areaLabel(data.area)} akan dicatat sebagai pemasukan kas RW.`
-        : "Tagihan dalam setoran ini akan kembali ke antrean setor RT.",
-      action === "TERIMA" ? "question" : "warning",
-      action === "TERIMA" ? "Ya, konfirmasi" : "Ya, tolak"
-    );
-    if (!ok) return;
-
-    setLoading(true);
-    try {
-      const res = await setoranApi.konfirmasi(id, { action, catatan: alasan || undefined });
-      showMessage(action === "TERIMA" ? "Dikonfirmasi" : "Ditolak", res.message, action === "TERIMA" ? "success" : "info");
-      onSuccess();
-      onClose();
-    } catch (err) {
-      showMessage("Gagal", err.message, "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const buktiPath = data?.buktiTransaksi ? setoranApi.buktiPath(data.id) : null;
-
-  return (
-    <div className="ipl-modal-overlay" onClick={onClose}>
-      <div className="ipl-modal ipl-modal-review" onClick={(e) => e.stopPropagation()}>
-        <div className="ipl-modal-header">
-          <h3>Detail Setoran {data ? areaLabel(data.area) : ""}</h3>
-          <button className="ipl-modal-close" onClick={onClose}>✕</button>
-        </div>
-        {!data ? (
-          <div className="ipl-loading"><div className="ipl-spinner" /><span>Memuat...</span></div>
-        ) : (
-          <div className="ipl-modal-body">
-            <div className="review-info-grid">
-              <div className="review-info-item">
-                <span className="review-info-label">Total IPL</span>
-                <span className="review-info-value review-nominal">{rupiah(data.totalIpl)}</span>
-              </div>
-              <div className="review-info-item">
-                <span className="review-info-label">Jumlah tagihan</span>
-                <span className="review-info-value">{data.jumlahTagihan}</span>
-              </div>
-              <div className="review-info-item">
-                <span className="review-info-label">Disetor oleh</span>
-                <span className="review-info-value">{data.createBy || "-"} · {tanggal(data.createDate)}</span>
-              </div>
-              <div className="review-info-item">
-                <span className="review-info-label">Status</span>
-                <span className="review-info-value"><StatusBadge status={data.status} /></span>
-              </div>
-              {data.konfirmasiBy && (
-                <div className="review-info-item">
-                  <span className="review-info-label">Diputuskan oleh</span>
-                  <span className="review-info-value">{data.konfirmasiBy} · {tanggal(data.tanggalKonfirmasi)}</span>
-                </div>
-              )}
-              {data.catatan && (
-                <div className="review-info-item">
-                  <span className="review-info-label">Catatan</span>
-                  <span className="review-info-value">{data.catatan}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="review-bukti-section">
-              <p className="review-bukti-label">Bukti Transfer</p>
-              <ProtectedImage path={buktiPath} alt="Bukti setoran" className="review-bukti-img" />
-            </div>
-
-            {data.tagihan?.length > 0 && (
-              <div className="setoran-tagihan-list">
-                <p className="review-bukti-label">Tagihan yang disetor</p>
-                <table className="ipl-table">
-                  <thead>
-                    <tr><th>No</th><th>Blok</th><th>Penghuni</th><th>Periode</th><th>IPL</th></tr>
-                  </thead>
-                  <tbody>
-                    {data.tagihan.map((t, index) => (
-                      <tr key={t.id}>
-                        <td>{index + 1}</td>
-                        <td>{t.rumah?.blokRumah}</td>
-                        <td>{t.rumah?.penghuni?.namaUser || "-"}</td>
-                        <td>{BULAN[Number(t.bulanPeriode) - 1]} {t.tahunPeriode}</td>
-                        <td>{rupiah(t.nominalIpl)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {data.konteks && (
-              <div className="setoran-tagihan-list">
-                <p className="review-bukti-label">Tidak ikut setoran ini (untuk diteliti sebelum konfirmasi)</p>
-                {data.konteks.kosongDikecualikan?.length > 0 ? (
-                  <table className="ipl-table">
-                    <thead>
-                      <tr><th>Blok</th><th>Pemilik</th><th>Periode</th><th>Masuk kas RT</th></tr>
-                    </thead>
-                    <tbody>
-                      {data.konteks.kosongDikecualikan.map((t) => (
-                        <tr key={t.id}>
-                          <td>{t.rumah?.blokRumah} <span className="rt-badge">Kosong</span></td>
-                          <td>{t.rumah?.penghuni?.namaUser || "—"}</td>
-                          <td>{BULAN[Number(t.bulanPeriode) - 1]} {t.tahunPeriode}</td>
-                          <td>{rupiah((t.nominalIpl || 0) + (t.nominalKas || 0))}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <p className="field-hint">Tidak ada tagihan rumah kosong yang dikecualikan.</p>
-                )}
-                {data.konteks.menunggu?.length > 0 && (
-                  <>
-                    <p className="review-bukti-label" style={{ marginTop: 8 }}>Pembayaran menunggu konfirmasi RT</p>
-                    <table className="ipl-table">
-                      <thead>
-                        <tr><th>Blok</th><th>Pembayar</th><th>Periode</th><th>Nominal</th></tr>
-                      </thead>
-                      <tbody>
-                        {data.konteks.menunggu.map((p) => (
-                          <tr key={p.idPembayaran}>
-                            <td>{p.ipl?.rumah?.blokRumah}</td>
-                            <td>{p.user?.namaUser || "—"}</td>
-                            <td>{BULAN[Number(p.ipl?.bulanPeriode) - 1]} {p.ipl?.tahunPeriode}</td>
-                            <td>{rupiah(p.nominal)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
-                )}
-              </div>
-            )}
-
-            {bolehKonfirmasi && data.status === "MENUNGGU_KONFIRMASI" && (
-              <>
-                <div className="ipl-form-group">
-                  <label>Alasan penolakan <span className="label-optional">(wajib bila ditolak)</span></label>
-                  <textarea
-                    rows={2}
-                    className="ipl-textarea"
-                    placeholder="Contoh: Nominal transfer tidak sesuai..."
-                    value={alasan}
-                    onChange={(e) => setAlasan(e.target.value)}
-                  />
-                </div>
-                <div className="review-action-row">
-                  <button className="btn-ipl-danger" onClick={() => proses("TOLAK")} disabled={loading}>
-                    <XCircle size={16} /> Tolak
-                  </button>
-                  <button className="btn-ipl-success" onClick={() => proses("TERIMA")} disabled={loading}>
-                    <CheckCircle size={16} /> Konfirmasi Setoran
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -637,7 +448,7 @@ export default function SetoranPage() {
         <SetorModal siap={siap} pilihRt={pilihRtSetor} onClose={() => setShowSetor(false)} onSuccess={load} />
       )}
       {detailId && (
-        <DetailModal
+        <SetoranDetailModal
           id={detailId}
           bolehKonfirmasi={bolehKonfirmasi}
           onClose={() => setDetailId(null)}

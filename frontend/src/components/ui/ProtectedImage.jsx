@@ -8,10 +8,15 @@ import { getToken } from "@/lib/session";
  * Gambar dari endpoint terautentikasi (mis. bukti transfer IPL/setoran/kas).
  * `<img src>` biasa tidak bisa membawa header Authorization, jadi filenya
  * diambil sebagai blob lalu ditampilkan lewat object URL.
+ * Klik thumbnail membuka lightbox di tab yang sama (tanpa tab baru).
+ * Props:
+ * - trigger({ open, src }): render kustom tombol pembuka (opsional).
+ * - fullscreen: overlay lightbox full-screen dengan pinch-zoom (untuk mobile).
  */
-export default function ProtectedImage({ path, alt, className, emptyText = "Tidak ada file bukti." }) {
+export default function ProtectedImage({ path, alt, className, emptyText = "Tidak ada file bukti.", trigger, fullscreen = false }) {
   const [objectUrl, setObjectUrl] = useState(null);
   const [error, setError] = useState(false);
+  const [zoom, setZoom] = useState(false);
 
   useEffect(() => {
     if (!path) {
@@ -42,15 +47,44 @@ export default function ProtectedImage({ path, alt, className, emptyText = "Tida
     };
   }, [path]);
 
+  useEffect(() => {
+    if (!zoom) return;
+    const handleKey = (e) => {
+      if (e.key === "Escape") setZoom(false);
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [zoom]);
+
   if (!path || error) {
     return <div className="review-bukti-empty">{emptyText}</div>;
   }
   if (!objectUrl) {
     return <div className="review-bukti-empty">Memuat…</div>;
   }
+  const open = () => setZoom(true);
   return (
-    <a href={objectUrl} target="_blank" rel="noopener noreferrer">
-      <img src={objectUrl} alt={alt} className={className} />
-    </a>
+    <>
+      {trigger ? (
+        trigger({ open, src: objectUrl })
+      ) : (
+        <button type="button" className="protected-thumb-btn" onClick={open} aria-label={`Perbesar ${alt}`}>
+          <img src={objectUrl} alt={alt} className={className} />
+        </button>
+      )}
+      {zoom && (
+        <div
+          className={`protected-lightbox-overlay${fullscreen ? " is-fullscreen" : ""}`}
+          onClick={() => setZoom(false)}
+        >
+          <div className="protected-lightbox-box" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="protected-lightbox-close" onClick={() => setZoom(false)} aria-label="Tutup perbesaran" autoFocus>
+              ✕
+            </button>
+            <img src={objectUrl} alt={alt} className="protected-lightbox-img" />
+          </div>
+        </div>
+      )}
+    </>
   );
 }

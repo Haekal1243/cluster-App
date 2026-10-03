@@ -12,6 +12,7 @@ import {
   KeyRound,
   UserCheck,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import { wargaApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
@@ -61,6 +62,7 @@ export default function WargaPage() {
   const bolehUbah = can(user, "warga.update");
   const bolehHapus = can(user, "warga.delete");
   const bolehReset = can(user, "warga.reset_password");
+  const bolehApprove = can(user, "warga.approve_registrasi");
   const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
 
   const loadData = async () => {

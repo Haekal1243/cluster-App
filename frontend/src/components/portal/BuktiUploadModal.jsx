@@ -8,6 +8,7 @@ import {
   Send,
   Trash2,
   Loader2,
+  CheckCircle,
 } from "lucide-react";
 import { portalApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";

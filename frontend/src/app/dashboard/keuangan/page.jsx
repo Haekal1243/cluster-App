@@ -7,7 +7,7 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
-  List,
+  Scale,
   PiggyBank,
   Eye,
   Pencil,
@@ -23,12 +23,18 @@ import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 // ── Helpers & opsi ────────────────────────────────────────────────────────────
 const BULAN_NAMES = {
   "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
   "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
   "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
+};
+const BULAN_PANJANG = {
+  "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
+  "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
+  "09": "September", "10": "Oktober", "11": "November", "12": "Desember",
 };
 
 const KATEGORI_MASUK = ["Dana Sosial", "Sewa Fasilitas", "Donasi", "Lainnya"];
@@ -284,6 +290,7 @@ function AdminKeuanganView({ user }) {
   const pilihAreaTulis = scopeOf(user, "keuangan.create") === "ALL" && isAdmin;
   const isBendaharaRT = user?.role === "BENDAHARA_RT";
   const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT", "BENDAHARA_RW"].includes(user?.role);
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const getCurrentYm = () => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
@@ -292,6 +299,11 @@ function AdminKeuanganView({ user }) {
     if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
     return `${BULAN_NAMES[m] || m} ${y}`;
+  };
+  const formatYmFull = (ym) => {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
+    const [y, m] = ym.split("-");
+    return `${BULAN_PANJANG[m] || m} ${y}`;
   };
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
@@ -346,6 +358,9 @@ function AdminKeuanganView({ user }) {
   const periodeLabel = periodeDari === periodeSampai
     ? formatYmPanjang(periodeDari)
     : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+  const periodeLabelFull = periodeDari === periodeSampai
+    ? formatYmFull(periodeDari)
+    : `${formatYmFull(periodeDari)} – ${formatYmFull(periodeSampai)}`;
 
   const kategoriOptions = [
     ...new Set(
@@ -486,71 +501,20 @@ function AdminKeuanganView({ user }) {
               : `Laporan kas periode ${periodeLabel}`}
           </p>
         </div>
-      </div>
-
-      {/* ── Summary Cards — Keuangan Cluster (scoped redesign) ── */}
-      {ringkasan && (
-        <div className="ipl-summary-grid keu-summary-grid">
-          <div className="ipl-summary-card keu-card keu-teal">
-            <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
-            <div className="keu-card-text">
-              <span className="ipl-summary-label">Saldo Kas Saat Ini</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
-              <span className="ipl-summary-sub">kumulatif sepanjang waktu</span>
-            </div>
-          </div>
-          <div className="ipl-summary-card keu-card keu-green">
-            <div className="keu-icon-circle"><TrendingUp size={22} strokeWidth={2} /></div>
-            <div className="keu-card-text">
-              <span className="ipl-summary-label">Pemasukan Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
-              <span className="ipl-summary-sub">{periodeLabel}</span>
-            </div>
-          </div>
-          <div className="ipl-summary-card keu-card keu-red">
-            <div className="keu-icon-circle"><TrendingDown size={22} strokeWidth={2} /></div>
-            <div className="keu-card-text">
-              <span className="ipl-summary-label">Pengeluaran Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
-              <span className="ipl-summary-sub">{periodeLabel}</span>
-            </div>
-          </div>
-          <div className="ipl-summary-card keu-card keu-teal">
-            <div className="keu-icon-circle"><List size={22} strokeWidth={2} /></div>
-            <div className="keu-card-text">
-              <span className="ipl-summary-label">Selisih Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
-              <span className="ipl-summary-sub">masuk − keluar {periodeLabel}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Tambah + Search + Filter ── */}
-      <div className="page-toolbar-row">
-        {bolehTambah && (
-          <button
-            id="btn-catat-transaksi"
-            className="btn-ipl-primary"
-            onClick={() => { setEditItem(null); setShowForm(true); }}
-          >
-            <Plus size={16} /> Catat Transaksi
-          </button>
-        )}
 
         <div className="export-split" ref={exportRef}>
           <button
             type="button"
-            className="btn-ipl-secondary"
+            className="btn-ipl-outline-teal"
             onClick={() => handleExport("xlsx")}
             disabled={!!exporting || !!rangeError || isLoading}
             title={rangeError || "Unduh Riwayat Kas sebagai Excel (.xlsx)"}
           >
-            <Download size={16} /> {exporting ? "Menyiapkan..." : "Export"}
+            <Download size={15} /> {exporting ? "Menyiapkan..." : "Export"}
           </button>
           <button
             type="button"
-            className="btn-ipl-secondary"
+            className="btn-ipl-outline-teal btn-ipl-outline-teal-icon"
             onClick={() => setExportOpen((o) => !o)}
             disabled={!!exporting || !!rangeError || isLoading}
             aria-label="Pilihan format export"
@@ -584,6 +548,53 @@ function AdminKeuanganView({ user }) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Summary Cards — Keuangan Cluster (scoped redesign) ── */}
+      {ringkasan && (
+        <div className="ipl-summary-grid keu-summary-grid">
+          <div className="ipl-summary-card keu-card keu-teal">
+            <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
+              <span className="ipl-summary-label">Saldo Kas Saat Ini</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
+            </div>
+          </div>
+          <div className="ipl-summary-card keu-card keu-green">
+            <div className="keu-icon-circle"><TrendingUp size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
+              <span className="ipl-summary-label">Pemasukan Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
+            </div>
+          </div>
+          <div className="ipl-summary-card keu-card keu-red">
+            <div className="keu-icon-circle"><TrendingDown size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
+              <span className="ipl-summary-label">Pengeluaran Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
+            </div>
+          </div>
+          <div className="ipl-summary-card keu-card keu-purple">
+            <div className="keu-icon-circle"><Scale size={22} strokeWidth={2} /></div>
+            <div className="keu-card-text">
+              <span className="ipl-summary-label">Selisih Periode</span>
+              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tambah + Search + Filter ── */}
+      <div className="page-toolbar-row">
+        {bolehTambah && (
+          <button
+            id="btn-catat-transaksi"
+            className="btn-ipl-primary"
+            onClick={() => { setEditItem(null); setShowForm(true); }}
+          >
+            <Plus size={16} /> Catat Transaksi
+          </button>
+        )}
 
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
@@ -748,7 +759,7 @@ function AdminKeuanganView({ user }) {
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
           <span className="ipl-table-title">
-            Riwayat Kas - {periodeLabel}
+            Riwayat Kas ({isMobile ? periodeLabel : periodeLabelFull})
           </span>
           <span className="ipl-table-count">{riwayat.length} data</span>
         </div>

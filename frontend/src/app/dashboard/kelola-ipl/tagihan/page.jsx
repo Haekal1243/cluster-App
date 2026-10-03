@@ -28,12 +28,18 @@ import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
 import ProtectedImage from "@/components/ui/ProtectedImage";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const BULAN_NAMES = {
   "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
   "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
   "09": "September", "10": "Oktober", "11": "November", "12": "Desember",
+};
+const BULAN_PENDEK = {
+  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+  "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
+  "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
 };
 
 const BULAN_OPTIONS = Object.entries(BULAN_NAMES).map(([val, label]) => ({ val, label }));
@@ -480,6 +486,7 @@ function AdminIuranView({ user }) {
   const bolehHapus = can(user, "ipl.delete");
   // Scope ALL (ketua/bendahara/sekre RW, admin) melihat semua RT; scope AREA hanya RT sendiri.
   const semuaRt = scopeOf(user, "ipl.read") === "ALL";
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const [tagihan, setTagihan] = useState([]);
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -493,6 +500,11 @@ function AdminIuranView({ user }) {
     if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
     return `${BULAN_NAMES[m] || m} ${y}`;
+  };
+  const formatYmPendek = (ym) => {
+    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
+    const [y, m] = ym.split("-");
+    return `${BULAN_PENDEK[m] || m} ${y}`;
   };
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
@@ -533,6 +545,9 @@ function AdminIuranView({ user }) {
   const periodeLabel = periodeDari === periodeSampai
     ? formatYmPanjang(periodeDari)
     : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+  const periodeLabelSingkat = periodeDari === periodeSampai
+    ? formatYmPendek(periodeDari)
+    : `${formatYmPendek(periodeDari)} - ${formatYmPendek(periodeSampai)}`;
 
   const handleFilterOpen = () => {
     setDraftPeriodeDari(periodeDari);
@@ -732,7 +747,7 @@ function AdminIuranView({ user }) {
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
           <span className="ipl-table-title">
-            Data Tagihan - {periodeLabel}
+            Data Tagihan ({isMobile ? periodeLabelSingkat : periodeLabel})
           </span>
           <span className="ipl-table-count">{tagihan.length} data</span>
         </div>

@@ -7270,6 +7270,7 @@ select {
 .rw-mini-more { color: #7f1d1d; font-weight: 600; }
 .rw-mini-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: #0f766e; text-decoration: none; min-height: 44px; }
 /* Kas RW: header – divider – grid – footer */
+.rw-kas-card { flex-direction: column; align-items: stretch; }
 .rw-kas-head { display: flex; align-items: flex-start; gap: 14px; width: 100%; }
 .rw-kas-head .keu-card-text { flex: 1; min-width: 0; }
 .rw-net-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
@@ -7292,13 +7293,6 @@ select {
 .rw-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 800; }
 .rw-empty { margin: 0; font-size: 0.85rem; color: #64748b; }
 .rw-chart-hint { margin: 0 0 12px; font-size: 0.75rem; color: #64748b; }
-.rw-tren-bars { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-items: end; }
-.rw-tren-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
-.rw-tren-track { position: relative; width: 100%; max-width: 56px; height: 140px; display: flex; align-items: flex-end; justify-content: center; background: #f8fafc; border-radius: 8px; }
-.rw-tren-bar { width: 60%; border-radius: 6px 6px 3px 3px; background: #0d9488; min-height: 6px; }
-.rw-tren-bar.is-berjalan { background: #5eead4; }
-.rw-tren-label { font-size: 0.7rem; color: #64748b; text-align: center; }
-.rw-tren-nominal { font-size: 0.72rem; font-weight: 700; color: #1e293b; }
 .rw-tindak-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .rw-tindak-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid #e5e9f0; border-radius: 10px; background: #fff; }
 .rw-tindak-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 999px; margin-top: 5px; background: #f59e0b; }
@@ -7332,6 +7326,4 @@ select {
   .rw-kpi .ipl-summary-value { font-size: 22px; }
   .rw-flow-nominal { font-size: 14px; }
   .rw-hero-actions .rw-cta { width: 100%; justify-content: center; }
-  .rw-tren-bars { gap: 4px; }
-  .rw-tren-track { height: 110px; }
 }

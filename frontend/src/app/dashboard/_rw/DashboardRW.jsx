@@ -187,7 +187,7 @@ export default function DashboardRW({ user }) {
       {!loading && data && (
         <div className="rw-bottom">
           <div className="rw-tren">
-            <TrenSetoranChart tren={data.tren} />
+            <TrenSetoranChart tren={data.tren} periodeLabel={periodeLabel} />
           </div>
           <div className="rw-side">
             <PerluTindakanList data={data.perluTindakan} onTinjau={setDetailId} />

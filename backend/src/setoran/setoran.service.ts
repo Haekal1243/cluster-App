@@ -215,14 +215,24 @@ export class SetoranService {
     if (!setoran) throw new NotFoundException(`Setoran dengan ID ${id} tidak ditemukan.`);
     assertInArea(ctx, setoran.area);
 
-    // Konteks anti-kecurangan untuk RW: tagihan yang TIDAK ikut setoran ini —
-    // rumah kosong LUNAS (masuk kas RT) + pembayaran yang masih menunggu
-    // konfirmasi. RW mengkonfirmasi dengan data lengkap, bukan buta.
-    const [kosongDikecualikan, menunggu] = await Promise.all([
+    // Konteks untuk RW: tagihan yang TIDAK ikut setoran ini, dibatasi pada
+    // periode yang ada di setoran agar ringkas dan relevan —
+    // (1) rumah kosong (masuk kas RT, semua status, ber-badge),
+    // (2) pembayaran menunggu konfirmasi RT,
+    // (3) tagihan BELUM_LUNAS rumah dihuni.
+    const periodeSet = new Map(
+      setoran.tagihan.map((t) => [`${t.tahunPeriode}-${t.bulanPeriode}`, { bulanPeriode: t.bulanPeriode, tahunPeriode: t.tahunPeriode }]),
+    );
+    const periodeOr = [...periodeSet.values()];
+    if (periodeOr.length === 0) {
+      return { ...setoran, konteks: { kosongDikecualikan: [], menunggu: [], belumBayar: [] } };
+    }
+    const [kosongDikecualikan, menunggu, belumBayar] = await Promise.all([
       this.prisma.ipl.findMany({
         where: {
-          statusPembayaran: 'LUNAS',
+          statusPembayaran: { in: ['LUNAS', 'MENUNGGU_KONFIRMASI', 'BELUM_LUNAS'] },
           setoranId: null,
+          OR: periodeOr,
           rumah: { rt: setoran.area as RT, status: 'KOSONG' },
         },
         select: {
@@ -231,6 +241,7 @@ export class SetoranService {
           tahunPeriode: true,
           nominalIpl: true,
           nominalKas: true,
+          statusPembayaran: true,
           rumah: {
             select: { blokRumah: true, penghuni: { select: { namaUser: true } } },
           },
@@ -241,6 +252,7 @@ export class SetoranService {
         where: {
           ipl: {
             statusPembayaran: 'MENUNGGU_KONFIRMASI',
+            OR: periodeOr,
             rumah: { rt: setoran.area as RT, status: { not: 'KOSONG' } },
           },
         },
@@ -259,8 +271,27 @@ export class SetoranService {
         },
         orderBy: { tanggalBayar: 'desc' },
       }),
+      this.prisma.ipl.findMany({
+        where: {
+          statusPembayaran: 'BELUM_LUNAS',
+          OR: periodeOr,
+          rumah: { rt: setoran.area as RT, status: { not: 'KOSONG' } },
+        },
+        select: {
+          id: true,
+          bulanPeriode: true,
+          tahunPeriode: true,
+          nominalIpl: true,
+          nominalKas: true,
+          statusPembayaran: true,
+          rumah: {
+            select: { blokRumah: true, penghuni: { select: { namaUser: true } } },
+          },
+        },
+        orderBy: [{ tahunPeriode: 'asc' }, { bulanPeriode: 'asc' }],
+      }),
     ]);
-    return { ...setoran, konteks: { kosongDikecualikan, menunggu } };
+    return { ...setoran, konteks: { kosongDikecualikan, menunggu, belumBayar } };
   }
 
   /** Id file bukti transfer setoran; dicek scope dulu, file ini tidak boleh diambil lewat GET /files/:id publik. */

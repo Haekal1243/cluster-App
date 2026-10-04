@@ -180,6 +180,7 @@ export default function BlokRumahPage() {
           </div>
           <FilterPopover
             active={filterAktif}
+            activeCount={(filterRT !== "SEMUA" ? 1 : 0) + (filterStatus !== "SEMUA" ? 1 : 0)}
             onOpen={() => {
               setDraftRT(filterRT);
               setDraftStatus(filterStatus);

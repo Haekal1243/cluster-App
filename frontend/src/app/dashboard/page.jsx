@@ -203,6 +203,7 @@ function AdminDashboardView({ user }) {
         </div>
         <FilterPopover
           active={!isDefaultPeriode}
+          activeCount={!isDefaultPeriode ? 1 : 0}
           label={isDefaultPeriode ? "Filter periode" : periodeLabel}
           hint="Maksimal 12 bulan · Total Warga tidak ikut filter"
           open={filterOpen}

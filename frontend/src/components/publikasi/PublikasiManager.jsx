@@ -303,6 +303,11 @@ export default function PublikasiManager({
           </div>
           <FilterPopover
             active={filterAktif}
+            activeCount={
+              (filterStatus !== "SEMUA" ? 1 : 0) +
+              (filterPengajuan !== "SEMUA" ? 1 : 0) +
+              (filterArea !== "SEMUA" ? 1 : 0)
+            }
             onOpen={() => setDraft({ status: filterStatus, pengajuan: filterPengajuan, area: filterArea })}
             onApply={() => {
               setFilterStatus(draft.status);

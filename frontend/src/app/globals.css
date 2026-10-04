@@ -1444,6 +1444,22 @@ select {
   transform: rotate(180deg);
 }
 
+/* Badge jumlah filter aktif di tombol Filter ("Filter · 1"). */
+.filter-popover-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* ── Export split-button (Riwayat Kas): tombol aksi + menu pilihan format ── */
 .export-split {
   position: relative;
@@ -1512,8 +1528,8 @@ select {
   right: 0;
   top: calc(100% + 8px);
   z-index: 40;
-  width: 260px;
-  max-width: 82vw;
+  width: 300px;
+  max-width: calc(100vw - 32px);
   max-height: min(70vh, 440px);
   background: var(--db-surface);
   border: 1px solid var(--db-border);
@@ -1547,6 +1563,14 @@ select {
 /* Combobox: input teks bebas + dropdown suggestion (mis. Blok Rumah di Tambah Warga) */
 .combobox {
   position: relative;
+  min-width: 0;
+}
+
+/* Trigger custom Select selalu full-width di dalam field popover. */
+.filter-popover-field .combobox,
+.filter-popover-field .ui-select-trigger {
+  width: 100%;
+  min-width: 0;
 }
 .combobox-input-open {
   border-bottom-left-radius: 0;
@@ -1570,8 +1594,11 @@ select {
   list-style: none;
 }
 .combobox-option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
+  min-height: 40px;
   text-align: left;
   padding: 8px 10px;
   border: none;
@@ -1580,9 +1607,45 @@ select {
   font-size: 0.875rem;
   color: var(--db-slate-700);
   cursor: pointer;
+  list-style: none;
 }
 .combobox-option:hover {
   background: var(--db-bg);
+}
+.combobox-option:focus-visible {
+  outline: 2px solid var(--db-primary);
+  outline-offset: -2px;
+  background: var(--db-bg);
+}
+.combobox-option-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.combobox-check {
+  display: inline-flex;
+  flex: none;
+  width: 20px;
+  justify-content: flex-end;
+  color: var(--db-primary);
+}
+
+/* Menu hasil portal: fixed mengikuti trigger, di atas popover/modal.
+   right:auto + width:max-content: lebar selebar konten (min. selebar trigger
+   dari min-width inline, maks. selebar viewport) — tidak melar ke tepi layar. */
+.combobox-list-portal {
+  top: auto;
+  right: auto;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  margin-top: 0;
+  border-radius: 10px;
+  border-top: 1px solid var(--db-border);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  max-height: 280px;
+  z-index: 1200;
 }
 .combobox-option.is-selected {
   background: var(--db-bg);
@@ -1591,12 +1654,67 @@ select {
 }
 
 .ui-select-trigger {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: #333;
+}
+.ui-select-trigger > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-select-trigger .is-placeholder {
+  color: #94a3b8;
+}
+.ui-select-chevron {
+  flex: none;
+  color: var(--db-slate-400);
+}
+/* Trigger custom sudah punya ikon chevron sendiri: matikan background
+   chevron sisa era native <select> (class .warga-filter-select). */
+.ui-select-trigger.warga-filter-select {
+  background-image: none;
+}
+
+/* Radio list untuk mode mobile (tanpa dropdown-dalam-dropdown). */
+.combobox-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.combobox-radio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--db-slate-700);
+  cursor: pointer;
+  text-align: left;
+}
+.combobox-radio.is-selected {
+  border-color: var(--db-primary);
+  background: #f0fdfa;
+  color: var(--db-primary-active);
+  font-weight: 600;
+}
+.combobox-radio-label {
+  flex: 1;
+  min-width: 0;
 }
 .ui-select-trigger:disabled {
   cursor: not-allowed;
@@ -1687,20 +1805,46 @@ select {
   padding: 8px 12px;
   border: none;
   border-radius: 8px;
-  background: #2563eb;
+  background: linear-gradient(135deg, var(--db-primary) 0%, var(--db-primary-hover) 100%);
   color: #fff;
   font-family: "Poppins", sans-serif;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: filter 0.15s ease;
 }
 .filter-popover-apply:hover:not(:disabled) {
-  background: #1d4ed8;
+  filter: brightness(1.07);
 }
 .filter-popover-apply:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Mobile: popover filter jadi bottom sheet full-width (margin 16px). */
+@media (max-width: 767px) {
+  .filter-popover-panel {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    top: auto;
+    width: auto;
+    max-width: none;
+    max-height: min(78vh, 560px);
+    max-height: min(78dvh, 560px);
+    z-index: 1200;
+    overflow-y: auto;
+  }
+  .filter-popover-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--db-surface);
+    padding-top: 4px;
+  }
+  .filter-popover-footer button {
+    min-height: 44px;
+  }
 }
 
 .list-search-wrap {

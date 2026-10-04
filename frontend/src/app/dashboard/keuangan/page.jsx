@@ -599,6 +599,12 @@ function AdminKeuanganView({ user }) {
 
           <FilterPopover
             active={!isDefaultPeriode || filterTipe !== "SEMUA" || filterKategori !== "SEMUA" || filterArea !== "SEMUA"}
+            activeCount={
+              (!isDefaultPeriode ? 1 : 0) +
+              (filterTipe !== "SEMUA" ? 1 : 0) +
+              (filterKategori !== "SEMUA" ? 1 : 0) +
+              (filterArea !== "SEMUA" ? 1 : 0)
+            }
             onOpen={handleFilterOpen}
             onApply={handleFilterApply}
             onReset={handleFilterReset}

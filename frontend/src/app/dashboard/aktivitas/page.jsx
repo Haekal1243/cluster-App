@@ -95,6 +95,10 @@ export default function AktivitasPage() {
           </div>
           <FilterPopover
             active={filterAktif}
+            activeCount={
+              (filterAksi !== "SEMUA" ? 1 : 0) +
+              (periodeDari !== getCurrentYm() || periodeSampai !== getCurrentYm() ? 1 : 0)
+            }
             onOpen={() => {
               setDraftAksi(filterAksi);
               setDraftDari(periodeDari);

@@ -7248,3 +7248,90 @@ select {
 .panel-sistem-link:hover { border-color: #5eead4; background: var(--db-success-bg); }
 .panel-sistem-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: var(--db-success-bg); color: var(--db-primary); }
 .panel-sistem-arrow { margin-left: auto; color: var(--db-slate-400); }
+
+/* ── Dashboard Bendahara RW ── */
+.rw-hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rw-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; }
+/* Grid KPI: konten rata atas, tinggi sama */
+.rw-kpi { align-items: stretch; }
+.rw-dash .rw-kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rw-kpi .keu-card { align-items: flex-start; }
+.rw-kpi .ipl-summary-label { font-size: 12px; }
+.rw-kpi .ipl-summary-value { font-size: 28px; }
+.rw-kpi .ipl-summary-sub { font-size: 13px; color: #475569; }
+.rw-persen { font-weight: 800; color: #065f46; }
+.rw-progress { display: block; height: 8px; border-radius: 999px; background: #ffffff; border: 1px solid rgba(4, 120, 87, 0.15); overflow: hidden; margin: 6px 0 8px; }
+.rw-progress-fill { display: block; height: 100%; border-radius: 999px; background: #047857; }
+.rw-mini-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rw-mini-list li { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
+.rw-mini-nominal { margin-left: auto; font-weight: 700; color: #1e293b; white-space: nowrap; }
+.rw-mini-status { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; white-space: nowrap; }
+.rw-mini-status.is-ditolak { background: #fee2e2; color: #b91c1c; }
+.rw-mini-more { color: #7f1d1d; font-weight: 600; }
+.rw-mini-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: #0f766e; text-decoration: none; min-height: 44px; }
+/* Kas RW: header – divider – grid – footer */
+.rw-kas-head { display: flex; align-items: flex-start; gap: 14px; width: 100%; }
+.rw-kas-head .keu-card-text { flex: 1; min-width: 0; }
+.rw-net-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
+.rw-net-badge.is-naik { background: #dcfce7; color: #15803d; }
+.rw-net-badge.is-turun { background: #fee2e2; color: #b91c1c; }
+.rw-net-badge.is-nol { background: #f1f5f9; color: #64748b; }
+.rw-divider { width: 100%; border: none; border-top: 1px solid rgba(13, 148, 136, 0.18); margin: 12px 0; }
+.rw-kas-flow { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.rw-flow-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 0 12px; }
+.rw-flow-col:first-child { padding-left: 0; }
+.rw-flow-col:last-child { padding-right: 0; border-left: 1px solid rgba(13, 148, 136, 0.18); }
+.rw-flow-label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #475569; }
+.rw-flow-nominal { font-size: 15px; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rw-flow-col i { font-style: normal; font-size: 12px; color: #64748b; }
+.rw-kas-link { margin-top: 12px; }
+.rw-bottom { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 16px; align-items: start; }
+.rw-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.rw-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.rw-panel-head h3 { margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b; display: inline-flex; align-items: center; gap: 8px; }
+.rw-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 800; }
+.rw-empty { margin: 0; font-size: 0.85rem; color: #64748b; }
+.rw-chart-hint { margin: 0 0 12px; font-size: 0.75rem; color: #64748b; }
+.rw-tren-bars { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; align-items: end; }
+.rw-tren-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.rw-tren-track { position: relative; width: 100%; max-width: 56px; height: 140px; display: flex; align-items: flex-end; justify-content: center; background: #f8fafc; border-radius: 8px; }
+.rw-tren-bar { width: 60%; border-radius: 6px 6px 3px 3px; background: #0d9488; min-height: 6px; }
+.rw-tren-bar.is-berjalan { background: #5eead4; }
+.rw-tren-label { font-size: 0.7rem; color: #64748b; text-align: center; }
+.rw-tren-nominal { font-size: 0.72rem; font-weight: 700; color: #1e293b; }
+.rw-tindak-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rw-tindak-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid #e5e9f0; border-radius: 10px; background: #fff; }
+.rw-tindak-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 999px; margin-top: 5px; background: #f59e0b; }
+.rw-tindak-dot.is-ok { background: #22c55e; }
+.rw-tindak-dot.is-no { background: #ef4444; }
+.rw-tindak-dot.is-wait { background: #f59e0b; }
+.rw-tindak-item.is-ditolak .rw-tindak-dot { background: #ef4444; }
+.rw-tindak-item.is-info { align-items: center; color: #64748b; }
+.rw-tindak-body { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; min-width: 0; }
+.rw-tindak-body b { color: #1e293b; }
+.rw-tindak-body span { color: #64748b; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.rw-tindak-body .btn-ipl-review { align-self: flex-start; margin-top: 4px; min-height: 44px; }
+.rw-aktivitas-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rw-aktivitas-list li { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+.rw-akt-rt { font-weight: 700; color: #1e293b; white-space: nowrap; }
+.rw-akt-ket { color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rw-akt-waktu { margin-left: auto; color: #64748b; font-size: 0.75rem; white-space: nowrap; }
+.rw-akt-nominal { font-weight: 700; color: #1e293b; white-space: nowrap; }
+@media (max-width: 1280px) {
+  .rw-dash .rw-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
+  .rw-bottom { grid-template-columns: minmax(0, 1fr); }
+  .rw-dash .rw-side { display: contents; }
+  .rw-dash .rw-tindak { order: 3; }
+  .rw-dash .rw-tren { order: 4; }
+  .rw-dash .rw-aktivitas { order: 5; }
+}
+@media (max-width: 640px) {
+  .rw-dash .rw-kpi { grid-template-columns: minmax(0, 1fr); }
+  .rw-kpi .ipl-summary-value { font-size: 22px; }
+  .rw-flow-nominal { font-size: 14px; }
+  .rw-hero-actions .rw-cta { width: 100%; justify-content: center; }
+  .rw-tren-bars { gap: 4px; }
+  .rw-tren-track { height: 110px; }
+}

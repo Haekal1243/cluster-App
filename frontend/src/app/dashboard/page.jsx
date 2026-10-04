@@ -7,8 +7,9 @@ import {
   Calendar, FileText, ChevronDown, Check,
 } from "lucide-react";
 import { iplApi, portalApi, kegiatanApi, pengumumanApi } from "@/lib/api";
-import { can, isWargaView } from "@/lib/session";
+import { can, isWargaView, scopeOf } from "@/lib/session";
 import PanelSistem from "@/components/dashboard/PanelSistem";
+import DashboardRW from "./_rw/DashboardRW";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import { useUser } from "@/lib/useUser";
 import Link from "next/link";
@@ -857,5 +858,9 @@ export default function DashboardPage() {
   // (Admin: tanpa akses tagihan, hanya role/pengurus/data warga), mengikuti hak akses.
   if (isWargaView(user)) return <WargaDashboardView user={user} />;
   if (!can(user, "ipl.read")) return <PanelSistem user={user} />;
+  // Bendahara RW: ringkasan setoran IPL RT ke kas RW (bukan data level warga).
+  if (can(user, "setoran.konfirmasi") && scopeOf(user, "setoran.konfirmasi") === "ALL") {
+    return <DashboardRW user={user} />;
+  }
   return <AdminDashboardView user={user} />;
 }

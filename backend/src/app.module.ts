@@ -21,6 +21,7 @@ import { KeuanganModule } from './keuangan/keuangan.module';
 import { SetoranModule } from './setoran/setoran.module';
 import { CatatanRapatModule } from './catatan-rapat/catatan-rapat.module';
 import { RbacModule } from './rbac/rbac.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { RbacModule } from './rbac/rbac.module';
     PengaduanModule,
     KeuanganModule,
     CatatanRapatModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

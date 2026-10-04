@@ -220,7 +220,7 @@ export default function PortalDashboardPage() {
         <div className="portal-hero-main">
           <div className="portal-hero-left">
             <p className="portal-hero-eyebrow">Portal Warga · RW 21 · Cluster Topaz</p>
-            <h2>Halo, {firstName} 👋</h2>
+            <h2>Halo, {firstName}</h2>
             <p className="portal-hero-sub">
               {rumahList.length > 1
                 ? `Kelola ${rumahList.length} unit rumah Anda dalam satu tempat.`

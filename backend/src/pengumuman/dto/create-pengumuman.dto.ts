@@ -10,8 +10,8 @@ export class CreatePengumumanDto {
   judul!: string;
 
   @IsString()
-  @IsOptional()
-  keteranganPengumuman?: string;
+  @IsNotEmpty()
+  keteranganPengumuman!: string;
 
   @IsEnum(StatusPengumuman)
   @IsOptional()

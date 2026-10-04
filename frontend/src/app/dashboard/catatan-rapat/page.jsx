@@ -1,17 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { FileText, Pencil, Plus, Search, Trash2, X, Eye } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Download, FileText, List, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { catatanRapatApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
 import Select from "@/components/ui/Select";
+import FileDropzone from "@/components/ui/FileDropzone";
+import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// Samain sama filter periode di halaman lain (Keuangan/Tagihan/dll): pilih per bulan,
+// bukan per hari, dan gak bisa pilih bulan yang belum terjadi.
+const getCurrentYm = () => new Date().toISOString().slice(0, 7);
 
 const tanggal = (d) =>
   d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }) : "-";
+
+// Judul biasanya ditulis "Rapat <Area> - <Topik>" (lihat seed), yang bikin redundan sama
+// badge area yang udah ditampilin terpisah. Potong prefix itu kalau memang ada, selain itu
+// (judul custom yang gak ikut pola) dibiarkan apa adanya.
+const stripRapatPrefix = (judul) => (judul || "").replace(/^Rapat\s+.+?\s[--]\s*/i, "").trim() || judul;
 
 /** Boleh mengubah/menghapus? Scope ALL = semua; AREA = hanya notulen wilayahnya. */
 function bolehTulis(user, kode, item) {
@@ -25,12 +34,13 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
   const [form, setForm] = useState({ judul: "", isiNotulen: "", area: "RW" });
   const [file, setFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const isiRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     setForm(
       mode === "edit" && initialData
-        ? { judul: initialData.judul, isiNotulen: initialData.isiNotulen, area: initialData.area }
+        ? { judul: initialData.judul, isiNotulen: initialData.isiNotulen ?? "", area: initialData.area }
         : { judul: "", isiNotulen: "", area: "RW" },
     );
     setFile(null);
@@ -38,18 +48,36 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
 
   if (!open) return null;
 
-  const handleFile = (e) => {
-    const f = e.target.files?.[0] ?? null;
-    if (f && f.size > MAX_FILE_SIZE) {
-      showMessage("File Terlalu Besar", "Ukuran file maksimal 10 MB.", "warning");
-      e.target.value = "";
-      return setFile(null);
-    }
-    setFile(f);
+  // Boleh kosongin isi notulen HANYA kalau ada file (baru dipilih, atau sudah terlampir sebelumnya
+  // dan belum diganti) — samain sama aturan validasi di backend.
+  const adaFile = !!file || (mode === "edit" && !!initialData?.fileNotulen);
+  const isiWajib = !adaFile;
+
+  // Sisipkan "• " di awal baris kursor berada, atau di awal baris baru — biar user gampang bikin poin
+  // tanpa harus ngetik bullet manual satu-satu.
+  const tambahPoin = () => {
+    const el = isiRef.current;
+    if (!el) return;
+    const { selectionStart, selectionEnd, value } = el;
+    const awalBaris = value.lastIndexOf("\n", selectionStart - 1) + 1;
+    const sudahBullet = value.slice(awalBaris, awalBaris + 2) === "• ";
+    const next = sudahBullet
+      ? value
+      : `${value.slice(0, awalBaris)}• ${value.slice(awalBaris)}`;
+    setForm((p) => ({ ...p, isiNotulen: next }));
+    const tambahan = sudahBullet ? 0 : 2;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(selectionStart + tambahan, selectionEnd + tambahan);
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isiWajib && !form.isiNotulen.trim()) {
+      showMessage("Validasi", "Isi notulen wajib diisi kalau tidak mengunggah file.", "warning");
+      return;
+    }
     setIsSaving(true);
     try {
       await onSubmit({
@@ -99,31 +127,38 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
               <input id="judul" className="form-control" value={form.judul} onChange={(e) => setForm({ ...form, judul: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label htmlFor="isi">
-                Isi Notulen <span className="required-star">*</span>
-              </label>
+              <div className="catatan-isi-label-row">
+                <label htmlFor="isi">
+                  Isi Notulen {isiWajib && <span className="required-star">*</span>}
+                  {!isiWajib && <span className="label-optional">(opsional, sudah ada file)</span>}
+                </label>
+                <button type="button" className="catatan-poin-btn" onClick={tambahPoin} title="Tambah poin di baris ini">
+                  <List size={13} /> Poin
+                </button>
+              </div>
               <textarea
+                ref={isiRef}
                 id="isi"
                 className="form-control"
                 rows={9}
                 value={form.isiNotulen}
                 onChange={(e) => setForm({ ...form, isiNotulen: e.target.value })}
                 placeholder="Peserta, agenda, pembahasan, keputusan..."
-                required
               />
             </div>
             <div className="form-group">
               <label>File Notulen</label>
-              <div className="file-input-wrapper">
-                <label className="file-input-label">
-                  Pilih File
-                  <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={handleFile} />
-                </label>
-                <span className="file-current">
-                  {file ? file.name : initialData?.fileNotulen ? "File sudah terlampir (pilih baru untuk mengganti)" : "Belum ada file"}
-                </span>
-              </div>
-              <span className="field-hint">PDF / DOC / DOCX / JPG / PNG · Maks. 10 MB</span>
+              <FileDropzone
+                file={file}
+                onFileSelect={setFile}
+                onRemove={() => setFile(null)}
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                maxSizeMB={10}
+                placeholder="Klik atau seret file ke sini"
+                hint="PDF / DOC / DOCX / JPG / PNG · Maks. 10 MB"
+                currentLabel={!file && initialData?.fileNotulen ? "File sudah terlampir (pilih baru untuk mengganti)" : undefined}
+                onError={(msg) => showMessage("File Terlalu Besar", msg, "warning")}
+              />
             </div>
           </div>
           <div className="modal-footer">
@@ -145,25 +180,71 @@ function DetailModal({ item, onClose }) {
       showMessage("Gagal Membuka File", err.message, "error");
     }
   };
+
+  const unduhPdf = async () => {
+    const { default: jsPDF } = await import("jspdf");
+    const doc = new jsPDF();
+    const judulBersih = stripRapatPrefix(item.judul);
+    const marginX = 16;
+    let y = 20;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.text(doc.splitTextToSize(judulBersih, 178), marginX, y);
+    y += 10;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    const metaLine = [
+      areaLabel(item.area),
+      tanggal(item.createDate),
+      item.createBy ? `oleh ${item.createBy}` : null,
+    ].filter(Boolean).join("   ·   ");
+    doc.text(metaLine, marginX, y);
+    y += 8;
+    doc.setDrawColor(220);
+    doc.line(marginX, y, 194, y);
+    y += 8;
+
+    doc.setFontSize(11);
+    doc.setTextColor(30);
+    const isi = item.isiNotulen?.trim() || "(Tidak ada isi notulen — lihat file terlampir.)";
+    doc.text(doc.splitTextToSize(isi, 178), marginX, y);
+
+    doc.save(`Notulen - ${judulBersih} - ${tanggal(item.createDate)}.pdf`);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+      <div className="modal-box catatan-detail-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>{item.judul}</h3>
+          <h3>{stripRapatPrefix(item.judul)}</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup"><X size={18} /></button>
         </div>
         <div className="modal-body">
           <div className="catatan-meta">
             <span className="rt-badge">{areaLabel(item.area)}</span>
             <span>{tanggal(item.createDate)}</span>
-            {item.createBy && <span>oleh {item.createBy}</span>}
           </div>
-          <div className="catatan-isi">{item.isiNotulen}</div>
-          {item.fileNotulen && (
-            <button type="button" className="btn-ipl-view" onClick={bukaFile} style={{ marginTop: 12 }}>
-              <FileText size={14} /> Buka file notulen
-            </button>
+          {item.isiNotulen?.trim() ? (
+            <div className="review-desc-card">
+              <span className="review-info-label">Isi Notulen</span>
+              <p className="review-desc-text">{item.isiNotulen}</p>
+            </div>
+          ) : (
+            <p className="field-hint">Tidak ada isi notulen — lihat file terlampir di bawah.</p>
           )}
+          <div className="catatan-detail-actions">
+            {item.fileNotulen && (
+              <button type="button" className="btn-ipl-view" onClick={bukaFile}>
+                <FileText size={14} /> Buka file notulen
+              </button>
+            )}
+            <button type="button" className="btn-outline-neutral" onClick={unduhPdf}>
+              <Download size={14} /> Download PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -178,6 +259,14 @@ export default function CatatanRapatPage() {
   const [filterArea, setFilterArea] = useState("SEMUA");
   const [modal, setModal] = useState({ open: false, mode: "create", item: null });
   const [detail, setDetail] = useState(null);
+
+  // Filter periode rapat per bulan (opsional, kosong = semua periode) — pola draft +
+  // Terapkan sama kayak filter periode di Keuangan/Tagihan/dll, tapi cuma 1 kriteria.
+  const [filterDari, setFilterDari] = useState("");
+  const [filterSampai, setFilterSampai] = useState("");
+  const [draftDari, setDraftDari] = useState("");
+  const [draftSampai, setDraftSampai] = useState("");
+  const filterTanggalAktif = !!filterDari || !!filterSampai;
 
   const bolehTambah = can(user, "catatan_rapat.create");
   const lihatSemuaArea = scopeOf(user, "catatan_rapat.read") === "ALL";
@@ -202,9 +291,30 @@ export default function CatatanRapatPage() {
 
   const q = search.trim().toLowerCase();
   const filtered = useMemo(
-    () => items.filter((i) => !q || i.judul.toLowerCase().includes(q) || i.isiNotulen.toLowerCase().includes(q)),
-    [items, q],
+    () => items.filter((i) => {
+      const matchSearch = !q || i.judul.toLowerCase().includes(q) || (i.isiNotulen || "").toLowerCase().includes(q);
+      const ymRapat = i.createDate ? i.createDate.slice(0, 7) : "";
+      const matchDari = !filterDari || ymRapat >= filterDari;
+      const matchSampai = !filterSampai || ymRapat <= filterSampai;
+      return matchSearch && matchDari && matchSampai;
+    }),
+    [items, q, filterDari, filterSampai],
   );
+
+  const handleFilterOpen = () => {
+    setDraftDari(filterDari);
+    setDraftSampai(filterSampai);
+  };
+  const handleFilterApply = () => {
+    setFilterDari(draftDari);
+    setFilterSampai(draftSampai);
+  };
+  const handleFilterReset = () => {
+    setFilterDari("");
+    setFilterSampai("");
+    setDraftDari("");
+    setDraftSampai("");
+  };
 
   const handleSubmit = async (payload) => {
     try {
@@ -248,12 +358,7 @@ export default function CatatanRapatPage() {
         </div>
       </div>
 
-      <div className="page-toolbar-row">
-        {bolehTambah && (
-          <button type="button" className="btn-primary" onClick={() => setModal({ open: true, mode: "create", item: null })}>
-            <Plus size={16} /> Tambah Catatan
-          </button>
-        )}
+      <div className="page-toolbar-row toolbar-row-reverse-mobile">
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
             <Search size={15} className="list-search-icon" />
@@ -270,7 +375,39 @@ export default function CatatanRapatPage() {
               ]}
             />
           )}
+          <FilterPopover
+            active={filterTanggalAktif}
+            onOpen={handleFilterOpen}
+            onApply={handleFilterApply}
+            onReset={handleFilterReset}
+            hint="Kosongkan = semua periode"
+          >
+            <FilterField label="Periode Dari">
+              <input
+                type="month"
+                className="ipl-input"
+                value={draftDari}
+                max={draftSampai || getCurrentYm()}
+                onChange={(e) => setDraftDari(e.target.value)}
+              />
+            </FilterField>
+            <FilterField label="Periode Sampai">
+              <input
+                type="month"
+                className="ipl-input"
+                value={draftSampai}
+                min={draftDari || undefined}
+                max={getCurrentYm()}
+                onChange={(e) => setDraftSampai(e.target.value)}
+              />
+            </FilterField>
+          </FilterPopover>
         </div>
+        {bolehTambah && (
+          <button type="button" className="btn-primary" onClick={() => setModal({ open: true, mode: "create", item: null })}>
+            <Plus size={16} /> Tambah
+          </button>
+        )}
       </div>
 
       {isLoading && <div className="table-loading">Memuat catatan rapat...</div>}
@@ -283,33 +420,37 @@ export default function CatatanRapatPage() {
       <div className="catatan-list">
         {!isLoading &&
           filtered.map((item) => (
-            <article key={item.id} className="catatan-card">
+            <article
+              key={item.id}
+              className="catatan-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => setDetail(item)}
+              onKeyDown={(e) => { if (e.key === "Enter") setDetail(item); }}
+            >
               <div className="catatan-card-head">
-                <h3>{item.judul}</h3>
+                <h3>{stripRapatPrefix(item.judul)}</h3>
                 <span className="rt-badge">{areaLabel(item.area)}</span>
               </div>
-              <p className="catatan-excerpt">{item.isiNotulen}</p>
               <div className="catatan-card-foot">
                 <span className="catatan-meta-small">
                   {tanggal(item.createDate)}
-                  {item.createBy ? ` · ${item.createBy}` : ""}
                   {item.fileNotulen ? " · ada file" : ""}
                 </span>
-                <div className="table-actions">
-                  <button type="button" className="btn-icon" title="Baca" aria-label="Baca" onClick={() => setDetail(item)}>
-                    <Eye size={16} />
-                  </button>
-                  {bolehTulis(user, "catatan_rapat.update", item) && (
-                    <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah" onClick={() => setModal({ open: true, mode: "edit", item })}>
-                      <Pencil size={16} />
-                    </button>
-                  )}
-                  {bolehTulis(user, "catatan_rapat.delete", item) && (
-                    <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus" onClick={() => handleDelete(item)}>
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
+                {(bolehTulis(user, "catatan_rapat.update", item) || bolehTulis(user, "catatan_rapat.delete", item)) && (
+                  <div className="table-actions" onClick={(e) => e.stopPropagation()}>
+                    {bolehTulis(user, "catatan_rapat.update", item) && (
+                      <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah" onClick={() => setModal({ open: true, mode: "edit", item })}>
+                        <Pencil size={14} />
+                      </button>
+                    )}
+                    {bolehTulis(user, "catatan_rapat.delete", item) && (
+                      <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus" onClick={() => handleDelete(item)}>
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </article>
           ))}

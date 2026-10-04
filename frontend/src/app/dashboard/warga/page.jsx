@@ -63,6 +63,9 @@ export default function WargaPage() {
   const bolehHapus = can(user, "warga.delete");
   const bolehReset = can(user, "warga.reset_password");
   const bolehApprove = can(user, "warga.approve_registrasi");
+  // Kolom/footer Aksi cuma ditampilin kalau role ini punya salah satu hak tulis;
+  // Bendahara dkk yang cuma "read" gak perlu lihat kolom kosong.
+  const bisaAksiWarga = bolehUbah || bolehReset || bolehHapus;
   const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
 
   const loadData = async () => {
@@ -313,7 +316,7 @@ export default function WargaPage() {
 
         {bolehTambah && (
           <button type="button" className="btn-primary" onClick={() => setWargaModal({ open: true, mode: "create", data: null })}>
-            <Plus size={16} /> Tambah Warga
+            <Plus size={16} /> Tambah
           </button>
         )}
       </div>
@@ -332,7 +335,7 @@ export default function WargaPage() {
                   <th>Nama</th>
                   <th>Blok Rumah</th>
                   <th>Kontak</th>
-                  <th>Aksi</th>
+                  {bisaAksiWarga && <th>Aksi</th>}
                 </tr>
               </thead>
               <tbody>
@@ -375,25 +378,27 @@ export default function WargaPage() {
                             <span style={{ color: "var(--db-slate-400)" }}>-</span>
                           )}
                         </td>
-                        <td>
-                          <div className="table-actions">
-                            {bisaDiubah && bolehUbah && (
-                              <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah warga" onClick={() => setWargaModal({ open: true, mode: "edit", data: w })}>
-                                <Pencil size={15} />
-                              </button>
-                            )}
-                            {bisaDiubah && bolehReset && (
-                              <button type="button" className="btn-icon" title="Atur ulang kata sandi" aria-label="Atur ulang kata sandi" onClick={() => handleResetPassword(w)}>
-                                <KeyRound size={15} />
-                              </button>
-                            )}
-                            {bisaDiubah && bolehHapus && (
-                              <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus warga" onClick={() => handleDeleteWarga(w)}>
-                                <Trash2 size={15} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
+                        {bisaAksiWarga && (
+                          <td>
+                            <div className="table-actions">
+                              {bisaDiubah && bolehUbah && (
+                                <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah warga" onClick={() => setWargaModal({ open: true, mode: "edit", data: w })}>
+                                  <Pencil size={15} />
+                                </button>
+                              )}
+                              {bisaDiubah && bolehReset && (
+                                <button type="button" className="btn-icon" title="Atur ulang kata sandi" aria-label="Atur ulang kata sandi" onClick={() => handleResetPassword(w)}>
+                                  <KeyRound size={15} />
+                                </button>
+                              )}
+                              {bisaDiubah && bolehHapus && (
+                                <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus warga" onClick={() => handleDeleteWarga(w)}>
+                                  <Trash2 size={15} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -405,7 +410,17 @@ export default function WargaPage() {
             {!isLoading &&
               wargaPage.map((w) => (
                 <div key={w.id} className="warga-grid-card">
-                  <h3 className="warga-grid-title">{w.namaUser}</h3>
+                  <div className="warga-grid-identity">
+                    <h3 className="warga-grid-title">{w.namaUser}</h3>
+                    {w.noTelp ? (
+                      <a href={waLink(w.noTelp)} target="_blank" rel="noopener noreferrer" className="wa-link" title={`Chat WhatsApp ${w.namaUser}`}>
+                        <PhoneCall size={13} />
+                        {w.noTelp}
+                      </a>
+                    ) : (
+                      <span className="penghuni-empty">Belum ada nomor kontak</span>
+                    )}
+                  </div>
                   <div className="rumah-chip-list">
                     {w.rumah.map((r) => (
                       <span key={r.id} className={`rumah-chip ${STATUS_RUMAH[r.status]?.cls}`}>
@@ -414,7 +429,7 @@ export default function WargaPage() {
                       </span>
                     ))}
                   </div>
-                  {w.role?.level === 3 && (
+                  {w.role?.level === 3 && (bolehUbah || bolehReset || bolehHapus) && (
                     <div className="warga-grid-footer">
                       <div className="table-actions warga-grid-actions">
                         {bolehUbah && (

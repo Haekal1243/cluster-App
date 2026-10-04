@@ -22,6 +22,8 @@ import { showMessage, showConfirm } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
+import FileDropzone from "@/components/ui/FileDropzone";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 import { usePagination } from "@/lib/usePagination";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
@@ -213,13 +215,10 @@ function KasFormModal({ initial, pilihArea = false, onClose, onSuccess }) {
           <div className="ipl-form-row">
             <div className="ipl-form-group">
               <label>Nominal (Rp)</label>
-              <input
-                type="number"
-                min="1"
-                placeholder="Contoh: 500000"
+              <CurrencyInput
+                placeholder="Contoh: 500.000"
                 value={form.nominal}
-                onChange={(e) => setForm({ ...form, nominal: e.target.value })}
-                className="ipl-input"
+                onChange={(v) => setForm({ ...form, nominal: v })}
                 required
               />
             </div>
@@ -246,11 +245,15 @@ function KasFormModal({ initial, pilihArea = false, onClose, onSuccess }) {
           </div>
           <div className="ipl-form-group">
             <label>Bukti / Nota <span className="label-optional">(opsional, JPG/PNG/PDF)</span></label>
-            <input
-              type="file"
+            <FileDropzone
+              file={bukti}
+              onFileSelect={setBukti}
+              onRemove={() => setBukti(null)}
               accept=".jpg,.jpeg,.png,.pdf"
-              onChange={(e) => setBukti(e.target.files?.[0] || null)}
-              className="ipl-input"
+              maxSizeMB={10}
+              placeholder="Klik atau seret file ke sini (opsional)"
+              hint="JPG / PNG / PDF · Maks. 10 MB"
+              onError={(msg) => showMessage("File Terlalu Besar", msg, "warning")}
             />
             {isEdit && !bukti && initial?.buktiFile && (
               <button
@@ -357,10 +360,10 @@ function AdminKeuanganView({ user }) {
   const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
   const periodeLabel = periodeDari === periodeSampai
     ? formatYmPanjang(periodeDari)
-    : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+    : `${formatYmPanjang(periodeDari)} - ${formatYmPanjang(periodeSampai)}`;
   const periodeLabelFull = periodeDari === periodeSampai
     ? formatYmFull(periodeDari)
-    : `${formatYmFull(periodeDari)} – ${formatYmFull(periodeSampai)}`;
+    : `${formatYmFull(periodeDari)} - ${formatYmFull(periodeSampai)}`;
 
   const kategoriOptions = [
     ...new Set(
@@ -505,7 +508,7 @@ function AdminKeuanganView({ user }) {
         <div className="export-split" ref={exportRef}>
           <button
             type="button"
-            className="btn-ipl-outline-teal"
+            className="btn-ipl-teal"
             onClick={() => handleExport("xlsx")}
             disabled={!!exporting || !!rangeError || isLoading}
             title={rangeError || "Unduh Riwayat Kas sebagai Excel (.xlsx)"}
@@ -514,7 +517,7 @@ function AdminKeuanganView({ user }) {
           </button>
           <button
             type="button"
-            className="btn-ipl-outline-teal btn-ipl-outline-teal-icon"
+            className="btn-ipl-teal btn-ipl-teal-icon"
             onClick={() => setExportOpen((o) => !o)}
             disabled={!!exporting || !!rangeError || isLoading}
             aria-label="Pilihan format export"
@@ -585,17 +588,7 @@ function AdminKeuanganView({ user }) {
       )}
 
       {/* ── Tambah + Search + Filter ── */}
-      <div className="page-toolbar-row">
-        {bolehTambah && (
-          <button
-            id="btn-catat-transaksi"
-            className="btn-ipl-primary"
-            onClick={() => { setEditItem(null); setShowForm(true); }}
-          >
-            <Plus size={16} /> Catat Transaksi
-          </button>
-        )}
-
+      <div className="page-toolbar-row toolbar-row-reverse-mobile">
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
             <Search size={15} className="list-search-icon" />
@@ -619,6 +612,7 @@ function AdminKeuanganView({ user }) {
               <input
                 type="month"
                 value={draftPeriodeDari}
+                max={draftPeriodeSampai || getCurrentYm()}
                 onChange={(e) => e.target.value && setDraftPeriodeDari(e.target.value)}
                 className="ipl-input"
               />
@@ -627,6 +621,8 @@ function AdminKeuanganView({ user }) {
               <input
                 type="month"
                 value={draftPeriodeSampai}
+                min={draftPeriodeDari || undefined}
+                max={getCurrentYm()}
                 onChange={(e) => e.target.value && setDraftPeriodeSampai(e.target.value)}
                 className="ipl-input"
               />
@@ -668,6 +664,15 @@ function AdminKeuanganView({ user }) {
             )}
           </FilterPopover>
         </div>
+        {bolehTambah && (
+          <button
+            id="btn-catat-transaksi"
+            className="btn-ipl-primary"
+            onClick={() => { setEditItem(null); setShowForm(true); }}
+          >
+            <Plus size={16} /> Catat Transaksi
+          </button>
+        )}
       </div>
 
       {/* ── Rincian pemasukan otomatis & per wilayah ── */}
@@ -872,12 +877,16 @@ function AdminKeuanganView({ user }) {
                 <div key={t.id} className="pengaduan-card" style={{ cursor: "default" }}>
                   <div className="pengaduan-card-top">
                     <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>{t.kategori}</h3>
-                    <KasTipeBadge tipe={t.tipe} />
+                    <div className="kas-card-top-right">
+                      <KasTipeBadge tipe={t.tipe} />
+                      <span className="pengaduan-meta-item">{formatTanggal(t.tanggal)}</span>
+                    </div>
                   </div>
-                  <div className="pengaduan-card-meta">
-                    <span className="pengaduan-meta-item">{formatTanggal(t.tanggal)}</span>
-                    {semuaArea && <span className="pengaduan-meta-item">{areaLabel(t.area)}</span>}
-                  </div>
+                  {semuaArea && (
+                    <div className="pengaduan-card-meta">
+                      <span className="pengaduan-meta-item">{areaLabel(t.area)}</span>
+                    </div>
+                  )}
                   {t.keterangan && <span className="warga-grid-penghuni">{t.keterangan}</span>}
                   <div className="pengaduan-card-actions" style={{ justifyContent: "space-between" }}>
                     <span style={{ fontWeight: 700, color: t.tipe === "PEMASUKAN" ? "#15803d" : "#dc2626" }}>

@@ -6,6 +6,7 @@ import { pengurusApi } from "@/lib/api";
 import { areaLabel } from "@/lib/session";
 import { showConfirm, showMessage } from "@/lib/message";
 import Select from "@/components/ui/Select";
+import FileDropzone from "@/components/ui/FileDropzone";
 
 const URUTAN_AREA = ["RW", "RT_01", "RT_02", "RT_03", "RT_04"];
 const MAKS_FOTO = 5 * 1024 * 1024;
@@ -88,13 +89,10 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
   const [foto, setFoto] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const pilihFoto = (e) => {
-    const file = e.target.files?.[0] ?? null;
+  const pilihFoto = (file) => {
     const masalah = file && cekFoto(file);
     if (masalah) {
       showMessage("Foto Tidak Valid", masalah, "error");
-      e.target.value = "";
-      setFoto(null);
       return;
     }
     setFoto(file);
@@ -159,9 +157,18 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
             </div>
             <div className="form-group">
               <label htmlFor="foto-pengurus">Foto pengurus</label>
-              <input id="foto-pengurus" type="file" className="form-control" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={pilihFoto} />
+              <FileDropzone
+                file={foto}
+                onFileSelect={pilihFoto}
+                onRemove={() => setFoto(null)}
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                maxSizeMB={5}
+                placeholder="Klik atau seret foto ke sini (opsional)"
+                hint="JPG / PNG · Maks. 5 MB"
+                onError={(msg) => showMessage("Foto Tidak Valid", msg, "error")}
+              />
               <span className="field-hint">
-                Opsional, JPG/PNG maks. 5 MB. Tampil di halaman depan; foto ini milik pemegang baru dan bisa diubah kapan saja.
+                Tampil di halaman depan; foto ini milik pemegang baru dan bisa diubah kapan saja.
               </span>
             </div>
           </div>

@@ -1,40 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  X,
-  Upload,
-  Image as ImageIcon,
-  Send,
-  Trash2,
-  Loader2,
-  CheckCircle,
-} from "lucide-react";
+import { X, Send, Loader2 } from "lucide-react";
 import { portalApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/jpg"];
-
-const formatUkuran = (bytes) => `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+import FileDropzone from "@/components/ui/FileDropzone";
 
 export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess }) {
   const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const fileInputRef = useRef(null);
   const panelRef = useRef(null);
   const triggerRef = useRef(null);
-
-  // Preview gambar saat file dipilih
-  useEffect(() => {
-    if (!file) { setPreview(null); return; }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
 
   // A11y: fokus masuk modal, Esc menutup, scroll body dikunci,
   // fokus dikembalikan ke pemicu saat modal ditutup.
@@ -54,35 +31,9 @@ export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess 
     };
   }, [onClose]);
 
-  // Validasi klien (gate tampilan saja; aturan backend tetap sumber kebenaran).
-  const pilihFile = (f) => {
-    if (!f) return;
-    if (!ACCEPTED_TYPES.includes(f.type)) {
-      setError("Format file harus JPG atau PNG.");
-      return;
-    }
-    if (f.size > MAX_FILE_SIZE) {
-      setError("Ukuran file maksimal 5 MB.");
-      return;
-    }
-    setError(null);
-    setFile(f);
-  };
-
-  const handleFileChange = (e) => {
-    pilihFile(e.target.files?.[0]);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    pilihFile(e.dataTransfer.files?.[0]);
-  };
-
   const resetFile = () => {
     setFile(null);
     setError(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = async (e) => {
@@ -146,59 +97,17 @@ export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess 
               </div>
             </div>
 
-            {/* Drop Zone */}
-            <div
-              className={`bukti-dropzone ${preview ? "has-preview" : ""} ${isDragOver ? "is-dragover" : ""} ${error ? "has-error" : ""}`}
-              onClick={() => fileInputRef.current?.click()}
-              onDrop={handleDrop}
-              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragLeave={() => setIsDragOver(false)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-            >
-              {preview ? (
-                <div className="bukti-preview-wrap">
-                  <img src={preview} alt="Preview bukti" className="bukti-preview-img" />
-                  <p className="bukti-preview-name">{file.name} · {formatUkuran(file.size)}</p>
-                </div>
-              ) : (
-                <div className="bukti-drop-placeholder">
-                  <ImageIcon size={40} strokeWidth={1.2} />
-                  <p>Klik atau seret foto bukti transfer ke sini</p>
-                  <span>JPG / PNG · Maks. 5 MB</span>
-                </div>
-              )}
-            </div>
-            {error && <span className="field-error">{error}</span>}
-            <input
-              ref={fileInputRef}
-              type="file"
+            <FileDropzone
+              file={file}
+              onFileSelect={(f) => { setError(null); setFile(f); }}
+              onRemove={resetFile}
               accept="image/jpg,image/jpeg,image/png"
-              style={{ display: "none" }}
-              onChange={handleFileChange}
+              maxSizeMB={5}
+              placeholder="Klik atau seret foto bukti transfer ke sini"
+              hint="JPG / PNG · Maks. 5 MB"
+              error={error}
+              onError={setError}
             />
-
-            {preview && (
-              <div className="bukti-file-actions">
-                <button
-                  type="button"
-                  className="bukti-ganti-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload size={14} /> Ganti Foto
-                </button>
-                <button
-                  type="button"
-                  className="btn-icon danger"
-                  onClick={resetFile}
-                  aria-label="Hapus file"
-                  title="Hapus file"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="modal-footer">

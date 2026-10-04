@@ -15,6 +15,7 @@ import {
   belumLewatBatasTampil,
   tampilKeSemua,
   tampilSampaiDari,
+  visibilitasKelolaWhere,
   visibilitasWhere,
 } from '../common/publikasi.helper';
 
@@ -79,7 +80,7 @@ export class PengumumanService {
   }
 
   findAll(ctx: AccessContext, params: { pengajuan?: string; area?: string } = {}) {
-    const and: Prisma.PengumumanWhereInput[] = [{ isDelete: false }, visibilitasWhere(ctx)];
+    const and: Prisma.PengumumanWhereInput[] = [{ isDelete: false }, visibilitasKelolaWhere(ctx)];
     if (params.pengajuan) and.push({ statusPengajuan: params.pengajuan as any });
     if (params.area && ctx.scope === 'ALL') and.push({ area: params.area as Area });
     return this.prisma.pengumuman.findMany({

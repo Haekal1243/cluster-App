@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Eye,
   Pencil,
   Plus,
   Search,
@@ -48,16 +49,17 @@ export default function PublikasiManager({
   title,
   subtitle,
   noun,
-  addLabel,
   searchPlaceholder,
   api,
   FormModal,
+  DetailModal,
   dateField,
   dateLabel,
   searchFields,
 }) {
   const { user, ready } = useUser();
   const [items, setItems] = useState([]);
+  const [detailItem, setDetailItem] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [modal, setModal] = useState({ open: false, mode: "create", item: null });
   const [keputusan, setKeputusan] = useState(null);
@@ -71,6 +73,10 @@ export default function PublikasiManager({
   const bolehTambah = can(user, `${menu}.create`);
   const bolehApprove = can(user, `${menu}.approve`);
   const bolehUbahStatus = (item) => bolehTulis(user, `${menu}.update`, item);
+  // Dipakai buat nyembunyiin kolom/toggle Status sepenuhnya kalau role ini memang
+  // nggak pernah punya hak ubah (bukan cuma didisable) — mis. Bendahara/Ketua RT&RW
+  // yang di tabel permission cuma punya read, beda dari Sekre yang punya CRUD penuh.
+  const bisaUbahStatusMenu = can(user, `${menu}.update`);
   const lihatSemuaWilayah = user?.permissions?.[`${menu}.read`] === "ALL";
 
   const loadData = async () => {
@@ -144,7 +150,7 @@ export default function PublikasiManager({
   const handleAjukan = async (item) => {
     const confirmed = await showConfirm(
       "Ajukan ke RW?",
-      `${noun} "${item.judul}" akan diajukan agar tampil ke seluruh warga. Ketua/sekre RW yang memutuskan.`,
+      `${noun} "${item.judul}" akan diajukan agar tampil ke seluruh warga.`,
       "question",
       "Ya, ajukan",
       "Batal",
@@ -199,26 +205,34 @@ export default function PublikasiManager({
 
   if (!ready || !user) return null;
 
-  const renderPengajuan = (item) => {
+  const renderPengajuanBadge = (item) => {
     const p = PENGAJUAN[item.statusPengajuan] ?? PENGAJUAN.TIDAK;
     return (
-      <div className="pengajuan-cell">
-        <span className={`ipl-badge badge-${p.cls}`} title={item.alasanTolak || undefined}>
-          {item.area === "RW" ? "Level RW" : p.label}
-        </span>
-        {item.statusPengajuan === "DITOLAK" && item.alasanTolak && (
-          <span className="pengajuan-alasan">{item.alasanTolak}</span>
-        )}
-        {item.tampilSampai && (
-          <span className="pengajuan-alasan">Tampil s/d {formatTanggalPendek(item.tampilSampai)}</span>
-        )}
-        {item.tampilDiLanding && <span className="pengajuan-alasan">Portofolio landing</span>}
-      </div>
+      <span className={`ipl-badge badge-${p.cls}`} title={item.alasanTolak || undefined}>
+        {item.area === "RW" ? "Level RW" : p.label}
+      </span>
     );
   };
 
+  const renderPengajuanExtra = (item) => (
+    <>
+      {item.statusPengajuan === "DITOLAK" && item.alasanTolak && (
+        <span className="pengajuan-alasan">{item.alasanTolak}</span>
+      )}
+      {item.tampilSampai && (
+        <span className="pengajuan-alasan">Tampil s/d {formatTanggalPendek(item.tampilSampai)}</span>
+      )}
+      {item.tampilDiLanding && <span className="pengajuan-alasan">Portofolio landing</span>}
+    </>
+  );
+
   const renderActions = (item, size) => (
     <div className="table-actions">
+      {DetailModal && (
+        <button type="button" className="btn-icon" onClick={() => setDetailItem(item)} aria-label="Lihat detail" title="Lihat detail">
+          <Eye size={size} />
+        </button>
+      )}
       {bolehPutuskan(user, menu, item) && (
         <button type="button" className="btn-ipl-review" onClick={() => setKeputusan(item)} title="Putuskan pengajuan">
           <Check size={14} /> Putuskan
@@ -242,17 +256,20 @@ export default function PublikasiManager({
     </div>
   );
 
-  const renderStatus = (item) => (
-    <div className="status-cell">
-      <Switch
-        checked={item.status === "active"}
-        disabled={!bolehUbahStatus(item)}
-        onCheckedChange={(checked) => handleToggleStatus(item, checked)}
-        label={`Status ${item.judul}`}
-      />
-      <span className="status-cell-label">{item.status === "active" ? "Aktif" : "Nonaktif"}</span>
-    </div>
-  );
+  const renderStatus = (item) => {
+    if (!bisaUbahStatusMenu) return null;
+    return (
+      <div className="status-cell">
+        <Switch
+          checked={item.status === "active"}
+          disabled={!bolehUbahStatus(item)}
+          onCheckedChange={(checked) => handleToggleStatus(item, checked)}
+          label={`Status ${item.judul}`}
+        />
+        <span className="status-cell-label">{item.status === "active" ? "Aktif" : "Nonaktif"}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="page-stack">
@@ -282,14 +299,7 @@ export default function PublikasiManager({
         </div>
       )}
 
-      <div className="page-toolbar-row">
-        {bolehTambah && (
-          <button type="button" className="btn-primary" onClick={() => setModal({ open: true, mode: "create", item: null })}>
-            <Plus size={16} />
-            {addLabel}
-          </button>
-        )}
-
+      <div className="page-toolbar-row toolbar-row-reverse-mobile">
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
             <Search size={15} className="list-search-icon" />
@@ -328,17 +338,19 @@ export default function PublikasiManager({
                 ]}
               />
             </FilterField>
-            <FilterField label="Pengajuan ke RW">
-              <Select
-                className="ipl-select ipl-select-sm"
-                value={draft.pengajuan}
-                onChange={(v) => setDraft((d) => ({ ...d, pengajuan: v }))}
-                options={[
-                  { value: "SEMUA", label: "Semua" },
-                  ...Object.entries(PENGAJUAN).map(([val, p]) => ({ value: val, label: p.label })),
-                ]}
-              />
-            </FilterField>
+            {lihatSemuaWilayah && (
+              <FilterField label="Pengajuan ke RW">
+                <Select
+                  className="ipl-select ipl-select-sm"
+                  value={draft.pengajuan}
+                  onChange={(v) => setDraft((d) => ({ ...d, pengajuan: v }))}
+                  options={[
+                    { value: "SEMUA", label: "Semua" },
+                    ...Object.entries(PENGAJUAN).map(([val, p]) => ({ value: val, label: p.label })),
+                  ]}
+                />
+              </FilterField>
+            )}
             {lihatSemuaWilayah && (
               <FilterField label="Wilayah">
                 <Select
@@ -354,6 +366,12 @@ export default function PublikasiManager({
             )}
           </FilterPopover>
         </div>
+        {bolehTambah && (
+          <button type="button" className="btn-primary" onClick={() => setModal({ open: true, mode: "create", item: null })}>
+            <Plus size={16} />
+            Tambah
+          </button>
+        )}
       </div>
 
       <div className="table-card pengumuman-table-card">
@@ -369,9 +387,9 @@ export default function PublikasiManager({
                 <th>No</th>
                 <th>Judul</th>
                 <th>{dateLabel}</th>
-                <th>Wilayah</th>
-                <th>Tampil ke Semua Warga</th>
-                <th>Status</th>
+                {lihatSemuaWilayah && <th>Wilayah</th>}
+                <th>Visibilitas</th>
+                {bisaUbahStatusMenu && <th>Status</th>}
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -382,9 +400,9 @@ export default function PublikasiManager({
                     <td>{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
                     <td className="col-judul">{item.judul}</td>
                     <td>{formatDate(item[dateField])}</td>
-                    <td><span className="rt-badge">{areaLabel(item.area)}</span></td>
-                    <td>{renderPengajuan(item)}</td>
-                    <td>{renderStatus(item)}</td>
+                    {lihatSemuaWilayah && <td><span className="rt-badge">{areaLabel(item.area)}</span></td>}
+                    <td>{renderPengajuanBadge(item)}</td>
+                    {bisaUbahStatusMenu && <td>{renderStatus(item)}</td>}
                     <td>{renderActions(item, 16)}</td>
                   </tr>
                 ))}
@@ -397,14 +415,19 @@ export default function PublikasiManager({
             paginatedItems.map((item) => (
               <div key={item.id} className="pengumuman-grid-card">
                 <h3 className="pengumuman-grid-title">
-                  {item.judul} <span className="rt-badge">{areaLabel(item.area)}</span>
+                  {item.judul} {lihatSemuaWilayah && <span className="rt-badge">{areaLabel(item.area)}</span>}
                 </h3>
                 <span className="meta-item pengumuman-grid-date">
                   <Calendar size={11} /> {formatDate(item[dateField])}
                 </span>
-                {renderPengajuan(item)}
+                {((item.statusPengajuan === "DITOLAK" && item.alasanTolak) || item.tampilSampai || item.tampilDiLanding) && (
+                  <div className="pengajuan-cell">{renderPengajuanExtra(item)}</div>
+                )}
                 <div className="pengumuman-grid-footer">
-                  {renderActions(item, 14)}
+                  <div className="pengumuman-grid-footer-left">
+                    {renderPengajuanBadge(item)}
+                    {renderActions(item, 14)}
+                  </div>
                   {renderStatus(item)}
                 </div>
               </div>
@@ -450,6 +473,9 @@ export default function PublikasiManager({
         onClose={() => setKeputusan(null)}
         onSubmit={handleKeputusan}
       />
+      {DetailModal && detailItem && (
+        <DetailModal {...{ [menu]: detailItem }} onClose={() => setDetailItem(null)} />
+      )}
     </div>
   );
 }

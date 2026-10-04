@@ -9,6 +9,7 @@ import { showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
+import FileDropzone from "@/components/ui/FileDropzone";
 import { usePagination } from "@/lib/usePagination";
 import SetoranDetailModal from "@/components/setoran/SetoranDetailModal";
 
@@ -74,14 +75,16 @@ function SetorModal({ siap, pilihRt, onClose, onSuccess }) {
           )}
           <div className="ipl-form-group">
             <label>Bukti transfer <span className="required-star">*</span></label>
-            <input
-              type="file"
+            <FileDropzone
+              file={file}
+              onFileSelect={setFile}
+              onRemove={() => setFile(null)}
               accept=".jpg,.jpeg,.png"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="ipl-input"
-              required
+              maxSizeMB={5}
+              placeholder="Klik atau seret foto bukti transfer ke sini"
+              hint="JPG / PNG · Maks. 5 MB"
+              onError={(msg) => showMessage("File Terlalu Besar", msg, "warning")}
             />
-            <span className="field-hint">JPG / PNG · Maks. 5 MB</span>
           </div>
           <div className="ipl-modal-footer">
             <button type="button" className="btn-ipl-secondary" onClick={onClose} disabled={loading}>Batal</button>
@@ -158,7 +161,7 @@ export default function SetoranPage() {
   const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
   const periodeLabel = periodeDari === periodeSampai
     ? formatYmPanjang(periodeDari)
-    : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+    : `${formatYmPanjang(periodeDari)} - ${formatYmPanjang(periodeSampai)}`;
 
   const handleFilterOpen = () => {
     setDraftPeriodeDari(periodeDari);
@@ -226,7 +229,6 @@ export default function SetoranPage() {
               <div className="keu-card-text">
                 <span className="ipl-summary-label">Siap Disetor {pilihRtSetor ? areaLabel(siap.rt) : ""}</span>
                 <span className="ipl-summary-value">{rupiah(siap.totalIpl)}</span>
-                <span className="ipl-summary-sub">{siap.jumlahTagihan} tagihan lunas belum disetor</span>
                 {siap.dikecualikanRumahKosong?.jumlahTagihan > 0 && (
                   <span className="ipl-summary-sub">
                     {siap.dikecualikanRumahKosong.jumlahTagihan} tagihan rumah kosong masuk kas RT
@@ -296,6 +298,7 @@ export default function SetoranPage() {
               <input
                 type="month"
                 value={draftPeriodeDari}
+                max={draftPeriodeSampai || getCurrentYm()}
                 onChange={(e) => e.target.value && setDraftPeriodeDari(e.target.value)}
                 className="ipl-input"
               />
@@ -304,6 +307,8 @@ export default function SetoranPage() {
               <input
                 type="month"
                 value={draftPeriodeSampai}
+                min={draftPeriodeDari || undefined}
+                max={getCurrentYm()}
                 onChange={(e) => e.target.value && setDraftPeriodeSampai(e.target.value)}
                 className="ipl-input"
               />

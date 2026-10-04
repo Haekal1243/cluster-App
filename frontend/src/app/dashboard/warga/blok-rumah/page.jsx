@@ -224,7 +224,7 @@ export default function BlokRumahPage() {
 
         {bolehTambah && (
           <button type="button" className="btn-primary" onClick={() => setRumahModal({ open: true, mode: "create", data: null })}>
-            <Plus size={16} /> Tambah Rumah
+            <Plus size={16} /> Tambah
           </button>
         )}
       </div>

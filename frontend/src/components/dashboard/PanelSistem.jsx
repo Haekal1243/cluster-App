@@ -51,7 +51,7 @@ export default function PanelSistem({ user }) {
       tone: ringkasan.jabatanTerisi < ringkasan.jabatanTotal ? "tone-warning" : "tone-success",
       label: "Jabatan Pengurus Terisi",
       nilai: `${ringkasan.jabatanTerisi} / ${ringkasan.jabatanTotal}`,
-      sub: "RW dan RT 1–4",
+      sub: "RW dan RT 1-4",
     },
     ringkasan.warga !== undefined && {
       icon: Users,

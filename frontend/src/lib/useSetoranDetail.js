@@ -84,7 +84,7 @@ export function useSetoranDetail(id, { onSuccess, onClose } = {}) {
       const last = rows.find((t) => periodeKey(t.tahunPeriode, t.bulanPeriode) === keys[keys.length - 1]);
       const a = labelPeriode(first.tahunPeriode, first.bulanPeriode);
       const b = labelPeriode(last.tahunPeriode, last.bulanPeriode);
-      rangeLabel = a === b ? a : `${a} – ${b}`;
+      rangeLabel = a === b ? a : `${a} - ${b}`;
     }
     const totalSetoran = data?.totalIpl ?? 0;
     const selisih = totalSetoran - totalRows;

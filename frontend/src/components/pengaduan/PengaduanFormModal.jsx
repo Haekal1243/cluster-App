@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { X, Upload, Image as ImageIcon, Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Send } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
 import Select from "@/components/ui/Select";
+import FileDropzone from "@/components/ui/FileDropzone";
 
 const KATEGORI_OPTIONS = [
   { value: "KEBERSIHAN", label: "Kebersihan" },
@@ -15,16 +16,13 @@ const KATEGORI_OPTIONS = [
 
 const EMPTY_FORM = { judul: "", kategori: "KEBERSIHAN", deskripsi: "", tujuan: "" };
 const JUDUL_MAX_LENGTH = 50;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export default function PengaduanFormModal({ onClose, onSuccess }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tujuanPilihan, setTujuanPilihan] = useState([]);
   const [loadingTujuan, setLoadingTujuan] = useState(true);
-  const fileInputRef = useRef(null);
 
   // Pilihan tujuan (RW / RT) mengikuti rumah & jabatan pelapor — dihitung backend supaya
   // form dan validasi submit selalu pakai aturan yang sama (lihat PengaduanService.getTujuanPilihan).
@@ -46,38 +44,9 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (!file) { setPreview(null); return; }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    if (f.size > MAX_FILE_SIZE) {
-      showMessage("File Terlalu Besar", "Ukuran foto maksimal 10 MB.", "warning");
-      e.target.value = "";
-      return;
-    }
-    setFile(f);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files?.[0];
-    if (!f) return;
-    if (f.size > MAX_FILE_SIZE) {
-      showMessage("File Terlalu Besar", "Ukuran foto maksimal 10 MB.", "warning");
-      return;
-    }
-    setFile(f);
   };
 
   const handleSubmit = async (e) => {
@@ -181,44 +150,16 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
 
             <div className="form-group">
               <label>Foto Kendala (opsional)</label>
-              <div
-                className={`bukti-dropzone ${preview ? "has-preview" : ""}`}
-                onClick={() => fileInputRef.current?.click()}
-                onDrop={handleDrop}
-                onDragOver={(e) => e.preventDefault()}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-              >
-                {preview ? (
-                  <div className="bukti-preview-wrap">
-                    <img src={preview} alt="Preview foto kendala" className="bukti-preview-img" />
-                    <p className="bukti-preview-name">{file.name}</p>
-                  </div>
-                ) : (
-                  <div className="bukti-drop-placeholder">
-                    <ImageIcon size={36} strokeWidth={1.2} />
-                    <p>Klik atau seret foto ke sini (opsional)</p>
-                    <span>JPG / PNG · Maks. 10 MB</span>
-                  </div>
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
+              <FileDropzone
+                file={file}
+                onFileSelect={setFile}
+                onRemove={() => setFile(null)}
                 accept="image/jpg,image/jpeg,image/png"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
+                maxSizeMB={10}
+                placeholder="Klik atau seret foto ke sini (opsional)"
+                hint="JPG / PNG · Maks. 10 MB"
+                onError={(msg) => showMessage("File Terlalu Besar", msg, "warning")}
               />
-              {preview && (
-                <button
-                  type="button"
-                  className="bukti-ganti-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload size={14} /> Ganti Foto
-                </button>
-              )}
             </div>
           </div>
 

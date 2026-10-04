@@ -347,7 +347,7 @@ model Pengumuman {
   id                    Int              @id @default(autoincrement())
   judul                 String           @map("judul_pengumuman")
   filePengumuman        String?          @map("file_pengumuman")
-  keteranganPengumuman  String?          @db.Text @map("keterangan_pengumuman")
+  keteranganPengumuman  String           @db.Text @map("keterangan_pengumuman")
   status                StatusPengumuman @default(active) @map("status")
   area                  Area             @default(RW)
   statusPengajuan       StatusPengajuan  @default(TIDAK) @map("status_pengajuan")
@@ -368,7 +368,7 @@ model CatatanRapat {
   id          Int       @id @default(autoincrement())
   area        Area
   judul       String
-  isiNotulen  String    @db.Text @map("isi_notulen")
+  isiNotulen  String?   @db.Text @map("isi_notulen")
   fileNotulen String?   @map("file_notulen")
   isDelete    Boolean   @default(false) @map("is_delete")
   createBy    String?   @map("create_by")

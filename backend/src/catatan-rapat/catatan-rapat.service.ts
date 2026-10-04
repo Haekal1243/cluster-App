@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Area, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FileService } from '../common/file/file.service';
@@ -13,15 +13,23 @@ export class CatatanRapatService {
     private files: FileService,
   ) {}
 
+  /** Isi notulen wajib diisi KECUALI ada file notulen (lama atau baru) yang menyertainya. */
+  private validasiIsiAtauFile(isiNotulen: string | null | undefined, adaFile: boolean) {
+    if (!adaFile && !isiNotulen?.trim()) {
+      throw new BadRequestException('Isi notulen wajib diisi kalau tidak mengunggah file.');
+    }
+  }
+
   async create(ctx: AccessContext, dto: CreateCatatanRapatDto, file?: Express.Multer.File) {
     const area: Area = areaFilter(ctx) ?? dto.area ?? ctx.user.area ?? 'RW';
+    this.validasiIsiAtauFile(dto.isiNotulen, !!file);
 
     const fileNotulen = file ? await this.files.simpan(file) : null;
     const data = await this.prisma.catatanRapat.create({
       data: {
         area,
         judul: dto.judul,
-        isiNotulen: dto.isiNotulen,
+        isiNotulen: dto.isiNotulen?.trim() || null,
         fileNotulen,
         createBy: ctx.user.nama,
       },
@@ -78,12 +86,16 @@ export class CatatanRapatService {
     const existing = await this.findForWrite(ctx, id);
     const fileBaru = file ? await this.files.simpan(file) : undefined;
 
+    const isiAkhir = dto.isiNotulen !== undefined ? dto.isiNotulen : existing.isiNotulen;
+    const fileAkhir = fileBaru !== undefined ? fileBaru : existing.fileNotulen;
+    this.validasiIsiAtauFile(isiAkhir, !!fileAkhir);
+
     const scopeArea = areaFilter(ctx);
     const data = await this.prisma.catatanRapat.update({
       where: { id },
       data: {
         judul: dto.judul,
-        isiNotulen: dto.isiNotulen,
+        isiNotulen: dto.isiNotulen !== undefined ? dto.isiNotulen.trim() || null : undefined,
         fileNotulen: fileBaru,
         // Area hanya bisa dipindah oleh scope ALL; pengurus tidak bisa memindah notulen ke area lain.
         ...(scopeArea === null && dto.area && { area: dto.area }),

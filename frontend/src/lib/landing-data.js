@@ -76,7 +76,7 @@ export const faq = [
   },
   {
     q: "Bagaimana cara mengajukan surat pengantar RT/RW?",
-    a: "Masuk ke menu Administrasi Surat, isi formulir keperluan surat, dan unggah dokumen pendukung apabila diperlukan. Surat akan diproses dalam 1–3 hari kerja dan dapat diambil langsung di sekretariat RW atau dikirim secara digital.",
+    a: "Masuk ke menu Administrasi Surat, isi formulir keperluan surat, dan unggah dokumen pendukung apabila diperlukan. Surat akan diproses dalam 1-3 hari kerja dan dapat diambil langsung di sekretariat RW atau dikirim secara digital.",
   },
   {
     q: "Bagaimana cara melaporkan pengaduan lingkungan?",

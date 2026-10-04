@@ -15,6 +15,7 @@ import {
   belumLewatBatasTampil,
   tampilKeSemua,
   tampilSampaiDari,
+  visibilitasKelolaWhere,
   visibilitasWhere,
 } from '../common/publikasi.helper';
 
@@ -88,7 +89,7 @@ export class KegiatanService {
 
   /** Daftar untuk halaman kelola. Filter opsional: ?pengajuan=DIAJUKAN, ?area=RT_01 (scope ALL). */
   findAll(ctx: AccessContext, params: { pengajuan?: string; area?: string } = {}) {
-    const and: Prisma.KegiatanWhereInput[] = [{ isDelete: false }, visibilitasWhere(ctx)];
+    const and: Prisma.KegiatanWhereInput[] = [{ isDelete: false }, visibilitasKelolaWhere(ctx)];
     if (params.pengajuan) and.push({ statusPengajuan: params.pengajuan as any });
     if (params.area && ctx.scope === 'ALL') and.push({ area: params.area as Area });
     return this.prisma.kegiatan.findMany({

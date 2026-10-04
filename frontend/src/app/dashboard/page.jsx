@@ -137,6 +137,10 @@ function AdminDashboardView({ user }) {
   const [draftDari, setDraftDari] = useState(getCurrentYm);
   const [draftSampai, setDraftSampai] = useState(getCurrentYm);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [kegiatan, setKegiatan] = useState([]);
+  const [pengumuman, setPengumuman] = useState([]);
+  const [selectedKegiatan, setSelectedKegiatan] = useState(null);
+  const [selectedPengumuman, setSelectedPengumuman] = useState(null);
 
   // Normalisasi + validasi turunan (tanpa setState di dalam effect)
   const [dari, sampai] = periodeDari > periodeSampai
@@ -163,6 +167,40 @@ function AdminDashboardView({ user }) {
       .finally(() => setLoadingStats(false));
   }, [dari, sampai, rangeError]);
 
+  // Sama kayak dashboard warga: kegiatan yang belum lewat tanggalnya + pengumuman aktif,
+  // biar pengurus juga bisa lihat sekilas apa yang tampil ke warga tanpa pindah menu.
+  useEffect(() => {
+    let cancelled = false;
+    async function loadKegiatan() {
+      let data = await kegiatanApi.getFeed().catch(() => null);
+      if (!Array.isArray(data)) data = await kegiatanApi.getActive().catch(() => []);
+      if (cancelled) return;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const akanDatang = (data || []).filter((k) => {
+        const t = new Date(k.tanggalAcara);
+        return Number.isNaN(t.getTime()) || t >= today;
+      });
+      akanDatang.sort((a, b) => new Date(a.tanggalAcara).getTime() - new Date(b.tanggalAcara).getTime());
+      setKegiatan(akanDatang);
+    }
+    loadKegiatan();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPengumuman() {
+      let data = await pengumumanApi.getFeed().catch(() => null);
+      if (!Array.isArray(data)) data = await pengumumanApi.getActive().catch(() => []);
+      if (cancelled) return;
+      const terbaru = [...(data || [])].sort((a, b) => new Date(b.createDate || 0) - new Date(a.createDate || 0));
+      setPengumuman(terbaru);
+    }
+    loadPengumuman();
+    return () => { cancelled = true; };
+  }, []);
+
   const openFilter = () => {
     setDraftDari(periodeDari);
     setDraftSampai(periodeSampai);
@@ -188,7 +226,7 @@ function AdminDashboardView({ user }) {
   const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
   const periodeLabel = periodeDari === periodeSampai
     ? formatYm(periodeDari)
-    : `${formatYm(periodeDari)} – ${formatYm(periodeSampai)}`;
+    : `${formatYm(periodeDari)} - ${formatYm(periodeSampai)}`;
 
   const userName = user?.nama || user?.name || "Admin";
 
@@ -196,11 +234,9 @@ function AdminDashboardView({ user }) {
     <div className="page-stack">
 
       {/* ── Welcome + Filter Periode (satu field) ── */}
-      <section className="welcome-banner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2>Selamat datang kembali, {userName} 👋</h2>
-          <p>Ini ringkasan aktivitas cluster Topaz periode {periodeLabel}.</p>
-        </div>
+      <section className="welcome-banner">
+        <h2 className="welcome-banner-title">Selamat datang kembali, {userName}</h2>
+        <p className="welcome-banner-sub">Ini ringkasan aktivitas cluster Topaz periode {periodeLabel}.</p>
         <FilterPopover
           active={!isDefaultPeriode}
           label={isDefaultPeriode ? "Filter periode" : periodeLabel}
@@ -217,6 +253,7 @@ function AdminDashboardView({ user }) {
               type="month"
               className="form-control"
               value={draftDari}
+              max={draftSampai || getCurrentYm()}
               onChange={(e) => e.target.value && setDraftDari(e.target.value)}
             />
           </FilterField>
@@ -225,6 +262,8 @@ function AdminDashboardView({ user }) {
               type="month"
               className="form-control"
               value={draftSampai}
+              min={draftDari || undefined}
+              max={getCurrentYm()}
               onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
             />
           </FilterField>
@@ -363,6 +402,114 @@ function AdminDashboardView({ user }) {
         </div>
 
       </div>
+
+      {/* Kegiatan Cluster */}
+      <section className="content-card">
+        <div className="db-section-header">
+          <CalendarDays size={17} />
+          <h3>Kegiatan Cluster</h3>
+          <div className="db-section-header-right">
+            <Link href="/dashboard/kegiatan" className="db-section-link">
+              Lihat semua <ArrowRight size={13} />
+            </Link>
+          </div>
+        </div>
+
+        {kegiatan.length === 0 ? (
+          <div className="portal-empty-notice">
+            <CalendarDays size={32} />
+            <p>Belum ada kegiatan akan datang.</p>
+          </div>
+        ) : (
+          <div className="portal-kegiatan-grid">
+            {kegiatan.map((k) => (
+              <div
+                key={k.id}
+                className="portal-kegiatan-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedKegiatan(k)}
+                onKeyDown={(e) => { if (e.key === "Enter") setSelectedKegiatan(k); }}
+              >
+                {k.gambarUrl && (
+                  <div className="portal-kegiatan-img-wrap">
+                    <img
+                      src={kegiatanApi.imageUrl(k.gambarUrl)}
+                      alt={k.judul}
+                      className="portal-kegiatan-img"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  </div>
+                )}
+                <div className="portal-kegiatan-body">
+                  <h3 className="portal-kegiatan-title">{k.judul}</h3>
+                  {k.deskripsi && (
+                    <p className="portal-kegiatan-desc">{k.deskripsi}</p>
+                  )}
+                  <div className="portal-kegiatan-meta">
+                    <span className="meta-item"><Calendar size={13} /> {formatKegiatanDate(k.tanggalAcara)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Pengumuman */}
+      <section className="content-card">
+        <div className="db-section-header">
+          <Megaphone size={17} />
+          <h3>Pengumuman</h3>
+          <div className="db-section-header-right">
+            <Link href="/dashboard/pengumuman" className="db-section-link">
+              Lihat semua <ArrowRight size={13} />
+            </Link>
+          </div>
+        </div>
+
+        {pengumuman.length === 0 ? (
+          <p className="portal-empty-text">Belum ada pengumuman aktif saat ini.</p>
+        ) : (
+          <div className="portal-card-list">
+            {pengumuman.map((p) => (
+              <div
+                key={p.id}
+                className="portal-info-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedPengumuman(p)}
+                onKeyDown={(e) => { if (e.key === "Enter") setSelectedPengumuman(p); }}
+              >
+                <div className="portal-info-card-icon">
+                  <Megaphone size={18} />
+                </div>
+                <div className="portal-info-card-body">
+                  <h3 className="portal-info-card-title">{p.judul}</h3>
+                  {p.keteranganPengumuman && (
+                    <p className="portal-info-card-desc">{p.keteranganPengumuman}</p>
+                  )}
+                  <div className="portal-info-card-meta">
+                    <span className="meta-item"><Calendar size={12} /> {formatPengumumanDate(p.createDate)}</span>
+                    {p.filePengumuman && (
+                      <span className="portal-download-link">
+                        <FileText size={12} /> Ada lampiran
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {selectedKegiatan && (
+        <KegiatanDetailModal kegiatan={selectedKegiatan} onClose={() => setSelectedKegiatan(null)} />
+      )}
+      {selectedPengumuman && (
+        <PengumumanDetailModal pengumuman={selectedPengumuman} onClose={() => setSelectedPengumuman(null)} />
+      )}
     </div>
   );
 }
@@ -547,7 +694,7 @@ function WargaDashboardView({ user }) {
         <div className="portal-hero-main">
           <div className="portal-hero-left">
             <p className="portal-hero-eyebrow">Beranda Warga · RW 21 · Cluster Topaz</p>
-            <h2>Halo, {firstName} 👋</h2>
+            <h2>Halo, {firstName}</h2>
             <p className="portal-hero-sub">
               {rumahList.length > 1
                 ? `Kelola ${rumahList.length} unit rumah Anda dalam satu tempat.`

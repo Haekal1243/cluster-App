@@ -28,6 +28,7 @@ import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
 import ProtectedImage from "@/components/ui/ProtectedImage";
+import CurrencyInput from "@/components/ui/CurrencyInput";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -165,25 +166,19 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
           <div className="ipl-form-row">
             <div className="ipl-form-group">
               <label>IPL (Rp) <span className="label-optional">disetor ke RW</span></label>
-              <input
-                type="number"
-                min="1"
-                placeholder="Contoh: 130000"
+              <CurrencyInput
+                placeholder="Contoh: 130.000"
                 value={form.nominalIpl}
-                onChange={(e) => setForm({ ...form, nominalIpl: e.target.value })}
-                className="ipl-input"
+                onChange={(v) => setForm({ ...form, nominalIpl: v })}
                 required
               />
             </div>
             <div className="ipl-form-group">
               <label>Kas RT (Rp) <span className="label-optional">masuk kas RT</span></label>
-              <input
-                type="number"
-                min="0"
-                placeholder="Contoh: 20000"
+              <CurrencyInput
+                placeholder="Contoh: 20.000"
                 value={form.nominalKas}
-                onChange={(e) => setForm({ ...form, nominalKas: e.target.value })}
-                className="ipl-input"
+                onChange={(v) => setForm({ ...form, nominalKas: v })}
               />
             </div>
           </div>
@@ -255,13 +250,13 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
           <div className="ipl-form-row">
             <div className="ipl-form-group">
               <label>IPL (Rp)</label>
-              <input type="number" min="1" className="ipl-input" required value={form.nominalIpl}
-                onChange={(e) => setForm({ ...form, nominalIpl: e.target.value })} />
+              <CurrencyInput required value={form.nominalIpl}
+                onChange={(v) => setForm({ ...form, nominalIpl: v })} />
             </div>
             <div className="ipl-form-group">
               <label>Kas RT (Rp)</label>
-              <input type="number" min="0" className="ipl-input" value={form.nominalKas}
-                onChange={(e) => setForm({ ...form, nominalKas: e.target.value })} />
+              <CurrencyInput value={form.nominalKas}
+                onChange={(v) => setForm({ ...form, nominalKas: v })} />
             </div>
           </div>
           <div className="ipl-form-group">
@@ -305,12 +300,12 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
     const [y, m] = ym.split("-");
     return `${BULAN_NAMES[m] || m} ${y}`;
   };
-  const periodeLabel = dari === sampai ? formatPeriode(dari) : `${formatPeriode(dari)} – ${formatPeriode(sampai)}`;
+  const periodeLabel = dari === sampai ? formatPeriode(dari) : `${formatPeriode(dari)} - ${formatPeriode(sampai)}`;
 
   return (
     <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
       <div className="ipl-table-header">
-        <span className="ipl-table-title">Rekap per RT - {periodeLabel}</span>
+        <span className="ipl-table-title">Rekap per RT ({periodeLabel})</span>
         <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
       </div>
       <div className="ipl-table-wrapper">
@@ -544,7 +539,7 @@ function AdminIuranView({ user }) {
   const isDefaultPeriode = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
   const periodeLabel = periodeDari === periodeSampai
     ? formatYmPanjang(periodeDari)
-    : `${formatYmPanjang(periodeDari)} – ${formatYmPanjang(periodeSampai)}`;
+    : `${formatYmPanjang(periodeDari)} - ${formatYmPanjang(periodeSampai)}`;
   const periodeLabelSingkat = periodeDari === periodeSampai
     ? formatYmPendek(periodeDari)
     : `${formatYmPendek(periodeDari)} - ${formatYmPendek(periodeSampai)}`;
@@ -666,17 +661,7 @@ function AdminIuranView({ user }) {
       )}
 
       {/* ── Tambah + Search + Filter ── */}
-      <div className="page-toolbar-row">
-        {bolehGenerate && (
-          <button
-            id="btn-generate-tagihan"
-            className="btn-ipl-primary"
-            onClick={() => setShowGenerate(true)}
-          >
-            <Plus size={16} /> Buat Tagihan Periode
-          </button>
-        )}
-
+      <div className="page-toolbar-row toolbar-row-reverse-mobile">
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
             <Search size={15} className="list-search-icon" />
@@ -700,6 +685,7 @@ function AdminIuranView({ user }) {
               <input
                 type="month"
                 value={draftPeriodeDari}
+                max={draftPeriodeSampai || getCurrentYm()}
                 onChange={(e) => e.target.value && setDraftPeriodeDari(e.target.value)}
                 className="ipl-input"
               />
@@ -708,6 +694,8 @@ function AdminIuranView({ user }) {
               <input
                 type="month"
                 value={draftPeriodeSampai}
+                min={draftPeriodeDari || undefined}
+                max={getCurrentYm()}
                 onChange={(e) => e.target.value && setDraftPeriodeSampai(e.target.value)}
                 className="ipl-input"
               />
@@ -738,6 +726,15 @@ function AdminIuranView({ user }) {
             )}
           </FilterPopover>
         </div>
+        {bolehGenerate && (
+          <button
+            id="btn-generate-tagihan"
+            className="btn-ipl-primary"
+            onClick={() => setShowGenerate(true)}
+          >
+            <Plus size={16} /> Buat Tagihan Periode
+          </button>
+        )}
       </div>
 
       {/* Tampilan RW: rekap terkumpul & disetor per RT — ikut filter aktif (tanpa search) */}
@@ -1018,6 +1015,7 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
 
 // Diekspor agar dipakai ulang oleh route /kelola-ipl/tagihan-saya tanpa duplikasi kode.
 export function WargaIuranView({ user }) {
+  const currentYm = new Date().toISOString().slice(0, 7);
   const formatYmPanjang = (ym) => {
     if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
     const [y, m] = ym.split("-");
@@ -1084,7 +1082,7 @@ export function WargaIuranView({ user }) {
       ? formatYmPanjang(displayDari || displaySampai)
       : displayDari === displaySampai
         ? formatYmPanjang(displayDari)
-        : `${formatYmPanjang(displayDari)} – ${formatYmPanjang(displaySampai)}`;
+        : `${formatYmPanjang(displayDari)} - ${formatYmPanjang(displaySampai)}`;
 
   // Sinkronkan draft dari filter yang sedang diterapkan setiap popover dibuka
   const handleFilterOpenChange = (next) => {
@@ -1287,6 +1285,7 @@ export function WargaIuranView({ user }) {
               <input
                 type="month"
                 value={draftDari}
+                max={draftSampai || currentYm}
                 onChange={(e) => setDraftDari(e.target.value)}
                 className="ipl-input"
                 style={{ width: "100%" }}
@@ -1302,6 +1301,8 @@ export function WargaIuranView({ user }) {
               <input
                 type="month"
                 value={draftSampai}
+                min={draftDari || undefined}
+                max={currentYm}
                 onChange={(e) => setDraftSampai(e.target.value)}
                 className="ipl-input"
                 style={{ width: "100%" }}

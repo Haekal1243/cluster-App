@@ -60,9 +60,9 @@ export default function Footer() {
                   Jam Pelayanan
                 </div>
                 <div style={{ fontSize: 13, color: "#334155" }}>
-                  Senin – Jumat
+                  Senin - Jumat
                   <br />
-                  08.00 – 17.00 WIB
+                  08.00 - 17.00 WIB
                 </div>
               </div>
             </div>

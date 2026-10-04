@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { showMessage } from "@/lib/message";
+import FileDropzone from "@/components/ui/FileDropzone";
 
 const EMPTY_FORM = {
   judul: "",
@@ -11,8 +12,6 @@ const EMPTY_FORM = {
   tampilDiLanding: false,
   durasiHari: "",
 };
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 function toDateInputValue(value) {
   if (!value) return "";
@@ -54,17 +53,6 @@ export default function KegiatanFormModal({
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
-  };
-
-  const handleFileChange = (event) => {
-    const f = event.target.files?.[0] ?? null;
-    if (f && f.size > MAX_FILE_SIZE) {
-      showMessage("File Terlalu Besar", "Ukuran gambar maksimal 10 MB.", "warning");
-      event.target.value = "";
-      setFile(null);
-      return;
-    }
-    setFile(f);
   };
 
   const handleSubmit = async (event) => {
@@ -183,25 +171,17 @@ export default function KegiatanFormModal({
                 Gambar Kegiatan{" "}
                 {mode === "create" && <span className="required-star">*</span>}
               </label>
-              <div className="file-input-wrapper">
-                <label className="file-input-label">
-                  Pilih Gambar
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png"
-                    onChange={handleFileChange}
-                    required={mode === "create"}
-                  />
-                </label>
-                <span className="file-current">
-                  {file
-                    ? file.name
-                    : initialData?.gambarUrl
-                      ? `Gambar saat ini: ${initialData.gambarUrl}`
-                      : "Belum ada gambar"}
-                </span>
-              </div>
-              <span className="field-hint">JPG / PNG · Maks. 10 MB</span>
+              <FileDropzone
+                file={file}
+                onFileSelect={setFile}
+                onRemove={() => setFile(null)}
+                accept=".jpg,.jpeg,.png"
+                maxSizeMB={10}
+                placeholder="Klik atau seret gambar ke sini"
+                hint="JPG / PNG · Maks. 10 MB"
+                currentLabel={!file && initialData?.gambarUrl ? `Gambar saat ini: ${initialData.gambarUrl}` : undefined}
+                onError={(msg) => showMessage("File Terlalu Besar", msg, "warning")}
+              />
             </div>
           </div>
 

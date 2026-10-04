@@ -268,7 +268,7 @@ export default function RolePermissionPage() {
             ))}
           </ul>
           <button type="button" className="btn-outline-neutral rbac-add" onClick={() => setShowTambah(true)}>
-            <Plus size={14} /> Tambah Peran
+            <Plus size={14} /> Tambah
           </button>
         </aside>
 

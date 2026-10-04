@@ -131,6 +131,7 @@ export default function AktivitasPage() {
               <input
                 type="month"
                 value={draftDari}
+                max={draftSampai || getCurrentYm()}
                 onChange={(e) => e.target.value && setDraftDari(e.target.value)}
                 className="ipl-input"
               />
@@ -139,6 +140,8 @@ export default function AktivitasPage() {
               <input
                 type="month"
                 value={draftSampai}
+                min={draftDari || undefined}
+                max={getCurrentYm()}
                 onChange={(e) => e.target.value && setDraftSampai(e.target.value)}
                 className="ipl-input"
               />

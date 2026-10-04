@@ -742,6 +742,8 @@ select {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .header-left h1 {
@@ -752,6 +754,7 @@ select {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .header-menu-btn {
@@ -774,6 +777,7 @@ select {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-shrink: 0;
 }
 
 .header-icon-btn {
@@ -1020,7 +1024,17 @@ select {
   gap: 24px;
 }
 
+/* Grid 2 kolom x 2 baris: judul selalu baris atas, tombol filter "nempel" di
+   kolom kanan menyatu tinggi sama judul+subjudul di desktop. Di mobile (lihat
+   media query di bawah), areanya diubah supaya judul selalu satu baris penuh
+   dan tombol filter turun sejajar subjudul — sesuai desain Figma. */
 .welcome-banner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "title filter" "sub filter";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 4px;
   padding: 28px 32px;
   border-radius: 20px;
   background: linear-gradient(
@@ -1031,16 +1045,23 @@ select {
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
 }
 
-.welcome-banner h2 {
+.welcome-banner-title {
+  grid-area: title;
+  margin: 0;
   color: #fff;
   font-size: 1.4rem;
   font-weight: 700;
-  margin-bottom: 6px;
 }
 
-.welcome-banner p {
+.welcome-banner-sub {
+  grid-area: sub;
+  margin: 0;
   color: rgba(255, 255, 255, 0.75);
   font-size: 0.9rem;
+}
+
+.welcome-banner .filter-popover {
+  grid-area: filter;
 }
 
 .stat-grid {
@@ -1184,8 +1205,8 @@ select {
 .btn-primary {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  gap: 7px;
+  padding: 9px 16px;
   border: none;
   border-radius: 10px;
   background: linear-gradient(
@@ -1194,7 +1215,7 @@ select {
     var(--db-primary-hover) 100%
   );
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 8px 18px rgba(13, 148, 136, 0.28);
@@ -1217,12 +1238,15 @@ select {
 }
 
 .btn-outline-neutral {
-  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
   border: 1px solid var(--db-border);
   border-radius: 10px;
   background: var(--db-surface);
   color: var(--db-slate-600);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s ease;
@@ -1453,29 +1477,31 @@ select {
 }
 
 /* Outline teal: beda dari .btn-ipl-secondary abu-abu generik, tapi lebih ringan dari tombol primary solid */
-.btn-ipl-outline-teal {
+.btn-ipl-teal {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: transparent;
-  color: var(--db-primary, #0d9488);
-  border: 1.5px solid var(--db-primary, #0d9488);
+  background: linear-gradient(135deg, var(--db-primary) 0%, var(--db-primary-hover) 100%);
+  color: #fff;
+  border: none;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+  box-shadow: 0 6px 14px rgba(13, 148, 136, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.btn-ipl-outline-teal:hover:not(:disabled) {
-  background: rgba(13, 148, 136, 0.1);
+.btn-ipl-teal:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.35);
 }
-.btn-ipl-outline-teal:disabled {
+.btn-ipl-teal:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.btn-ipl-outline-teal-icon {
+.btn-ipl-teal-icon {
   padding: 8px 10px;
 }
 
@@ -1840,6 +1866,16 @@ select {
   border-top: 1px solid var(--db-border);
 }
 
+/* Badge "Tampil ke semua warga"/"Level RW" disejajarkan dengan toggle Aktif,
+   bukan numpuk sendirian di baris atas kartu. */
+.pengumuman-grid-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .pengumuman-grid-footer .status-cell {
   gap: 6px;
 }
@@ -2006,11 +2042,17 @@ select {
 .warga-grid-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px;
+  gap: 10px;
+  padding: 14px;
   background: var(--db-surface);
   border: 1px solid var(--db-border);
   border-radius: 12px;
+}
+
+.warga-grid-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .warga-grid-title {
@@ -2018,7 +2060,7 @@ select {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.3;
   color: var(--db-text);
@@ -2131,12 +2173,14 @@ select {
     padding: 9px 12px;
     font-size: 0.82rem;
   }
-  .modal-box .file-input-label {
-    padding: 8px 12px;
-    font-size: 0.8rem;
+  .modal-box .bukti-dropzone {
+    padding: 20px 14px;
   }
-  .modal-box .file-current {
-    font-size: 0.76rem;
+  .modal-box .bukti-dropzone.has-preview {
+    padding: 12px;
+  }
+  .modal-box .bukti-drop-placeholder p {
+    font-size: 0.82rem;
   }
   .modal-box .field-hint,
   .modal-box .field-error {
@@ -2294,40 +2338,6 @@ select {
   background: var(--db-bg);
 }
 
-.file-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.file-input-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 16px;
-  border: 1px dashed var(--db-border);
-  border-radius: 10px;
-  background: var(--db-bg);
-  color: var(--db-slate-600);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.file-input-label:hover {
-  border-color: var(--db-primary);
-  color: var(--db-primary);
-}
-
-.file-input-label input[type="file"] {
-  display: none;
-}
-
-.file-current {
-  font-size: 0.82rem;
-  color: var(--db-slate-500);
-}
-
 .detail-card {
   display: flex;
   flex-direction: column;
@@ -2481,9 +2491,9 @@ select {
     font-size: 0.92rem;
   }
 
-  .welcome-banner h2,
+  .welcome-banner-title,
   .portal-welcome-text h2 {
-    font-size: 1.15rem;
+    font-size: 0.88rem;
   }
 }
 
@@ -2584,8 +2594,16 @@ select {
 }
 
 @media (max-width: 640px) {
-  /* Tombol Tambah tampil di atas search+filter di mobile */
-  .warga-toolbar-row { flex-direction: column-reverse; }
+  /* Tombol Tambah/Catat/Generate tampil di atas search+filter di mobile,
+     walau di desktop dia ada di kanan (setelah search+filter) sejajar Filter.
+     align-items di-stretch supaya field search (dan tombolnya) tetap selebar
+     penuh — tanpa ini, .page-toolbar-row { align-items:center } bikin semua
+     anaknya ke-center dan menyusut ke lebar kontennya pas arahnya jadi kolom. */
+  .warga-toolbar-row,
+  .toolbar-row-reverse-mobile {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
 }
 
 /* Stats row */
@@ -5006,31 +5024,35 @@ select {
 .btn-ipl-primary {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 18px;
-  background: var(--db-primary);
+  gap: 7px;
+  padding: 9px 16px;
+  background: linear-gradient(135deg, var(--db-primary) 0%, var(--db-primary-hover) 100%);
   color: #fff;
   border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   font-family: "Poppins", sans-serif;
 }
-.btn-ipl-primary:hover { background: var(--db-primary-hover); }
+.btn-ipl-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(13, 148, 136, 0.35);
+}
 .btn-ipl-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-ipl-secondary {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 18px;
+  gap: 7px;
+  padding: 9px 16px;
   background: var(--db-border, #e2e8f0);
   color: var(--db-slate-700);
   border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
@@ -5487,6 +5509,16 @@ select {
 }
 
 .pengaduan-card-top .ipl-status-badge { flex: none; }
+
+/* Kartu Riwayat Kas (mobile): badge tipe + tanggal ditumpuk di kanan, 2 baris,
+   sejajar menyamping judul kategori di kiri. */
+.kas-card-top-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
 
 /* Meta mengalir sebagai teks + ikon kecil, dipisah titik — lebih elegan daripada
    deretan chip kotak, dan tetap rapi saat wrap ke baris baru. */
@@ -6410,6 +6442,50 @@ select {
   .ipl-form-row { grid-template-columns: 1fr; }
   .review-action-row { flex-direction: column; }
 
+  /* Semua pop up .ipl-modal (Catat Transaksi, Generate/Ubah Tagihan, Setor, dll):
+     disamain ukurannya kayak .modal-box biar gak ada yang kegedean sendiri di HP. */
+  .ipl-modal {
+    max-width: 92vw;
+  }
+  .ipl-modal-header {
+    padding: 12px 16px;
+  }
+  .ipl-modal-header h3 {
+    font-size: 0.92rem;
+  }
+  .ipl-modal-body {
+    padding: 16px;
+    gap: 12px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .ipl-form-group label {
+    font-size: 0.8rem;
+  }
+  .ipl-input,
+  .ipl-select,
+  .ipl-textarea {
+    padding: 9px 12px;
+    font-size: 0.82rem;
+  }
+  .ipl-modal-footer {
+    padding-top: 10px;
+  }
+  .ipl-modal .btn-ipl-secondary,
+  .ipl-modal .btn-ipl-primary {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+  .ipl-modal .bukti-dropzone {
+    padding: 20px 14px;
+  }
+  .ipl-modal .bukti-dropzone.has-preview {
+    padding: 12px;
+  }
+  .ipl-modal .bukti-drop-placeholder p {
+    font-size: 0.82rem;
+  }
+
   /* Modal Pengaduan (Tanggapi/Detail) di mobile: dikecilin biar gak penuh layar */
   .pengaduan-modal.ipl-modal-review { max-width: 92vw; }
 
@@ -6480,6 +6556,7 @@ select {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 14px;
   }
 }
 
@@ -6822,26 +6899,27 @@ select {
   .welcome-banner {
     padding: 16px 18px;
   }
-  .welcome-banner h2 {
-    font-size: 1.05rem;
-    margin-bottom: 3px;
-    line-height: 1.25;
+  .welcome-banner-title {
+    font-size: 0.92rem;
+    line-height: 1.3;
   }
-  .welcome-banner p {
-    font-size: 0.8rem;
+  .welcome-banner-sub {
+    font-size: 0.72rem;
   }
-  /* Jangan sampai tombol Filter periode wrap ke baris baru lalu nempel di kiri
-     (bikin panel dropdown-nya "right: 0" ikut geser ke kiri dan kepotong layar).
-     Biarkan teks sambutan yang menyusut, tombol filter tetap di kanan. */
+  /* Desain Figma mobile: judul selalu 1 baris penuh di atas, tombol Filter
+     turun sejajar subjudul (bukan sejajar judul kayak di desktop). Ini juga
+     yang bikin tombolnya gak pernah kepotong — dia selalu di kolom kanan,
+     gak pernah numpuk jadi baris sendiri yang nempel ke kiri. */
   .welcome-banner {
-    flex-wrap: nowrap !important;
-  }
-  .welcome-banner > div:first-child {
-    min-width: 0;
-    flex: 1 1 auto;
+    grid-template-areas: "title title" "sub filter";
+    align-items: start;
   }
   .welcome-banner .filter-popover {
-    flex-shrink: 0;
+    align-self: center;
+  }
+  .welcome-banner .filter-popover-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
   }
 
   .page-stack {
@@ -6903,10 +6981,14 @@ select {
     font-size: 0.82em !important;
     margin: 0.6em 1em 0 !important;
   }
+  /* Jangan resize lewat width/height — elemen garis centang/silang di dalam
+     .swal2-icon posisinya dihitung relatif ke ukuran asli SweetAlert2, jadi
+     kalau dipaksa width/height, bentuknya jadi berantakan. Pakai transform
+     scale supaya seluruh isi ikon ikut menyusut proporsional. */
   .swal2-icon {
-    width: 3.4em !important;
-    height: 3.4em !important;
-    margin: 1.1em auto 0.4em !important;
+    transform: scale(0.68);
+    transform-origin: center;
+    margin: 0.3em auto -0.6em !important;
   }
   .swal2-actions {
     margin: 1.2em auto 0 !important;
@@ -6992,24 +7074,38 @@ select {
 .keputusan-opsi.is-active.tolak { background: #fef2f2; border-color: #fecaca; color: var(--db-danger); }
 
 /* ── Catatan rapat ── */
-.catatan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.catatan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
 .catatan-card {
-  background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 14px;
-  padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 12px;
+  padding: 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.catatan-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.catatan-card-head h3 { margin: 0; font-size: 0.98rem; color: var(--db-text); line-height: 1.35; }
-.catatan-excerpt {
-  margin: 0; font-size: 0.85rem; color: var(--db-slate-500); line-height: 1.55;
-  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line;
+.catatan-card:hover, .catatan-card:focus-visible {
+  border-color: var(--db-primary); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
-.catatan-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; }
-.catatan-meta-small { font-size: 0.76rem; color: var(--db-slate-400); }
+.catatan-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.catatan-card-head h3 { margin: 0; font-size: 0.85rem; font-weight: 700; color: var(--db-text); line-height: 1.35; }
+.catatan-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: auto; }
+.catatan-meta-small { font-size: 0.7rem; color: var(--db-slate-400); }
+.catatan-card-foot .btn-icon { width: 28px; height: 28px; }
 .catatan-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 0.82rem; color: var(--db-slate-500); margin-bottom: 12px; }
-.catatan-isi { white-space: pre-wrap; line-height: 1.7; color: var(--db-text); font-size: 0.92rem; max-height: 52vh; overflow: auto; }
 .catatan-area-info {
   background: #f0fdfa; border: 1px solid #99f6e4; color: var(--db-primary-active);
   border-radius: 10px; padding: 10px 12px; font-size: 0.84rem; margin-bottom: 14px; line-height: 1.5;
+}
+.catatan-isi-label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.catatan-isi-label-row label { margin-bottom: 0; }
+.catatan-poin-btn {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid var(--db-border);
+  border-radius: 999px; background: var(--db-surface); color: var(--db-slate-600); font-size: 0.74rem;
+  font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+.catatan-poin-btn:hover { border-color: var(--db-primary); color: var(--db-primary); background: var(--db-bg); }
+.catatan-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+/* 520px cuma dipakai di atas breakpoint mobile, biar gak menang-menangan sama
+   `.modal-box { max-width: 92vw }` yang didefinisikan duluan di @media (max-width: 600px). */
+@media (min-width: 601px) {
+  .catatan-detail-modal { max-width: 520px; }
 }
 
 /* ── Admin: role & permission ── */

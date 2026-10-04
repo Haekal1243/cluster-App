@@ -8,9 +8,11 @@ export class CreateCatatanRapatDto {
   @IsNotEmpty()
   judul!: string;
 
+  /** Boleh kosong HANYA kalau ada file notulen yang diunggah — divalidasi di service,
+   * karena butuh tahu apakah file ikut terkirim (tidak bisa dicek lewat DTO saja). */
   @IsString()
-  @IsNotEmpty()
-  isiNotulen!: string;
+  @IsOptional()
+  isiNotulen?: string;
 
   /**
    * Tidak ada pilihan kategori: area ditentukan otomatis dari jabatan pembuat

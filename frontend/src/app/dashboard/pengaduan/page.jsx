@@ -68,17 +68,23 @@ function canRespond(item, boleh = true) {
   return boleh && (item.status === "MENUNGGU" || item.status === "DIPROSES");
 }
 
-function PengaduanActionButton({ item, onAction, bolehRespon }) {
-  return canRespond(item, bolehRespon) ? (
-    <button
-      type="button"
-      className="btn-ipl-review"
-      onClick={() => onAction(item)}
-      title="Tanggapi pengaduan"
-    >
-      <MessageSquareWarning size={14} /> Tanggapi
-    </button>
-  ) : (
+/** `hideViewFallback`: dipakai di kartu mobile — kartunya sendiri udah bisa diklik buat
+ * buka detail, jadi tombol "Lihat" yang cuma ngedobelin aksi itu gak perlu ditampilkan. */
+function PengaduanActionButton({ item, onAction, bolehRespon, hideViewFallback = false }) {
+  if (canRespond(item, bolehRespon)) {
+    return (
+      <button
+        type="button"
+        className="btn-ipl-review"
+        onClick={() => onAction(item)}
+        title="Tanggapi pengaduan"
+      >
+        <MessageSquareWarning size={14} /> Tanggapi
+      </button>
+    );
+  }
+  if (hideViewFallback) return null;
+  return (
     <button
       type="button"
       className="btn-ipl-view"
@@ -400,7 +406,7 @@ function AdminPengaduanView({ user }) {
                 item={item}
                 pelapor={item.pelapor?.namaUser}
                 onOpen={handlePengaduanAction}
-                aksi={<PengaduanActionButton item={item} onAction={handlePengaduanAction} bolehRespon={bolehRespon} />}
+                aksi={<PengaduanActionButton item={item} onAction={handlePengaduanAction} bolehRespon={bolehRespon} hideViewFallback />}
               />
             ))}
           </div>

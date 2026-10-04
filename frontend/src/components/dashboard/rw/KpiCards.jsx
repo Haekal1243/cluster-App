@@ -5,9 +5,8 @@ import {
   ArrowRight,
   ArrowDown,
   ArrowUp,
-  BadgeCheck,
   Clock,
-  HandCoins,
+  FileX,
   Landmark,
   TrendingDown,
   TrendingUp,
@@ -78,7 +77,7 @@ export function KpiBelumDisetor({ data }) {
   return (
     <div className="ipl-summary-card keu-card keu-red">
       <div className="keu-icon-circle">
-        {total === 0 ? <BadgeCheck size={22} strokeWidth={2} /> : <HandCoins size={22} strokeWidth={2} />}
+        <FileX size={22} strokeWidth={2} />
       </div>
       <div className="keu-card-text">
         <span className="ipl-summary-label">Belum disetor RT</span>
@@ -92,7 +91,7 @@ export function KpiBelumDisetor({ data }) {
               {items.map((r) => (
                 <li key={r.rt}>
                   <span className="rt-badge">{areaLabel(r.rt)}</span>
-                  <span className={`rw-mini-status ${r.status === "Ditolak" ? "is-ditolak" : ""}`}>
+                  <span className={`ipl-badge ${r.status === "Ditolak" ? "badge-belum" : "badge-menunggu"}`}>
                     {r.status}
                   </span>
                   <span className="rw-mini-nominal">{formatSingkat(r.nominal)}</span>

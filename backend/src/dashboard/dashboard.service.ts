@@ -11,27 +11,6 @@ import {
 // RT di RW ini tetap 4 (enum Area/RT) — penyebut "a dari b RT" selalu 4.
 const RT_LIST: RT[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
-const ymLabel = (tahun: string, bulan: string) =>
-  new Date(Number(tahun), Number(bulan) - 1, 1).toLocaleDateString('id-ID', {
-    month: 'short',
-    year: '2-digit',
-  });
-
-/** 6 YM mundur dari ym "YYYY-MM" (inklusif), urut menaik. */
-function enamPeriodeMundur(sampaiYm: string) {
-  const [y, m] = sampaiYm.split('-').map(Number);
-  const out: { bulan: string; tahun: string; ym: string }[] = [];
-  const cursor = new Date(y, m - 1, 1);
-  cursor.setMonth(cursor.getMonth() - 5);
-  for (let i = 0; i < 6; i++) {
-    const bulan = String(cursor.getMonth() + 1).padStart(2, '0');
-    const tahun = String(cursor.getFullYear());
-    out.push({ bulan, tahun, ym: `${tahun}-${bulan}` });
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
-  return out;
-}
-
 @Injectable()
 export class DashboardRwService {
   constructor(private prisma: PrismaService) {}
@@ -51,17 +30,14 @@ export class DashboardRwService {
       sampaiYm: ym,
     };
     const { gte, lt } = ymRangeToDates(resolved.dariYm, resolved.sampaiYm);
-    const trenYm = enamPeriodeMundur(resolved.sampaiYm);
-    const trenOr = trenYm.map((p) => ({
-      bulanPeriode: p.bulan,
-      tahunPeriode: p.tahun,
-    }));
     const nowYm = currentYm();
+    const rangeYm = new Set(
+      resolved.periodeList.map((p) => `${p.tahun}-${p.bulan}`),
+    );
 
     const [
       tertagihAgg,
-      dikonfRows,
-      setoranDikonfMeta,
+      setoranDikonf,
       setoranTunggu,
       lunasRows,
       setoranDitolak,
@@ -70,30 +46,26 @@ export class DashboardRwService {
       kasSemua,
       kasRtSemua,
       setoranSemua,
-      trenSetoranRows,
       aktivitasRows,
     ] = await Promise.all([
       this.prisma.ipl.aggregate({
         _sum: { nominalIpl: true },
         where: { OR: resolved.periodeOr, rumah: { status: { not: 'KOSONG' } } },
       }),
-      // Diterima per TAGIHAN periode (bukan total setoran utuh): setoran lintas
-      // periode otomatis terpecah, tidak dobel-hitung antar periode.
-      this.prisma.ipl.findMany({
-        where: {
-          OR: resolved.periodeOr,
-          setoran: { status: 'DIKONFIRMASI' },
-          rumah: { status: { not: 'KOSONG' } },
-        },
-        select: { nominalIpl: true, rumah: { select: { rt: true } } },
-      }),
-      // Metadata setoran terkonfirmasi (area + tanggal) untuk susulan & status terakhir.
+      // Diterima = total setoran utuh (semantik sama dengan summary menu
+      // Setoran: setoran dihitung penuh di tiap periode yang disentuhnya).
       this.prisma.setoranIpl.findMany({
         where: {
           status: 'DIKONFIRMASI',
           tagihan: { some: { OR: resolved.periodeOr } },
         },
-        select: { id: true, area: true, createDate: true },
+        select: {
+          id: true,
+          area: true,
+          totalIpl: true,
+          createDate: true,
+          tagihan: { select: { bulanPeriode: true, tahunPeriode: true } },
+        },
       }),
       this.prisma.setoranIpl.findMany({
         where: {
@@ -155,14 +127,6 @@ export class DashboardRwService {
         where: { setoran: { status: 'DIKONFIRMASI' } },
         select: { nominalIpl: true },
       }),
-      this.prisma.ipl.findMany({
-        where: {
-          OR: trenOr,
-          setoran: { status: 'DIKONFIRMASI' },
-          rumah: { status: { not: 'KOSONG' } },
-        },
-        select: { nominalIpl: true, bulanPeriode: true, tahunPeriode: true },
-      }),
       this.prisma.setoranIpl.findMany({
         where: { tagihan: { some: { OR: resolved.periodeOr } } },
         select: {
@@ -180,10 +144,10 @@ export class DashboardRwService {
       }),
     ]);
 
-    // ── KPI 1: diterima vs tertagih (basis per tagihan periode) ──
+    // ── KPI 1: diterima vs tertagih (total setoran utuh, sama dengan menu) ──
     const iplTertagih = tertagihAgg._sum.nominalIpl ?? 0;
-    const diterima = dikonfRows.reduce((s, r) => s + r.nominalIpl, 0);
-    const rtSudahSetor = new Set(dikonfRows.map((r) => r.rumah.rt)).size;
+    const diterima = setoranDikonf.reduce((s, r) => s + r.totalIpl, 0);
+    const rtSudahSetor = new Set(setoranDikonf.map((r) => r.area)).size;
     const persen =
       iplTertagih > 0
         ? Math.min(100, Math.round((diterima / iplTertagih) * 100))
@@ -202,9 +166,8 @@ export class DashboardRwService {
       terkumpul[r.rumah.rt] = (terkumpul[r.rumah.rt] ?? 0) + r.nominalIpl;
     }
     const dikonfPerRt: Record<string, number> = {};
-    for (const r of dikonfRows) {
-      const rt = r.rumah.rt;
-      dikonfPerRt[rt] = (dikonfPerRt[rt] ?? 0) + r.nominalIpl;
+    for (const r of setoranDikonf) {
+      dikonfPerRt[r.area] = (dikonfPerRt[r.area] ?? 0) + r.totalIpl;
     }
     const tungguPerRt: Record<string, number> = {};
     for (const r of setoranTunggu) {
@@ -218,7 +181,7 @@ export class DashboardRwService {
         terakhirPerRt[area] = { status, tgl: t };
       }
     };
-    for (const r of setoranDikonfMeta) catatTerakhir(r.area, 'DIKONFIRMASI', null, r.createDate);
+    for (const r of setoranDikonf) catatTerakhir(r.area, 'DIKONFIRMASI', null, r.createDate);
     for (const r of setoranTunggu) catatTerakhir(r.area, 'MENUNGGU_KONFIRMASI', null, r.createDate);
     for (const r of setoranDitolak) {
       catatTerakhir(r.area, 'DITOLAK', r.tanggalKonfirmasi, r.createDate);
@@ -256,22 +219,33 @@ export class DashboardRwService {
       sumRows(kasSemua.filter((t) => t.tipe === 'PEMASUKAN')) -
       sumRows(kasSemua.filter((t) => t.tipe === 'PENGELUARAN'));
 
-    // ── Tren 6 periode (diterima per periode tagihan; tanpa target) ──
+    // ── Tren mengikuti range terpilih (default 1 bar bulan berjalan).
+    // Bar per bulan = total utuh setoran DIKONFIRMASI yang menyentuh bulan itu
+    // (semantik `some`, sama dengan menu Setoran & KPI).
     const trenDiterima = new Map<string, number>();
-    for (const r of trenSetoranRows) {
-      const key = `${r.tahunPeriode}-${r.bulanPeriode}`;
-      trenDiterima.set(key, (trenDiterima.get(key) ?? 0) + r.nominalIpl);
+    for (const r of setoranDikonf) {
+      const touched = new Set(
+        r.tagihan.map((t) => `${t.tahunPeriode}-${t.bulanPeriode}`),
+      );
+      for (const key of touched) {
+        if (rangeYm.has(key)) {
+          trenDiterima.set(key, (trenDiterima.get(key) ?? 0) + r.totalIpl);
+        }
+      }
     }
-    const tren = trenYm.map((p) => ({
-      ym: p.ym,
-      label: ymLabel(p.tahun, p.bulan),
-      diterima: trenDiterima.get(p.ym) ?? 0,
-      berjalan: p.ym === nowYm,
-    }));
+    const tren = resolved.periodeList.map((p) => {
+      const ymKey = `${p.tahun}-${p.bulan}`;
+      return {
+        ym: ymKey,
+        label: p.label,
+        diterima: trenDiterima.get(ymKey) ?? 0,
+        berjalan: ymKey === nowYm,
+      };
+    });
 
     // ── Perlu tindakan ──
     const rtAdaSusulan = new Set([
-      ...setoranDikonfMeta.map((r) => r.area),
+      ...setoranDikonf.map((r) => r.area),
       ...setoranTunggu.map((r) => r.area),
     ]);
     const ditolakAktif = setoranDitolak.filter((r) => !rtAdaSusulan.has(r.area));

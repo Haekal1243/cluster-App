@@ -19,7 +19,7 @@ export function formatRupiahShort(n) {
   let s;
   if (a >= 1_000_000) {
     const v = a / 1_000_000;
-    s = `${Number.isInteger(v) ? String(v) : v.toFixed(1).replace(".", ",")}jt`;
+    s = `${Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0$/, "").replace(".", ",")}jt`;
   } else if (a >= 1_000) {
     s = `${Math.round(a / 1_000)}rb`;
   } else {

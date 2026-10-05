@@ -6,6 +6,7 @@ import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
 import { areaLabel } from "@/lib/session";
 import Select from "@/components/ui/Select";
+import { formatTanggalPendek as formatDate } from "@/lib/format";
 
 const KATEGORI_LABELS = {
   KEBERSIHAN: "Kebersihan",
@@ -19,13 +20,6 @@ const STATUS_OPTIONS = [
   { value: "SELESAI", label: "Selesai" },
   { value: "DITOLAK", label: "Ditolak" },
 ];
-
-function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
-}
 
 export default function PengaduanRespondModal({ pengaduan, currentUserName, onClose, onSuccess }) {
   const [status, setStatus] = useState(

@@ -26,19 +26,15 @@ import FileDropzone from "@/components/ui/FileDropzone";
 import CurrencyInput from "@/components/ui/CurrencyInput";
 import { usePagination } from "@/lib/usePagination";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import {
+  formatRupiah,
+  formatTanggalPendek as formatTanggal,
+  getCurrentYm,
+  formatYmPendek,
+  formatYmPanjang as formatYmLengkap,
+} from "@/lib/format";
 
 // ── Helpers & opsi ────────────────────────────────────────────────────────────
-const BULAN_NAMES = {
-  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
-  "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
-  "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
-};
-const BULAN_PANJANG = {
-  "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
-  "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
-  "09": "September", "10": "Oktober", "11": "November", "12": "Desember",
-};
-
 const KATEGORI_MASUK = ["Dana Sosial", "Sewa Fasilitas", "Donasi", "Lainnya"];
 const KATEGORI_KELUAR = ["Operasional", "Perawatan & Perbaikan", "Acara & Kegiatan", "Lainnya"];
 
@@ -47,15 +43,6 @@ const TIPE_FILTER_OPTIONS = [
   { val: "PEMASUKAN", label: "Pemasukan" },
   { val: "PENGELUARAN", label: "Pengeluaran" },
 ];
-
-function formatRupiah(nominal) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(nominal || 0);
-}
-
-function formatTanggal(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-}
 
 function toDateInput(dateStr) {
   if (!dateStr) return "";
@@ -294,20 +281,8 @@ function AdminKeuanganView({ user }) {
   const isBendaharaRT = user?.role === "BENDAHARA_RT";
   const hideRincianRT = ["BENDAHARA_RT", "KETUA_RT", "SEKRE_RT", "BENDAHARA_RW"].includes(user?.role);
   const isMobile = useMediaQuery("(max-width: 767px)");
-  const getCurrentYm = () => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
-  };
-  const formatYmPanjang = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
-    const [y, m] = ym.split("-");
-    return `${BULAN_NAMES[m] || m} ${y}`;
-  };
-  const formatYmFull = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
-    const [y, m] = ym.split("-");
-    return `${BULAN_PANJANG[m] || m} ${y}`;
-  };
+  const formatYmPanjang = formatYmPendek;
+  const formatYmFull = formatYmLengkap;
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
     const [y2, m2] = sampai.split("-").map(Number);

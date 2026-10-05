@@ -9,12 +9,7 @@ import { useUser } from "@/lib/useUser";
 import { showMessage } from "@/lib/message";
 import Pagination from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
-
-const waLink = (noTelp) => {
-  if (!noTelp) return null;
-  const clean = noTelp.replace(/\D/g, "");
-  return `https://wa.me/${clean.startsWith("0") ? `62${clean.slice(1)}` : clean}`;
-};
+import { waLink } from "@/lib/format";
 
 export default function PendaftaranPage() {
   const { user } = useUser();

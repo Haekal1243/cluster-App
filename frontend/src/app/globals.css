@@ -2500,7 +2500,7 @@ select {
 @media (max-width: 900px) {
   .auth-container {
     padding: 16px;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .auth-card {
@@ -2515,7 +2515,7 @@ select {
     display: flex;
     flex: none;
     width: 100%;
-    height: 110px;
+    height: 150px;
     padding: 16px;
     justify-content: center;
     align-items: center;
@@ -2523,48 +2523,126 @@ select {
   }
 
   .auth-logo {
-    max-height: 80px;
-    max-width: 80px;
+    max-height: 110px;
+    max-width: 110px;
     width: auto;
     height: auto;
     object-fit: contain;
   }
 
   .auth-right {
-    padding: 32px 24px;
+    padding: 24px 20px;
     flex: none;
     width: 100%;
   }
 
+  /* Card login/daftar kegedean di HP — judul, spacing, dan input dikecilin semua.
+     Semua di-scope ke dalam .auth-right doang, biar gak ikut ngecilin .form-control
+     dkk di modal-modal lain yang kebetulan pakai class yang sama. */
+  .auth-header h2 {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+  }
+
+  .auth-header p {
+    font-size: 0.82rem;
+    margin-bottom: 18px;
+  }
+
+  .auth-right .form-group {
+    margin-bottom: 12px;
+  }
+
+  .auth-right .form-group label {
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+  }
+
+  .auth-right .form-control {
+    padding: 11px 14px;
+    font-size: 0.88rem;
+  }
+
+  .auth-right .form-control.with-icon {
+    padding-left: 40px;
+  }
+
+  .auth-right .input-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .auth-right .options-row {
+    margin-bottom: 16px;
+    font-size: 0.82rem;
+  }
+
+  .btn-sign-in {
+    padding: 12px;
+    font-size: 0.92rem;
+  }
+
+  .auth-right .register-section {
+    margin-top: 16px;
+    font-size: 0.82rem;
+  }
+
   .register-content-split {
     flex-direction: column;
+    gap: 12px;
   }
 
   .stepper-box {
     width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 12px;
-    padding: 16px;
+    gap: 10px;
+    padding: 12px;
   }
 
   .step-line {
     display: none;
   }
 
-  .address-row,
+  .step-label {
+    font-size: 0.82rem;
+  }
+
+  .form-box-header {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+
+  .form-box-body {
+    padding: 14px 16px;
+  }
+
   .options-row {
     flex-direction: column;
     align-items: stretch;
   }
 
+  /* RT & Blok Rumah tetap 1 baris di mobile, cuma gap-nya dikecilin dan
+     min-width dilepas biar kedua kotak muat berdampingan di layar sempit. */
+  .address-row {
+    gap: 16px;
+    margin-bottom: 10px;
+  }
+
+  .rt-section,
+  .blok-section {
+    min-width: 0;
+  }
+
   .form-actions {
-    gap: 12px;
+    gap: 10px;
+    padding-top: 14px;
   }
 
   .btn-back,
   .btn-next {
     width: 100%;
+    height: 38px;
   }
 }
 

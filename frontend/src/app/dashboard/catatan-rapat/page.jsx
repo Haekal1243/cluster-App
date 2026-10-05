@@ -9,13 +9,7 @@ import { showConfirm, showMessage } from "@/lib/message";
 import Select from "@/components/ui/Select";
 import FileDropzone from "@/components/ui/FileDropzone";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
-
-// Samain sama filter periode di halaman lain (Keuangan/Tagihan/dll): pilih per bulan,
-// bukan per hari, dan gak bisa pilih bulan yang belum terjadi.
-const getCurrentYm = () => new Date().toISOString().slice(0, 7);
-
-const tanggal = (d) =>
-  d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }) : "-";
+import { getCurrentYm, formatTanggalPanjang as tanggal } from "@/lib/format";
 
 // Judul biasanya ditulis "Rapat <Area> - <Topik>" (lihat seed), yang bikin redundan sama
 // badge area yang udah ditampilin terpisah. Potong prefix itu kalau memang ada, selain itu

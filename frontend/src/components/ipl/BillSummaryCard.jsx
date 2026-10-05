@@ -1,6 +1,7 @@
 "use client";
 
 import { Calendar, CircleCheck, Clock, Home, Info, Wallet } from "lucide-react";
+import { formatRupiah as rupiahPenuh } from "@/lib/format";
 
 // Kelas Tailwind ditulis statis (object map) agar tidak kena purge.
 const TONE = {
@@ -19,13 +20,6 @@ const TONE = {
     hint: "Ada tagihan yang perlu dibayar",
   },
 };
-
-const rupiahPenuh = (n) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(Number(n) || 0);
 
 /**
  * Card ringkasan tagihan warga. Murni presentational: kalkulasi outstanding

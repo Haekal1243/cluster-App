@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock } from "lucide-react";
+import { Lock, Eye, EyeOff } from "lucide-react";
 import AuthShell from "@/components/auth/AuthShell";
 import RegisterStepper from "@/components/auth/RegisterStepper";
 import { showMessage } from "@/lib/message";
@@ -13,12 +13,13 @@ export default function AkunPage() {
   const [dataDiri, setDataDiri] = useState(null);
 
   const [accountData, setAccountData] = useState({
-    email: "",
     password: "",
     confirmPassword: "",
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const storedValue = sessionStorage.getItem("registerDataDiri");
@@ -62,7 +63,6 @@ export default function AkunPage() {
         noTelp: dataDiri.noTelp,
         rt: dataDiri.rt,
         rumahId: Number(dataDiri.rumahId),
-        email: accountData.email || undefined,
         password: accountData.password,
       });
 
@@ -105,21 +105,6 @@ export default function AkunPage() {
           <div className="form-box-body">
             <form>
               <div className="form-group">
-                <label htmlFor="email">Email <span className="field-hint">(opsional)</span></label>
-                <div className="input-wrapper">
-                  <Mail className="input-icon" />
-                  <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    className="form-control with-icon"
-                    value={accountData.email}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
                 <label htmlFor="password">
                   Kata Sandi <span className="required-star">*</span>
                 </label>
@@ -127,13 +112,23 @@ export default function AkunPage() {
                   <Lock className="input-icon" />
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
-                    className="form-control with-icon"
+                    className="form-control with-icon with-toggle"
                     value={accountData.password}
                     onChange={handleChange}
                     minLength={6}
                   />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                    aria-pressed={showPassword}
+                    title={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </button>
                 </div>
               </div>
 
@@ -145,12 +140,22 @@ export default function AkunPage() {
                   <Lock className="input-icon" />
                   <input
                     id="confirmPassword"
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     name="confirmPassword"
-                    className="form-control with-icon"
+                    className="form-control with-icon with-toggle"
                     value={accountData.confirmPassword}
                     onChange={handleChange}
                   />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    aria-label={showConfirmPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                    aria-pressed={showConfirmPassword}
+                    title={showConfirmPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  >
+                    {showConfirmPassword ? <EyeOff /> : <Eye />}
+                  </button>
                 </div>
               </div>
 
@@ -169,7 +174,7 @@ export default function AkunPage() {
                   onClick={handleFinish}
                   disabled={isFinishDisabled || isLoading}
                 >
-                  {isLoading ? "Mengirim..." : "Kirim Pendaftaran"}
+                  {isLoading ? "Mendaftar..." : "Daftar"}
                 </button>
               </div>
             </form>

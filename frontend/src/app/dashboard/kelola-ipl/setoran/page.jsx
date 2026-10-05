@@ -12,12 +12,12 @@ import Select from "@/components/ui/Select";
 import FileDropzone from "@/components/ui/FileDropzone";
 import { usePagination } from "@/lib/usePagination";
 import SetoranDetailModal from "@/components/setoran/SetoranDetailModal";
-
-const rupiah = (n) =>
-  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n || 0);
-
-const tanggal = (d) =>
-  d ? new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+import {
+  formatRupiah as rupiah,
+  formatTanggalPendek as tanggal,
+  formatYmPendek,
+  getCurrentYm,
+} from "@/lib/format";
 
 const STATUS = {
   MENUNGGU_KONFIRMASI: { label: "Menunggu Konfirmasi", cls: "badge-menunggu" },
@@ -113,20 +113,7 @@ export default function SetoranPage() {
   const pilihRtSetor = scopeOf(user, "setoran.create") === "ALL";
 
   // ── Filter: periode (bulan berjalan default) + status + wilayah — pola sama Keuangan/Tagihan ──
-  const BULAN_NAMES = {
-    "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
-    "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
-    "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
-  };
-  const getCurrentYm = () => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
-  };
-  const formatYmPanjang = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
-    const [y, m] = ym.split("-");
-    return `${BULAN_NAMES[m] || m} ${y}`;
-  };
+  const formatYmPanjang = formatYmPendek;
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
     const [y2, m2] = sampai.split("-").map(Number);

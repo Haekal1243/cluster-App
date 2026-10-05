@@ -30,20 +30,18 @@ import BuktiUploadModal from "@/components/portal/BuktiUploadModal";
 import ProtectedImage from "@/components/ui/ProtectedImage";
 import CurrencyInput from "@/components/ui/CurrencyInput";
 import { useMediaQuery } from "@/lib/useMediaQuery";
+import {
+  formatRupiah,
+  formatTanggalPendek as formatTanggal,
+  BULAN_PANJANG as BULAN_NAMES,
+  BULAN_OPTIONS,
+  getCurrentYm,
+  getMonthLabel,
+  formatYmPendek,
+  formatYmPanjang,
+} from "@/lib/format";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const BULAN_NAMES = {
-  "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
-  "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
-  "09": "September", "10": "Oktober", "11": "November", "12": "Desember",
-};
-const BULAN_PENDEK = {
-  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
-  "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
-  "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
-};
-
-const BULAN_OPTIONS = Object.entries(BULAN_NAMES).map(([val, label]) => ({ val, label }));
 const currentYear = new Date().getFullYear();
 const TAHUN_OPTIONS = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
 
@@ -53,15 +51,6 @@ const STATUS_FILTER_OPTIONS = [
   { val: "MENUNGGU_KONFIRMASI", label: "Menunggu Konfirmasi" },
   { val: "LUNAS", label: "Lunas" },
 ];
-
-function formatRupiah(nominal) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(nominal);
-}
-
-function formatTanggal(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-}
 
 function AdminStatusBadge({ status }) {
   const map = {
@@ -295,11 +284,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
 
   if (!rekap) return null;
 
-  const formatPeriode = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
-    const [y, m] = ym.split("-");
-    return `${BULAN_NAMES[m] || m} ${y}`;
-  };
+  const formatPeriode = formatYmPanjang;
   const periodeLabel = dari === sampai ? formatPeriode(dari) : `${formatPeriode(dari)} - ${formatPeriode(sampai)}`;
 
   return (
@@ -487,20 +472,6 @@ function AdminIuranView({ user }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Filter state — range periode, default bulan berjalan
-  const getCurrentYm = () => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
-  };
-  const formatYmPanjang = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
-    const [y, m] = ym.split("-");
-    return `${BULAN_NAMES[m] || m} ${y}`;
-  };
-  const formatYmPendek = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
-    const [y, m] = ym.split("-");
-    return `${BULAN_PENDEK[m] || m} ${y}`;
-  };
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
     const [y2, m2] = sampai.split("-").map(Number);
@@ -922,13 +893,6 @@ function AdminIuranView({ user }) {
 }
 
 // ── Warga: lihat & bayar tagihan milik sendiri ────────────────────────────────
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-
-function getMonthLabel(bulan, tahun) {
-  const m = parseInt(bulan, 10);
-  return `${MONTHS[m - 1] || bulan} ${tahun}`;
-}
-
 function formatRt(rt) {
   return String(rt || "").replace("_", " ");
 }
@@ -947,9 +911,7 @@ function WargaStatusBadge({ status }) {
   );
 }
 
-function rupiah(n) {
-  return `Rp ${(Number(n) || 0).toLocaleString("id-ID")}`;
-}
+const rupiah = formatRupiah;
 
 // ── Modal: Riwayat Transaksi (read-only, untuk tagihan Lunas role Warga) ────
 function RiwayatTransaksiModal({ ipl, onClose }) {
@@ -1015,12 +977,7 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
 
 // Diekspor agar dipakai ulang oleh route /kelola-ipl/tagihan-saya tanpa duplikasi kode.
 export function WargaIuranView({ user }) {
-  const currentYm = new Date().toISOString().slice(0, 7);
-  const formatYmPanjang = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
-    const [y, m] = ym.split("-");
-    return `${BULAN_NAMES[m] || m} ${y}`;
-  };
+  const currentYm = getCurrentYm();
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
     const [y2, m2] = sampai.split("-").map(Number);

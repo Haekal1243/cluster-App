@@ -7,6 +7,7 @@ import { showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { getCurrentYm } from "@/lib/format";
 
 const AKSI_LABEL = {
   "rumah.ubah_status": "Ubah status rumah",
@@ -30,11 +31,6 @@ const tanggalWaktu = (d) =>
         minute: "2-digit",
       })
     : "—";
-
-const getCurrentYm = () => {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
-};
 
 export default function AktivitasPage() {
   const [data, setData] = useState({ riwayat: [], aksiTersedia: [] });

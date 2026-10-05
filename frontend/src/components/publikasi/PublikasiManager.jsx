@@ -27,17 +27,9 @@ import {
 import Switch from "@/components/ui/switch";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import KeputusanPengajuanModal from "./KeputusanPengajuanModal";
+import { formatTanggalPanjang as formatDate } from "@/lib/format";
 
 const PAGE_SIZE = 10;
-
-function formatDate(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 /**
  * Halaman kelola kegiatan / pengumuman. Keduanya berbagi alur yang sama:

@@ -5,21 +5,13 @@ import Reveal from "./Reveal";
 import { PhotoIcon } from "./icons";
 import { fileUrl } from "@/lib/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { formatTanggalPanjang as formatTanggalAcara } from "@/lib/format";
 
 const labelStyle = {
   background: "rgba(13,148,136,0.85)",
   color: "white",
   border: "none",
 };
-
-function formatTanggalAcara(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 export default function Kegiatan({ items = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);

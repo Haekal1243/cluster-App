@@ -18,6 +18,7 @@ import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 import { showConfirm, showCredentials, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
+import { waLink } from "@/lib/format";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
@@ -29,12 +30,6 @@ const STATUS_RUMAH = {
   KOSONG: { label: "Kosong", cls: "unactived" },
   DIHUNI_TETAP: { label: "Tetap", cls: "active" },
   DIHUNI_KONTRAK: { label: "Kontrak", cls: "kontrak" },
-};
-
-const waLink = (noTelp) => {
-  if (!noTelp) return null;
-  const clean = noTelp.replace(/\D/g, "");
-  return `https://wa.me/${clean.startsWith("0") ? `62${clean.slice(1)}` : clean}`;
 };
 
 /** Pengurus RT yang hak tulisnya berjangkauan AREA hanya boleh memilih RT-nya sendiri. */

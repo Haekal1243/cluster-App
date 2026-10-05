@@ -1,15 +1,7 @@
 import Reveal from "./Reveal";
+import { formatTanggalPanjang as formatTanggalPengumuman } from "@/lib/format";
 
 const badgeStyle = { background: "#ECFDF5", color: "#0D9488" };
-
-function formatTanggalPengumuman(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 export default function Pengumuman({ items = [] }) {
   return (

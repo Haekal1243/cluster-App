@@ -14,30 +14,16 @@ import { useUser } from "@/lib/useUser";
 import Link from "next/link";
 import KegiatanDetailModal from "@/components/kegiatan/KegiatanDetailModal";
 import PengumumanDetailModal from "@/components/pengumuman/PengumumanDetailModal";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function formatRupiah(n) {
-  if (!n && n !== 0) return "-";
-  return `Rp ${n.toLocaleString("id-ID")}`;
-}
-
-function formatRupiahSingkat(n) {
-  if (!n && n !== 0) return "-";
-  if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1)}jt`;
-  if (n >= 1_000) return `Rp ${(n / 1_000).toFixed(0)}rb`;
-  return `Rp ${n}`;
-}
-
-function formatRupiahFull(n) {
-  if (!n && n !== 0) return "-";
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
-}
-
-const BULAN_NAMES = {
-  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
-  "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
-  "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
-};
+import {
+  formatRupiah,
+  formatRupiahSingkat,
+  BULAN_PENDEK as BULAN_NAMES,
+  getMonthLabel,
+  getCurrentYm,
+  formatYmPendek,
+  formatTanggalLengkap as formatKegiatanDate,
+  formatTanggalPanjang as formatPengumumanDate,
+} from "@/lib/format";
 
 // ── Mini Bar Chart (SVG) ──────────────────────────────────────────────────────
 function TrenChart({ data }) {
@@ -51,7 +37,7 @@ function TrenChart({ data }) {
           const pct = max > 0 ? (d.kasMasuk / max) * 100 : 0;
           const isLast = i === data.length - 1;
           return (
-            <div key={i} className="db-chart-col" title={`${d.label}: ${formatRupiahFull(d.kasMasuk)}`}>
+            <div key={i} className="db-chart-col" title={`${d.label}: ${formatRupiah(d.kasMasuk)}`}>
               <div className="db-bar-wrapper">
                 <div
                   className={`db-bar ${isLast ? "db-bar-active" : ""}`}
@@ -92,38 +78,9 @@ function StatusBadge({ status }) {
   );
 }
 
-const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
-
-function getMonthLabel(bulan, tahun) {
-  const m = parseInt(bulan, 10);
-  return `${MONTHS[m - 1] || bulan} ${tahun}`;
-}
-
-function formatKegiatanDate(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
-}
-
-function formatPengumumanDate(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-}
-
 // ── Admin/Pengurus: ringkasan seluruh cluster ─────────────────────────────────
 function AdminDashboardView({ user }) {
-  const getCurrentYm = () => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
-  };
-  const formatYm = (ym) => {
-    if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return ym || "-";
-    const [y, m] = ym.split("-");
-    return `${MONTHS[parseInt(m, 10) - 1] || m} ${y}`;
-  };
+  const formatYm = formatYmPendek;
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
     const [y2, m2] = sampai.split("-").map(Number);

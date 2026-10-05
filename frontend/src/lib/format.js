@@ -1,0 +1,105 @@
+// Helper format (rupiah, tanggal, bulan, periode, kontak) yang dipakai di banyak halaman.
+// Sebelumnya tiap file nge-define ulang versi sendiri-sendiri (kadang namanya sama tapi
+// isinya beda, kadang isinya sama tapi namanya beda) — semuanya disatukan di sini supaya
+// ada satu sumber kebenaran dan gampang diubah/di-maintain.
+
+// ── Rupiah ──────────────────────────────────────────────────────────────────
+export function formatRupiah(n) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(n || 0);
+}
+
+/** Versi singkat buat ruang sempit (mis. kartu metrik): "Rp 1.5jt", "Rp 500rb". */
+export function formatRupiahSingkat(n) {
+  if (!n && n !== 0) return "-";
+  if (n >= 1_000_000) return `Rp ${(n / 1_000_000).toFixed(1)}jt`;
+  if (n >= 1_000) return `Rp ${(n / 1_000).toFixed(0)}rb`;
+  return `Rp ${n}`;
+}
+
+// ── Nama bulan ──────────────────────────────────────────────────────────────
+export const BULAN_PENDEK = {
+  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
+  "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
+  "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
+};
+
+export const BULAN_PANJANG = {
+  "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
+  "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
+  "09": "September", "10": "Oktober", "11": "November", "12": "Desember",
+};
+
+export const BULAN_OPTIONS = Object.entries(BULAN_PANJANG).map(([val, label]) => ({ val, label }));
+
+/** Array 1-indexed (index 0 = Januari) — buat kode lama yang pakai MONTHS[bulan-1]. */
+export const MONTHS = Object.values(BULAN_PENDEK);
+
+/** Label "Okt 2026" dari bulanPeriode ("10") + tahunPeriode ("2026") ala tagihan IPL. */
+export function getMonthLabel(bulan, tahun) {
+  const m = parseInt(bulan, 10);
+  return `${MONTHS[m - 1] || bulan} ${tahun}`;
+}
+
+// ── Periode "YYYY-MM" (dipakai filter periode Dari/Sampai) ───────────────────
+export function getCurrentYm() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function isValidYm(ym) {
+  return !!ym && /^\d{4}-\d{2}$/.test(ym);
+}
+
+/** "2026-10" -> "Okt 2026" */
+export function formatYmPendek(ym) {
+  if (!isValidYm(ym)) return ym || "-";
+  const [y, m] = ym.split("-");
+  return `${BULAN_PENDEK[m] || m} ${y}`;
+}
+
+/** "2026-10" -> "Oktober 2026" */
+export function formatYmPanjang(ym) {
+  if (!isValidYm(ym)) return ym || "-";
+  const [y, m] = ym.split("-");
+  return `${BULAN_PANJANG[m] || m} ${y}`;
+}
+
+// ── Tanggal ─────────────────────────────────────────────────────────────────
+function toValidDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** "05 Sep 2026" */
+export function formatTanggalPendek(value) {
+  const d = toValidDate(value);
+  if (!d) return "-";
+  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+/** "05 September 2026" */
+export function formatTanggalPanjang(value) {
+  const d = toValidDate(value);
+  if (!d) return "-";
+  return d.toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+/** "Senin, 5 September 2026" */
+export function formatTanggalLengkap(value) {
+  const d = toValidDate(value);
+  if (!d) return "-";
+  return d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
+// ── Kontak ──────────────────────────────────────────────────────────────────
+/** Link wa.me dari nomor HP (buang semua karakter non-digit). */
+export function waLink(noTelp) {
+  if (!noTelp) return null;
+  const clean = noTelp.replace(/\D/g, "");
+  return `https://wa.me/${clean.replace(/^0/, "62")}`;
+}

@@ -3,6 +3,7 @@
 import { Calendar, MessageCircle, Forward } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { areaLabel } from "@/lib/session";
+import { formatTanggalPanjang as formatDate } from "@/lib/format";
 
 const KATEGORI_LABELS = {
   KEBERSIHAN: "Kebersihan",
@@ -17,13 +18,6 @@ const STATUS_LABELS = {
   SELESAI: { label: "Selesai", cls: "status-selesai" },
   DITOLAK: { label: "Ditolak", cls: "status-ditolak" },
 };
-
-function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-}
 
 export default function PengaduanDetailModal({ pengaduan, onClose }) {
   if (!pengaduan) return null;

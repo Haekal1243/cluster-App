@@ -2,13 +2,7 @@
 
 import { Calendar } from "lucide-react";
 import { kegiatanApi } from "@/lib/api";
-
-function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
-}
+import { formatTanggalLengkap as formatDate } from "@/lib/format";
 
 export default function KegiatanDetailModal({ kegiatan, onClose }) {
   if (!kegiatan) return null;

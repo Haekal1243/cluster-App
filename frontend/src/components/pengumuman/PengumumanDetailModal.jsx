@@ -2,13 +2,7 @@
 
 import { Megaphone, FileText, Calendar } from "lucide-react";
 import { pengumumanApi } from "@/lib/api";
-
-function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    day: "numeric", month: "long", year: "numeric",
-  });
-}
+import { formatTanggalPanjang as formatDate } from "@/lib/format";
 
 export default function PengumumanDetailModal({ pengumuman, onClose }) {
   if (!pengumuman) return null;

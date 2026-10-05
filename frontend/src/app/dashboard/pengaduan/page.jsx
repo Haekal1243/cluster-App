@@ -13,6 +13,7 @@ import { usePagination } from "@/lib/usePagination";
 import PengaduanFormModal from "@/components/pengaduan/PengaduanFormModal";
 import PengaduanDetailModal from "@/components/pengaduan/PengaduanDetailModal";
 import { can, scopeOf, areaLabel } from "@/lib/session";
+import { BULAN_OPTIONS, formatTanggalPendek as formatDate } from "@/lib/format";
 import { useUser } from "@/lib/useUser";
 import PengaduanRespondModal from "@/components/pengaduan/PengaduanRespondModal";
 
@@ -51,13 +52,6 @@ function urutkanTanggal(list, urutan) {
   return [...list].sort((a, b) => arah * (new Date(a.createdAt) - new Date(b.createdAt)));
 }
 
-const BULAN_NAMES = {
-  "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
-  "05": "Mei", "06": "Juni", "07": "Juli", "08": "Agustus",
-  "09": "September", "10": "Oktober", "11": "November", "12": "Desember",
-};
-const BULAN_OPTIONS = Object.entries(BULAN_NAMES).map(([val, label]) => ({ val, label }));
-
 function StatusBadge({ status }) {
   const s = STATUS_LABELS[status] || STATUS_LABELS.MENUNGGU;
   return <span className={`ipl-status-badge ${s.cls}`}>{s.label}</span>;
@@ -87,20 +81,14 @@ function PengaduanActionButton({ item, onAction, bolehRespon, hideViewFallback =
   return (
     <button
       type="button"
-      className="btn-ipl-view"
+      className="btn-icon"
       onClick={() => onAction(item)}
+      aria-label="Lihat detail"
       title="Lihat detail"
     >
-      <Eye size={14} /> Lihat
+      <Eye size={14} />
     </button>
   );
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
 }
 
 /** Kartu pengaduan untuk layar HP (desktop memakai tabel). Dipakai bersama oleh tampilan pengurus dan warga. */
@@ -603,8 +591,8 @@ function WargaPengaduanView({ user }) {
                     <td className="pengaduan-col-tanggal">{formatDate(item.createdAt)}</td>
                     <td><StatusBadge status={item.status} /></td>
                     <td>
-                      <button type="button" className="btn-ipl-view" onClick={() => setDetailItem(item)} title="Lihat detail">
-                        <Eye size={14} /> Lihat
+                      <button type="button" className="btn-icon" onClick={() => setDetailItem(item)} aria-label="Lihat detail" title="Lihat detail">
+                        <Eye size={14} />
                       </button>
                     </td>
                   </tr>

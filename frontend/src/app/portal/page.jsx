@@ -5,6 +5,11 @@ import { Home, CheckCircle, AlertTriangle, Clock, Megaphone, ArrowRight, Wallet,
 import { portalApi, pengumumanApi, kegiatanApi } from "@/lib/api";
 import { getUser } from "@/lib/session";
 import Link from "next/link";
+import {
+  getMonthLabel,
+  formatTanggalPendek as formatTanggalSingkat,
+  formatTanggalLengkap as formatTanggalAcara,
+} from "@/lib/format";
 
 function StatusBadge({ status }) {
   const map = {
@@ -18,31 +23,6 @@ function StatusBadge({ status }) {
       <Icon size={12} /> {label}
     </span>
   );
-}
-
-const MONTHS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
-
-function getMonthLabel(bulan, tahun) {
-  const m = parseInt(bulan, 10);
-  return `${MONTHS[m - 1] || bulan} ${tahun}`;
-}
-
-function formatTanggalSingkat(dateStr) {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("id-ID", {
-    day: "numeric", month: "short", year: "numeric",
-  });
-}
-
-function formatTanggalAcara(dateStr) {
-  if (!dateStr) return "-";
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("id-ID", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
 }
 
 export default function PortalDashboardPage() {

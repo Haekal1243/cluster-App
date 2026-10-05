@@ -2,6 +2,7 @@ import Link from "next/link";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import { API_BASE_URL, fileUrl } from "@/lib/api";
+import { formatTanggalPanjang as tanggal } from "@/lib/format";
 
 export const metadata = {
   title: "Portofolio Kegiatan - Cluster Topaz",
@@ -17,9 +18,6 @@ async function getPortofolio() {
     return { total: 0, tahun: [] };
   }
 }
-
-const tanggal = (v) =>
-  v ? new Date(v).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" }) : "-";
 
 const gambar = fileUrl;
 

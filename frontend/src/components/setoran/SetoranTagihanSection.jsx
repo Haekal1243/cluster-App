@@ -67,15 +67,22 @@ function TagihanCards({ rows }) {
   );
 }
 
+function periodeLabelMenunggu(p) {
+  const ipl = p?.ipl;
+  if (!ipl?.bulanPeriode || !ipl?.tahunPeriode) return "-";
+  return `${SD_BULAN[Number(ipl.bulanPeriode) - 1] || ipl.bulanPeriode} ${ipl.tahunPeriode}`;
+}
+
 /** Blok konteks collapsed (info tambahan, bukan konten utama). */
 export function SetoranKonteks({ konteks }) {
   if (!konteks) return null;
   const kosong = konteks.kosongDikecualikan ?? [];
   const menunggu = konteks.menunggu ?? [];
-  if (kosong.length === 0 && menunggu.length === 0) return null;
+  const belumBayar = konteks.belumBayar ?? [];
+  if (kosong.length === 0 && menunggu.length === 0 && belumBayar.length === 0) return null;
   return (
     <details className="sd-konteks">
-      <summary>Tidak ikut setoran ini (teliti sebelum konfirmasi)</summary>
+      <summary>Tidak ikut setoran ini</summary>
       <div className="sd-konteks-body">
         {kosong.length > 0 && (
           <>
@@ -83,7 +90,16 @@ export function SetoranKonteks({ konteks }) {
             <ul className="sd-konteks-list">
               {kosong.map((t) => (
                 <li key={t.id}>
-                  {t.rumah?.blokRumah} · {periodeLabel(t)} · {formatRupiah((t.nominalIpl || 0) + (t.nominalKas || 0))}
+                  {t.rumah?.blokRumah} · {periodeLabel(t)} · {formatRupiah((t.nominalIpl || 0) + (t.nominalKas || 0))}{" "}
+                  {t.statusPembayaran === "MENUNGGU_KONFIRMASI" ? (
+                    <span className="sd-status sd-status-wait" style={{ marginLeft: 6 }}>
+                      Menunggu konfirmasi
+                    </span>
+                  ) : t.statusPembayaran === "BELUM_LUNAS" ? (
+                    <span className="sd-status sd-status-no" style={{ marginLeft: 6 }}>
+                      Belum bayar
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -95,7 +111,27 @@ export function SetoranKonteks({ konteks }) {
             <ul className="sd-konteks-list">
               {menunggu.map((p) => (
                 <li key={p.idPembayaran}>
-                  {p.ipl?.rumah?.blokRumah} · {p.user?.namaUser || "—"} · {formatRupiah(p.nominal)}
+                  {p.ipl?.rumah?.blokRumah} · {p.user?.namaUser || "—"} · {periodeLabelMenunggu(p)} ·{" "}
+                  {formatRupiah(p.nominal)}{" "}
+                  <span className="sd-status sd-status-wait" style={{ marginLeft: 6 }}>
+                    Menunggu konfirmasi RT
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {belumBayar.length > 0 && (
+          <>
+            <p className="sd-konteks-label">Belum bayar ({belumBayar.length})</p>
+            <ul className="sd-konteks-list">
+              {belumBayar.map((t) => (
+                <li key={t.id}>
+                  {t.rumah?.blokRumah} · {t.rumah?.penghuni?.namaUser || "—"} · {periodeLabel(t)} ·{" "}
+                  {formatRupiah((t.nominalIpl || 0) + (t.nominalKas || 0))}{" "}
+                  <span className="sd-status sd-status-no" style={{ marginLeft: 6 }}>
+                    Belum bayar
+                  </span>
                 </li>
               ))}
             </ul>

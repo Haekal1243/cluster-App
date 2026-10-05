@@ -276,6 +276,13 @@ function AdminPengaduanView({ user }) {
             filterStatus !== "SEMUA" ||
             urutan !== "prioritas"
           }
+          activeCount={
+            (filterBulan !== "SEMUA" ? 1 : 0) +
+            (filterTahun !== "SEMUA" ? 1 : 0) +
+            (filterKategori !== "SEMUA" ? 1 : 0) +
+            (filterStatus !== "SEMUA" ? 1 : 0) +
+            (urutan !== "prioritas" ? 1 : 0)
+          }
           onOpen={handleFilterOpen}
           onApply={handleFilterApply}
           onReset={handleFilterReset}
@@ -504,6 +511,11 @@ function WargaPengaduanView({ user }) {
 
           <FilterPopover
             active={filterStatus !== "SEMUA" || filterKategori !== "SEMUA" || urutan !== "terbaru"}
+            activeCount={
+              (filterStatus !== "SEMUA" ? 1 : 0) +
+              (filterKategori !== "SEMUA" ? 1 : 0) +
+              (urutan !== "terbaru" ? 1 : 0)
+            }
             onOpen={handleFilterOpen}
             onApply={handleFilterApply}
             onReset={handleFilterReset}

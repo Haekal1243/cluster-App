@@ -6,7 +6,7 @@ import { formatTanggalPanjang as tanggal } from "@/lib/format";
 
 export const metadata = {
   title: "Portofolio Kegiatan - Cluster Topaz",
-  description: "Rencana dan agenda kegiatan warga RW 21 Cluster Topaz untuk 5 tahun ke depan.",
+  description: "Dokumentasi dan agenda kegiatan warga RW 21 Cluster Topaz dari tahun ke tahun.",
 };
 
 async function getPortofolio() {
@@ -38,10 +38,10 @@ export default async function PortofolioPage() {
             Portofolio Cluster
           </p>
           <h1 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(26px,3.4vw,40px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em", margin: 0 }}>
-            Kegiatan Warga RW 21, 5 Tahun ke Depan
+            Kegiatan Warga RW 21, dari Tahun ke Tahun
           </h1>
           <p style={{ fontSize: 15, color: "#64748B", maxWidth: 640, lineHeight: 1.7, marginTop: 12 }}>
-            Rencana dan agenda kegiatan yang akan diselenggarakan bersama warga Cluster Topaz, dari tahun ke tahun.
+            Dokumentasi dan agenda kegiatan bersama warga Cluster Topaz, dari tahun ke tahun.
             {total > 0 ? ` Total ${total} kegiatan terdokumentasi.` : ""}
           </p>
 

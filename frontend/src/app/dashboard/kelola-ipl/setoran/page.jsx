@@ -132,12 +132,19 @@ export default function SetoranPage() {
 
   const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
   const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
-  const [filterStatus, setFilterStatus] = useState("SEMUA");
+  // Deep-link dari KPI Dashboard RW (?status=MENUNGGU_KONFIRMASI).
+  // Lazy initializer (bukan useEffect) agar lolos react-hooks/set-state-in-effect.
+  const statusAwal = () => {
+    if (typeof window === "undefined") return "SEMUA";
+    const s = new URLSearchParams(window.location.search).get("status");
+    return ["MENUNGGU_KONFIRMASI", "DIKONFIRMASI", "DITOLAK"].includes(s) ? s : "SEMUA";
+  };
+  const [filterStatus, setFilterStatus] = useState(statusAwal);
   const [filterRt, setFilterRt] = useState("SEMUA");
 
   const [draftPeriodeDari, setDraftPeriodeDari] = useState(getCurrentYm);
   const [draftPeriodeSampai, setDraftPeriodeSampai] = useState(getCurrentYm);
-  const [draftFilterStatus, setDraftFilterStatus] = useState("SEMUA");
+  const [draftFilterStatus, setDraftFilterStatus] = useState(statusAwal);
   const [draftFilterRt, setDraftFilterRt] = useState("SEMUA");
 
   const [dari, sampai] = periodeDari > periodeSampai

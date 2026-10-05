@@ -168,17 +168,17 @@ export default function DashboardRW({ user }) {
       <section className="ipl-summary-grid keu-summary-grid rw-kpi" aria-label="Indikator setoran">
         {loading || !data ? (
           <>
-            <div className="ipl-summary-card keu-card keu-muted"><div className="keu-card-text"><span className="ipl-summary-label">Memuat…</span></div></div>
-            <div className="ipl-summary-card keu-card keu-muted"><div className="keu-card-text"><span className="ipl-summary-label">Memuat…</span></div></div>
-            <div className="ipl-summary-card keu-card keu-muted"><div className="keu-card-text"><span className="ipl-summary-label">Memuat…</span></div></div>
-            <div className="ipl-summary-card keu-card keu-muted"><div className="keu-card-text"><span className="ipl-summary-label">Memuat…</span></div></div>
+            <div className="stat-card tone-muted" aria-hidden="true"><span className="stat-text"><span className="stat-label">Memuat…</span></span></div>
+            <div className="stat-card tone-muted" aria-hidden="true"><span className="stat-text"><span className="stat-label">Memuat…</span></span></div>
+            <div className="stat-card tone-muted" aria-hidden="true"><span className="stat-text"><span className="stat-label">Memuat…</span></span></div>
+            <div className="stat-card tone-muted" aria-hidden="true"><span className="stat-text"><span className="stat-label">Memuat…</span></span></div>
           </>
         ) : (
           <>
             <KpiDiterima data={data.kpi.diterima} />
             <KpiMenunggu data={data.kpi.menunggu} rtNames={rtMenunggu} />
             <KpiBelumDisetor data={data.kpi.belumDisetor} />
-            <KpiKasRw data={data.kpi.kasRw} />
+            <KpiKasRw data={data.kpi.kasRw} periodeLabel={periodeLabel} />
           </>
         )}
       </section>

@@ -315,8 +315,18 @@ function AdminKeuanganView({ user }) {
   const [draftPeriodeSampai, setDraftPeriodeSampai] = useState(getCurrentYm);
   const [draftFilterTipe, setDraftFilterTipe] = useState("SEMUA");
   const [draftFilterKategori, setDraftFilterKategori] = useState("SEMUA");
-  const [filterArea, setFilterArea] = useState("SEMUA");
-  const [draftFilterArea, setDraftFilterArea] = useState("SEMUA");
+  // Deep-link dari Dashboard RW ("Lihat di Keuangan" → ?area=RW) agar
+  // filter langsung menampilkan kas RW-murni yang angkanya 1:1 dengan KPI.
+  // Lazy initializer (bukan useEffect) agar lolos react-hooks/set-state-in-effect.
+  const areaAwal = () => {
+    if (typeof window === "undefined") return "SEMUA";
+    const area = new URLSearchParams(window.location.search).get("area");
+    return area && ["SEMUA", "RW", "RT_01", "RT_02", "RT_03", "RT_04"].includes(area)
+      ? area
+      : "SEMUA";
+  };
+  const [filterArea, setFilterArea] = useState(areaAwal);
+  const [draftFilterArea, setDraftFilterArea] = useState(areaAwal);
 
   // Modal state
   const [showForm, setShowForm] = useState(false);

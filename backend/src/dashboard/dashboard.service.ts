@@ -44,7 +44,7 @@ export class DashboardRwService {
       tagihanRtRows,
       kasPeriode,
       kasSemua,
-      kasRtSemua,
+      setoranPeriodeIpl,
       setoranSemua,
       aktivitasRows,
     ] = await Promise.all([
@@ -115,13 +115,12 @@ export class DashboardRwService {
         where: { area: 'RW' },
         select: { tipe: true, nominal: true },
       }),
+      // Setoran IPL periode ini dihitung per tagihan (sum nominalIpl) agar
+      // 1:1 dengan keuangan.service getRingkasan area=RW (bukan totalIpl
+      // utuh per setoran yang bisa double-count lintas bulan).
       this.prisma.ipl.findMany({
-        where: { statusPembayaran: 'LUNAS' },
-        select: {
-          nominalIpl: true,
-          nominalKas: true,
-          rumah: { select: { status: true } },
-        },
+        where: { OR: resolved.periodeOr, setoran: { status: 'DIKONFIRMASI' } },
+        select: { nominalIpl: true },
       }),
       this.prisma.ipl.findMany({
         where: { setoran: { status: 'DIKONFIRMASI' } },
@@ -200,21 +199,25 @@ export class DashboardRwService {
       .sort((a, b) => b.nominal - a.nominal);
     const belumTotal = belumItems.reduce((s, r) => s + r.nominal, 0);
 
-    // ── KPI 4: kas RW (agregat, mirror keuangan.service) ──
+    // ── KPI 4: kas RW (Opsi A — mirror keuangan.service area=RW) ──
+    // Saldo = setoran IPL DIKONFIRMASI + manual RW (tanpa kas RT yang
+    // masih dipegang RT). Masuk periode = setoran periode + manual masuk.
     const sumRows = (rows: { nominal: number }[]) =>
       rows.reduce((s, r) => s + r.nominal, 0);
-    const masuk = sumRows(kasPeriode.filter((t) => t.tipe === 'PEMASUKAN'));
-    const keluar = sumRows(kasPeriode.filter((t) => t.tipe === 'PENGELUARAN'));
-    const masukCount = kasPeriode.filter((t) => t.tipe === 'PEMASUKAN').length;
+    const setoranMasuk = setoranPeriodeIpl.reduce((s, r) => s + r.nominalIpl, 0);
+    const manualMasuk = sumRows(kasPeriode.filter((t) => t.tipe === 'PEMASUKAN'));
+    const manualKeluar = sumRows(
+      kasPeriode.filter((t) => t.tipe === 'PENGELUARAN'),
+    );
+    const masuk = setoranMasuk + manualMasuk;
+    const keluar = manualKeluar;
+    const masukCount =
+      setoranDikonf.length +
+      kasPeriode.filter((t) => t.tipe === 'PEMASUKAN').length;
     const keluarCount = kasPeriode.filter(
       (t) => t.tipe === 'PENGELUARAN',
     ).length;
     const saldo =
-      kasRtSemua.reduce(
-        (s, r) =>
-          s + r.nominalKas + (r.rumah.status === 'KOSONG' ? r.nominalIpl : 0),
-        0,
-      ) +
       setoranSemua.reduce((s, r) => s + r.nominalIpl, 0) +
       sumRows(kasSemua.filter((t) => t.tipe === 'PEMASUKAN')) -
       sumRows(kasSemua.filter((t) => t.tipe === 'PENGELUARAN'));
@@ -287,6 +290,11 @@ export class DashboardRwService {
           keluar,
           keluarCount,
           net: masuk - keluar,
+          // Breakdown agar frontend bisa menampilkan "termasuk Setor IPL".
+          setoranMasuk,
+          setoranCount: setoranDikonf.length,
+          manualMasuk,
+          manualKeluar,
         },
       },
       tren,

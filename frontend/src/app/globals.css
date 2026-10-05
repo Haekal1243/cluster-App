@@ -7252,40 +7252,102 @@ select {
 /* ── Dashboard Bendahara RW ── */
 .rw-hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .rw-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; }
-/* Grid KPI: konten rata atas, tinggi sama */
+/* Grid KPI: tinggi semua card dalam satu baris disamakan, konten tetap
+   vertical center via .stat-card { align-items: center }. Kolom mengikuti
+   LEBAR KONTAINER (bukan viewport) via auto-fit — toggle sidebar yang
+   menyempitkan konten ±230px otomatis mengurangi kolom tanpa reload,
+   sehingga tiap card minimal ~270px dan tidak ada teks terpotong. */
 .rw-kpi { align-items: stretch; }
-.rw-dash .rw-kpi { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.rw-kpi .keu-card { align-items: flex-start; }
-.rw-kpi .ipl-summary-label { font-size: 12px; }
-.rw-kpi .ipl-summary-value { font-size: 28px; }
-.rw-kpi .ipl-summary-sub { font-size: 13px; color: #475569; }
+.rw-dash .rw-kpi {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  gap: 20px;
+}
+/* Card sempit: ikon + padding mengecil agar nominal tetap 1 baris penuh. */
+@container (max-width: 299px) {
+  .stat-card { gap: 12px; padding: 16px 18px 20px; }
+  .stat-card .stat-icon { width: 44px; height: 44px; }
+}
 .rw-persen { font-weight: 800; color: #065f46; }
-.rw-progress { display: block; height: 8px; border-radius: 999px; background: #ffffff; border: 1px solid rgba(4, 120, 87, 0.15); overflow: hidden; margin: 6px 0 8px; }
-.rw-progress-fill { display: block; height: 100%; border-radius: 999px; background: #047857; }
-.rw-mini-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.rw-mini-list li { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
-.rw-mini-nominal { margin-left: auto; font-weight: 700; color: #1e293b; white-space: nowrap; }
 .rw-mini-status { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; white-space: nowrap; }
 .rw-mini-status.is-ditolak { background: #fee2e2; color: #b91c1c; }
-.rw-mini-more { color: #7f1d1d; font-weight: 600; }
 .rw-mini-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: #0f766e; text-decoration: none; min-height: 44px; }
-/* Kas RW: header – divider – grid – footer */
-.rw-kas-card { flex-direction: column; align-items: stretch; }
-.rw-kas-head { display: flex; align-items: flex-start; gap: 14px; width: 100%; }
-.rw-kas-head .keu-card-text { flex: 1; min-width: 0; }
-.rw-net-badge { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
-.rw-net-badge.is-naik { background: #dcfce7; color: #15803d; }
-.rw-net-badge.is-turun { background: #fee2e2; color: #b91c1c; }
-.rw-net-badge.is-nol { background: #f1f5f9; color: #64748b; }
-.rw-divider { width: 100%; border: none; border-top: 1px solid rgba(13, 148, 136, 0.18); margin: 12px 0; }
-.rw-kas-flow { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
-.rw-flow-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 0 12px; }
-.rw-flow-col:first-child { padding-left: 0; }
-.rw-flow-col:last-child { padding-right: 0; border-left: 1px solid rgba(13, 148, 136, 0.18); }
-.rw-flow-label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #475569; }
-.rw-flow-nominal { font-size: 15px; font-weight: 700; color: #1e293b; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rw-flow-col i { font-style: normal; font-size: 12px; color: #64748b; }
-.rw-kas-link { margin-top: 12px; }
+/* ── StatCard: kartu KPI compact shared (acuan: card halaman Keuangan) ── */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px 24px;
+  border: 1px solid;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s;
+  min-width: 0;
+}
+a.stat-card:hover { box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); }
+.stat-card.tone-green { background: linear-gradient(135deg, #bbf7d0 0%, #effdf4 55%, #ffffff 100%); border-color: #4ade80; }
+.stat-card.tone-green .stat-icon { background: #16a34a; }
+.stat-card.tone-amber { background: linear-gradient(135deg, #fde68a 0%, #fffbeb 55%, #ffffff 100%); border-color: #fbbf24; }
+.stat-card.tone-amber .stat-icon { background: #d97706; }
+.stat-card.tone-muted { background: linear-gradient(135deg, #f1f5f9 0%, #f1f5f9 42%, #ffffff 88%); border-color: #cbd5e1; }
+.stat-card.tone-muted .stat-icon { background: #94a3b8; }
+.stat-card.tone-red { background: linear-gradient(135deg, #fecaca 0%, #fff1f1 55%, #ffffff 100%); border-color: #f87171; }
+.stat-card.tone-red .stat-icon { background: #dc2626; }
+.stat-card.tone-teal { background: linear-gradient(135deg, #b6e0dc 0%, #eef8f7 55%, #ffffff 100%); border-color: #7cc9c0; }
+.stat-card.tone-teal .stat-icon { background: #0d9488; }
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.stat-icon svg { stroke: #fff; }
+.stat-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.stat-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #334155; }
+.stat-card { container-type: inline-size; }
+.stat-value {
+  /* Fallback bila browser tak mendukung cqi. */
+  font-size: clamp(20px, 2vw, 26px);
+  /* Skala mengikuti LEBAR KARTU (bukan viewport): kolom 4-col yang sempit
+     (sidebar 268px) hanya menyisakan ~110–150px untuk teks setelah ikon +
+     padding, jadi 2vw tidak cukup mengecilkan font. 6.5cqi menjamin
+     "Rp 125.000.000" tetap 1 baris tanpa terpotong. */
+  font-size: clamp(14px, 6.5cqi, 26px);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #1e293b;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.stat-sub {
+  font-size: 13px;
+  color: #4b5563;
+  /* Sub-teks boleh wrap maksimal 2 baris (bukan ellipsis 1 baris). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Baris sub-teks card "Setoran IPL diterima": 1 baris tiap info, tanpa ellipsis. */
+.stat-sub .sub-row { display: block; white-space: nowrap; }
+/* Nominal adaptif: penuh bila kartu lega, ringkas bila kartu sempit. */
+.stat-sub .amt-short { display: none; }
+@container (max-width: 299px) {
+  .stat-sub .amt-full { display: none; }
+  .stat-sub .amt-short { display: inline; }
+}
+.stat-sub b { font-weight: 600; color: #334155; }
+/* Pengaman bila ada svg di dalam sub: jangan jadi block element sendiri. */
+.stat-sub svg { flex-shrink: 0; }
+.stat-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255, 255, 255, 0.65); }
+.stat-progress-fill { display: block; height: 100%; background: #047857; }
+/* (aturan kartu kas RW lama dihapus — digantikan StatCard compact) */
 .rw-bottom { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 16px; align-items: start; }
 .rw-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .rw-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
@@ -7311,9 +7373,6 @@ select {
 .rw-akt-ket { color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rw-akt-waktu { margin-left: auto; color: #64748b; font-size: 0.75rem; white-space: nowrap; }
 .rw-akt-nominal { font-weight: 700; color: #1e293b; white-space: nowrap; }
-@media (max-width: 1280px) {
-  .rw-dash .rw-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (max-width: 1100px) {
   .rw-bottom { grid-template-columns: minmax(0, 1fr); }
   .rw-dash .rw-side { display: contents; }
@@ -7321,9 +7380,6 @@ select {
   .rw-dash .rw-tren { order: 4; }
   .rw-dash .rw-aktivitas { order: 5; }
 }
-@media (max-width: 640px) {
-  .rw-dash .rw-kpi { grid-template-columns: minmax(0, 1fr); }
-  .rw-kpi .ipl-summary-value { font-size: 22px; }
-  .rw-flow-nominal { font-size: 14px; }
+@media (max-width: 767px) {
   .rw-hero-actions .rw-cta { width: 100%; justify-content: center; }
 }

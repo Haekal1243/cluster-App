@@ -323,7 +323,7 @@ function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
                 <td>{formatRupiah(r.terkumpulKas)}</td>
                 <td>
                   {r.terkumpulRumahKosong?.jumlahTagihan > 0
-                    ? `${r.terkumpulRumahKosong.jumlahTagihan} tagihan · ${formatRupiah(r.terkumpulRumahKosong.nominal)}`
+                    ? `${r.terkumpulRumahKosong.jumlahTagihan} tagihan`
                     : <span className="text-muted">—</span>}
                 </td>
                 <td>{formatRupiah(r.sudahDisetor)}</td>
@@ -647,6 +647,11 @@ function AdminIuranView({ user }) {
 
           <FilterPopover
             active={!isDefaultPeriode || filterStatus !== "SEMUA" || filterRt !== "SEMUA"}
+            activeCount={
+              (!isDefaultPeriode ? 1 : 0) +
+              (filterStatus !== "SEMUA" ? 1 : 0) +
+              (filterRt !== "SEMUA" ? 1 : 0)
+            }
             onOpen={handleFilterOpen}
             onApply={handleFilterApply}
             onReset={handleFilterReset}
@@ -1226,6 +1231,12 @@ export function WargaIuranView({ user }) {
 
         <FilterPopover
           active={hasActiveFilter}
+          activeCount={
+            (periodeDari ? 1 : 0) +
+            (periodeSampai ? 1 : 0) +
+            (filterStatus !== "SEMUA" ? 1 : 0) +
+            (selectedRumahId !== "semua" ? 1 : 0)
+          }
           open={filterOpen}
           onOpenChange={handleFilterOpenChange}
           onApply={applyFilter}

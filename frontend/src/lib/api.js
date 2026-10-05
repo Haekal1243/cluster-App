@@ -211,6 +211,12 @@ export const auditApi = {
     request(`/audit${qs({ aksi, search, dari, sampai, limit })}`),
 };
 
+// ── Dashboard Bendahara RW: agregat setoran IPL + kas RW (filter rentang YYYY-MM) ──
+export const dashboardRwApi = {
+  get: ({ dari, sampai } = {}) =>
+    request(`/dashboard/rw${qs({ dari, sampai })}`),
+};
+
 export const keuanganApi = {
   // Riwayat transaksi kas manual dengan filter opsional
   getAll: ({ dari, sampai, tipe, kategori, search, area } = {}) =>

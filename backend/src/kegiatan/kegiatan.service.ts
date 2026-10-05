@@ -134,9 +134,11 @@ export class KegiatanService {
     });
   }
 
-  /** Publik (landing): portofolio cluster 5 tahun ke depan, dikelompokkan per tahun. */
+  /** Publik (landing): portofolio cluster 5 tahun ke belakang s/d 5 tahun ke depan, dikelompokkan per tahun. */
   async portofolio() {
     const sekarang = new Date();
+    const mulai = new Date();
+    mulai.setFullYear(mulai.getFullYear() - 5);
     const batas = new Date();
     batas.setFullYear(batas.getFullYear() + 5);
     const rows = await this.prisma.kegiatan.findMany({
@@ -145,7 +147,7 @@ export class KegiatanService {
         status: 'active',
         tampilDiLanding: true,
         ...tampilKeSemua,
-        tanggalAcara: { gte: sekarang, lte: batas },
+        tanggalAcara: { gte: mulai, lte: batas },
       },
       orderBy: { tanggalAcara: 'asc' },
       select: RINGKAS,

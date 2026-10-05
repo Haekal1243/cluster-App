@@ -284,6 +284,7 @@ export default function WargaPage() {
           </div>
           <FilterPopover
             active={filterRT !== "SEMUA"}
+            activeCount={filterRT !== "SEMUA" ? 1 : 0}
             onOpen={() => {
               setDraftRT(filterRT);
             }}

@@ -10,7 +10,7 @@ import {
   TipeKas,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import * as process from 'node:process';
+import { Buffer } from 'node:buffer';
 import { MATRIX, PERMISSIONS, ROLES } from './rbac-data';
 
 const prisma = new PrismaClient();

@@ -1468,6 +1468,22 @@ select {
   transform: rotate(180deg);
 }
 
+/* Badge jumlah filter aktif di tombol Filter ("Filter · 1"). */
+.filter-popover-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* ── Export split-button (Riwayat Kas): tombol aksi + menu pilihan format ── */
 .export-split {
   position: relative;
@@ -1566,8 +1582,8 @@ select {
   right: 0;
   top: calc(100% + 8px);
   z-index: 40;
-  width: 260px;
-  max-width: 82vw;
+  width: 300px;
+  max-width: calc(100vw - 32px);
   max-height: min(70vh, 440px);
   background: var(--db-surface);
   border: 1px solid var(--db-border);
@@ -1601,6 +1617,14 @@ select {
 /* Combobox: input teks bebas + dropdown suggestion (mis. Blok Rumah di Tambah Warga) */
 .combobox {
   position: relative;
+  min-width: 0;
+}
+
+/* Trigger custom Select selalu full-width di dalam field popover. */
+.filter-popover-field .combobox,
+.filter-popover-field .ui-select-trigger {
+  width: 100%;
+  min-width: 0;
 }
 .combobox-input-open {
   border-bottom-left-radius: 0;
@@ -1624,8 +1648,11 @@ select {
   list-style: none;
 }
 .combobox-option {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
+  min-height: 40px;
   text-align: left;
   padding: 8px 10px;
   border: none;
@@ -1634,9 +1661,45 @@ select {
   font-size: 0.875rem;
   color: var(--db-slate-700);
   cursor: pointer;
+  list-style: none;
 }
 .combobox-option:hover {
   background: var(--db-bg);
+}
+.combobox-option:focus-visible {
+  outline: 2px solid var(--db-primary);
+  outline-offset: -2px;
+  background: var(--db-bg);
+}
+.combobox-option-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.combobox-check {
+  display: inline-flex;
+  flex: none;
+  width: 20px;
+  justify-content: flex-end;
+  color: var(--db-primary);
+}
+
+/* Menu hasil portal: fixed mengikuti trigger, di atas popover/modal.
+   right:auto + width:max-content: lebar selebar konten (min. selebar trigger
+   dari min-width inline, maks. selebar viewport) — tidak melar ke tepi layar. */
+.combobox-list-portal {
+  top: auto;
+  right: auto;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  margin-top: 0;
+  border-radius: 10px;
+  border-top: 1px solid var(--db-border);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  max-height: 280px;
+  z-index: 1200;
 }
 .combobox-option.is-selected {
   background: var(--db-bg);
@@ -1645,12 +1708,67 @@ select {
 }
 
 .ui-select-trigger {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: #333;
+}
+.ui-select-trigger > span:first-child {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-select-trigger .is-placeholder {
+  color: #94a3b8;
+}
+.ui-select-chevron {
+  flex: none;
+  color: var(--db-slate-400);
+}
+/* Trigger custom sudah punya ikon chevron sendiri: matikan background
+   chevron sisa era native <select> (class .warga-filter-select). */
+.ui-select-trigger.warga-filter-select {
+  background-image: none;
+}
+
+/* Radio list untuk mode mobile (tanpa dropdown-dalam-dropdown). */
+.combobox-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.combobox-radio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--db-slate-700);
+  cursor: pointer;
+  text-align: left;
+}
+.combobox-radio.is-selected {
+  border-color: var(--db-primary);
+  background: #f0fdfa;
+  color: var(--db-primary-active);
+  font-weight: 600;
+}
+.combobox-radio-label {
+  flex: 1;
+  min-width: 0;
 }
 .ui-select-trigger:disabled {
   cursor: not-allowed;
@@ -1741,20 +1859,46 @@ select {
   padding: 8px 12px;
   border: none;
   border-radius: 8px;
-  background: #2563eb;
+  background: linear-gradient(135deg, var(--db-primary) 0%, var(--db-primary-hover) 100%);
   color: #fff;
   font-family: "Poppins", sans-serif;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: filter 0.15s ease;
 }
 .filter-popover-apply:hover:not(:disabled) {
-  background: #1d4ed8;
+  filter: brightness(1.07);
 }
 .filter-popover-apply:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Mobile: popover filter jadi bottom sheet full-width (margin 16px). */
+@media (max-width: 767px) {
+  .filter-popover-panel {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    top: auto;
+    width: auto;
+    max-width: none;
+    max-height: min(78vh, 560px);
+    max-height: min(78dvh, 560px);
+    z-index: 1200;
+    overflow-y: auto;
+  }
+  .filter-popover-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--db-surface);
+    padding-top: 4px;
+  }
+  .filter-popover-footer button {
+    min-height: 44px;
+  }
 }
 
 .list-search-wrap {
@@ -7304,3 +7448,138 @@ select {
 .panel-sistem-link:hover { border-color: #5eead4; background: var(--db-success-bg); }
 .panel-sistem-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: var(--db-success-bg); color: var(--db-primary); }
 .panel-sistem-arrow { margin-left: auto; color: var(--db-slate-400); }
+
+/* ── Dashboard Bendahara RW ── */
+.rw-hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rw-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; }
+/* Grid KPI: tinggi semua card dalam satu baris disamakan, konten tetap
+   vertical center via .stat-card { align-items: center }. Kolom mengikuti
+   LEBAR KONTAINER (bukan viewport) via auto-fit — toggle sidebar yang
+   menyempitkan konten ±230px otomatis mengurangi kolom tanpa reload,
+   sehingga tiap card minimal ~270px dan tidak ada teks terpotong. */
+.rw-kpi { align-items: stretch; }
+.rw-dash .rw-kpi {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+  gap: 20px;
+}
+/* Card sempit: ikon + padding mengecil agar nominal tetap 1 baris penuh. */
+@container (max-width: 299px) {
+  .stat-card { gap: 12px; padding: 16px 18px 20px; }
+  .stat-card .stat-icon { width: 44px; height: 44px; }
+}
+.rw-persen { font-weight: 800; color: #065f46; }
+.rw-mini-status { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; white-space: nowrap; }
+.rw-mini-status.is-ditolak { background: #fee2e2; color: #b91c1c; }
+.rw-mini-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: #0f766e; text-decoration: none; min-height: 44px; }
+/* ── StatCard: kartu KPI compact shared (acuan: card halaman Keuangan) ── */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px 24px;
+  border: 1px solid;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s;
+  min-width: 0;
+}
+a.stat-card:hover { box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); }
+.stat-card.tone-green { background: linear-gradient(135deg, #bbf7d0 0%, #effdf4 55%, #ffffff 100%); border-color: #4ade80; }
+.stat-card.tone-green .stat-icon { background: #16a34a; }
+.stat-card.tone-amber { background: linear-gradient(135deg, #fde68a 0%, #fffbeb 55%, #ffffff 100%); border-color: #fbbf24; }
+.stat-card.tone-amber .stat-icon { background: #d97706; }
+.stat-card.tone-muted { background: linear-gradient(135deg, #f1f5f9 0%, #f1f5f9 42%, #ffffff 88%); border-color: #cbd5e1; }
+.stat-card.tone-muted .stat-icon { background: #94a3b8; }
+.stat-card.tone-red { background: linear-gradient(135deg, #fecaca 0%, #fff1f1 55%, #ffffff 100%); border-color: #f87171; }
+.stat-card.tone-red .stat-icon { background: #dc2626; }
+.stat-card.tone-teal { background: linear-gradient(135deg, #b6e0dc 0%, #eef8f7 55%, #ffffff 100%); border-color: #7cc9c0; }
+.stat-card.tone-teal .stat-icon { background: #0d9488; }
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.stat-icon svg { stroke: #fff; }
+.stat-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.stat-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #334155; }
+.stat-card { container-type: inline-size; }
+.stat-value {
+  /* Fallback bila browser tak mendukung cqi. */
+  font-size: clamp(20px, 2vw, 26px);
+  /* Skala mengikuti LEBAR KARTU (bukan viewport): kolom 4-col yang sempit
+     (sidebar 268px) hanya menyisakan ~110–150px untuk teks setelah ikon +
+     padding, jadi 2vw tidak cukup mengecilkan font. 6.5cqi menjamin
+     "Rp 125.000.000" tetap 1 baris tanpa terpotong. */
+  font-size: clamp(14px, 6.5cqi, 26px);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #1e293b;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.stat-sub {
+  font-size: 13px;
+  color: #4b5563;
+  /* Sub-teks boleh wrap maksimal 2 baris (bukan ellipsis 1 baris). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Baris sub-teks card "Setoran IPL diterima": 1 baris tiap info, tanpa ellipsis. */
+.stat-sub .sub-row { display: block; white-space: nowrap; }
+/* Nominal adaptif: penuh bila kartu lega, ringkas bila kartu sempit. */
+.stat-sub .amt-short { display: none; }
+@container (max-width: 299px) {
+  .stat-sub .amt-full { display: none; }
+  .stat-sub .amt-short { display: inline; }
+}
+.stat-sub b { font-weight: 600; color: #334155; }
+/* Pengaman bila ada svg di dalam sub: jangan jadi block element sendiri. */
+.stat-sub svg { flex-shrink: 0; }
+.stat-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255, 255, 255, 0.65); }
+.stat-progress-fill { display: block; height: 100%; background: #047857; }
+/* (aturan kartu kas RW lama dihapus — digantikan StatCard compact) */
+.rw-bottom { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 16px; align-items: start; }
+.rw-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.rw-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.rw-panel-head h3 { margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b; display: inline-flex; align-items: center; gap: 8px; }
+.rw-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 800; }
+.rw-empty { margin: 0; font-size: 0.85rem; color: #64748b; }
+.rw-chart-hint { margin: 0 0 12px; font-size: 0.75rem; color: #64748b; }
+.rw-tindak-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rw-tindak-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid #e5e9f0; border-radius: 10px; background: #fff; }
+.rw-tindak-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 999px; margin-top: 5px; background: #f59e0b; }
+.rw-tindak-dot.is-ok { background: #22c55e; }
+.rw-tindak-dot.is-no { background: #ef4444; }
+.rw-tindak-dot.is-wait { background: #f59e0b; }
+.rw-tindak-item.is-ditolak .rw-tindak-dot { background: #ef4444; }
+.rw-tindak-item.is-info { align-items: center; color: #64748b; }
+.rw-tindak-body { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; min-width: 0; }
+.rw-tindak-body b { color: #1e293b; }
+.rw-tindak-body span { color: #64748b; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.rw-tindak-body .btn-ipl-review { align-self: flex-start; margin-top: 4px; min-height: 44px; }
+.rw-aktivitas-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rw-aktivitas-list li { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+.rw-akt-rt { font-weight: 700; color: #1e293b; white-space: nowrap; }
+.rw-akt-ket { color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rw-akt-waktu { margin-left: auto; color: #64748b; font-size: 0.75rem; white-space: nowrap; }
+.rw-akt-nominal { font-weight: 700; color: #1e293b; white-space: nowrap; }
+@media (max-width: 1100px) {
+  .rw-bottom { grid-template-columns: minmax(0, 1fr); }
+  .rw-dash .rw-side { display: contents; }
+  .rw-dash .rw-tindak { order: 3; }
+  .rw-dash .rw-tren { order: 4; }
+  .rw-dash .rw-aktivitas { order: 5; }
+}
+@media (max-width: 767px) {
+  .rw-hero-actions .rw-cta { width: 100%; justify-content: center; }
+}

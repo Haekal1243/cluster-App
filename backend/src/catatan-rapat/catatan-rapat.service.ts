@@ -95,7 +95,7 @@ export class CatatanRapatService {
       where: { id },
       data: {
         judul: dto.judul,
-        isiNotulen: dto.isiNotulen !== undefined ? dto.isiNotulen.trim() || null : undefined,
+        isiNotulen: dto.isiNotulen !== undefined ? dto.isiNotulen?.trim() || null : undefined,
         fileNotulen: fileBaru,
         // Area hanya bisa dipindah oleh scope ALL; pengurus tidak bisa memindah notulen ke area lain.
         ...(scopeArea === null && dto.area && { area: dto.area }),

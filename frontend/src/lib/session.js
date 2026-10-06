@@ -1,6 +1,19 @@
 const TOKEN_KEY = "accessToken";
 const USER_KEY = "user";
 
+// App terinstall (PWA "Add to Home Screen"/"Install") dijalankan di jendela standalone
+// tanpa chrome browser. sessionStorage di situ ikut mati tiap Android membunuh proses
+// app di background — pengguna jadi otomatis ter-logout tiap buka app lagi, padahal
+// app yang sudah diinstall di HP pribadi itu wajar selalu "diingat" (sama kayak app
+// native lain). Jadi sesi WAJIB localStorage di mode ini, apapun pilihan "Ingat saya".
+function isStandalonePwa() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(display-mode: standalone)")?.matches === true ||
+    window.navigator.standalone === true // properti lama khusus Safari/iOS
+  );
+}
+
 export function getToken() {
   if (typeof window === "undefined") return null;
   return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
@@ -8,7 +21,7 @@ export function getToken() {
 
 export function setToken(token, remember) {
   if (typeof window === "undefined") return;
-  if (remember) {
+  if (remember || isStandalonePwa()) {
     localStorage.setItem(TOKEN_KEY, token);
     sessionStorage.removeItem(TOKEN_KEY);
   } else {
@@ -48,7 +61,13 @@ export function getUser() {
  */
 export function saveUser(user, remember) {
   if (typeof window === "undefined") return;
-  const pakaiSession = remember === undefined ? !!sessionStorage.getItem(USER_KEY) : !remember;
+  // Di mode standalone, paksa localStorage walau sebelumnya (pra-fix) sempat kesimpen di
+  // sessionStorage — jadi otomatis "sembuh" sendiri begitu sesi di-refresh (lihat DashboardShell).
+  const pakaiSession = isStandalonePwa()
+    ? false
+    : remember === undefined
+      ? !!sessionStorage.getItem(USER_KEY)
+      : !remember;
   const [tujuan, lain] = pakaiSession ? [sessionStorage, localStorage] : [localStorage, sessionStorage];
   lain.removeItem(USER_KEY);
   tujuan.setItem(USER_KEY, JSON.stringify(user));

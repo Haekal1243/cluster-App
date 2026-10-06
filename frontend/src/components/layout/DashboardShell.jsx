@@ -6,6 +6,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
 import GantiPasswordModal from "@/components/auth/GantiPasswordModal";
+import NotifPrompt from "@/components/push/NotifPrompt";
 import { authApi } from "@/lib/api";
 import { getToken, getUser, saveUser, clearSession } from "@/lib/session";
 import { isPathAllowed } from "@/lib/nav";
@@ -123,6 +124,8 @@ export default function DashboardShell({ children }) {
 
       {/* Login pertama dengan password sementara dari pengurus RT: wajib ganti dulu */}
       {user?.wajibGantiPassword && <GantiPasswordModal wajib />}
+
+      <NotifPrompt />
     </div>
   );
 }

@@ -24,9 +24,17 @@ function bolehTulis(user, kode, item) {
   return false;
 }
 
+// Jenis input notulen yang sudah tersimpan: tidak ada file → isi notulen; file bertipe image → gambar; sisanya → file.
+function jenisDariItem(item) {
+  if (!item?.fileNotulen) return "isi";
+  return item.fileNotulenMime?.startsWith("image/") ? "gambar" : "file";
+}
+
 function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, onClose, onSubmit }) {
   const [form, setForm] = useState({ judul: "", isiNotulen: "", area: "RW" });
   const [file, setFile] = useState(null);
+  const [jenisInput, setJenisInput] = useState("isi");
+  const [jenisAwal, setJenisAwal] = useState("isi");
   const [isSaving, setIsSaving] = useState(false);
   const isiRef = useRef(null);
 
@@ -38,14 +46,22 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
         : { judul: "", isiNotulen: "", area: "RW" },
     );
     setFile(null);
+    const awal = mode === "edit" && initialData ? jenisDariItem(initialData) : "isi";
+    setJenisInput(awal);
+    setJenisAwal(awal);
   }, [open, mode, initialData]);
 
   if (!open) return null;
 
-  // Boleh kosongin isi notulen HANYA kalau ada file (baru dipilih, atau sudah terlampir sebelumnya
-  // dan belum diganti) — samain sama aturan validasi di backend.
-  const adaFile = !!file || (mode === "edit" && !!initialData?.fileNotulen);
-  const isiWajib = !adaFile;
+  // Edit tanpa ganti file & jenis tidak berubah → file lama masih dianggap terlampir.
+  const adaFileLama = mode === "edit" && jenisInput !== "isi" && jenisInput === jenisAwal && !!initialData?.fileNotulen;
+  const isiWajib = jenisInput === "isi";
+  const fileWajib = jenisInput !== "isi" && !file && !adaFileLama;
+
+  const pilihJenis = (j) => {
+    setJenisInput(j);
+    setFile(null);
+  };
 
   // Sisipkan "• " di awal baris kursor berada, atau di awal baris baru — biar user gampang bikin poin
   // tanpa harus ngetik bullet manual satu-satu.
@@ -69,16 +85,27 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isiWajib && !form.isiNotulen.trim()) {
-      showMessage("Validasi", "Isi notulen wajib diisi kalau tidak mengunggah file.", "warning");
+      showMessage("Validasi", "Isi notulen wajib diisi.", "warning");
       return;
     }
+    if (fileWajib) {
+      showMessage(
+        "Validasi",
+        jenisInput === "gambar" ? "Gambar notulen wajib diunggah." : "File notulen wajib diunggah.",
+        "warning",
+      );
+      return;
+    }
+    // Pindah dari gambar/file ke isi notulen saat edit → lepas file lama di server.
+    const lepasFileLama = mode === "edit" && jenisInput === "isi" && jenisAwal !== "isi" && !!initialData?.fileNotulen;
     setIsSaving(true);
     try {
       await onSubmit({
         judul: form.judul.trim(),
-        isiNotulen: form.isiNotulen,
+        isiNotulen: jenisInput === "isi" ? form.isiNotulen : "",
         ...(pilihArea ? { area: form.area } : {}),
-        file,
+        file: jenisInput !== "isi" ? file : undefined,
+        ...(lepasFileLama ? { hapusFile: true } : {}),
       });
     } finally {
       setIsSaving(false);
@@ -96,12 +123,6 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            <div className="catatan-area-info">
-              Notulen ini otomatis tersimpan di wilayah{" "}
-              <strong>{areaLabel(mode === "edit" ? initialData?.area : areaOtomatis)}</strong> sesuai jabatan Anda dan
-              hanya terlihat pengurus wilayah tersebut.
-            </div>
-
             {pilihArea && (
               <div className="form-group">
                 <label htmlFor="area">Wilayah</label>
@@ -120,40 +141,79 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
               </label>
               <input id="judul" className="form-control" value={form.judul} onChange={(e) => setForm({ ...form, judul: e.target.value })} required />
             </div>
+
             <div className="form-group">
-              <div className="catatan-isi-label-row">
-                <label htmlFor="isi">
-                  Isi Notulen {isiWajib && <span className="required-star">*</span>}
-                  {!isiWajib && <span className="label-optional">(opsional, sudah ada file)</span>}
-                </label>
-                <button type="button" className="catatan-poin-btn" onClick={tambahPoin} title="Tambah poin di baris ini">
-                  <List size={13} /> Poin
+              <label>Isi Notulen Berupa</label>
+              <div className="catatan-mode-pilihan" role="radiogroup" aria-label="Jenis isi notulen">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={jenisInput === "isi"}
+                  className={`catatan-mode-opsi ${jenisInput === "isi" ? "is-active" : ""}`}
+                  onClick={() => pilihJenis("isi")}
+                >
+                  Teks
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={jenisInput === "gambar"}
+                  className={`catatan-mode-opsi ${jenisInput === "gambar" ? "is-active" : ""}`}
+                  onClick={() => pilihJenis("gambar")}
+                >
+                  Gambar
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={jenisInput === "file"}
+                  className={`catatan-mode-opsi ${jenisInput === "file" ? "is-active" : ""}`}
+                  onClick={() => pilihJenis("file")}
+                >
+                  File
                 </button>
               </div>
-              <textarea
-                ref={isiRef}
-                id="isi"
-                className="form-control"
-                rows={9}
-                value={form.isiNotulen}
-                onChange={(e) => setForm({ ...form, isiNotulen: e.target.value })}
-                placeholder="Peserta, agenda, pembahasan, keputusan..."
-              />
             </div>
-            <div className="form-group">
-              <label>File Notulen</label>
-              <FileDropzone
-                file={file}
-                onFileSelect={setFile}
-                onRemove={() => setFile(null)}
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                maxSizeMB={10}
-                placeholder="Klik atau seret file ke sini"
-                hint="PDF / DOC / DOCX / JPG / PNG · Maks. 10 MB"
-                currentLabel={!file && initialData?.fileNotulen ? "File sudah terlampir (pilih baru untuk mengganti)" : undefined}
-                onError={(msg) => showMessage("File Terlalu Besar", msg, "warning")}
-              />
-            </div>
+
+            {jenisInput === "isi" ? (
+              <div className="form-group">
+                <div className="catatan-isi-label-row">
+                  <label htmlFor="isi">
+                    Isi Notulen <span className="required-star">*</span>
+                  </label>
+                  <button type="button" className="catatan-poin-btn" onClick={tambahPoin} title="Tambah poin di baris ini">
+                    <List size={13} /> Poin
+                  </button>
+                </div>
+                <textarea
+                  ref={isiRef}
+                  id="isi"
+                  className="form-control"
+                  rows={9}
+                  value={form.isiNotulen}
+                  onChange={(e) => setForm({ ...form, isiNotulen: e.target.value })}
+                  placeholder="Peserta, agenda, pembahasan, keputusan..."
+                />
+              </div>
+            ) : (
+              <div className="form-group">
+                <label>
+                  {jenisInput === "gambar" ? "Gambar Notulen" : "File Notulen"}{" "}
+                  {fileWajib && <span className="required-star">*</span>}
+                </label>
+                <FileDropzone
+                  file={file}
+                  onFileSelect={setFile}
+                  onRemove={() => setFile(null)}
+                  accept={jenisInput === "gambar" ? ".jpg,.jpeg,.png" : ".pdf,.doc,.docx"}
+                  maxSizeMB={10}
+                  placeholder="Klik atau seret file ke sini"
+                  hint={jenisInput === "gambar" ? "JPG / PNG · Maks. 10 MB" : "PDF / DOC / DOCX · Maks. 10 MB"}
+                  currentLabel={!file && adaFileLama ? "File sudah terlampir (pilih baru untuk mengganti)" : undefined}
+                  onError={(msg) => showMessage("File Terlalu Besar", msg, "warning")}
+                />
+              </div>
+            )}
           </div>
           <div className="modal-footer">
             <button type="button" className="btn-outline-neutral" onClick={onClose} disabled={isSaving}>Batal</button>
@@ -165,8 +225,38 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
   );
 }
 
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function getImageSize(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+function unduhBlob(blob, namaFile) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = namaFile;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function DetailModal({ item, onClose }) {
+  const [isDownloading, setIsDownloading] = useState(false);
   if (!item) return null;
+
+  const jenis = jenisDariItem(item);
   const bukaFile = async () => {
     try {
       await catatanRapatApi.openFile(item.id);
@@ -175,7 +265,7 @@ function DetailModal({ item, onClose }) {
     }
   };
 
-  const unduhPdf = async () => {
+  const buatHeaderPdf = async () => {
     const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     const judulBersih = stripRapatPrefix(item.judul);
@@ -201,13 +291,72 @@ function DetailModal({ item, onClose }) {
     doc.line(marginX, y, 194, y);
     y += 8;
 
-    doc.setFontSize(11);
-    doc.setTextColor(30);
-    const isi = item.isiNotulen?.trim() || "(Tidak ada isi notulen — lihat file terlampir.)";
-    doc.text(doc.splitTextToSize(isi, 178), marginX, y);
-
-    doc.save(`Notulen - ${judulBersih} - ${tanggal(item.createDate)}.pdf`);
+    return { doc, y, judulBersih };
   };
+
+  const unduhPdf = async () => {
+    setIsDownloading(true);
+    try {
+      const namaDasar = `Notulen - ${stripRapatPrefix(item.judul)} - ${tanggal(item.createDate)}`;
+
+      // Dokumen Word tidak bisa disisipkan ke PDF dari browser — unduh file aslinya apa adanya.
+      if (jenis === "file" && item.fileNotulenMime !== "application/pdf") {
+        const blob = await catatanRapatApi.getFileBlob(item.id);
+        const ext = (item.fileNotulenNama || "").split(".").pop();
+        unduhBlob(blob, `${namaDasar}${ext ? `.${ext}` : ""}`);
+        return;
+      }
+
+      const { doc, y } = await buatHeaderPdf();
+
+      if (jenis === "isi") {
+        doc.setFontSize(11);
+        doc.setTextColor(30);
+        const isi = item.isiNotulen?.trim() || "(Tidak ada isi notulen.)";
+        doc.text(doc.splitTextToSize(isi, 178), 16, y);
+        doc.save(`${namaDasar}.pdf`);
+        return;
+      }
+
+      if (jenis === "gambar") {
+        const blob = await catatanRapatApi.getFileBlob(item.id);
+        const dataUrl = await blobToDataUrl(blob);
+        const { width, height } = await getImageSize(dataUrl);
+        const maxW = 178;
+        const maxH = 297 - y - 14;
+        let w = maxW;
+        let h = (height / width) * w;
+        if (h > maxH) {
+          h = maxH;
+          w = (width / height) * h;
+        }
+        const format = item.fileNotulenMime === "image/png" ? "PNG" : "JPEG";
+        doc.addImage(dataUrl, format, 16, y, w, h);
+        doc.save(`${namaDasar}.pdf`);
+        return;
+      }
+
+      // jenis === "file" & mime PDF → gabungkan cover dengan halaman PDF aslinya.
+      const { PDFDocument } = await import("pdf-lib");
+      const headerBytes = doc.output("arraybuffer");
+      const merged = await PDFDocument.create();
+      const headerDoc = await PDFDocument.load(headerBytes);
+      (await merged.copyPages(headerDoc, headerDoc.getPageIndices())).forEach((p) => merged.addPage(p));
+
+      const blob = await catatanRapatApi.getFileBlob(item.id);
+      const fileBytes = await blob.arrayBuffer();
+      const attachDoc = await PDFDocument.load(fileBytes);
+      (await merged.copyPages(attachDoc, attachDoc.getPageIndices())).forEach((p) => merged.addPage(p));
+
+      unduhBlob(new Blob([await merged.save()], { type: "application/pdf" }), `${namaDasar}.pdf`);
+    } catch (err) {
+      showMessage("Gagal Membuat PDF", err.message || "Terjadi kesalahan.", "error");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const labelUnduh = jenis === "file" && item.fileNotulenMime !== "application/pdf" ? "Download File" : "Download PDF";
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -227,16 +376,18 @@ function DetailModal({ item, onClose }) {
               <p className="review-desc-text">{item.isiNotulen}</p>
             </div>
           ) : (
-            <p className="field-hint">Tidak ada isi notulen — lihat file terlampir di bawah.</p>
+            <p className="field-hint">
+              {jenis === "gambar" ? "Notulen berupa gambar — lihat lampiran di bawah." : "Tidak ada isi notulen — lihat file terlampir di bawah."}
+            </p>
           )}
           <div className="catatan-detail-actions">
             {item.fileNotulen && (
               <button type="button" className="btn-ipl-view" onClick={bukaFile}>
-                <FileText size={14} /> Buka file notulen
+                <FileText size={14} /> Buka {jenis === "gambar" ? "gambar" : "file"} notulen
               </button>
             )}
-            <button type="button" className="btn-outline-neutral" onClick={unduhPdf}>
-              <Download size={14} /> Download PDF
+            <button type="button" className="btn-outline-neutral" onClick={unduhPdf} disabled={isDownloading}>
+              <Download size={14} /> {isDownloading ? "Memproses..." : labelUnduh}
             </button>
           </div>
         </div>

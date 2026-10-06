@@ -43,6 +43,15 @@ export class FileService {
     await this.prisma.file.deleteMany({ where: { id } });
   }
 
+  /** Metadata beberapa file sekaligus (tanpa isi datanya) — dipakai untuk melampirkan info ke response lain. */
+  async metadataBanyak(ids: string[]) {
+    if (ids.length === 0) return [];
+    return this.prisma.file.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, mimeType: true, namaAsli: true },
+    });
+  }
+
   /** Kirim isi file ke klien. `publikSaja`: tolak file yang tidak bertanda publik. */
   async kirim(res: Response, id: string, opsi: { publikSaja?: boolean } = {}) {
     const file = await this.prisma.file.findUnique({ where: { id } });

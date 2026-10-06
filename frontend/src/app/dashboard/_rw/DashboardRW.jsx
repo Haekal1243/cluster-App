@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye } from "lucide-react";
-import { dashboardRwApi } from "@/lib/api";
+import { Calendar, CalendarDays, Eye, FileText, Megaphone } from "lucide-react";
+import { dashboardRwApi, kegiatanApi, pengumumanApi } from "@/lib/api";
 import { areaLabel, can } from "@/lib/session";
+import { formatTanggalLengkap as formatKegiatanDate, formatTanggalPanjang as formatPengumumanDate } from "@/lib/format";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import SetoranDetailModal from "@/components/setoran/SetoranDetailModal";
+import KegiatanDetailModal from "@/components/kegiatan/KegiatanDetailModal";
+import PengumumanDetailModal from "@/components/pengumuman/PengumumanDetailModal";
 import {
   KpiBelumDisetor,
   KpiDiterima,
@@ -42,6 +45,11 @@ export default function DashboardRW({ user }) {
   const [loading, setLoading] = useState(true);
   const [gagal, setGagal] = useState(null);
   const [detailId, setDetailId] = useState(null);
+
+  const [kegiatan, setKegiatan] = useState([]);
+  const [pengumuman, setPengumuman] = useState([]);
+  const [selectedKegiatan, setSelectedKegiatan] = useState(null);
+  const [selectedPengumuman, setSelectedPengumuman] = useState(null);
 
   const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
   const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
@@ -80,6 +88,37 @@ export default function DashboardRW({ user }) {
     muat();
   }, [muat]);
 
+  // Kegiatan & pengumuman: sama seperti dashboard warga — hanya yang aktif/akan datang.
+  useEffect(() => {
+    let cancelled = false;
+    async function loadKegiatan() {
+      let data = await kegiatanApi.getFeed().catch(() => null);
+      if (!Array.isArray(data)) data = await kegiatanApi.getActive().catch(() => []);
+      if (cancelled) return;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const akanDatang = (data || []).filter((k) => {
+        const t = new Date(k.tanggalAcara);
+        return Number.isNaN(t.getTime()) || t >= today;
+      });
+      akanDatang.sort((a, b) => new Date(a.tanggalAcara).getTime() - new Date(b.tanggalAcara).getTime());
+      setKegiatan(akanDatang);
+    }
+    loadKegiatan();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPengumuman() {
+      let data = await pengumumanApi.getFeed().catch(() => null);
+      if (!Array.isArray(data)) data = await pengumumanApi.getActive().catch(() => []);
+      if (!cancelled) setPengumuman(data || []);
+    }
+    loadPengumuman();
+    return () => { cancelled = true; };
+  }, []);
+
   const isDefault = periodeDari === getCurrentYm() && periodeSampai === getCurrentYm();
   const periodeLabel =
     periodeDari === periodeSampai ? formatYm(periodeDari) : `${formatYm(periodeDari)} – ${formatYm(periodeSampai)}`;
@@ -96,8 +135,8 @@ export default function DashboardRW({ user }) {
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}
       >
         <div>
-          <h2>Selamat datang kembali, {userName}</h2>
-          <p>Ringkasan setoran IPL dari RT ke kas RW · {periodeLabel}.</p>
+          <h2 className="welcome-banner-title">Selamat datang kembali, {userName}</h2>
+          <p className="welcome-banner-sub">Ringkasan setoran IPL dari RT ke kas RW · {periodeLabel}.</p>
         </div>
         <div className="rw-hero-actions">
           {menungguCount > 0 && (
@@ -196,6 +235,97 @@ export default function DashboardRW({ user }) {
         </div>
       )}
 
+      {/* Kegiatan Cluster */}
+      <section className="content-card">
+        <div className="db-section-header">
+          <CalendarDays size={17} />
+          <h3>Kegiatan Cluster</h3>
+        </div>
+
+        {kegiatan.length === 0 ? (
+          <div className="portal-empty-notice">
+            <CalendarDays size={32} />
+            <p>Belum ada kegiatan akan datang.</p>
+          </div>
+        ) : (
+          <div className="portal-kegiatan-grid">
+            {kegiatan.map((k) => (
+              <div
+                key={k.id}
+                className="portal-kegiatan-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedKegiatan(k)}
+                onKeyDown={(e) => { if (e.key === "Enter") setSelectedKegiatan(k); }}
+              >
+                {k.gambarUrl && (
+                  <div className="portal-kegiatan-img-wrap">
+                    <img
+                      src={kegiatanApi.imageUrl(k.gambarUrl)}
+                      alt={k.judul}
+                      className="portal-kegiatan-img"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  </div>
+                )}
+                <div className="portal-kegiatan-body">
+                  <h3 className="portal-kegiatan-title">{k.judul}</h3>
+                  {k.deskripsi && (
+                    <p className="portal-kegiatan-desc">{k.deskripsi}</p>
+                  )}
+                  <div className="portal-kegiatan-meta">
+                    <span className="meta-item"><Calendar size={13} /> {formatKegiatanDate(k.tanggalAcara)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Pengumuman */}
+      <section className="content-card">
+        <div className="db-section-header">
+          <Megaphone size={17} />
+          <h3>Pengumuman</h3>
+        </div>
+
+        {pengumuman.length === 0 ? (
+          <p className="portal-empty-text">Belum ada pengumuman aktif saat ini.</p>
+        ) : (
+          <div className="portal-card-list">
+            {pengumuman.map((p) => (
+              <div
+                key={p.id}
+                className="portal-info-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedPengumuman(p)}
+                onKeyDown={(e) => { if (e.key === "Enter") setSelectedPengumuman(p); }}
+              >
+                <div className="portal-info-card-icon">
+                  <Megaphone size={18} />
+                </div>
+                <div className="portal-info-card-body">
+                  <h3 className="portal-info-card-title">{p.judul}</h3>
+                  {p.keteranganPengumuman && (
+                    <p className="portal-info-card-desc">{p.keteranganPengumuman}</p>
+                  )}
+                  <div className="portal-info-card-meta">
+                    <span className="meta-item"><Calendar size={12} /> {formatPengumumanDate(p.createDate)}</span>
+                    {p.filePengumuman && (
+                      <span className="portal-download-link">
+                        <FileText size={12} /> Ada lampiran
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {detailId && (
         <SetoranDetailModal
           id={detailId}
@@ -203,6 +333,12 @@ export default function DashboardRW({ user }) {
           onClose={() => setDetailId(null)}
           onSuccess={muat}
         />
+      )}
+      {selectedKegiatan && (
+        <KegiatanDetailModal kegiatan={selectedKegiatan} onClose={() => setSelectedKegiatan(null)} />
+      )}
+      {selectedPengumuman && (
+        <PengumumanDetailModal pengumuman={selectedPengumuman} onClose={() => setSelectedPengumuman(null)} />
       )}
     </div>
   );

@@ -88,7 +88,7 @@ export default function PengaduanRespondModal({ pengaduan, currentUserName, onCl
               <div className="ipl-summary-icon"><Forward size={20} /></div>
               <div className="ipl-summary-body">
                 <span className="ipl-summary-label">Diteruskan ke RW</span>
-                <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>
+                <span style={{ fontSize: "0.875rem", fontWeight: 500, color: "var(--db-slate-700)" }}>
                   Belum ditanggapi pengurus RT sejak {formatDate(pengaduan.createdAt)}.
                 </span>
               </div>

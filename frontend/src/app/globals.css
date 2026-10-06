@@ -804,6 +804,27 @@ select {
   transform: translateY(-1px);
 }
 
+.header-install-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #99f6e4;
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: var(--db-primary-active);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.header-install-btn:hover { background: #ccfbf1; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15); }
+@media (max-width: 640px) {
+  .header-install-btn span { display: none; }
+  .header-install-btn { padding: 8px; }
+}
+
 .badge-dot {
   position: absolute;
   top: 8px;

@@ -1,15 +1,3 @@
-/*
-  Warnings:
-
-  - Made the column `keterangan_pengumuman` on table `tb_pengumuman` required. This step will fail if there are existing NULL values in that column.
-
-*/
--- AlterTable
-ALTER TABLE `tb_catatanrapat` MODIFY `isi_notulen` TEXT NULL;
-
--- AlterTable
-ALTER TABLE `tb_pengumuman` MODIFY `keterangan_pengumuman` TEXT NOT NULL;
-
 -- CreateTable
 CREATE TABLE `tb_PushSubscription` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
@@ -26,12 +14,3 @@ CREATE TABLE `tb_PushSubscription` (
 
 -- AddForeignKey
 ALTER TABLE `tb_PushSubscription` ADD CONSTRAINT `tb_PushSubscription_idUser_fkey` FOREIGN KEY (`idUser`) REFERENCES `tb_User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- RedefineIndex (urutan ditukar: MySQL menganggap nama index case-insensitive,
--- jadi index lama harus di-drop dulu sebelum index baru dengan nama "sama" dibuat)
-DROP INDEX `tb_pengaduan_status_createdAt_idx` ON `tb_pengaduan`;
-CREATE INDEX `tb_Pengaduan_status_createdAt_idx` ON `tb_Pengaduan`(`status`, `createdAt`);
-
--- RedefineIndex
-DROP INDEX `tb_pengaduan_tujuan_status_idx` ON `tb_pengaduan`;
-CREATE INDEX `tb_Pengaduan_tujuan_status_idx` ON `tb_Pengaduan`(`tujuan`, `status`);

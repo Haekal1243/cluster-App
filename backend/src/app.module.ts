@@ -17,6 +17,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { PermissionGuard } from './auth/permission.guard';
 import { PengaduanModule } from './pengaduan/pengaduan.module';
 import { NotifikasiModule } from './notifikasi/notifikasi.module';
+import { PushModule } from './push/push.module';
 import { KeuanganModule } from './keuangan/keuangan.module';
 import { SetoranModule } from './setoran/setoran.module';
 import { CatatanRapatModule } from './catatan-rapat/catatan-rapat.module';
@@ -36,6 +37,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AuthModule,
     RbacModule,
     NotifikasiModule,
+    PushModule,
     WargaModule,
     PengumumanModule,
     KegiatanModule,

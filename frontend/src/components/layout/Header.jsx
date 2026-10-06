@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Bell, CheckCheck, Inbox, KeyRound } from "lucide-react";
+import { Menu, Bell, CheckCheck, Inbox, KeyRound, Download } from "lucide-react";
 import { notifikasiApi } from "@/lib/api";
 import { areaLabel } from "@/lib/session";
 import { pageTitle } from "@/lib/nav";
@@ -32,6 +32,34 @@ export default function Header({ onMenuClick }) {
   const [notifications, setNotifications] = useState([]);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const panelRef = useRef(null);
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  // Chrome (Android/desktop) nembak event ini kalau app-nya kedetect installable.
+  // Simpan event-nya, dipicu belakangan lewat tombol sendiri (bukan prompt otomatis browser).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia?.("(display-mode: standalone)").matches) return; // sudah terinstall
+
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    const handleInstalled = () => setInstallPrompt(null);
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("appinstalled", handleInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("appinstalled", handleInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null); // event cuma bisa dipakai sekali
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +130,18 @@ export default function Header({ onMenuClick }) {
       </div>
 
       <div className="header-actions">
+        {installPrompt && (
+          <button
+            type="button"
+            className="header-install-btn"
+            onClick={handleInstallClick}
+            title="Install aplikasi ke perangkat"
+          >
+            <Download size={15} />
+            <span>Install App</span>
+          </button>
+        )}
+
         <div className="notif-wrap" ref={panelRef}>
           <button
             type="button"

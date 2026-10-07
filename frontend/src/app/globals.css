@@ -71,14 +71,36 @@ body {
   min-height: 100%;
 }
 
+html {
+  /* Matikan efek "pull-to-refresh"/bounce glow Chrome pas scroll nyampe ujung atas/bawah
+     — di PWA terinstall ini kerasa seperti UI browser, bukan app native. */
+  overscroll-behavior-y: none;
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
   min-height: 100dvh; /* harus sama dengan tinggi shell dashboard (dvh), kalau tidak halaman bisa di-scroll melewati footer di HP */
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   font-family: "Poppins", sans-serif;
   background: var(--bg-main);
   color: var(--text-primary);
+  /* Kilatan abu-abu pas nge-tap tombol/link di Chrome Android — ganti sama :active state
+     kita sendiri lewat CSS normal, jadi gak kerasa "browser". */
+  -webkit-tap-highlight-color: transparent;
+  /* Blok seleksi teks (long-press munculin menu Copy/Select All ala browser) di seluruh
+     app — native app umumnya begini. Input/textarea/contenteditable dikecualikan di bawah
+     karena user tetap harus bisa select/copy/paste teks yang mereka ketik sendiri. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 img {
@@ -94,6 +116,12 @@ button,
 input,
 select {
   font: inherit;
+}
+
+/* Kilatan tap bawaan Chrome dimatikan (lihat body di atas) — ganti feedback tekan
+   sendiri yang lebih halus, supaya tombol tetap kerasa "hidup" pas disentuh. */
+button:not(:disabled):active {
+  opacity: 0.75;
 }
 
 /* ========================================= */

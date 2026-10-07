@@ -41,11 +41,21 @@ export function formatRupiahShort(n) {
 }
 
 // ── Nama bulan ──────────────────────────────────────────────────────────────
-export const BULAN_PENDEK = {
-  "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr",
-  "05": "Mei", "06": "Jun", "07": "Jul", "08": "Agu",
-  "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
-};
+// PENTING: jangan turunkan array dari object ber-key "01".."12" via
+// Object.values()/entries() — key "10","11","12" selalu diurutkan JS secara
+// numerik duluan sehingga hasilnya mulai dari Oktober (pernah bikin semua label
+// bulan mundur 3 bulan pasca-merge). Array MONTHS di bawah adalah sumber
+// kebenaran urutan; peta & opsi dibangun darinya.
+/** Urutan Januari..Desember (index 0 = Januari). Dipakai semua label bulan. */
+export const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+  "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
+];
+
+/** Peta "01".."12" -> nama pendek. Dibangun dari MONTHS agar urutannya terjamin. */
+export const BULAN_PENDEK = Object.fromEntries(
+  MONTHS.map((label, i) => [String(i + 1).padStart(2, "0"), label]),
+);
 
 export const BULAN_PANJANG = {
   "01": "Januari", "02": "Februari", "03": "Maret", "04": "April",
@@ -53,10 +63,11 @@ export const BULAN_PANJANG = {
   "09": "September", "10": "Oktober", "11": "November", "12": "Desember",
 };
 
-export const BULAN_OPTIONS = Object.entries(BULAN_PANJANG).map(([val, label]) => ({ val, label }));
-
-/** Array 1-indexed (index 0 = Januari) — buat kode lama yang pakai MONTHS[bulan-1]. */
-export const MONTHS = Object.values(BULAN_PENDEK);
+/** Opsi dropdown filter, urut Januari..Desember. */
+export const BULAN_OPTIONS = MONTHS.map((label, i) => {
+  const val = String(i + 1).padStart(2, "0");
+  return { val, label: BULAN_PANJANG[val] };
+});
 
 /** Label "Okt 2026" dari bulanPeriode ("10") + tahunPeriode ("2026") ala tagihan IPL. */
 export function getMonthLabel(bulan, tahun) {

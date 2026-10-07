@@ -2,34 +2,55 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { PesanIndonesiaFilter, validasiIndonesia } from './common/pesan-indonesia';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // <-- 2. Tambahkan pengaturan CORS
-  // Sebelumnya menerima SEMUA origin (tidak ada whitelist sama sekali). Sekarang dibatasi:
-  // - origin eksplisit dari env CORS_ORIGINS (dev lokal, custom domain, dst)
-  // - *.vercel.app (preview deployment Vercel dapat URL unik tiap deploy, jadi dipakai pola,
+  // <-- 2. Pengaturan CORS (whitelist origin)
+  // - Di laptop (NODE_ENV bukan 'production'): localhost/127.0.0.1 (:3000 Next.js,
+  //   :3001 cadangan, :5173 Vite) lolos OTOMATIS agar clone -> jalan tanpa setting env.
+  // - Di deploy (NODE_ENV=production): default dev di atas MATI TOTAL, yang lolos hanya
+  //   origin eksplisit dari env CORS_ORIGINS (custom domain) + *.vercel.app
+  //   (preview deployment Vercel dapat URL unik tiap deploy, jadi dipakai pola,
   //   bukan daftar statis — tetap aman karena subdomain itu hanya bisa dibuat dari project Vercel kita)
   // - request tanpa header Origin (server-to-server/curl, bukan browser) tetap diizinkan
   // exposedHeaders: agar fetch browser boleh MEMBACA Content-Disposition
   // (dipakai tombol Export agar nama file dari server ikut terpakai).
+  // Tetap Bearer token (tanpa credentials:true) — frontend kirim Authorization header.
+  const logger = new Logger('CORS');
+  const isProd = process.env.NODE_ENV === 'production';
   const originEksplisit = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
+  const defaultDev = isProd
+    ? []
+    : [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+      ];
+  const originDiizinkan = new Set([...defaultDev, ...originEksplisit]);
   const polaVercel = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
 
   app.enableCors({
     origin(origin, callback) {
-      if (!origin || originEksplisit.includes(origin) || polaVercel.test(origin)) {
+      if (!origin || originDiizinkan.has(origin) || polaVercel.test(origin)) {
         callback(null, true);
       } else {
-        callback(new Error(`Origin ${origin} tidak diizinkan oleh CORS`));
+        // Tolak diam-diam (tanpa header CORS) agar browser memblokir,
+        // tapi JANGAN lempar Error: itu jadi 500 + spam log ERROR Nest.
+        logger.warn(`Origin ${origin} ditolak oleh CORS`);
+        callback(null, false);
       }
     },
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Content-Disposition'],
   });
 

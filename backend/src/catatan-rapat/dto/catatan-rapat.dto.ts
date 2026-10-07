@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 import { Transform } from 'class-transformer';
 import { Area } from '@prisma/client';
@@ -24,4 +24,11 @@ export class CreateCatatanRapatDto {
   area?: Area;
 }
 
-export class UpdateCatatanRapatDto extends PartialType(CreateCatatanRapatDto) {}
+export class UpdateCatatanRapatDto extends PartialType(CreateCatatanRapatDto) {
+  /** Dikirim saat user pindah mode dari gambar/file ke isi notulen tanpa mengunggah file baru —
+   * melepas file lama. Datang sebagai string "true"/"false" dari FormData. */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  hapusFile?: boolean;
+}

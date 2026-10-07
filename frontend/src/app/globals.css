@@ -804,6 +804,27 @@ select {
   transform: translateY(-1px);
 }
 
+.header-install-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #99f6e4;
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: var(--db-primary-active);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.header-install-btn:hover { background: #ccfbf1; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.15); }
+@media (max-width: 640px) {
+  .header-install-btn span { display: none; }
+  .header-install-btn { padding: 8px; }
+}
+
 .badge-dot {
   position: absolute;
   top: 8px;
@@ -7324,6 +7345,17 @@ select {
 }
 .catatan-poin-btn:hover { border-color: var(--db-primary); color: var(--db-primary); background: var(--db-bg); }
 .catatan-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.catatan-mode-pilihan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+.catatan-mode-opsi {
+  display: flex; align-items: center; justify-content: center; padding: 9px 6px;
+  border: 1px solid var(--db-border); border-radius: 10px; font-weight: 600; font-size: 0.82rem;
+  cursor: pointer; color: var(--db-slate-600); text-align: center; background: var(--db-surface);
+  font-family: inherit; transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap; min-width: 0;
+}
+@media (max-width: 380px) { .catatan-mode-opsi { font-size: 0.75rem; padding: 9px 4px; } }
+.catatan-mode-opsi:hover { border-color: var(--db-primary); }
+.catatan-mode-opsi.is-active { background: #f0fdfa; border-color: #99f6e4; color: var(--db-primary-active); }
 /* 520px cuma dipakai di atas breakpoint mobile, biar gak menang-menangan sama
    `.modal-box { max-width: 92vw }` yang didefinisikan duluan di @media (max-width: 600px). */
 @media (min-width: 601px) {
@@ -7582,4 +7614,49 @@ a.stat-card:hover { box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); }
 }
 @media (max-width: 767px) {
   .rw-hero-actions .rw-cta { width: 100%; justify-content: center; }
+}
+
+/* ── Banner "aktifkan notifikasi" (push) ── */
+.notif-prompt {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.notif-prompt-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f0fdfa;
+  color: var(--db-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.notif-prompt-body { flex: 1; min-width: 0; }
+.notif-prompt-title { margin: 0; font-weight: 700; font-size: 0.88rem; color: var(--db-text); }
+.notif-prompt-sub { margin: 2px 0 10px; font-size: 0.78rem; color: var(--db-slate-500); line-height: 1.4; }
+.notif-prompt-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.notif-prompt .btn-ipl-primary { padding: 7px 14px; font-size: 0.8rem; }
+.notif-prompt-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px; border: none;
+  background: transparent; color: var(--db-slate-400); cursor: pointer;
+}
+.notif-prompt-close:hover { background: var(--db-bg); color: var(--db-slate-600); }
+@media (max-width: 480px) {
+  .notif-prompt { flex-wrap: wrap; }
+  .notif-prompt-actions { width: 100%; justify-content: flex-end; }
 }

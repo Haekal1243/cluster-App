@@ -37,8 +37,21 @@ export class CatatanRapatService {
     return { message: 'Catatan rapat berhasil disimpan', data };
   }
 
+  /** Tempel metadata file notulen (mimeType, namaAsli) ke tiap baris, tanpa isi datanya —
+   * dipakai frontend untuk membedakan lampiran gambar vs dokumen pas generate PDF. */
+  private async tempelMetaFile<T extends { fileNotulen: string | null }>(rows: T[]) {
+    const ids = [...new Set(rows.map((r) => r.fileNotulen).filter((id): id is string => !!id))];
+    const metaList = await this.files.metadataBanyak(ids);
+    const metaById = new Map(metaList.map((m) => [m.id, m]));
+    return rows.map((r) => ({
+      ...r,
+      fileNotulenMime: r.fileNotulen ? (metaById.get(r.fileNotulen)?.mimeType ?? null) : null,
+      fileNotulenNama: r.fileNotulen ? (metaById.get(r.fileNotulen)?.namaAsli ?? null) : null,
+    }));
+  }
+
   /** Notulen RW hanya terlihat pengurus RW, notulen RT hanya di RT itu (lewat scope AREA). */
-  findAll(ctx: AccessContext, params: { search?: string; area?: string } = {}) {
+  async findAll(ctx: AccessContext, params: { search?: string; area?: string } = {}) {
     const area = areaFilter(ctx);
     const and: Prisma.CatatanRapatWhereInput[] = [{ isDelete: false }];
     if (area) and.push({ area });
@@ -47,10 +60,11 @@ export class CatatanRapatService {
       const q = params.search.trim();
       and.push({ OR: [{ judul: { contains: q } }, { isiNotulen: { contains: q } }] });
     }
-    return this.prisma.catatanRapat.findMany({
+    const rows = await this.prisma.catatanRapat.findMany({
       where: { AND: and },
       orderBy: { createDate: 'desc' },
     });
+    return this.tempelMetaFile(rows);
   }
 
   async findOne(ctx: AccessContext, id: number) {
@@ -60,7 +74,8 @@ export class CatatanRapatService {
     if (!catatan || (area && catatan.area !== area)) {
       throw new NotFoundException(`Catatan rapat dengan ID ${id} tidak ditemukan`);
     }
-    return catatan;
+    const [withMeta] = await this.tempelMetaFile([catatan]);
+    return withMeta;
   }
 
   /** Id file notulen; dicek scope dulu, karena file ini tidak boleh diambil lewat GET /files/:id publik. */
@@ -85,9 +100,10 @@ export class CatatanRapatService {
   ) {
     const existing = await this.findForWrite(ctx, id);
     const fileBaru = file ? await this.files.simpan(file) : undefined;
+    const lepasFileLama = dto.hapusFile === true && fileBaru === undefined;
 
     const isiAkhir = dto.isiNotulen !== undefined ? dto.isiNotulen : existing.isiNotulen;
-    const fileAkhir = fileBaru !== undefined ? fileBaru : existing.fileNotulen;
+    const fileAkhir = fileBaru !== undefined ? fileBaru : lepasFileLama ? null : existing.fileNotulen;
     this.validasiIsiAtauFile(isiAkhir, !!fileAkhir);
 
     const scopeArea = areaFilter(ctx);
@@ -95,15 +111,15 @@ export class CatatanRapatService {
       where: { id },
       data: {
         judul: dto.judul,
-        isiNotulen: dto.isiNotulen !== undefined ? dto.isiNotulen?.trim() || null : undefined,
-        fileNotulen: fileBaru,
+        isiNotulen: dto.isiNotulen !== undefined ? dto.isiNotulen.trim() || null : undefined,
+        fileNotulen: fileBaru !== undefined ? fileBaru : lepasFileLama ? null : undefined,
         // Area hanya bisa dipindah oleh scope ALL; pengurus tidak bisa memindah notulen ke area lain.
         ...(scopeArea === null && dto.area && { area: dto.area }),
         updateBy: ctx.user.nama,
         updateDate: new Date(),
       },
     });
-    if (fileBaru) await this.files.hapus(existing.fileNotulen);
+    if (fileBaru || lepasFileLama) await this.files.hapus(existing.fileNotulen);
     return { message: 'Catatan rapat berhasil diperbarui', data };
   }
 

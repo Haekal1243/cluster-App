@@ -51,6 +51,20 @@ export async function openProtectedFile(path) {
 /** URL file publik (foto/gambar/lampiran); isinya disimpan di database, bukan folder statis. */
 export const fileUrl = (id) => (id ? `${API_BASE_URL}/files/${id}` : null);
 
+/** Ambil isi file yang dilindungi (butuh login) sebagai Blob — dipakai untuk menyisipkan
+ * gambar/PDF lampiran ke dalam PDF yang di-generate di klien (jsPDF/pdf-lib). */
+export async function fetchProtectedFileBlob(path) {
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    if (response.status === 401) clearSession();
+    throw new Error("File tidak dapat diambil.");
+  }
+  return response.blob();
+}
+
 function buildFormData(payload) {
   const formData = new FormData();
   Object.entries(payload).forEach(([key, value]) => {
@@ -280,6 +294,13 @@ export const notifikasiApi = {
   markAllRead: () => request("/notifikasi/read-all", { method: "PATCH" }),
 };
 
+// ── Push notification (Web Push) ────────────────────────────────────────
+export const pushApi = {
+  getVapidKey: () => request("/push/vapid-public-key"),
+  subscribe: (subscription) => request("/push/subscribe", json("POST", subscription)),
+  unsubscribe: (endpoint) => request("/push/subscribe", json("DELETE", { endpoint })),
+};
+
 // ── Catatan rapat: notulen per wilayah (RW / tiap RT) ───────────────────
 export const catatanRapatApi = {
   getAll: ({ search, area } = {}) => request(`/catatan-rapat${qs({ search, area })}`),
@@ -290,6 +311,7 @@ export const catatanRapatApi = {
   remove: (id) => request(`/catatan-rapat/${id}`, { method: "DELETE" }),
   // File notulen tidak disajikan publik; dibuka lewat endpoint yang mengecek login & wilayah.
   openFile: (id) => openProtectedFile(`/catatan-rapat/${id}/file`),
+  getFileBlob: (id) => fetchProtectedFileBlob(`/catatan-rapat/${id}/file`),
 };
 
 // ── Admin: role, permission, pengurus ───────────────────────────────────

@@ -221,6 +221,7 @@ model User {
   pembayaran PembayaranIpl[]
   pengaduan  Pengaduan[]
   notifikasi Notifikasi[]
+  pushSubscriptions PushSubscription[]
 
   @@index([roleId])
   @@index([area])
@@ -443,9 +444,28 @@ model Notifikasi {
   pesan     String         @db.Text
   link      String?
   isRead    Boolean        @default(false)
+  readAt    DateTime?      @map("read_at") // diisi saat ditandai dibaca; dipakai cron pembersih (hapus 1 hari setelahnya)
   createdAt DateTime       @default(now())
 
+  @@index([isRead, readAt])
   @@map("tb_Notifikasi")
+}
+
+// Endpoint push notification browser (Web Push API). 1 user bisa punya beberapa
+// subscription (beberapa device/browser). Endpoint di-unique-kan per user supaya
+// subscribe ulang dari device yang sama tidak bikin duplikat.
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  idUser    Int
+  user      User     @relation(fields: [idUser], references: [id], onDelete: Cascade)
+  endpoint  String   @db.VarChar(512)
+  p256dh    String   @db.VarChar(255)
+  auth      String   @db.VarChar(255)
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([idUser, endpoint])
+  @@map("tb_PushSubscription")
 }
 
 // Transaksi kas manual (pemasukan non-IPL & seluruh pengeluaran), per area.

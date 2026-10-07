@@ -14,9 +14,30 @@ function isStandalonePwa() {
   );
 }
 
+// Sesi yang kesimpen di sessionStorage SEBELUM fix standalone-PWA di atas ada (atau sempat
+// gagal kedetek standalone pas login) tidak otomatis pindah ke localStorage — baru pindah
+// kalau ada pemicu lain (mis. authApi.me() refresh). Kalau di antara login dan pemicu itu
+// Android keburu bunuh proses app (biasa kejadian pas user mondar-mandir pencet back),
+// sessionStorage-nya ilang duluan dan user ke-logout padahal sudah "seharusnya" localStorage.
+// Jadi tiap baca sesi di mode standalone, langsung pindahkan paksa — jangan nunggu dipicu apa pun.
+function migrasiKeLocalStorageJikaStandalone() {
+  if (!isStandalonePwa()) return;
+  const token = sessionStorage.getItem(TOKEN_KEY);
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+    sessionStorage.removeItem(TOKEN_KEY);
+  }
+  const user = sessionStorage.getItem(USER_KEY);
+  if (user) {
+    localStorage.setItem(USER_KEY, user);
+    sessionStorage.removeItem(USER_KEY);
+  }
+}
+
 export function getToken() {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+  migrasiKeLocalStorageJikaStandalone();
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token, remember) {
@@ -47,8 +68,9 @@ export function clearSession() {
 // (hilang saat tab ditutup), supaya profil orang sebelumnya tidak tertinggal di komputer bersama.
 export function getUser() {
   if (typeof window === "undefined") return null;
+  migrasiKeLocalStorageJikaStandalone();
   try {
-    const raw = sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY);
+    const raw = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;

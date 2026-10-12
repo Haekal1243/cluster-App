@@ -13,7 +13,7 @@ const RT_LIST: RT[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
 @Injectable()
 export class DashboardRwService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async ringkasanRw(
     ctx: AccessContext,
@@ -120,8 +120,15 @@ export class DashboardRwService {
       // utuh per setoran yang bisa double-count lintas bulan).
       this.prisma.ipl.findMany({
         where: { OR: resolved.periodeOr, setoran: { status: 'DIKONFIRMASI' } },
-        select: { nominalIpl: true },
+        select: {
+          nominalIpl: true,
+          bulanPeriode: true,
+          tahunPeriode: true,
+          setoran: { select: { area: true } },
+        },
       }),
+
+      //saldo kas RW - All time no period
       this.prisma.ipl.findMany({
         where: { setoran: { status: 'DIKONFIRMASI' } },
         select: { nominalIpl: true },
@@ -143,10 +150,12 @@ export class DashboardRwService {
       }),
     ]);
 
-    // ── KPI 1: diterima vs tertagih (total setoran utuh, sama dengan menu) ──
+    // ── KPI 1: diterima vs tertagih (per tagihan, sesuai periode masing-masing) ──
     const iplTertagih = tertagihAgg._sum.nominalIpl ?? 0;
-    const diterima = setoranDikonf.reduce((s, r) => s + r.totalIpl, 0);
-    const rtSudahSetor = new Set(setoranDikonf.map((r) => r.area)).size;
+    const diterima = setoranPeriodeIpl.reduce((s, r) => s + r.nominalIpl, 0);
+    const rtSudahSetor = new Set(
+      setoranPeriodeIpl.map((r) => r.setoran!.area),
+    ).size;
     const persen =
       iplTertagih > 0
         ? Math.min(100, Math.round((diterima / iplTertagih) * 100))
@@ -165,8 +174,9 @@ export class DashboardRwService {
       terkumpul[r.rumah.rt] = (terkumpul[r.rumah.rt] ?? 0) + r.nominalIpl;
     }
     const dikonfPerRt: Record<string, number> = {};
-    for (const r of setoranDikonf) {
-      dikonfPerRt[r.area] = (dikonfPerRt[r.area] ?? 0) + r.totalIpl;
+    for (const r of setoranPeriodeIpl) {
+      const area = r.setoran!.area;
+      dikonfPerRt[area] = (dikonfPerRt[area] ?? 0) + r.nominalIpl;
     }
     const tungguPerRt: Record<string, number> = {};
     for (const r of setoranTunggu) {
@@ -204,7 +214,7 @@ export class DashboardRwService {
     // masih dipegang RT). Masuk periode = setoran periode + manual masuk.
     const sumRows = (rows: { nominal: number }[]) =>
       rows.reduce((s, r) => s + r.nominal, 0);
-    const setoranMasuk = setoranPeriodeIpl.reduce((s, r) => s + r.nominalIpl, 0);
+    const setoranMasuk = diterima;
     const manualMasuk = sumRows(kasPeriode.filter((t) => t.tipe === 'PEMASUKAN'));
     const manualKeluar = sumRows(
       kasPeriode.filter((t) => t.tipe === 'PENGELUARAN'),
@@ -226,14 +236,10 @@ export class DashboardRwService {
     // Bar per bulan = total utuh setoran DIKONFIRMASI yang menyentuh bulan itu
     // (semantik `some`, sama dengan menu Setoran & KPI).
     const trenDiterima = new Map<string, number>();
-    for (const r of setoranDikonf) {
-      const touched = new Set(
-        r.tagihan.map((t) => `${t.tahunPeriode}-${t.bulanPeriode}`),
-      );
-      for (const key of touched) {
-        if (rangeYm.has(key)) {
-          trenDiterima.set(key, (trenDiterima.get(key) ?? 0) + r.totalIpl);
-        }
+    for (const r of setoranPeriodeIpl) {
+      const key = `${r.tahunPeriode}-${r.bulanPeriode}`;
+      if (rangeYm.has(key)) {
+        trenDiterima.set(key, (trenDiterima.get(key) ?? 0) + r.nominalIpl);
       }
     }
     const tren = resolved.periodeList.map((p) => {

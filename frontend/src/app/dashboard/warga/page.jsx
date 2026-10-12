@@ -52,6 +52,9 @@ export default function WargaPage() {
 
   const [wargaModal, setWargaModal] = useState({ open: false, mode: "create", data: null });
   const [rumahModal, setRumahModal] = useState({ open: false, mode: "create", data: null });
+  // Error per sumber agar satu API 403 tidak menghanguskan data lain yang sukses.
+  const [gagalWarga, setGagalWarga] = useState(null);
+  const [gagalRumah, setGagalRumah] = useState(null);
 
   const bolehTambah = can(user, "warga.create");
   const bolehUbah = can(user, "warga.update");
@@ -65,15 +68,33 @@ export default function WargaPage() {
 
   const loadData = async () => {
     setIsLoading(true);
-    try {
-      const [w, r] = await Promise.all([wargaApi.getAll(), wargaApi.getAllRumah()]);
-      setWarga(Array.isArray(w) ? w : []);
-      setRumah(Array.isArray(r) ? r : []);
-    } catch (error) {
-      showMessage("Gagal Memuat Data", error.message, "error");
-    } finally {
-      setIsLoading(false);
+    setGagalWarga(null);
+    setGagalRumah(null);
+    // Load independen: kegagalan satu sumber (mis. 403 di salah satunya) tidak
+    // boleh menghanguskan data sumber lain yang sebenarnya sukses.
+    const [wRes, rRes] = await Promise.allSettled([wargaApi.getAll(), wargaApi.getAllRumah()]);
+    if (wRes.status === "fulfilled") {
+      setWarga(Array.isArray(wRes.value) ? wRes.value : []);
+    } else {
+      setGagalWarga(wRes.reason?.message || "Gagal memuat data warga.");
     }
+    if (rRes.status === "fulfilled") {
+      setRumah(Array.isArray(rRes.value) ? rRes.value : []);
+    } else {
+      setGagalRumah(rRes.reason?.message || "Gagal memuat data rumah.");
+    }
+    if (wRes.status === "rejected" && rRes.status === "rejected") {
+      showMessage("Gagal Memuat Data", wRes.reason?.message || rRes.reason?.message || "Terjadi kesalahan pada server.", "error");
+    } else if (wRes.status === "rejected" || rRes.status === "rejected") {
+      showMessage(
+        "Sebagian Data Gagal Dimuat",
+        wRes.status === "rejected"
+          ? `Data warga: ${wRes.reason?.message}`
+          : `Data rumah: ${rRes.reason?.message}`,
+        "error",
+      );
+    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -269,6 +290,18 @@ export default function WargaPage() {
           </div>
         </div>
       </div>
+
+      {(gagalWarga || gagalRumah) && !isLoading && (
+        <div className="table-empty" role="alert">
+          {gagalWarga && <div>Data warga gagal dimuat: {gagalWarga}</div>}
+          {gagalRumah && <div>Data rumah gagal dimuat: {gagalRumah}</div>}
+          <div style={{ marginTop: 8 }}>
+            <button type="button" className="btn-primary" onClick={loadData}>
+              Coba lagi
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="page-toolbar-row warga-toolbar-row">
         <div className="warga-filter-bar">

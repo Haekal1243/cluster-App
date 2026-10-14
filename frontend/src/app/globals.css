@@ -82,7 +82,6 @@ body {
   min-height: 100vh;
   min-height: 100dvh; /* harus sama dengan tinggi shell dashboard (dvh), kalau tidak halaman bisa di-scroll melewati footer di HP */
   overflow-x: hidden;
-  overscroll-behavior-y: none;
   font-family: "Poppins", sans-serif;
   background: var(--bg-main);
   color: var(--text-primary);

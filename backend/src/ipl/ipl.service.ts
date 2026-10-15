@@ -97,7 +97,7 @@ export class IplService {
       'TAGIHAN_BARU',
       'Tagihan IPL Baru',
       `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${total.toLocaleString('id-ID')} telah diterbitkan.`,
-      '/dashboard/iuran',
+      '/dashboard/kelola-ipl/tagihan-warga',
     );
 
     await this.audit.catat(ctx.user.sub, 'ipl.generate', {
@@ -387,7 +387,7 @@ export class IplService {
         'PERUBAHAN_DATA',
         'Koreksi Nominal Tagihan',
         `${ctx.user.nama} mengoreksi tagihan ${ipl.rumah.rt.replace('_', ' ')} periode ${ipl.bulanPeriode}/${ipl.tahunPeriode}: ${before} -> ${after}.`,
-        '/dashboard/kelola-ipl/tagihan',
+        '/dashboard/kelola-ipl/tagihan-warga',
         ctx.user.sub,
       );
     }
@@ -611,7 +611,7 @@ export class IplService {
         'PEMBAYARAN_DIKONFIRMASI',
         'Pembayaran Dikonfirmasi',
         'Pembayaran IPL kamu sudah dikonfirmasi dan berstatus Lunas.',
-        '/dashboard/iuran',
+        '/dashboard/kelola-ipl/tagihan-warga',
       );
 
       await this.audit.catat(user.sub, 'ipl.konfirmasi', {
@@ -640,7 +640,7 @@ export class IplService {
       'PEMBAYARAN_DITOLAK',
       'Pembayaran Ditolak',
       `Pembayaran IPL kamu ditolak.${dto.catatan ? ` Catatan: ${dto.catatan}` : ''}`,
-      '/dashboard/iuran',
+      '/dashboard/kelola-ipl/tagihan-warga',
     );
 
     await this.audit.catat(user.sub, 'ipl.konfirmasi', {

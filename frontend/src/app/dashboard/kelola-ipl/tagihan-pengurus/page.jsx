@@ -3,9 +3,9 @@
 import { ReceiptText } from "lucide-react";
 import { useUser } from "@/lib/useUser";
 import { can } from "@/lib/session";
-import { WargaIuranView } from "../tagihan/page";
+import { WargaIuranView } from "../_views/warga/WargaIuranView";
 
-export default function TagihanSayaPage() {
+export default function TagihanPengurusPage() {
   const { user, ready } = useUser();
 
   if (!ready || !user) return null;

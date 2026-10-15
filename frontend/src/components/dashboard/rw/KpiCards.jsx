@@ -42,7 +42,7 @@ export function KpiBelumDisetor({ data = {} }) {
       icon={<FileX size={22} strokeWidth={2} />}
       label="Belum disetor RT"
       value={formatRupiah(total)}
-      href="/dashboard/kelola-ipl/tagihan"
+      href="/dashboard/kelola-ipl/tagihan-warga"
     />
   );
 }
@@ -56,7 +56,7 @@ export function KpiKasRw({ data = {} }) {
       icon={<Wallet size={22} strokeWidth={2} />}
       label="Saldo kas RW"
       value={formatRupiah(saldo)}
-      href="/dashboard/keuangan?area=RW"
+      href="/dashboard/keuangan/rw"
     />
   );
 }

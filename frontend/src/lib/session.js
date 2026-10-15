@@ -117,6 +117,27 @@ export function isWargaView(user) {
   return user?.roleLevel === 3;
 }
 
+/** Pengurus RT: bukan warga, area-nya RT_xx (scope AREA). Jabatan (ketua/sekre/bendahara)
+// dibedakan lewat permission, bukan lewat sini. */
+export function isPengurusRt(user) {
+  if (!user || isWargaView(user)) return false;
+  return !!user.area && user.area !== "RW";
+}
+
+/** Pengurus RW: bukan warga dan bukan pengurus RT (area RW / scope ALL / admin). */
+export function isPengurusRw(user) {
+  if (!user || isWargaView(user)) return false;
+  return !isPengurusRt(user);
+}
+
+/** Audiens tampilan: "warga" | "rt" | "rw" (null bila user belum ada).
+ * Satu-satunya tempat logika RT-vs-RW; file view/route hanya panggil helper ini. */
+export function audienceOf(user) {
+  if (!user) return null;
+  if (isWargaView(user)) return "warga";
+  return isPengurusRt(user) ? "rt" : "rw";
+}
+
 export const AREA_LABEL = {
   RW: "RW",
   RT_01: "RT 01",

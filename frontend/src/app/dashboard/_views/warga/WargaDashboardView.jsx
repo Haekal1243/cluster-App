@@ -322,7 +322,7 @@ export function WargaDashboardView({ user }) {
             })}
           </ul>
           <div className="warga-detail-cta-wrap">
-            <Link href="/dashboard/iuran" className="warga-detail-cta">
+            <Link href="/dashboard/kelola-ipl/tagihan-warga" className="warga-detail-cta">
               Bayar Sekarang <ArrowRight size={15} />
             </Link>
           </div>

@@ -60,10 +60,16 @@ export const NAV_ITEMS = [
     allow: (u) => can(u, "ipl.read") || canAny(u, ["setoran.read", "setoran.create"]),
   },
   {
-    label: "Keuangan",
-    href: "/dashboard/keuangan",
+    label: "Keuangan RT",
+    href: "/dashboard/keuangan/rt",
     icon: ReceiptText,
-    allow: (u) => can(u, "keuangan.read") && !isWargaView(u),
+    allow: (u) => can(u, "keuangan.read") && (isPengurusRt(u) || (!u.area && scopeOf(u, "keuangan.read") === "ALL")),
+  },
+  {
+    label: "Keuangan RW",
+    href: "/dashboard/keuangan/rw",
+    icon: ReceiptText,
+    allow: (u) => can(u, "keuangan.read") && isPengurusRw(u),
   },
   {
     label: "Pengaduan",

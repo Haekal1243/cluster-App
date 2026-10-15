@@ -147,7 +147,7 @@ export class SetoranService {
       'SETORAN_MASUK',
       'Setoran IPL Masuk',
       `${labelRt(target)} menyetor IPL sebesar Rp ${setoran.totalIpl.toLocaleString('id-ID')} (${setoran.jumlahTagihan} tagihan), menunggu konfirmasi.`,
-      '/dashboard/iuran',
+      '/dashboard/kelola-ipl/tagihan-warga',
       ctx.user.sub,
     );
 
@@ -332,7 +332,7 @@ export class SetoranService {
         'SETORAN_DIKONFIRMASI',
         'Setoran IPL Dikonfirmasi',
         `Setoran IPL ${labelRt(setoran.area)} sebesar Rp ${setoran.totalIpl.toLocaleString('id-ID')} sudah dikonfirmasi bendahara RW.`,
-        '/dashboard/iuran',
+        '/dashboard/kelola-ipl/tagihan-warga',
         ctx.user.sub,
       );
       return { message: 'Setoran dikonfirmasi dan tercatat sebagai pemasukan kas RW.' };
@@ -365,7 +365,7 @@ export class SetoranService {
       'SETORAN_DITOLAK',
       'Setoran IPL Ditolak',
       `Setoran IPL ${labelRt(setoran.area)} ditolak. Alasan: ${dto.catatan}`,
-      '/dashboard/iuran',
+      '/dashboard/kelola-ipl/tagihan-warga',
       ctx.user.sub,
     );
     return { message: 'Setoran ditolak. Tagihan akan ikut setoran berikutnya.' };

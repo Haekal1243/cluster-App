@@ -337,7 +337,7 @@ export class WargaService {
       'PEMBAYARAN_MASUK',
       'Bukti Pembayaran Baru',
       `Warga blok ${ipl.rumah.blokRumah} mengirim bukti pembayaran IPL, menunggu konfirmasi.`,
-      '/dashboard/iuran',
+      '/dashboard/kelola-ipl/tagihan-warga',
       ctx.user.sub,
     );
 

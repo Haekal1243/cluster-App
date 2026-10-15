@@ -20,7 +20,7 @@ export default function Sidebar({
   // Menu mengikuti hak akses (permission) user dari database, bukan nama role.
   const navItems = user ? NAV_ITEMS.filter((item) => item.allow(user)) : [];
 
-  // Menu aktif mengikuti prefix path (mis. /dashboard/kelola-ipl/tagihan membuat
+  // Menu aktif mengikuti prefix path (mis. /dashboard/kelola-ipl/tagihan-warga membuat
   // menu Pengelolaan IPL aktif), konsisten dengan judul halaman & guard akses.
   // Beranda ditangani khusus karena navItemFor() mengembalikannya null.
   const activeHref = pathname === "/dashboard" ? "/dashboard" : navItemFor(pathname)?.href;

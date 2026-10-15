@@ -228,7 +228,7 @@ export function PengurusDashboardView({ user }) {
 
       {/* ── Alert: menunggu konfirmasi ── */}
       {stats?.menungguKonfirmasi > 0 && (
-        <Link href="/dashboard/iuran" className="ipl-dashboard-alert">
+        <Link href="/dashboard/kelola-ipl/tagihan-warga" className="ipl-dashboard-alert">
           <AlertTriangle size={18} />
           <span>
             Ada <strong>{stats.menungguKonfirmasi} pembayaran</strong> menunggu konfirmasi
@@ -241,7 +241,7 @@ export function PengurusDashboardView({ user }) {
       <section className="ipl-summary-grid keu-summary-grid">
 
         {/* Kas Masuk */}
-        <Link href="/dashboard/iuran" className="ipl-summary-card keu-card keu-teal">
+        <Link href="/dashboard/kelola-ipl/tagihan-warga" className="ipl-summary-card keu-card keu-teal">
           <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
             <span className="ipl-summary-label">Total Pembayaran IPL</span>
@@ -252,7 +252,7 @@ export function PengurusDashboardView({ user }) {
         </Link>
 
         {/* Lunas */}
-        <Link href="/dashboard/iuran" className="ipl-summary-card keu-card keu-green">
+        <Link href="/dashboard/kelola-ipl/tagihan-warga" className="ipl-summary-card keu-card keu-green">
           <div className="keu-icon-circle"><CheckCircle size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
             <span className="ipl-summary-label">Rumah Lunas</span>
@@ -263,7 +263,7 @@ export function PengurusDashboardView({ user }) {
         </Link>
 
         {/* Menunggu Konfirmasi */}
-        <Link href="/dashboard/iuran" className="ipl-summary-card keu-card keu-amber">
+        <Link href="/dashboard/kelola-ipl/tagihan-warga" className="ipl-summary-card keu-card keu-amber">
           <div className="keu-icon-circle"><Clock size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
             <span className="ipl-summary-label">Menunggu Konfirmasi</span>
@@ -321,7 +321,7 @@ export function PengurusDashboardView({ user }) {
             <h3>Pembayaran Terbaru</h3>
             <div className="db-section-header-right">
               <span className="db-section-sub">{periodeLabel}</span>
-              <Link href="/dashboard/iuran" className="db-section-link">
+              <Link href="/dashboard/kelola-ipl/tagihan-warga" className="db-section-link">
                 Lihat semua <ArrowRight size={13} />
               </Link>
             </div>

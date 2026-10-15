@@ -687,7 +687,7 @@ export class WargaService {
             'PERUBAHAN_DATA',
             'Rumah Diubah Kosong',
             `${ctx.user.nama} mengubah blok ${existing.blokRumah} (${rtLabel}) dari ${existing.status} menjadi KOSONG. Tagihan rumah ini masuk kas RT dan tidak disetor ke RW.`,
-            '/dashboard/warga/blok-rumah',
+            '/dashboard/data-warga/blok-rumah',
             ctx.user.sub,
           );
         }
@@ -791,7 +791,7 @@ export class WargaService {
       'PENDAFTARAN_BARU',
       'Pendaftaran Warga Baru',
       `${pendaftaran.namaUser} mendaftar untuk blok ${rumah.blokRumah}, menunggu persetujuan.`,
-      '/dashboard/warga',
+      '/dashboard/data-warga',
     );
 
     return { message: 'Pendaftaran berhasil dikirim. Menunggu persetujuan pengurus RT.' };

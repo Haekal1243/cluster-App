@@ -5949,7 +5949,23 @@ button:not(:disabled):active {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.25s ease;
 }
-.ipl-modal-review { max-width: 580px; }
+.ipl-modal-review { max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+/* Modal pengaduan (Tanggapi/Detail) tetap memakai ukuran lama. */
+.pengaduan-modal.ipl-modal-review { max-width: 580px; display: block; max-height: none; overflow: visible; }
+.ipl-modal-review:not(.pengaduan-modal) .ipl-modal-body {
+  overflow-y: auto;
+  max-height: calc(90vh - 70px);
+  padding: 20px 22px;
+  gap: 14px;
+}
+/* Wrapper thumbnail bukti di modal review IPL: full-width agar img width:100% benar-benar menekan modal. */
+.ipl-modal-review:not(.pengaduan-modal) .review-bukti-section .protected-thumb-btn {
+  display: block;
+  width: 100%;
+}
+/* Bukti transfer di modal review IPL: dibatasi agar modal tidak over-frame. Klik tetap membuka lightbox full. */
+.ipl-modal-review:not(.pengaduan-modal) .review-bukti-img { max-height: 180px; display: block; }
+.ipl-modal-review:not(.pengaduan-modal) .review-info-grid { gap: 8px; padding: 12px; }
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }

@@ -28,7 +28,7 @@ export default function WargaLayout({ children }) {
 
       <div className="db-section-toggle" role="tablist" aria-label="Data warga atau blok rumah">
         <Link
-          href="/dashboard/warga"
+          href="/dashboard/data-warga"
           role="tab"
           aria-selected={isDataWarga}
           className={`db-toggle-btn ${isDataWarga ? "is-active" : ""}`}
@@ -37,7 +37,7 @@ export default function WargaLayout({ children }) {
         </Link>
         {bolehLihatTabRumah && (
           <Link
-            href="/dashboard/warga/blok-rumah"
+            href="/dashboard/data-warga/blok-rumah"
             role="tab"
             aria-selected={isRumah}
             className={`db-toggle-btn ${isRumah ? "is-active" : ""}`}
@@ -47,7 +47,7 @@ export default function WargaLayout({ children }) {
         )}
         {bolehApprove && (
           <Link
-            href="/dashboard/warga/pendaftaran"
+            href="/dashboard/data-warga/pendaftaran"
             role="tab"
             aria-selected={isPendaftaran}
             className={`db-toggle-btn ${isPendaftaran ? "is-active" : ""}`}

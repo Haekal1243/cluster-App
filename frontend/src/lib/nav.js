@@ -13,25 +13,45 @@ import {
   UserCog,
   Home,
 } from "lucide-react";
-import { can, canAny, isWargaView, scopeOf } from "./session";
+import { can, canAny, isWargaView, isPengurusRt, isPengurusRw, scopeOf } from "./session";
 
 // Menu disusun dari permission user (dikirim backend lewat /auth/me), bukan dari
 // nama role, jadi role baru yang dibuat admin otomatis mendapat menu yang sesuai.
 // Halaman kelola (bukan portal warga) disembunyikan untuk tampilan warga.
 export const NAV_ITEMS = [
   {
+    // Akun sistem tanpa ipl.read (mis. role Admin) melihat PanelSistem di /dashboard.
+    // Warga/pengurus langsung diarahkan dispatcher ke home masing-masing.
     label: "Beranda",
     href: "/dashboard",
     icon: LayoutDashboard,
-    allow: () => true,
+    allow: (u) => !can(u, "ipl.read"),
+  },
+  {
+    label: "Beranda",
+    href: "/dashboard/warga",
+    icon: LayoutDashboard,
+    allow: (u) => isWargaView(u),
+  },
+  {
+    label: "Beranda RT",
+    href: "/dashboard/rt",
+    icon: Home,
+    allow: (u) => isPengurusRt(u),
+  },
+  {
+    label: "Beranda RW",
+    href: "/dashboard/rw",
+    icon: Landmark,
+    allow: (u) => isPengurusRw(u),
   },
   {
     label: "Data Warga",
-    href: "/dashboard/warga",
+    href: "/dashboard/data-warga",
     icon: Users,
     allow: (u) => can(u, "warga.read") && !isWargaView(u),
   },
-  {
+  { 
     // Pengurus (bisa lihat tagihan RT/RW, bukan cuma OWN) melihat "Pengelolaan IPL";
     // warga biasa tetap "Tagihan IPL" seperti sebelumnya.
     label: (u) => (can(u, "ipl.read") && scopeOf(u, "ipl.read") !== "OWN" ? "Pengelolaan IPL" : "Tagihan IPL"),

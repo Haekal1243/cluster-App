@@ -425,7 +425,7 @@ function ReviewModal({ tagihan, onClose, onSuccess }) {
           <div className="ipl-form-group">
             <label>Catatan Penolakan <span className="label-optional">(opsional, khusus jika ditolak)</span></label>
             <textarea
-              rows={3}
+              rows={2}
               placeholder="Contoh: Foto tidak jelas, jumlah transfer tidak sesuai..."
               value={catatan}
               onChange={(e) => setCatatan(e.target.value)}

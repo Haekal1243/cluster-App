@@ -666,4 +666,4 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
       )}
     </div>
   );
-}
+}

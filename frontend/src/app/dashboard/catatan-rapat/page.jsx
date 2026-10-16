@@ -377,7 +377,7 @@ function DetailModal({ item, onClose }) {
             </div>
           ) : (
             <p className="field-hint">
-              {jenis === "gambar" ? "Notulen berupa gambar — lihat lampiran di bawah." : "Tidak ada isi notulen — lihat file terlampir di bawah."}
+              {jenis === "gambar" ? "Notulen berupa gambar, lihat lampiran di bawah." : "Tidak ada isi notulen, lihat file terlampir di bawah."}
             </p>
           )}
           <div className="catatan-detail-actions">

@@ -55,7 +55,7 @@ export default function KelolaIplLayout({ children }) {
             aria-selected={isTagihanPengurus}
             className={`db-toggle-btn ${isTagihanPengurus ? "is-active" : ""}`}
           >
-            Tagihan Pengurus
+            Tagihan Saya
           </Link>
         )}
         {bolehSetoran && (

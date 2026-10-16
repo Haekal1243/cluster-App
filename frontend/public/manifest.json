@@ -1,7 +1,7 @@
 {
   "name": "Cluster Topaz App",
   "short_name": "Topaz",
-  "description": "Aplikasi warga cluster Topaz — IPL, pengaduan, pengumuman, dan kegiatan.",
+  "description": "Aplikasi warga cluster Topaz - IPL, pengaduan, pengumuman, dan kegiatan.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

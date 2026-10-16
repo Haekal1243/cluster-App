@@ -30,7 +30,7 @@ const tanggalWaktu = (d) =>
         hour: "2-digit",
         minute: "2-digit",
       })
-    : "—";
+    : "-";
 
 export default function AktivitasPage() {
   const [data, setData] = useState({ riwayat: [], aksiTersedia: [] });
@@ -175,8 +175,8 @@ export default function AktivitasPage() {
                         {AKSI_LABEL[r.aksi] ?? r.aksi}
                       </span>
                     </td>
-                    <td>{r.namaUser || "—"}</td>
-                    <td>{r.keterangan || "—"}</td>
+                    <td>{r.namaUser || "-"}</td>
+                    <td>{r.keterangan || "-"}</td>
                   </tr>
                 ))}
             </tbody>

@@ -60,7 +60,7 @@ export function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
                 <td>
                   {r.terkumpulRumahKosong?.jumlahTagihan > 0
                     ? `${r.terkumpulRumahKosong.jumlahTagihan} tagihan`
-                    : <span className="text-muted">—</span>}
+                    : <span className="text-muted">-</span>}
                 </td>
                 <td>{formatRupiah(r.sudahDisetor)}</td>
                 <td>

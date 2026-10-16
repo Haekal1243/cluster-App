@@ -67,7 +67,7 @@ export class AuditController {
     const nama = new Map(users.map((u) => [u.id, u.namaUser]));
 
     return {
-      riwayat: rows.map((r) => ({ ...r, namaUser: r.idUser !== null ? (nama.get(r.idUser) ?? '—') : 'Sistem' })),
+      riwayat: rows.map((r) => ({ ...r, namaUser: r.idUser !== null ? (nama.get(r.idUser) ?? '-') : 'Sistem' })),
       aksiTersedia: [...AKSI_AUDIT],
     };
   }

@@ -1,0 +1,150 @@
+/* =========================================================================
+   Perbaikan responsif (mobile) untuk komponen RBAC / setoran / pengajuan
+   ========================================================================= */
+.rt-badge { white-space: nowrap; }
+.content-card .ipl-table-header { flex-wrap: wrap; gap: 6px; }
+.pengumuman-grid-card, .warga-grid-card, .catatan-card { min-width: 0; }
+.pengajuan-cell .ipl-badge { white-space: normal; }
+.keu-rincian-grid > div { min-width: 0; }
+.keu-rincian-list li span { min-width: 0; }
+
+@media (max-width: 900px) {
+  /* Daftar role jadi baris yang bisa digeser, editor hak akses langsung terlihat di bawahnya */
+  .rbac-role-list { flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 6px; }
+  .rbac-role-item { min-width: 168px; flex: 0 0 auto; }
+  .rbac-add { width: auto; }
+}
+
+@media (max-width: 720px) {
+  /* Tab + pencarian + tombol tidak berebut satu baris */
+  .page-toolbar-row .db-section-toggle { flex: 1 1 100%; }
+  .page-toolbar-row > .warga-filter-bar,
+  .page-toolbar-row > .list-toolbar-row { flex: 1 1 100%; }
+  .keu-rincian-grid { grid-template-columns: minmax(0, 1fr); }
+  .keu-area-table { display: block; overflow-x: auto; }
+  .rbac-nama-input { max-width: 100%; }
+  .rbac-role-head { align-items: stretch; }
+  .rbac-role-actions { width: 100%; }
+  .rbac-role-actions button { flex: 1 1 auto; justify-content: center; }
+}
+
+@media (max-width: 640px) {
+  /* Kartu kegiatan/pengumuman memuat lebih banyak info (wilayah, status ACC): satu kolom */
+  .pengumuman-grid { grid-template-columns: minmax(0, 1fr); }
+  .pengajuan-banner { flex-wrap: wrap; }
+  .pengajuan-banner .btn-outline-neutral { margin-left: 0; }
+}
+
+/* Layout matriks role: kolom grid tidak boleh melebar mengikuti isi yang bisa digeser */
+.rbac-layout { grid-template-columns: 280px minmax(0, 1fr); }
+.rbac-roles { min-width: 0; }
+@media (max-width: 900px) { .rbac-layout { grid-template-columns: minmax(0, 1fr); } }
+
+/* Dashboard pengelola sistem (Admin) */
+.panel-sistem-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+.panel-sistem-link {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; text-decoration: none;
+  border: 1px solid var(--db-border); border-radius: 12px; color: var(--db-text); font-weight: 600;
+  background: var(--db-surface); transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.panel-sistem-link:hover { border-color: #5eead4; background: var(--db-success-bg); }
+.panel-sistem-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: var(--db-success-bg); color: var(--db-primary); }
+.panel-sistem-arrow { margin-left: auto; color: var(--db-slate-400); }
+
+/* ── Dashboard Bendahara RW ── */
+.rw-hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rw-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; }
+.rw-persen { font-weight: 800; color: #065f46; }
+.rw-mini-status { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; white-space: nowrap; }
+.rw-mini-status.is-ditolak { background: #fee2e2; color: #b91c1c; }
+.rw-mini-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 0.8rem; font-weight: 700; color: #0f766e; text-decoration: none; min-height: 44px; }
+.rw-bottom { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 16px; align-items: start; }
+.rw-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.rw-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.rw-panel-head h3 { margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b; display: inline-flex; align-items: center; gap: 8px; }
+.rw-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 800; }
+.rw-empty { margin: 0; font-size: 0.85rem; color: #64748b; }
+.rw-chart-hint { margin: 0 0 12px; font-size: 0.75rem; color: #64748b; }
+.rw-tindak-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.rw-tindak-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid #e5e9f0; border-radius: 10px; background: #fff; }
+.rw-tindak-dot { flex-shrink: 0; width: 10px; height: 10px; border-radius: 999px; margin-top: 5px; background: #f59e0b; }
+.rw-tindak-dot.is-ok { background: #22c55e; }
+.rw-tindak-dot.is-no { background: #ef4444; }
+.rw-tindak-dot.is-wait { background: #f59e0b; }
+.rw-tindak-item.is-ditolak .rw-tindak-dot { background: #ef4444; }
+.rw-tindak-item.is-info { align-items: center; color: #64748b; }
+.rw-tindak-body { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; min-width: 0; }
+.rw-tindak-body b { color: #1e293b; }
+.rw-tindak-body span { color: #64748b; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.rw-tindak-body .btn-ipl-review { align-self: flex-start; margin-top: 4px; min-height: 44px; }
+.rw-aktivitas-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rw-aktivitas-list li { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+.rw-akt-rt { font-weight: 700; color: #1e293b; white-space: nowrap; }
+.rw-akt-ket { color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rw-akt-waktu { margin-left: auto; color: #64748b; font-size: 0.75rem; white-space: nowrap; }
+.rw-akt-nominal { font-weight: 700; color: #1e293b; white-space: nowrap; }
+@media (max-width: 1100px) {
+  .rw-bottom { grid-template-columns: minmax(0, 1fr); }
+  .rw-dash .rw-side { display: contents; }
+  .rw-dash .rw-tindak { order: 3; }
+  .rw-dash .rw-tren { order: 4; }
+  .rw-dash .rw-aktivitas { order: 5; }
+}
+@media (max-width: 767px) {
+  .rw-hero-actions .rw-cta { width: 100%; justify-content: center; }
+}
+/* Rekap per RT (Tagihan Warga, tampilan RW): pasangan label-nilai di kartu HP. */
+.rekap-rt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
+.rekap-rt-grid > div { min-width: 0; }
+.rekap-rt-grid dt { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--db-slate-400); }
+.rekap-rt-grid dd { margin: 2px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--db-slate-700); overflow-wrap: anywhere; }
+
+/* ── Banner "aktifkan notifikasi" (push) ── */
+.notif-prompt {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  max-width: 420px;
+  margin: 0 auto;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.notif-prompt-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f0fdfa;
+  color: var(--db-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.notif-prompt-body { flex: 1; min-width: 0; }
+.notif-prompt-title { margin: 0; font-weight: 700; font-size: 0.88rem; color: var(--db-text); }
+.notif-prompt-sub { margin: 2px 0 10px; font-size: 0.78rem; color: var(--db-slate-500); line-height: 1.4; }
+.notif-prompt-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.notif-prompt .btn-ipl-primary { padding: 7px 14px; font-size: 0.8rem; }
+.notif-prompt-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px; border: none;
+  background: transparent; color: var(--db-slate-400); cursor: pointer;
+}
+.notif-prompt-close:hover { background: var(--db-bg); color: var(--db-slate-600); }
+@media (max-width: 480px) {
+  .notif-prompt { flex-wrap: wrap; }
+  .notif-prompt-actions { width: 100%; justify-content: flex-end; }
+}

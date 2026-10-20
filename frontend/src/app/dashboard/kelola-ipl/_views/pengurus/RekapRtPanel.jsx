@@ -29,7 +29,7 @@ export function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
         <span className="ipl-table-title">Rekap per RT ({periodeLabel})</span>
         <span className="ipl-table-count">IPL disetor RT ke RW; kas tetap di RT</span>
       </div>
-      <div className="ipl-table-wrapper">
+      <div className="ipl-table-wrapper pengaduan-table-wrapper">
         <table className="ipl-table">
           <thead>
             <tr>
@@ -72,6 +72,57 @@ export function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="pengaduan-cards">
+        {rekap.perRt.map((r) => (
+          <div key={r.rt} className="pengaduan-card" style={{ cursor: "default" }}>
+            <div className="pengaduan-card-top">
+              <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
+                <span className="rt-badge">{areaLabel(r.rt)}</span>
+              </h3>
+              <span className="pengaduan-meta-item">Lunas {r.lunas} / {r.totalTagihan}</span>
+            </div>
+            <dl className="rekap-rt-grid">
+              <div>
+                <dt>Menunggu</dt>
+                <dd>
+                  {r.menungguKonfirmasi > 0
+                    ? <span className="ipl-badge badge-menunggu">{r.menungguKonfirmasi}</span>
+                    : <span className="text-muted">0</span>}
+                </dd>
+              </div>
+              <div>
+                <dt>IPL Terkumpul</dt>
+                <dd>{formatRupiah(r.terkumpulIpl)}</dd>
+              </div>
+              <div>
+                <dt>Kas RT</dt>
+                <dd>{formatRupiah(r.terkumpulKas)}</dd>
+              </div>
+              <div>
+                <dt>Rumah Kosong</dt>
+                <dd>
+                  {r.terkumpulRumahKosong?.jumlahTagihan > 0
+                    ? `${r.terkumpulRumahKosong.jumlahTagihan} tagihan`
+                    : <span className="text-muted">-</span>}
+                </dd>
+              </div>
+              <div>
+                <dt>Sudah Disetor</dt>
+                <dd>{formatRupiah(r.sudahDisetor)}</dd>
+              </div>
+              <div>
+                <dt>Belum Disetor</dt>
+                <dd>
+                  <span className={r.belumDisetor > 0 ? "ipl-badge badge-menunggu" : ""}>
+                    {formatRupiah(r.belumDisetor)}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -224,9 +224,10 @@ export default function PublikasiManager({
     </>
   );
 
-  const renderActions = (item, size) => (
+  // `hideDetail`: dipakai di kartu HP — kartunya sendiri bisa diklik buat buka detail.
+  const renderActions = (item, size, hideDetail = false) => (
     <div className="table-actions">
-      {DetailModal && (
+      {DetailModal && !hideDetail && (
         <button type="button" className="btn-icon" onClick={() => setDetailItem(item)} aria-label="Lihat detail" title="Lihat detail">
           <Eye size={size} />
         </button>
@@ -416,7 +417,16 @@ export default function PublikasiManager({
         <div className="pengumuman-grid">
           {!isLoading &&
             paginatedItems.map((item) => (
-              <div key={item.id} className="pengumuman-grid-card">
+              <div
+                key={item.id}
+                className={`pengumuman-grid-card${DetailModal ? " card-clickable" : ""}`}
+                {...(DetailModal && {
+                  role: "button",
+                  tabIndex: 0,
+                  onClick: () => setDetailItem(item),
+                  onKeyDown: (e) => { if (e.key === "Enter") setDetailItem(item); },
+                })}
+              >
                 <h3 className="pengumuman-grid-title">
                   {item.judul} {lihatSemuaWilayah && <span className="rt-badge">{areaLabel(item.area)}</span>}
                 </h3>
@@ -426,10 +436,10 @@ export default function PublikasiManager({
                 {((item.statusPengajuan === "DITOLAK" && item.alasanTolak) || item.tampilSampai || item.tampilDiLanding) && (
                   <div className="pengajuan-cell">{renderPengajuanExtra(item)}</div>
                 )}
-                <div className="pengumuman-grid-footer">
+                <div className="pengumuman-grid-footer" onClick={(e) => e.stopPropagation()}>
                   <div className="pengumuman-grid-footer-left">
                     {renderPengajuanBadge(item)}
-                    {renderActions(item, 14)}
+                    {renderActions(item, 14, true)}
                   </div>
                   {renderStatus(item)}
                 </div>

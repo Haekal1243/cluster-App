@@ -1,0 +1,249 @@
+/* ==========================================
+   HALAMAN MASTER DATA (Pengumuman, dll)
+   ========================================== */
+
+/* Card judul halaman (bukan Dashboard) — tint teal lembut, sengaja beda
+   dari .welcome-banner (gradient gelap solid) biar nggak ketuker sama Dashboard,
+   tapi tetap ada aksen warna (bukan putih polos) */
+.page-toolbar,
+.ipl-page-header {
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.18) 0%, rgba(13, 148, 136, 0.06) 100%);
+  border: 1px solid rgba(13, 148, 136, 0.35);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-toolbar h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--db-slate-700);
+  margin-bottom: 4px;
+}
+
+.page-toolbar p {
+  font-size: 0.88rem;
+  color: var(--db-slate-500);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    var(--db-primary) 0%,
+    var(--db-primary-hover) 100%
+  );
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.28);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(13, 148, 136, 0.35);
+}
+
+.btn-primary:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-outline-neutral {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 1px solid var(--db-border);
+  border-radius: 10px;
+  background: var(--db-surface);
+  color: var(--db-slate-600);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-outline-neutral:hover {
+  background: var(--db-bg);
+}
+
+.btn-link-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: var(--db-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.btn-link-back:hover {
+  text-decoration: underline;
+}
+
+.table-card {
+  border-radius: 16px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  overflow-x: auto;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+/* Cegah teks di tabel/kartu data ke-select/ke-blok pas di-tap atau di-drag,
+   terutama di mobile (kartu-kartu ini sekarang banyak yang bisa diklik). */
+.data-table,
+.ipl-table,
+.pengaduan-card,
+.pengumuman-grid-card,
+.kegiatan-grid-card,
+.iuran-grid-card,
+.warga-grid-card,
+.portal-kegiatan-card,
+.portal-info-card {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.data-table thead {
+  background: var(--db-bg);
+}
+
+.data-table th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--db-slate-500);
+  border-bottom: 1px solid var(--db-border);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 14px 20px;
+  color: var(--db-slate-700);
+  border-bottom: 1px solid var(--db-border);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover {
+  background: var(--db-bg);
+}
+
+.data-table .col-judul {
+  font-weight: 600;
+  color: var(--db-slate-700);
+}
+
+.data-table .col-keterangan {
+  max-width: 320px;
+  color: var(--db-slate-500);
+  white-space: normal;
+}
+
+.data-table a {
+  color: var(--db-info);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.data-table a:hover {
+  text-decoration: underline;
+}
+
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-cell-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--db-slate-500);
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--db-border);
+  border-radius: 9px;
+  background: var(--db-surface);
+  color: var(--db-slate-600);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn-icon:hover {
+  background: var(--db-bg);
+  color: var(--db-primary);
+  border-color: var(--db-primary);
+}
+
+.btn-icon.danger:hover {
+  color: var(--db-danger);
+  border-color: var(--db-danger);
+  background: #fef2f2;
+}
+
+.table-loading,
+.table-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--db-slate-500);
+  font-size: 0.9rem;
+}
+

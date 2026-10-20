@@ -18,6 +18,7 @@ import {
   formatYmPendek,
   getCurrentYm,
 } from "@/lib/format";
+import FitText from "@/components/ui/FitText";
 
 const STATUS = {
   MENUNGGU_KONFIRMASI: { label: "Menunggu Konfirmasi", cls: "badge-menunggu" },
@@ -222,7 +223,7 @@ export default function SetoranPage() {
               <div className="keu-icon-circle"><Landmark size={22} strokeWidth={2} /></div>
               <div className="keu-card-text">
                 <span className="ipl-summary-label">Siap Disetor {pilihRtSetor ? areaLabel(siap.rt) : ""}</span>
-                <span className="ipl-summary-value">{rupiah(siap.totalIpl)}</span>
+                <FitText>{rupiah(siap.totalIpl)}</FitText>
                 {siap.dikecualikanRumahKosong?.jumlahTagihan > 0 && (
                   <span className="ipl-summary-sub">
                     {siap.dikecualikanRumahKosong.jumlahTagihan} tagihan rumah kosong masuk kas RT
@@ -237,14 +238,14 @@ export default function SetoranPage() {
                 <div className="keu-icon-circle"><CheckCircle size={22} strokeWidth={2} /></div>
                 <div className="keu-card-text">
                   <span className="ipl-summary-label">Sudah Dikonfirmasi</span>
-                  <span className="ipl-summary-value">{rupiah(summary.totalDikonfirmasi)}</span>
+                  <FitText>{rupiah(summary.totalDikonfirmasi)}</FitText>
                 </div>
               </div>
               <div className="ipl-summary-card keu-card keu-amber">
                 <div className="keu-icon-circle"><Clock size={22} strokeWidth={2} /></div>
                 <div className="keu-card-text">
                   <span className="ipl-summary-label">Menunggu Konfirmasi</span>
-                  <span className="ipl-summary-value">{rupiah(summary.totalMenunggu)}</span>
+                  <FitText>{rupiah(summary.totalMenunggu)}</FitText>
                 </div>
               </div>
               <div className="ipl-summary-card keu-card keu-red">
@@ -393,13 +394,21 @@ export default function SetoranPage() {
                       )}
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className={s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "btn-ipl-review" : "btn-ipl-view"}
-                        onClick={() => setDetailId(s.id)}
-                      >
-                        <Eye size={14} /> {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "Review" : "Detail"}
-                      </button>
+                      {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? (
+                        <button type="button" className="btn-ipl-review" onClick={() => setDetailId(s.id)}>
+                          <Eye size={14} /> Review
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title="Lihat detail"
+                          aria-label="Lihat detail"
+                          onClick={() => setDetailId(s.id)}
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -409,7 +418,14 @@ export default function SetoranPage() {
 
           <div className="pengaduan-cards">
             {listPage.map((s) => (
-              <div key={s.id} className="pengaduan-card" style={{ cursor: "default" }}>
+              <div
+                key={s.id}
+                className="pengaduan-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailId(s.id)}
+                onKeyDown={(e) => { if (e.key === "Enter") setDetailId(s.id); }}
+              >
                 <div className="pengaduan-card-top">
                   <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
                     <span className="rt-badge">{areaLabel(s.area)}</span> {tanggal(s.createDate)}
@@ -425,15 +441,13 @@ export default function SetoranPage() {
                     {s.konfirmasiBy} <span className="text-muted" style={{ fontWeight: 400 }}>· {tanggal(s.tanggalKonfirmasi)}</span>
                   </span>
                 )}
-                <div className="pengaduan-card-actions">
-                  <button
-                    type="button"
-                    className={s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "btn-ipl-review" : "btn-ipl-view"}
-                    onClick={() => setDetailId(s.id)}
-                  >
-                    <Eye size={14} /> {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "Review" : "Detail"}
-                  </button>
-                </div>
+                {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi && (
+                  <div className="pengaduan-card-actions" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" className="btn-ipl-review" onClick={() => setDetailId(s.id)}>
+                      <Eye size={14} /> Review
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

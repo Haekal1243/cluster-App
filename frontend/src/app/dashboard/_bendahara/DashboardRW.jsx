@@ -204,13 +204,18 @@ export default function DashboardRW({ user }) {
       )}
 
       {/* ── KPI ── */}
-      <section className="ipl-summary-grid keu-summary-grid rw-kpi" aria-label="Indikator setoran">
+      <section className="ipl-summary-grid keu-summary-grid" aria-label="Indikator setoran">
         {loading || !data ? (
           <>
-            <div className="stat-card tone-muted" aria-hidden="true"><span className="stat-text"><span className="stat-label">Memuat…</span></span></div>
-            <div className="stat-card tone-muted" aria-hidden="true"><span className="stat-text"><span className="stat-label">Memuat…</span></span></div>
-            <div className="stat-card tone-muted" aria-hidden="true"><span className="stat-text"><span className="stat-label">Memuat…</span></span></div>
-            <div className="stat-card tone-muted" aria-hidden="true"><span className="stat-text"><span className="stat-label">Memuat…</span></span></div>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="ipl-summary-card keu-card keu-muted" aria-hidden="true">
+                <div className="keu-icon-circle" />
+                <div className="keu-card-text">
+                  <span className="ipl-summary-label">Memuat…</span>
+                  <span className="ipl-summary-value">-</span>
+                </div>
+              </div>
+            ))}
           </>
         ) : (
           <>

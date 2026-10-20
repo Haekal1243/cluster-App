@@ -1,0 +1,42 @@
+/* ============================================================
+   SweetAlert2 (showMessage / showConfirm) — dikecilin di mobile.
+   SweetAlert2 nyuntik CSS-nya sendiri saat runtime, jadi override
+   di sini pakai !important supaya konsisten menang urutan-cascade-nya.
+   ============================================================ */
+@media (max-width: 600px) {
+  .swal2-popup {
+    width: 88vw !important;
+    padding: 1em 0.5em 1.3em !important;
+    border-radius: 14px !important;
+  }
+  .swal2-title {
+    font-size: 1.1em !important;
+    padding: 0.4em 0.6em 0 !important;
+  }
+  .swal2-html-container {
+    font-size: 0.82em !important;
+    margin: 0.6em 1em 0 !important;
+  }
+  /* Jangan resize lewat width/height — elemen garis centang/silang di dalam
+     .swal2-icon posisinya dihitung relatif ke ukuran asli SweetAlert2, jadi
+     kalau dipaksa width/height, bentuknya jadi berantakan. Pakai transform
+     scale supaya seluruh isi ikon ikut menyusut proporsional. */
+  .swal2-icon {
+    transform: scale(0.68);
+    transform-origin: center;
+    margin: 0.3em auto -0.6em !important;
+  }
+  .swal2-actions {
+    margin: 1.2em auto 0 !important;
+    gap: 8px;
+  }
+  .swal2-styled {
+    padding: 0.5em 1.4em !important;
+    font-size: 0.82em !important;
+  }
+  .swal2-close {
+    font-size: 1.6em !important;
+    width: 1em !important;
+    height: 1em !important;
+  }
+}

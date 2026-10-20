@@ -4,9 +4,9 @@ import { Clock, FileX, Landmark, Wallet } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import { formatRupiah } from "@/lib/format";
 
-/** 1. Setoran IPL diterima + strip progress vs IPL tertagih. */
+/** 1. Setoran IPL diterima. */
 export function KpiDiterima({ data = {} }) {
-  const { nominal = 0, persen = null } = data;
+  const { nominal = 0 } = data;
   return (
     <StatCard
       tone="green"
@@ -14,7 +14,6 @@ export function KpiDiterima({ data = {} }) {
       label="Setoran IPL diterima"
       value={formatRupiah(nominal)}
       href="/dashboard/kelola-ipl/setoran"
-      progress={persen}
     />
   );
 }

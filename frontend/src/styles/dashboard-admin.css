@@ -1,0 +1,402 @@
+/* ============================================================
+   DASHBOARD ADMIN — Metric Cards, Chart, Recent Payments
+   ============================================================ */
+
+/* Metric Grid */
+.db-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.db-metric-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s, transform 0.15s;
+  cursor: pointer;
+}
+.db-metric-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+  transform: translateY(-2px);
+}
+
+.db-metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Card tones */
+.db-card-primary .db-metric-icon { background: #e0f2fe; color: #0369a1; }
+.db-card-success .db-metric-icon { background: #dcfce7; color: #16a34a; }
+.db-card-warning .db-metric-icon { background: #fffbeb; color: #b45309; }
+.db-card-muted   .db-metric-icon { background: #f1f5f9; color: var(--db-slate-400); }
+.db-card-info    .db-metric-icon { background: #eff6ff; color: #1d4ed8; }
+
+/* Accent left border per tone */
+.db-card-primary { border-left: 4px solid #0369a1; }
+.db-card-success { border-left: 4px solid #16a34a; }
+.db-card-warning { border-left: 4px solid #b45309; }
+.db-card-muted   { border-left: 4px solid var(--db-slate-400); }
+.db-card-info    { border-left: 4px solid #1d4ed8; }
+
+.db-metric-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.db-metric-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--db-slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.db-metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--db-slate-700);
+  line-height: 1.2;
+}
+.db-metric-sub {
+  font-size: 0.75rem;
+  color: var(--db-slate-400);
+}
+
+/* Bottom row: chart + recent */
+.db-bottom-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+}
+
+.db-chart-card,
+.db-recent-card {
+  min-height: 280px;
+}
+
+/* Section header inside card */
+.db-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--db-slate-600);
+}
+.db-section-header > svg {
+  flex-shrink: 0;
+}
+.db-section-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--db-slate-700);
+}
+.db-section-sub {
+  font-size: 0.78rem;
+  line-height: 1;
+  color: var(--db-slate-400);
+  margin-left: 2px;
+}
+.db-section-link {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--db-primary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.db-section-link:hover { color: var(--db-primary-hover); }
+
+/* Grup "periode + Lihat semua" — dibungkus 1 unit biar kalau wrap, turun bareng
+   (nggak kepisah dari h3-nya, yang bikin "Lihat semua" nyasar sendirian). */
+.db-chart-card .db-section-header,
+.db-recent-card .db-section-header {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.db-chart-card .db-section-header h3,
+.db-recent-card .db-section-header h3 {
+  white-space: nowrap;
+}
+.db-section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.db-section-header-right .db-section-sub { margin-left: 0; }
+.db-section-header-right .db-section-link { margin-left: 0; }
+
+@media (max-width: 640px) {
+  .db-chart-card .db-section-header,
+  .db-recent-card .db-section-header {
+    flex-wrap: nowrap;
+    margin-bottom: 12px;
+  }
+  .db-section-header h3 {
+    font-size: 0.82rem;
+  }
+  .db-recent-card .db-section-header-right .db-section-sub {
+    display: none;
+  }
+  .db-recent-card .db-section-header-right .db-section-link {
+    font-size: 0.74rem;
+  }
+}
+
+/* Bar Chart */
+.db-chart-wrap {
+  flex: 1;
+}
+.db-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 140px;
+  padding: 0 4px;
+}
+.db-chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+.db-bar-wrapper {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.db-bar {
+  width: 100%;
+  max-width: 36px;
+  background: #e2e8f0;
+  border-radius: 6px 6px 0 0;
+  transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+.db-bar:hover { background: #94a3b8; }
+.db-bar.db-bar-active { background: var(--db-primary); }
+.db-bar.db-bar-active:hover { background: var(--db-primary-hover); }
+
+.db-chart-label {
+  font-size: 0.68rem;
+  color: var(--db-slate-400);
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.db-chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  color: var(--db-slate-400);
+  font-size: 0.85rem;
+}
+
+/* Chart legend */
+.db-chart-legend {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--db-border);
+}
+.db-legend-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.db-legend-label {
+  font-size: 0.68rem;
+  color: var(--db-slate-400);
+  font-weight: 500;
+}
+.db-legend-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--db-slate-700);
+}
+
+/* Recent Payments List */
+.db-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.db-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+.db-recent-item:last-child { border-bottom: none; }
+
+.db-recent-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--db-primary), #7c3aed);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.db-recent-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.db-recent-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--db-slate-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.db-recent-sub {
+  font-size: 0.75rem;
+  color: var(--db-slate-400);
+}
+.db-recent-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.db-recent-nominal {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--db-slate-700);
+}
+
+/* Status dots */
+.db-status-dot {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.dot-lunas   { background: #dcfce7; color: #16a34a; }
+.dot-belum   { background: #fef2f2; color: var(--db-danger); }
+.dot-menunggu { background: #fffbeb; color: var(--db-warning); }
+
+.db-empty-recent {
+  padding: 32px;
+  text-align: center;
+  color: var(--db-slate-400);
+  font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .db-metric-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .db-bottom-row { grid-template-columns: 1fr; }
+  .db-chart-legend { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  /* Dashboard Admin — mobile compact: tetap grid 2x2, bukan collapse 1 kolom */
+  .welcome-banner {
+    padding: 16px 18px;
+  }
+  .welcome-banner-title {
+    font-size: 0.92rem;
+    line-height: 1.3;
+  }
+  .welcome-banner-sub {
+    font-size: 0.72rem;
+  }
+  /* Desain Figma mobile: judul selalu 1 baris penuh di atas, tombol Filter
+     turun sejajar subjudul (bukan sejajar judul kayak di desktop). Ini juga
+     yang bikin tombolnya gak pernah kepotong — dia selalu di kolom kanan,
+     gak pernah numpuk jadi baris sendiri yang nempel ke kiri. */
+  .welcome-banner {
+    grid-template-areas: "title title" "sub filter";
+    align-items: start;
+  }
+  .welcome-banner .filter-popover {
+    align-self: center;
+  }
+  .welcome-banner .filter-popover-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .page-stack {
+    gap: 16px;
+  }
+
+  .db-metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .db-metric-card {
+    padding: 12px;
+    gap: 8px;
+    border-radius: 12px;
+  }
+
+  .db-metric-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .db-metric-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .db-metric-label {
+    font-size: 0.62rem;
+    white-space: normal;
+  }
+
+  .db-metric-value {
+    font-size: 0.98rem;
+  }
+
+  .db-metric-sub {
+    font-size: 0.66rem;
+  }
+}
+

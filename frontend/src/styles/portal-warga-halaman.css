@@ -1,0 +1,996 @@
+/* ---- Portal Pengumuman List ---- */
+.portal-pengumuman-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portal-pengumuman-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.portal-peng-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--db-primary);
+  margin-top: 6px;
+}
+
+.portal-peng-judul {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--db-text);
+}
+
+.portal-peng-desc {
+  font-size: 0.82rem;
+  color: var(--db-muted);
+  margin-top: 2px;
+}
+
+.portal-section-hint {
+  font-size: 0.76rem !important;
+  color: var(--db-slate-400) !important;
+  margin-top: 2px !important;
+}
+
+/* ---- Portal Pengumuman Expandable (dashboard) ---- */
+.portal-peng-expandable {
+  gap: 4px;
+}
+
+.portal-peng-item {
+  border-radius: 12px;
+  transition: background 0.15s ease;
+}
+
+.portal-peng-item:hover {
+  background: #f8fafc;
+}
+
+.portal-peng-item.is-open {
+  background: #f8fafc;
+}
+
+.portal-peng-toggle {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 12px 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.portal-peng-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-peng-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.portal-peng-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--db-slate-400);
+  white-space: nowrap;
+}
+
+.portal-peng-desc.full {
+  white-space: pre-line;
+  line-height: 1.65;
+  color: var(--db-slate-600);
+}
+
+.portal-peng-chevron {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--db-slate-400);
+  transition: transform 0.2s ease;
+}
+
+.portal-peng-chevron.rotated {
+  transform: rotate(180deg);
+  color: #0d9488;
+}
+
+.portal-peng-lampiran {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 2px 10px 12px 30px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0d9488;
+  text-decoration: none;
+}
+
+.portal-peng-lampiran:hover {
+  text-decoration: underline;
+}
+
+/* ---- Portal Kegiatan Strip (dashboard): kartu foto geser horizontal ---- */
+.portal-keg-section {
+  padding: 22px 24px;
+}
+
+.portal-keg-strip {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 8px;
+  margin: 0 -2px;
+  scrollbar-width: none;
+}
+
+.portal-keg-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.portal-keg-card {
+  flex: 0 0 232px;
+  scroll-snap-align: start;
+  border: 1px solid var(--db-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--db-surface);
+  text-decoration: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.portal-keg-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.portal-keg-img-wrap {
+  position: relative;
+  height: 130px;
+  background: #134e4a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.portal-keg-img-fallback {
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+}
+
+.portal-keg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portal-keg-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  border-radius: 4px;
+  padding: 3px 8px;
+  background: rgba(13, 148, 136, 0.9);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.portal-keg-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.portal-keg-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #0d9488;
+}
+
+.portal-keg-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--db-slate-400);
+}
+
+.portal-keg-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.45;
+}
+
+.portal-keg-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.6;
+}
+
+/* ---- Portal Info Card (Pengumuman page) ---- */
+.portal-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.portal-info-card {
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: box-shadow 0.2s ease;
+}
+
+.portal-info-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.portal-info-card-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(99,102,241,0.1);
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portal-info-card-body { flex: 1; min-width: 0; }
+
+.portal-info-card-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--db-text);
+  margin-bottom: 6px;
+}
+
+.portal-info-card-desc {
+  font-size: 0.875rem;
+  color: var(--db-muted);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.portal-info-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.78rem;
+  color: var(--db-muted);
+}
+
+.portal-download-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.portal-download-link:hover { text-decoration: underline; }
+
+/* ---- Portal Kegiatan Grid ---- */
+.portal-kegiatan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.portal-kegiatan-card {
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.portal-kegiatan-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+}
+
+.portal-kegiatan-img-wrap {
+  height: 180px;
+  overflow: hidden;
+}
+
+.portal-kegiatan-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.portal-kegiatan-card:hover .portal-kegiatan-img {
+  transform: scale(1.05);
+}
+
+.portal-kegiatan-body { padding: 16px; }
+
+.portal-kegiatan-title {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--db-text);
+  margin-bottom: 8px;
+}
+
+.portal-kegiatan-desc {
+  font-size: 0.85rem;
+  color: var(--db-muted);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.portal-kegiatan-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.78rem;
+  color: var(--db-muted);
+}
+
+/* Card kegiatan sempit (grid 2 kolom di mobile) bikin tanggal sering turun
+   2 baris — ikon kalender disejajarkan ke baris pertama, bukan ke tengah,
+   biar nggak numpuk/dempet sama baris keduanya. */
+.portal-kegiatan-meta .meta-item {
+  align-items: flex-start;
+}
+.portal-kegiatan-meta .meta-item svg {
+  margin-top: 2px;
+}
+
+/* Baris ikon + teks (mis. ikon kalender + tanggal) di dalam meta row manapun —
+   pakai di setiap <span>/<a> yang membungkus sebuah ikon lucide + teks singkat,
+   supaya ikon dan teks selalu sejajar vertikal. */
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.35;
+}
+
+.meta-item svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ---- Tagihan Hero Card ---- */
+.portal-tagihan-hero {
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 16px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.portal-tagihan-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.portal-tagihan-hero-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.portal-tagihan-period {
+  font-size: 0.8rem;
+  color: var(--db-muted);
+  margin-bottom: 4px;
+}
+
+.portal-tagihan-month {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--db-text);
+}
+
+.portal-tagihan-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.portal-tagihan-amount {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--db-text);
+}
+
+.portal-no-tagihan {
+  color: var(--db-muted);
+  font-size: 0.9rem;
+}
+
+.portal-bayar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.portal-bayar-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ---- Portal Rumah Selector ---- */
+.portal-rumah-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-selector-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--db-text);
+  white-space: nowrap;
+}
+
+.portal-select-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 340px;
+}
+
+.portal-select {
+  width: 100%;
+  appearance: none;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  border-radius: 10px;
+  padding: 9px 36px 9px 14px;
+  font-size: 0.875rem;
+  color: var(--db-text);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.portal-select:focus { outline: none; border-color: #6366f1; }
+
+.portal-select-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--db-muted);
+  pointer-events: none;
+}
+
+/* ---- IPL Status Badges ---- */
+.ipl-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ipl-status-badge.status-lunas {
+  background: rgba(34,197,94,0.12);
+  color: #16a34a;
+}
+
+.ipl-status-badge.status-belum {
+  background: rgba(239,68,68,0.12);
+  color: #dc2626;
+}
+
+.ipl-status-badge.status-menunggu {
+  background: rgba(245,158,11,0.12);
+  color: #d97706;
+}
+
+/* ---- Status Pengaduan (dipakai bareng .ipl-status-badge) ---- */
+.ipl-status-badge.status-diproses {
+  background: rgba(29,78,216,0.12);
+  color: var(--db-info);
+}
+
+.ipl-status-badge.status-selesai {
+  background: rgba(34,197,94,0.12);
+  color: #16a34a;
+}
+
+.ipl-status-badge.status-ditolak {
+  background: rgba(220,38,38,0.12);
+  color: var(--db-danger);
+}
+
+/* ---- Bukti Upload Modal ---- */
+.bukti-info-card {
+  background: var(--db-bg);
+  border: 1px solid var(--db-border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bukti-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.bukti-info-label { color: var(--db-muted); }
+.bukti-info-value { font-weight: 600; color: var(--db-text); }
+.bukti-nominal { font-size: 1.1rem; color: #6366f1; }
+
+.bukti-dropzone {
+  border: 2px dashed var(--db-border);
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  margin-bottom: 12px;
+  user-select: none;
+}
+
+.bukti-dropzone:hover, .bukti-dropzone:focus {
+  border-color: #6366f1;
+  background: rgba(99,102,241,0.04);
+  outline: none;
+}
+
+.bukti-dropzone.has-preview {
+  padding: 16px;
+  border-style: solid;
+  border-color: #6366f1;
+}
+
+.bukti-dropzone.is-dragover {
+  border-color: #6366f1;
+  background: rgba(99,102,241,0.06);
+}
+
+.bukti-dropzone.has-error {
+  border-color: var(--db-danger);
+  background: rgba(220,38,38,0.04);
+}
+
+.bukti-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.bukti-file-actions .bukti-ganti-btn { margin-bottom: 0; }
+
+.spin { animation: spin 0.8s linear infinite; }
+
+.bukti-drop-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--db-muted);
+}
+
+.bukti-drop-placeholder svg { color: var(--db-muted); }
+.bukti-drop-placeholder p { font-weight: 500; font-size: 0.9rem; color: var(--db-text); }
+.bukti-drop-placeholder span { font-size: 0.78rem; }
+
+.bukti-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.bukti-preview-img {
+  max-height: 200px;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.bukti-preview-name {
+  font-size: 0.8rem;
+  color: var(--db-muted);
+}
+
+.bukti-ganti-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--db-border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  color: var(--db-muted);
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.bukti-ganti-btn:hover { border-color: #6366f1; color: #6366f1; }
+
+/* ---- Misc ---- */
+.text-muted { color: var(--db-muted); }
+.text-success { color: #16a34a; }
+.text-sm { font-size: 0.82rem; }
+.btn-sm { padding: 5px 12px !important; font-size: 0.8rem !important; }
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card-header-row h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--db-text);
+}
+
+.link-lihat-semua {
+  font-size: 0.82rem;
+  color: var(--db-primary);
+  text-decoration: none;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.link-lihat-semua:hover { text-decoration: underline; }
+
+/* Portal collapsed sidebar */
+.portal-sidebar.collapsed .portal-user-card,
+.portal-sidebar.collapsed .portal-user-info,
+.portal-sidebar.collapsed .portal-user-role {
+  display: none;
+}
+
+/* Portal responsive */
+@media (max-width: 900px) {
+  .portal-main {
+    margin-left: 0;
+  }
+
+  .portal-content {
+    padding: 20px 16px;
+  }
+
+  .portal-stat-row {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-tagihan-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 18px 16px;
+  }
+
+  .portal-tagihan-hero-left {
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .portal-tagihan-hero-left > div:last-child {
+    min-width: 0;
+  }
+
+  .portal-tagihan-hero-icon {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  .portal-tagihan-month {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  /* Nominal di kiri dan jumlah tagihan di kanan, satu baris, dipisah garis tipis dari judul. */
+  .portal-tagihan-hero-right {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--db-border);
+  }
+
+  .portal-tagihan-amount {
+    font-size: 1.5rem;
+  }
+
+  .portal-action-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .portal-hero {
+    padding: 24px 20px;
+  }
+
+  .portal-hero-main {
+    flex-direction: column;
+  }
+
+  .portal-hero-right {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .portal-hero-value {
+    font-size: 1.6rem;
+  }
+
+  .portal-hero-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .portal-unit-item {
+    align-items: flex-start;
+  }
+
+  .portal-unit-status {
+    margin-top: 2px;
+  }
+
+  .portal-peng-top {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .portal-peng-lampiran {
+    margin-left: 30px;
+  }
+
+  .portal-keg-card {
+    flex-basis: 78%;
+  }
+
+  .portal-kegiatan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-rumah-selector {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .portal-select-wrap {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* Dashboard Warga — mobile compact (sesuai desain Figma mobile), lebih padat
+   daripada breakpoint 900px di atas yang sekadar men-stack layout desktop. */
+@media (max-width: 640px) {
+  .page-stack {
+    gap: 16px;
+  }
+
+  .content-card {
+    padding: 16px;
+  }
+
+  /* Welcome banner lebih ringkas */
+  .portal-welcome-banner {
+    padding: 16px 18px;
+  }
+
+  .portal-welcome-text h2 {
+    font-size: 1.05rem;
+    margin-bottom: 3px;
+    line-height: 1.25;
+  }
+
+  .portal-welcome-text p {
+    font-size: 0.8rem;
+  }
+
+  .portal-welcome-decoration {
+    width: 120px;
+    height: 120px;
+    right: -30px;
+    top: -30px;
+  }
+
+  /* Stat cards: tetap 2 kolom berdampingan, dipadatkan */
+  .portal-stat-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .portal-stat-card {
+    padding: 12px;
+    gap: 8px;
+    border-radius: 12px;
+  }
+
+  .portal-stat-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .portal-stat-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .portal-stat-label {
+    font-size: 0.62rem;
+  }
+
+  .portal-stat-value {
+    font-size: 0.98rem;
+  }
+
+  .portal-stat-sub {
+    font-size: 0.66rem;
+  }
+
+  /* Kegiatan: grid 2 kolom, card compact/square seperti di Figma */
+  .portal-kegiatan-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .portal-kegiatan-img-wrap {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .portal-kegiatan-body {
+    padding: 10px;
+  }
+
+  .portal-kegiatan-title {
+    font-size: 0.78rem;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Deskripsi disembunyikan di grid mobile — cukup judul + tanggal.
+     Discope ke .portal-kegiatan-card aja (card compact di grid), soalnya
+     class yang sama juga dipakai buat isi Detail Kegiatan modal — kalau
+     nggak discope, deskripsi di modal ikut ke-hide di mobile. */
+  .portal-kegiatan-card .portal-kegiatan-desc {
+    display: none;
+  }
+
+  .portal-kegiatan-meta {
+    font-size: 0.66rem;
+    gap: 6px;
+  }
+
+  /* Pengumuman: card lebih padat, deskripsi dipotong 2 baris saja */
+  .portal-info-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .portal-info-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .portal-info-card-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .portal-info-card-title {
+    font-size: 0.88rem;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  /* Deskripsi dipotong 2 baris cuma di card list (.portal-info-card) —
+     class yang sama dipakai juga di Detail Pengumuman modal, jadi discope
+     biar deskripsi lengkap di modal nggak ikut kepotong (lihat kasus sama
+     di .portal-kegiatan-desc). */
+  .portal-info-card .portal-info-card-desc {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .portal-info-card-meta {
+    font-size: 0.7rem;
+    gap: 10px;
+  }
+}
+

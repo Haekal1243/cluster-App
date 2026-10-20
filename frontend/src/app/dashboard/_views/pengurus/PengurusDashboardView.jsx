@@ -13,13 +13,13 @@ import KegiatanDetailModal from "@/components/kegiatan/KegiatanDetailModal";
 import PengumumanDetailModal from "@/components/pengumuman/PengumumanDetailModal";
 import {
   formatRupiah,
-  formatRupiahSingkat,
   BULAN_PENDEK as BULAN_NAMES,
   getCurrentYm,
   formatYmPendek,
   formatTanggalLengkap as formatKegiatanDate,
   formatTanggalPanjang as formatPengumumanDate,
 } from "@/lib/format";
+import FitText from "@/components/ui/FitText";
 
 // ── Mini Bar Chart (SVG) ──────────────────────────────────────────────────────
 function TrenChart({ data }) {
@@ -245,9 +245,9 @@ export function PengurusDashboardView({ user }) {
           <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
             <span className="ipl-summary-label">Total Pembayaran IPL</span>
-            <span className="ipl-summary-value">
-              {loadingStats ? "-" : formatRupiahSingkat(stats?.totalKasMasukBulanIni ?? 0)}
-            </span>
+            <FitText>
+              {loadingStats ? "-" : formatRupiah(stats?.totalKasMasukBulanIni ?? 0)}
+            </FitText>
           </div>
         </Link>
 

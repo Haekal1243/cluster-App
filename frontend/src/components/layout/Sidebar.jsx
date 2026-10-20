@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { X, LogOut } from "lucide-react";
+import { useState } from "react";
+import { X, LogOut, KeyRound } from "lucide-react";
 import { showConfirm } from "@/lib/message";
+import GantiPasswordModal from "@/components/auth/GantiPasswordModal";
 import { clearSession } from "@/lib/session";
 import { NAV_ITEMS, navItemFor, resolveLabel } from "@/lib/nav";
 import { useUser } from "@/lib/useUser";
@@ -16,6 +18,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
+  const [showGantiPassword, setShowGantiPassword] = useState(false);
 
   // Menu mengikuti hak akses (permission) user dari database, bukan nama role.
   const navItems = user ? NAV_ITEMS.filter((item) => item.allow(user)) : [];
@@ -80,6 +83,18 @@ export default function Sidebar({
         </nav>
 
         <div className="sidebar-footer">
+          {/* Hak dasar akun: tampil untuk semua user login, tidak lewat permission menu */}
+          <button
+            type="button"
+            className="sidebar-logout-btn sidebar-password-btn"
+            onClick={() => setShowGantiPassword(true)}
+            title={isCollapsed ? "Ganti Password" : undefined}
+          >
+            <span className="sidebar-link-icon">
+              <KeyRound size={17} />
+            </span>
+            <span className="sidebar-link-label">Ganti Password</span>
+          </button>
           <button
             type="button"
             className="sidebar-logout-btn"
@@ -93,6 +108,15 @@ export default function Sidebar({
           </button>
         </div>
       </aside>
+
+      {showGantiPassword && (
+        <GantiPasswordModal
+          onClose={() => {
+            setShowGantiPassword(false);
+            onClose();
+          }}
+        />
+      )}
     </>
   );
 }

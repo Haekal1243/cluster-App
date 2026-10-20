@@ -1,0 +1,119 @@
+:root {
+  --teal-primary: #15bed1;
+  --cyan-left-top: #00f2fe;
+  --cyan-left-bottom: #4facfe;
+  --bg-main: #b0b8c3;
+  --form-bg: #ffffff;
+  --text-primary: #000000;
+  --text-secondary: #777777;
+  --border: #d1d5db;
+  --tw-background: 0 0% 100%;
+  --tw-foreground: 222.2 47.4% 11.2%;
+  --tw-card: 0 0% 100%;
+  --tw-card-foreground: 222.2 47.4% 11.2%;
+  --tw-popover: 0 0% 100%;
+  --tw-popover-foreground: 222.2 47.4% 11.2%;
+  --tw-primary: 188 100% 43%;
+  --tw-primary-foreground: 0 0% 100%;
+  --tw-secondary: 210 40% 96.1%;
+  --tw-secondary-foreground: 222.2 47.4% 11.2%;
+  --tw-muted: 210 40% 96.1%;
+  --tw-muted-foreground: 215.4 16.3% 46.9%;
+  --tw-accent: 210 40% 96.1%;
+  --tw-accent-foreground: 222.2 47.4% 11.2%;
+  --tw-border: 214.3 31.8% 91.4%;
+  --tw-input: 214.3 31.8% 91.4%;
+  --tw-ring: 188 100% 43%;
+  --tw-radius: 1rem;
+
+  /* Dashboard palette */
+  --db-bg: #f8fafc;
+  --db-surface: #ffffff;
+  --db-border: #e2e8f0;
+  --db-success-bg: #ecfdf5;
+
+  --db-sidebar-bg: #0f172a;
+  --db-sidebar-bg-alt: #0a1120;
+  --db-sidebar-active: #1e293b;
+
+  --db-slate-700: #334155;
+  --db-slate-600: #475569;
+  --db-slate-500: #64748b;
+  --db-slate-400: #94a3b8;
+
+  --db-primary: #0d9488;
+  --db-primary-hover: #0f766e;
+  --db-primary-active: #134e4a;
+
+  --db-danger: #dc2626;
+  --db-info: #1d4ed8;
+  --db-purple: #7c3aed;
+  --db-warning: #b45309;
+
+  --db-text: var(--db-slate-700);
+  --db-muted: var(--db-slate-500);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  /* Matikan efek "pull-to-refresh"/bounce glow Chrome pas scroll nyampe ujung atas/bawah
+     — di PWA terinstall ini kerasa seperti UI browser, bukan app native. */
+  overscroll-behavior-y: none;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh; /* harus sama dengan tinggi shell dashboard (dvh), kalau tidak halaman bisa di-scroll melewati footer di HP */
+  overflow-x: hidden;
+  font-family: "Poppins", sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  /* Kilatan abu-abu pas nge-tap tombol/link di Chrome Android — ganti sama :active state
+     kita sendiri lewat CSS normal, jadi gak kerasa "browser". */
+  -webkit-tap-highlight-color: transparent;
+  /* Blok seleksi teks (long-press munculin menu Copy/Select All ala browser) di seluruh
+     app — native app umumnya begini. Input/textarea/contenteditable dikecualikan di bawah
+     karena user tetap harus bisa select/copy/paste teks yang mereka ketik sendiri. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+/* Kilatan tap bawaan Chrome dimatikan (lihat body di atas) — ganti feedback tekan
+   sendiri yang lebih halus, supaya tombol tetap kerasa "hidup" pas disentuh. */
+button:not(:disabled):active {
+  opacity: 0.75;
+}
+

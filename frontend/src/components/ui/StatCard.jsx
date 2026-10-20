@@ -1,50 +1,39 @@
 "use client";
 
 import Link from "next/link";
+import FitText from "@/components/ui/FitText";
+
+// tone StatCard -> varian warna .keu-card (dipakai juga oleh Keuangan/Iuran/Setoran).
+const TONE_KEU = {
+  teal: "keu-teal",
+  green: "keu-green",
+  amber: "keu-amber",
+  red: "keu-red",
+  muted: "keu-muted",
+  purple: "keu-purple",
+};
 
 /**
- * Kartu KPI compact shared (acuan: card halaman Keuangan).
+ * Kartu KPI: markup identik dengan card ringkasan di menu lain (.keu-card),
+ * jadi tampilannya seragam di semua halaman.
  *
- * - Seluruh card adalah link ke `href` (render <div> bila href kosong).
- * - Struktur identik di semua tone: ikon + label + nilai + 1 baris sub-teks,
- *   sehingga tinggi card selalu sama.
- * - `progress` (0–100) → strip absolute di dasar card; `null` → disembunyikan.
+ * Seluruh card adalah link ke `href` (render <div> bila href kosong).
  */
-export default function StatCard({
-  tone = "teal",
-  icon,
-  label,
-  value,
-  sub,
-  subTitle,
-  href,
-  progress = null,
-}) {
-  const pct =
-    progress === null || progress === undefined
-      ? null
-      : Math.min(100, Math.max(0, Math.round(progress)));
+export default function StatCard({ tone = "teal", icon, label, value, href }) {
   const Tag = href ? Link : "div";
   const tagProps = href ? { href } : {};
   return (
-    <Tag {...tagProps} className={`stat-card tone-${tone}`}>
-      <span className="stat-icon" aria-hidden="true">
+    <Tag
+      {...tagProps}
+      className={`ipl-summary-card keu-card ${TONE_KEU[tone] || TONE_KEU.teal}`}
+    >
+      <div className="keu-icon-circle" aria-hidden="true">
         {icon}
-      </span>
-      <span className="stat-text">
-        <span className="stat-label">{label}</span>
-        <span className="stat-value" title={typeof value === "string" ? value : undefined}>
-          {value}
-        </span>
-        <span className="stat-sub" title={subTitle}>
-          {sub}
-        </span>
-      </span>
-      {pct !== null && (
-        <span className="stat-progress" aria-hidden="true">
-          <span className="stat-progress-fill" style={{ width: `${pct}%` }} />
-        </span>
-      )}
+      </div>
+      <div className="keu-card-text">
+        <span className="ipl-summary-label">{label}</span>
+        <FitText title={typeof value === "string" ? value : undefined}>{value}</FitText>
+      </div>
     </Tag>
   );
 }

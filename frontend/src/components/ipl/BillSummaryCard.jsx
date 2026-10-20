@@ -2,6 +2,7 @@
 
 import { Calendar, CircleCheck, Clock, Home, Info, Wallet } from "lucide-react";
 import { formatRupiah as rupiahPenuh } from "@/lib/format";
+import FitText from "@/components/ui/FitText";
 
 // Kelas Tailwind ditulis statis (object map) agar tidak kena purge.
 const TONE = {
@@ -73,11 +74,13 @@ export function BillSummaryCard({
             {loading ? (
               <div className="mt-2 h-9 w-44 animate-pulse rounded-lg bg-slate-100" />
             ) : (
-              <p
-                className={`truncate text-3xl font-bold tracking-tight sm:text-4xl ${tone.amount}`}
+              <FitText
+                as="p"
+                min={14}
+                className={`overflow-hidden whitespace-nowrap text-3xl font-bold tracking-tight sm:text-4xl ${tone.amount}`}
               >
                 {rupiahPenuh(outstanding)}
-              </p>
+              </FitText>
             )}
           </div>
         </div>

@@ -69,6 +69,7 @@
 
 /* ── Catatan rapat ── */
 .catatan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+@media (max-width: 767px) { .catatan-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
 .catatan-card {
   background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 12px;
   padding: 12px; display: flex; flex-direction: column; gap: 6px; cursor: pointer;

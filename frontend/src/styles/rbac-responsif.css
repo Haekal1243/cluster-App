@@ -28,9 +28,11 @@
   .rbac-role-actions button { flex: 1 1 auto; justify-content: center; }
 }
 
+@media (max-width: 767px) {
+  .pengumuman-grid.pengumuman-grid-single { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (max-width: 640px) {
-  /* Kartu kegiatan/pengumuman memuat lebih banyak info (wilayah, status ACC): satu kolom */
-  .pengumuman-grid { grid-template-columns: minmax(0, 1fr); }
   .pengajuan-banner { flex-wrap: wrap; }
   .pengajuan-banner .btn-outline-neutral { margin-left: 0; }
 }

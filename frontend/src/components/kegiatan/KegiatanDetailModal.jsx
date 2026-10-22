@@ -37,6 +37,12 @@ export default function KegiatanDetailModal({ kegiatan, onClose }) {
               {kegiatan.deskripsi}
             </p>
           )}
+
+          {kegiatan.statusPengajuan === "DITOLAK" && kegiatan.alasanTolak && (
+            <p className="portal-kegiatan-desc" style={{ whiteSpace: "pre-wrap" }}>
+              <strong>Alasan ditolak:</strong> {kegiatan.alasanTolak}
+            </p>
+          )}
         </div>
       </div>
     </div>

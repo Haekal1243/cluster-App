@@ -614,8 +614,14 @@
   color: var(--db-slate-500, var(--db-slate-400));
 }
 .pengaduan-card-title .ipl-penghuni {
-  display: block;
+  margin-left: 8px;
   font-weight: 400;
+}
+.pengaduan-card-badges {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
 }
 .ipl-nominal {
   font-weight: 600;

@@ -1,0 +1,25 @@
+/*
+ * Target sentuh minimal 44x44 px (WCAG 2.5.5 / pedoman Apple & Material) untuk perangkat sentuh
+ * dan layar sempit. Tombol ikon kecil diperbesar area kliknya; tampilan ikon tetap sama karena
+ * isinya dipusatkan.
+ */
+@media (pointer: coarse), (max-width: 768px) {
+  .sidebar-close,
+  .header-menu-btn,
+  .header-icon-btn,
+  .notif-prompt-close,
+  .modal-close,
+  .ipl-modal-close {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header-install-btn,
+  .notif-prompt-actions .btn-ipl-primary,
+  .warga-detail-cta {
+    min-height: 44px;
+  }
+}

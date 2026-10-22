@@ -27,3 +27,14 @@ PERUBAHAN-22-SEP-2026.md
 RENCANA-KEAMANAN-CYBER.md
 RENCANA-PERBAIKAN-SISTEM.md
 UAT-CHECKLIST.md
+
+# File instruksi agen AI (AGENTS.md dibuat ulang otomatis oleh next dev)
+frontend/AGENTS.md
+frontend/CLAUDE.md
+
+# Berkas unggahan lama (bukti bayar warga = data pribadi). Upload kini disimpan di DB (tb_File).
+backend/uploads/
+build.log
+*.tmp.js
+*.tmp.js.map
+*.tmp.d.ts

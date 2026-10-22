@@ -65,10 +65,13 @@ body {
   min-height: 100%;
 }
 
-html {
-  /* Matikan efek "pull-to-refresh"/bounce glow Chrome pas scroll nyampe ujung atas/bawah
-     — di PWA terinstall ini kerasa seperti UI browser, bukan app native. */
-  overscroll-behavior-y: none;
+/* Matikan efek "pull-to-refresh"/bounce glow Chrome pas scroll nyampe ujung atas/bawah
+   — di PWA terinstall ini kerasa seperti UI browser, bukan app native. Di tab Chrome
+   biasa pull-to-refresh tetap dibiarkan jalan. */
+@media (display-mode: standalone) {
+  html {
+    overscroll-behavior-y: none;
+  }
 }
 
 body {

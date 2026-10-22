@@ -311,9 +311,14 @@ export class SetoranService {
       throw new BadRequestException('Setoran ini tidak dalam status "Menunggu Konfirmasi".');
     }
 
+    // Keputusan dikunci atomik pada status MENUNGGU_KONFIRMASI: pengecekan di atas di luar transaksi,
+    // sehingga TERIMA dan TOLAK yang datang bersamaan sama-sama lolos. Hanya satu yang boleh menang.
+    const sudahDiputuskan = () =>
+      new ConflictException('Setoran ini baru saja diputuskan oleh pengguna lain. Muat ulang halaman.');
+
     if (dto.action === 'TERIMA') {
-      await this.prisma.setoranIpl.update({
-        where: { id },
+      const hasil = await this.prisma.setoranIpl.updateMany({
+        where: { id, status: 'MENUNGGU_KONFIRMASI' },
         data: {
           status: 'DIKONFIRMASI',
           konfirmasiBy: ctx.user.nama,
@@ -321,6 +326,7 @@ export class SetoranService {
           catatan: dto.catatan ?? null,
         },
       });
+      if (hasil.count !== 1) throw sudahDiputuskan();
       await this.audit.catat(ctx.user.sub, 'setoran.konfirmasi', {
         target: 'SetoranIpl',
         targetId: id,
@@ -342,18 +348,19 @@ export class SetoranService {
       throw new BadRequestException('Alasan penolakan wajib diisi.');
     }
     // Tagihan dilepas lagi supaya otomatis ikut setoran berikutnya.
-    await this.prisma.$transaction([
-      this.prisma.ipl.updateMany({ where: { setoranId: id }, data: { setoranId: null } }),
-      this.prisma.setoranIpl.update({
-        where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      const hasil = await tx.setoranIpl.updateMany({
+        where: { id, status: 'MENUNGGU_KONFIRMASI' },
         data: {
           status: 'DITOLAK',
           konfirmasiBy: ctx.user.nama,
           tanggalKonfirmasi: new Date(),
           catatan: dto.catatan,
         },
-      }),
-    ]);
+      });
+      if (hasil.count !== 1) throw sudahDiputuskan();
+      await tx.ipl.updateMany({ where: { setoranId: id }, data: { setoranId: null } });
+    });
     await this.audit.catat(ctx.user.sub, 'setoran.tolak', {
       target: 'SetoranIpl',
       targetId: id,

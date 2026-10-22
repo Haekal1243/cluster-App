@@ -641,7 +641,8 @@ export function PengurusIuranView({ user }) {
               <thead>
                 <tr>
                   <th>No</th>
-                  <th>{semuaRt ? "Blok / RT · Penghuni" : "Blok · Penghuni"}</th>
+                  <th>{semuaRt ? "Blok / RT" : "Blok"}</th>
+                  <th>Penghuni</th>
                   <th>Total</th>
                   <th>Status</th>
                   <th>Tanggal Bayar</th>
@@ -657,12 +658,10 @@ export function PengurusIuranView({ user }) {
                     <tr key={t.id}>
                       <td>{(page - 1) * 10 + index + 1}</td>
                       <td>
-                        <div className="ipl-blok-row">
-                          <span className="ipl-blok-name">{t.rumah?.blokRumah}</span>
-                          <span className="ipl-penghuni">{t.rumah?.penghuni?.namaUser || <em className="text-muted">Kosong</em>}</span>
-                        </div>
+                        <span className="ipl-blok">{t.rumah?.blokRumah}</span>
                         {semuaRt && <span className="ipl-rt">{t.rumah?.rt?.replace("_", " ")}</span>}
                       </td>
+                      <td>{t.rumah?.penghuni?.namaUser || <em className="text-muted">Kosong</em>}</td>
                       <td className="ipl-nominal">
                         {formatRupiah(t.nominal)}
                         <span className="ipl-nominal-split">IPL {formatRupiah(t.nominalIpl)} + kas {formatRupiah(t.nominalKas)}</span>
@@ -743,10 +742,13 @@ export function PengurusIuranView({ user }) {
                 >
                   <div className="pengaduan-card-top">
                     <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
-                      {t.rumah?.blokRumah} {semuaRt && <span className="rt-badge">{t.rumah?.rt?.replace("_", " ")}</span>}
+                      {t.rumah?.blokRumah}
                       <span className="ipl-penghuni">{t.rumah?.penghuni?.namaUser || <em className="text-muted">Kosong</em>}</span>
                     </h3>
-                    <PengurusStatusBadge status={t.statusPembayaran} />
+                    <div className="pengaduan-card-badges">
+                      {semuaRt && <span className="rt-badge">{t.rumah?.rt?.replace("_", " ")}</span>}
+                      <PengurusStatusBadge status={t.statusPembayaran} />
+                    </div>
                   </div>
                   {pembayaran?.tanggalBayar && (
                     <div className="pengaduan-card-meta">

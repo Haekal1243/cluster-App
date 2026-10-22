@@ -32,6 +32,15 @@ function formatTanggalExport(t: Date | string): string {
   return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
 }
 
+/**
+ * CSV injection: Excel/Sheets menjalankan sel yang diawali = + - @ (juga tab/CR) sebagai formula.
+ * Teks isian pengguna diberi awalan ' agar dibaca sebagai teks biasa. Angka tidak disentuh.
+ */
+export function netralkanSelCsv<T>(nilai: T): T | string {
+  if (typeof nilai !== 'string') return nilai;
+  return /^[=+\-@\t\r]/.test(nilai) ? `'${nilai}` : nilai;
+}
+
 // ================================================================
 // EXPORT RIWAYAT KAS (CSV / XLSX) — pure function agar bisa di-test
 // ================================================================
@@ -518,7 +527,11 @@ export class KeuanganService {
         `${title}\n` +
         stringify(
           [
-            ...baris,
+            ...baris.map((b) => ({
+              ...b,
+              wilayah: netralkanSelCsv(b.wilayah),
+              deskripsi: netralkanSelCsv(b.deskripsi),
+            })),
             {
               tanggal: '',
               wilayah: '',

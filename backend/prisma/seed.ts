@@ -517,6 +517,13 @@ async function main() {
       `\n⚠️  Sudah ada ${sudahAda} akun di database, data dummy dilewati.\n` +
         '   Untuk memulai dari nol: npx prisma migrate reset (menghapus SEMUA data).',
     );
+  } else if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DUMMY_SEED_IN_PRODUCTION !== 'true') {
+    // Akun dummy memakai sandi default yang tertanam di repo ini (publik bagi siapa pun yang membacanya).
+    console.log(
+      '\n⛔ NODE_ENV=production: akun dummy TIDAK dibuat karena sandinya default dan diketahui umum.\n' +
+        '   Buat admin pertama dengan sandi sendiri, atau set ALLOW_DUMMY_SEED_IN_PRODUCTION=true\n' +
+        '   hanya untuk demo, lalu SEGERA ganti semua sandinya.',
+    );
   } else {
     await seedDummy(roleId);
   }

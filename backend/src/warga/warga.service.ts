@@ -273,7 +273,7 @@ export class WargaService {
   /** Warga mengirim bukti pembayaran untuk tagihan rumahnya sendiri. */
   async uploadBuktiPembayaran(
     ctx: AccessContext,
-    data: { idIpl: number; nominal?: number; bukti?: Express.Multer.File },
+    data: { idIpl: number; bukti?: Express.Multer.File },
   ) {
     if (!data.bukti) throw new BadRequestException('Bukti pembayaran wajib diunggah.');
 
@@ -300,19 +300,25 @@ export class WargaService {
     const buktiId = await this.files.simpan(data.bukti);
     const pembayaran = await this.prisma
       .$transaction(async (tx) => {
-        const p = await tx.pembayaranIpl.create({
+        // Klaim tagihan secara atomik (BELUM_LUNAS -> MENUNGGU_KONFIRMASI). Pengecekan status di atas
+        // dilakukan di luar transaksi, jadi klik ganda/dua tab bisa lolos bersamaan; hanya satu
+        // request yang boleh memenangkan klaim ini, sisanya ditolak.
+        const klaim = await tx.ipl.updateMany({
+          where: { id: data.idIpl, statusPembayaran: 'BELUM_LUNAS' },
+          data: { statusPembayaran: 'MENUNGGU_KONFIRMASI' },
+        });
+        if (klaim.count !== 1) {
+          throw new ConflictException('Tagihan ini sudah dibayar atau bukti pembayarannya sedang diproses.');
+        }
+        // Nominal selalu dihitung server dari tagihan, bukan dari isian klien.
+        return tx.pembayaranIpl.create({
           data: {
             idUser: ctx.user.sub,
             idIpl: data.idIpl,
-            nominal: data.nominal && data.nominal > 0 ? data.nominal : totalTagihan(ipl),
+            nominal: totalTagihan(ipl),
             buktiTransaksi: buktiId,
           },
         });
-        await tx.ipl.update({
-          where: { id: data.idIpl },
-          data: { statusPembayaran: 'MENUNGGU_KONFIRMASI' },
-        });
-        return p;
       })
       .catch(async (err) => {
         // Pembayaran gagal dicatat: jangan tinggalkan bukti yatim di database.

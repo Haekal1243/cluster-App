@@ -144,6 +144,29 @@ export class PesanIndonesiaFilter implements ExceptionFilter {
       });
     }
 
+    // Error 4xx dari middleware Express (mis. body-parser: payload terlalu besar -> 413,
+    // JSON rusak -> 400) membawa status sendiri; jangan dilaporkan sebagai 500.
+    const statusMiddleware = (exception as { status?: unknown; statusCode?: unknown } | null)?.status
+      ?? (exception as { statusCode?: unknown } | null)?.statusCode;
+    if (typeof statusMiddleware === 'number' && statusMiddleware >= 400 && statusMiddleware < 500) {
+      return res.status(statusMiddleware).json({
+        statusCode: statusMiddleware,
+        message:
+          statusMiddleware === 413 ? 'Data yang dikirim terlalu besar.' : 'Format data yang dikirim tidak valid.',
+        error: HttpStatus[statusMiddleware] ?? undefined,
+      });
+    }
+
+    // Parameter di luar jangkauan kolom DB (mis. id 99999999999999999999) = salah input, bukan error server.
+    const namaError = (exception as { constructor?: { name?: string } } | null)?.constructor?.name;
+    if (namaError === 'PrismaClientValidationError') {
+      return res.status(HttpStatus.BAD_REQUEST).json({
+        statusCode: 400,
+        message: 'Parameter yang dikirim tidak valid.',
+        error: 'BAD_REQUEST',
+      });
+    }
+
     this.logger.error(exception instanceof Error ? (exception.stack ?? exception.message) : String(exception));
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: 500,

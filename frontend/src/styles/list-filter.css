@@ -558,15 +558,15 @@
 .pengumuman-grid-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
+  gap: 8px;
+  padding: 12px;
   background: var(--db-surface);
   border: 1px solid var(--db-border);
   border-radius: 12px;
 }
 
 .pengumuman-grid-title {
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.3;
   color: var(--db-text);
@@ -577,30 +577,39 @@
 }
 
 .pengumuman-grid-date {
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   color: var(--db-muted);
 }
 
 .pengumuman-grid-footer {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   margin-top: 4px;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid var(--db-border);
 }
 
-/* Badge "Tampil ke semua warga"/"Level RW" disejajarkan dengan toggle Aktif,
-   bukan numpuk sendirian di baris atas kartu. */
-.pengumuman-grid-footer-left {
+/* Badge visibilitas di baris sendiri di atas garis, di bawah tanggal. */
+.pengumuman-grid-badge {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+}
+/* Aksi kiri + status kanan di bawah garis; aksi kiri + status kanan di bawahnya. */
+.pengumuman-grid-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
   min-width: 0;
+}
+.pengumuman-grid-footer:not(:has(button, .status-cell)) {
+  display: none;
 }
 
 .pengumuman-grid-footer .status-cell {
@@ -608,31 +617,36 @@
 }
 
 .pengumuman-grid-footer .status-cell-label {
-  font-size: 0.68rem;
+  font-size: 0.78rem;
 }
 
 .pengumuman-grid-footer .table-actions {
   justify-content: flex-start;
-  gap: 4px;
+  gap: 8px;
 }
 
 .pengumuman-grid-footer .btn-icon {
-  width: 26px;
-  height: 26px;
+  width: 36px;
+  height: 36px;
 }
 
 .pengumuman-grid-footer .ui-switch {
-  width: 32px;
-  height: 18px;
+  width: 40px;
+  height: 22px;
 }
 
 .pengumuman-grid-footer .ui-switch-thumb {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
 }
 
 .pengumuman-grid-footer .ui-switch.is-checked .ui-switch-thumb {
-  transform: translateX(14px);
+  transform: translateX(18px);
+}
+
+.pengumuman-grid-footer .ipl-badge {
+  font-size: 0.74rem;
+  padding: 4px 10px;
 }
 
 /* Grid kartu Kegiatan (admin) — dipakai gantinya tabel di layar mobile */
@@ -852,7 +866,7 @@
   .pengumuman-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
     padding: 14px;
   }
 

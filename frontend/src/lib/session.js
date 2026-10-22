@@ -51,6 +51,14 @@ export function setToken(token, remember) {
   }
 }
 
+// Ganti kata sandi membatalkan semua token lama (termasuk token sesi ini); backend mengirim token
+// baru dan kita tulis ke penyimpanan yang sama dengan token lama supaya mode "Ingat saya" tidak berubah.
+export function replaceToken(token) {
+  if (typeof window === "undefined" || !token) return;
+  if (localStorage.getItem(TOKEN_KEY)) localStorage.setItem(TOKEN_KEY, token);
+  else sessionStorage.setItem(TOKEN_KEY, token);
+}
+
 export function clearSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(USER_KEY);

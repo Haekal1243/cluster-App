@@ -1,4 +1,5 @@
-import { Area } from '@prisma/client';
+import { ForbiddenException } from '@nestjs/common';
+import { Area, StatusPengajuan } from '@prisma/client';
 import { AccessContext } from '../auth/auth.types';
 
 /**
@@ -32,6 +33,20 @@ export function visibilitasKelolaWhere(ctx: AccessContext) {
 export const tampilKeSemua = {
   OR: [{ area: 'RW' as Area }, { statusPengajuan: 'DISETUJUI' as const }],
 };
+
+/**
+ * Konten RT yang visibilitasnya hanya untuk warga RT-nya (belum diajukan / ditolak RW) hanya boleh
+ * diubah RT pemiliknya; pengurus RW cuma melihat. User tanpa area (admin) tidak dibatasi.
+ */
+export function assertBolehUbahKonten(
+  ctx: AccessContext,
+  item: { area: Area; statusPengajuan: StatusPengajuan },
+) {
+  const hanyaRt = item.area !== 'RW' && (item.statusPengajuan === 'TIDAK' || item.statusPengajuan === 'DITOLAK');
+  if (hanyaRt && ctx.user.area && ctx.user.area !== item.area) {
+    throw new ForbiddenException('Konten ini hanya tampil di RT-nya, pengurus RW hanya bisa melihat.');
+  }
+}
 
 /** Batas tampil di dashboard warga: tanpa batas, atau belum lewat. */
 export function belumLewatBatasTampil() {

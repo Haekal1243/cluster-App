@@ -1,6 +1,7 @@
 // backend/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { PesanIndonesiaFilter, validasiIndonesia } from './common/pesan-indonesia';
@@ -36,11 +37,30 @@ async function bootstrap() {
         'http://127.0.0.1:5173',
       ];
   const originDiizinkan = new Set([...defaultDev, ...originEksplisit]);
+  // Pola *.vercel.app mencakup SEMUA project Vercel milik siapa pun, bukan hanya milik kita,
+  // jadi hanya aktif bila diminta eksplisit (CORS_ALLOW_VERCEL_PREVIEW=true) untuk preview deploy.
+  // Untuk produksi cukup daftarkan domain frontend di CORS_ORIGINS.
+  const izinkanVercel = process.env.CORS_ALLOW_VERCEL_PREVIEW === 'true';
   const polaVercel = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
+
+  // Di belakang proxy (Railway/Vercel/Nginx) IP klien ada di X-Forwarded-For. Tanpa ini semua
+  // pengguna terlihat dari satu IP proxy dan rate limit login jadi satu bucket untuk semua orang.
+  // Isi TRUST_PROXY dengan jumlah proxy di depan app (default 1 di produksi, 0 di laptop).
+  app.set('trust proxy', Number(process.env.TRUST_PROXY ?? (isProd ? 1 : 0)));
+  app.disable('x-powered-by');
+  // API hanya melayani JSON dan berkas; tidak ada alasan untuk di-frame atau di-sniff.
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    if (isProd) res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    next();
+  });
 
   app.enableCors({
     origin(origin, callback) {
-      if (!origin || originDiizinkan.has(origin) || polaVercel.test(origin)) {
+      if (!origin || originDiizinkan.has(origin) || (izinkanVercel && polaVercel.test(origin))) {
         callback(null, true);
       } else {
         // Tolak diam-diam (tanpa header CORS) agar browser memblokir,

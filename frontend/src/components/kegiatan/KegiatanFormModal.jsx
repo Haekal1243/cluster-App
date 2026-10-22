@@ -147,7 +147,7 @@ export default function KegiatanFormModal({
                       checked={form.tampilDiLanding}
                       onChange={handleChange}
                     />
-                    Tampilkan di portofolio landing page (5 tahun)
+                    Tampilkan di halaman portofolio
                   </label>
                 </div>
                 <div className="form-group">

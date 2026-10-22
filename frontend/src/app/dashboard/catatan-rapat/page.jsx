@@ -9,7 +9,8 @@ import { showConfirm, showMessage } from "@/lib/message";
 import Select from "@/components/ui/Select";
 import FileDropzone from "@/components/ui/FileDropzone";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
-import { getCurrentYm, formatTanggalPanjang as tanggal } from "@/lib/format";
+import { getCurrentYm, formatTanggalPanjang as tanggal, formatTanggalPendek } from "@/lib/format";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 // Judul biasanya ditulis "Rapat <Area> - <Topik>" (lihat seed), yang bikin redundan sama
 // badge area yang udah ditampilin terpisah. Potong prefix itu kalau memang ada, selain itu
@@ -398,6 +399,7 @@ function DetailModal({ item, onClose }) {
 
 export default function CatatanRapatPage() {
   const { user, ready } = useUser();
+  const isMobile = useMediaQuery("(max-width: 767px)");
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -555,50 +557,55 @@ export default function CatatanRapatPage() {
         )}
       </div>
 
-      {isLoading && <div className="table-loading">Memuat catatan rapat...</div>}
-      {!isLoading && filtered.length === 0 && (
-        <div className="table-card">
-          <div className="table-empty">{items.length === 0 ? "Belum ada catatan rapat." : "Tidak ada catatan yang cocok."}</div>
+      <div className="table-card">
+        <div className="ipl-table-header">
+          <span className="ipl-table-title">Daftar Catatan Rapat</span>
+          <span className="ipl-table-count">{filtered.length} data</span>
         </div>
-      )}
 
-      <div className="catatan-list">
-        {!isLoading &&
-          filtered.map((item) => (
-            <article
-              key={item.id}
-              className="catatan-card"
-              role="button"
-              tabIndex={0}
-              onClick={() => setDetail(item)}
-              onKeyDown={(e) => { if (e.key === "Enter") setDetail(item); }}
-            >
-              <div className="catatan-card-head">
-                <h3>{stripRapatPrefix(item.judul)}</h3>
-                <span className="rt-badge">{areaLabel(item.area)}</span>
-              </div>
-              <div className="catatan-card-foot">
-                <span className="catatan-meta-small">
-                  {tanggal(item.createDate)}
-                  {item.fileNotulen ? " · ada file" : ""}
-                </span>
-                {(bolehTulis(user, "catatan_rapat.update", item) || bolehTulis(user, "catatan_rapat.delete", item)) && (
-                  <div className="table-actions" onClick={(e) => e.stopPropagation()}>
-                    {bolehTulis(user, "catatan_rapat.update", item) && (
-                      <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah" onClick={() => setModal({ open: true, mode: "edit", item })}>
-                        <Pencil size={14} />
-                      </button>
-                    )}
-                    {bolehTulis(user, "catatan_rapat.delete", item) && (
-                      <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus" onClick={() => handleDelete(item)}>
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </article>
-          ))}
+        {isLoading && <div className="table-loading">Memuat catatan rapat...</div>}
+        {!isLoading && filtered.length === 0 && (
+          <div className="table-empty">{items.length === 0 ? "Belum ada catatan rapat." : "Tidak ada catatan yang cocok."}</div>
+        )}
+
+        <div className="catatan-list">
+          {!isLoading &&
+            filtered.map((item) => (
+              <article
+                key={item.id}
+                className="catatan-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetail(item)}
+                onKeyDown={(e) => { if (e.key === "Enter") setDetail(item); }}
+              >
+                <div className="catatan-card-head">
+                  <h3>{stripRapatPrefix(item.judul)}</h3>
+                  <span className="rt-badge">{areaLabel(item.area)}</span>
+                </div>
+                <div className="catatan-card-foot">
+                  <span className="catatan-meta-small">
+                    {(isMobile ? formatTanggalPendek : tanggal)(item.createDate)}
+                    {item.fileNotulen ? " · ada file" : ""}
+                  </span>
+                  {(bolehTulis(user, "catatan_rapat.update", item) || bolehTulis(user, "catatan_rapat.delete", item)) && (
+                    <div className="table-actions" onClick={(e) => e.stopPropagation()}>
+                      {bolehTulis(user, "catatan_rapat.update", item) && (
+                        <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah" onClick={() => setModal({ open: true, mode: "edit", item })}>
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                      {bolehTulis(user, "catatan_rapat.delete", item) && (
+                        <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus" onClick={() => handleDelete(item)}>
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </article>
+            ))}
+        </div>
       </div>
 
       <CatatanFormModal

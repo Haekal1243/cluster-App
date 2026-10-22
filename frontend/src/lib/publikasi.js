@@ -5,7 +5,7 @@ import { scopeOf } from "./session";
 export const PENGAJUAN = {
   TIDAK: { label: "Hanya RT ini", cls: "muted" },
   DIAJUKAN: { label: "Menunggu ACC RW", cls: "menunggu" },
-  DISETUJUI: { label: "Tampil ke semua warga", cls: "lunas" },
+  DISETUJUI: { label: "Semua warga", cls: "lunas" },
   DITOLAK: { label: "Ditolak RW", cls: "belum" },
 };
 

@@ -641,7 +641,12 @@ export class KeuanganService {
       const bulan = parts[2];
       if (!rt || !tahun || !bulan)
         throw new NotFoundException('ID setoran tidak valid.');
-      assertInArea(ctx, rt as Area);
+      // Baris setoran tampil di riwayat RW (semua RT) dan RT pemiliknya; pengurus RW (area 'RW')
+      // memang boleh melihat bukti setoran semua RT, jadi hanya RT lain yang ditolak.
+      const batas = areaFilter(ctx);
+      if (batas !== null && batas !== 'RW' && batas !== rt) {
+        throw new ForbiddenException('Data ini di luar wilayah Anda.');
+      }
       const row = await this.prisma.ipl.findFirst({
         where: {
           bulanPeriode: bulan,

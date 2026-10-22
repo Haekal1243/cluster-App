@@ -9,8 +9,8 @@
   background: #fef2f2; color: var(--db-danger); border: 1px solid #fecaca;
   border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; margin-bottom: 12px;
 }
-.checkbox-row { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
-.checkbox-row input { width: 16px; height: 16px; accent-color: var(--db-primary); }
+.checkbox-row, .form-group .checkbox-row { display: flex; align-items: center; gap: 12px; font-size: 0.82rem; font-weight: 400; cursor: pointer; }
+.checkbox-row input { flex-shrink: 0; width: 16px; height: 16px; margin: 0; accent-color: var(--db-primary); }
 .danger-text { color: var(--db-danger); border-color: #fecaca; }
 .danger-text:hover { background: #fef2f2; }
 .badge-muted { background: #f1f5f9; color: var(--db-slate-500); }
@@ -68,7 +68,8 @@
 .keputusan-opsi.is-active.tolak { background: #fef2f2; border-color: #fecaca; color: var(--db-danger); }
 
 /* ── Catatan rapat ── */
-.catatan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.catatan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; padding: 14px; }
+.catatan-list:empty { display: none; }
 @media (max-width: 767px) { .catatan-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
 .catatan-card {
   background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 12px;
@@ -82,7 +83,6 @@
 .catatan-card-head h3 { margin: 0; font-size: 0.85rem; font-weight: 700; color: var(--db-text); line-height: 1.35; }
 .catatan-card-foot { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: auto; }
 .catatan-meta-small { font-size: 0.7rem; color: var(--db-slate-400); }
-.catatan-card-foot .btn-icon { width: 28px; height: 28px; }
 .catatan-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 0.82rem; color: var(--db-slate-500); margin-bottom: 12px; }
 .catatan-area-info {
   background: #f0fdfa; border: 1px solid #99f6e4; color: var(--db-primary-active);

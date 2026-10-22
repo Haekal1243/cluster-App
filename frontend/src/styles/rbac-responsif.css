@@ -150,3 +150,26 @@
   .notif-prompt { flex-wrap: wrap; }
   .notif-prompt-actions { width: 100%; justify-content: flex-end; }
 }
+
+/* Kartu data (pengganti baris tabel di mobile; di desktop dipakai Catatan Rapat, Pengaduan, dll): bayangan tipis biar terasa terangkat dan
+   gampang dibedakan antar kartu. Border tetap ada; hover masing-masing kartu menimpa ini. */
+.pengaduan-card,
+.pengumuman-grid-card,
+.kegiatan-grid-card,
+.iuran-grid-card,
+.warga-grid-card,
+.catatan-card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Kartu summary: bayangan lebih halus dari kartu data karena sudah berwarna/berikon. */
+.ipl-summary-card,
+.keu-card {
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.10), 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+/* Kartu kegiatan & pengumuman di beranda (semua role): bayangan dasar, hover tetap menimpa. */
+.portal-kegiatan-card,
+.portal-info-card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 1px 2px rgba(15, 23, 42, 0.04);
+}

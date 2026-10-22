@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle, XCircle, Clock, Eye, Landmark, Upload, Wallet } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, ClipboardCheck, Landmark, Upload, Wallet } from "lucide-react";
 import { setoranApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
@@ -12,6 +12,7 @@ import Select from "@/components/ui/Select";
 import FileDropzone from "@/components/ui/FileDropzone";
 import { usePagination } from "@/lib/usePagination";
 import SetoranDetailModal from "@/components/setoran/SetoranDetailModal";
+import { formatJam } from "@/lib/useSetoranDetail";
 import {
   formatRupiah as rupiah,
   formatTanggalPendek as tanggal,
@@ -395,8 +396,14 @@ export default function SetoranPage() {
                     </td>
                     <td>
                       {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? (
-                        <button type="button" className="btn-ipl-review" onClick={() => setDetailId(s.id)}>
-                          <Eye size={14} /> Review
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title="Tinjau setoran"
+                          aria-label="Tinjau setoran"
+                          onClick={() => setDetailId(s.id)}
+                        >
+                          <ClipboardCheck size={14} />
                         </button>
                       ) : (
                         <button
@@ -428,7 +435,7 @@ export default function SetoranPage() {
               >
                 <div className="pengaduan-card-top">
                   <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
-                    <span className="rt-badge">{areaLabel(s.area)}</span> {tanggal(s.createDate)}
+                    <span className="rt-badge">{areaLabel(s.area)}</span> {tanggal(s.createDate)} · {formatJam(s.createDate)}
                   </h3>
                   <StatusBadge status={s.status} />
                 </div>
@@ -440,13 +447,6 @@ export default function SetoranPage() {
                   <span className="warga-grid-penghuni">
                     {s.konfirmasiBy} <span className="text-muted" style={{ fontWeight: 400 }}>· {tanggal(s.tanggalKonfirmasi)}</span>
                   </span>
-                )}
-                {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi && (
-                  <div className="pengaduan-card-actions" onClick={(e) => e.stopPropagation()}>
-                    <button type="button" className="btn-ipl-review" onClick={() => setDetailId(s.id)}>
-                      <Eye size={14} /> Review
-                    </button>
-                  </div>
                 )}
               </div>
             ))}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus, Eye, MessageSquareWarning, Calendar, Search, Forward, User, MapPin, Tag,
+  Plus, Eye, MessageSquareReply, MessageSquareWarning, Calendar, Search, Forward, User, Tag,
 } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
@@ -13,7 +13,7 @@ import { usePagination } from "@/lib/usePagination";
 import { useAutoRefresh } from "@/lib/useAutoRefresh";
 import PengaduanFormModal from "@/components/pengaduan/PengaduanFormModal";
 import PengaduanDetailModal from "@/components/pengaduan/PengaduanDetailModal";
-import { can, scopeOf, areaLabel } from "@/lib/session";
+import { can, scopeOf } from "@/lib/session";
 import { BULAN_OPTIONS, formatTanggalPendek as formatDate } from "@/lib/format";
 import { useUser } from "@/lib/useUser";
 import PengaduanRespondModal from "@/components/pengaduan/PengaduanRespondModal";
@@ -63,22 +63,20 @@ function canRespond(item, boleh = true) {
   return boleh && (item.status === "MENUNGGU" || item.status === "DIPROSES");
 }
 
-/** `hideViewFallback`: dipakai di kartu mobile — kartunya sendiri udah bisa diklik buat
- * buka detail, jadi tombol "Lihat" yang cuma ngedobelin aksi itu gak perlu ditampilkan. */
-function PengaduanActionButton({ item, onAction, bolehRespon, hideViewFallback = false }) {
+function PengaduanActionButton({ item, onAction, bolehRespon }) {
   if (canRespond(item, bolehRespon)) {
     return (
       <button
         type="button"
-        className="btn-ipl-review"
+        className="btn-icon"
         onClick={() => onAction(item)}
         title="Tanggapi pengaduan"
+        aria-label="Tanggapi pengaduan"
       >
-        <MessageSquareWarning size={14} /> Tanggapi
+        <MessageSquareReply size={14} />
       </button>
     );
   }
-  if (hideViewFallback) return null;
   return (
     <button
       type="button"
@@ -96,7 +94,6 @@ function PengaduanActionButton({ item, onAction, bolehRespon, hideViewFallback =
 function PengaduanCard({ item, onOpen, pelapor, aksi }) {
   const metaItems = [
     pelapor && { icon: User, label: pelapor },
-    { icon: MapPin, label: areaLabel(item.tujuan) },
     { icon: Tag, label: KATEGORI_LABELS[item.kategori] || item.kategori },
   ].filter(Boolean);
 
@@ -405,7 +402,6 @@ function AdminPengaduanView({ user }) {
                 item={item}
                 pelapor={item.pelapor?.namaUser}
                 onOpen={handlePengaduanAction}
-                aksi={<PengaduanActionButton item={item} onAction={handlePengaduanAction} bolehRespon={bolehRespon} hideViewFallback />}
               />
             ))}
           </div>

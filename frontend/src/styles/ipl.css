@@ -445,7 +445,7 @@
 
 .pengaduan-table th:first-child,
 .pengaduan-table td:first-child { width: 1%; white-space: nowrap; }
-.pengaduan-col-judul { width: 32%; max-width: 380px; }
+.pengaduan-col-judul { width: 32%; max-width: 380px; font-weight: 700; }
 .pengaduan-judul {
   display: block;
   font-weight: 600;
@@ -508,8 +508,22 @@
 
 .pengaduan-card-top .ipl-status-badge { flex: none; }
 
-/* Kartu Riwayat Kas (mobile): badge tipe + tanggal ditumpuk di kanan, 2 baris,
-   sejajar menyamping judul kategori di kiri. */
+/* Kartu Riwayat Kas (mobile): judul kategori + tanggal (ikon kalender) ditumpuk di kiri,
+   badge tipe di kanan. */
+.kas-card-top-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kas-card-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--db-slate-500);
+}
 .kas-card-top-right {
   display: flex;
   flex-direction: column;
@@ -1267,7 +1281,7 @@
     color: #1e293b;
     cursor: pointer;
   }
-  .sd-topbar-title { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+  .sd-topbar-title { display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
   .sd-topbar-title h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b; }
 
   .sd-body { padding: 14px 14px 120px; }
@@ -1283,11 +1297,10 @@
     padding: 14px;
   }
   .sd-summary-total-m { font-size: 28px; font-weight: 700; color: #0f766e; font-variant-numeric: tabular-nums; }
-  .sd-summary-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
-  .sd-summary-cols > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .sd-summary-cols em { font-style: normal; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; }
-  .sd-summary-cols b { font-size: 0.82rem; color: #1e293b; }
-  .sd-summary-by { font-size: 0.78rem; color: #64748b; margin-top: 6px; }
+  .sd-summary-cols { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .sd-summary-cols > span { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: baseline; gap: 12px; min-width: 0; }
+  .sd-summary-cols em { font-style: normal; font-size: 0.82rem; color: #64748b; }
+  .sd-summary-cols b { font-size: 0.85rem; color: #1e293b; }
 
   .sd-bukti-m { display: block; }
   .sd-bukti-row {
@@ -1598,3 +1611,9 @@
   }
 }
 
+
+/* Pop up pratinjau file terlindungi (ProtectedFileViewer): kartu dengan gambar/PDF di dalamnya. */
+.pfv-modal { max-width: 720px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+.pfv-body { padding: 16px; overflow: auto; display: flex; justify-content: center; background: var(--db-bg); }
+.pfv-img { max-width: 100%; max-height: 72vh; object-fit: contain; border-radius: 10px; }
+.pfv-frame { width: 100%; height: 72vh; border: 0; border-radius: 10px; background: #fff; }

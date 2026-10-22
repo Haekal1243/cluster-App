@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Eye, Wallet, FileX, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Eye, ClipboardCheck, Wallet, FileX, Pencil, Trash2 } from "lucide-react";
 import { iplApi, portalApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -677,11 +677,13 @@ export function PengurusIuranView({ user }) {
                         <div className="table-actions">
                           {t.statusPembayaran === "MENUNGGU_KONFIRMASI" && bisaKonfirmasiBaris ? (
                             <button
-                              className="btn-ipl-review"
+                              type="button"
+                              className="btn-icon"
                               onClick={() => setReviewItem(t)}
-                              title="Review bukti pembayaran"
+                              title="Tinjau bukti pembayaran"
+                              aria-label="Tinjau bukti pembayaran"
                             >
-                              <Eye size={14} /> Review
+                              <ClipboardCheck size={14} />
                             </button>
                           ) : pembayaran?.buktiTransaksi && t.statusPembayaran !== "BELUM_LUNAS" ? (
                             <button
@@ -758,14 +760,9 @@ export function PengurusIuranView({ user }) {
                   <span className="warga-grid-penghuni">
                     {formatRupiah(t.nominal)} <span className="text-muted" style={{ fontWeight: 400 }}>(IPL {formatRupiah(t.nominalIpl)} + kas {formatRupiah(t.nominalKas)})</span>
                   </span>
-                  {(bisaReview || (t.statusPembayaran === "BELUM_LUNAS" && (bolehUbah || (bolehHapus && !pembayaran)))) && (
+                  {t.statusPembayaran === "BELUM_LUNAS" && (bolehUbah || (bolehHapus && !pembayaran)) && (
                     <div className="pengaduan-card-actions" onClick={(e) => e.stopPropagation()}>
                       <div className="table-actions">
-                        {bisaReview && (
-                          <button className="btn-ipl-review" onClick={() => setReviewItem(t)} title="Review bukti pembayaran">
-                            <Eye size={14} /> Review
-                          </button>
-                        )}
                         {t.statusPembayaran === "BELUM_LUNAS" && bolehUbah && (
                           <button type="button" className="btn-icon" title="Koreksi nominal" aria-label="Koreksi nominal" onClick={() => setEditItem(t)}>
                             <Pencil size={15} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Plus, Search, Wallet, TrendingUp, TrendingDown, Scale, PiggyBank, Eye, Pencil, Trash2, Download, ChevronDown } from "lucide-react";
+import { Plus, Search, Wallet, TrendingUp, TrendingDown, Calendar, Scale, PiggyBank, Eye, Pencil, Trash2, Download, ChevronDown } from "lucide-react";
 import { keuanganApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -626,10 +626,12 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
                   style={buktiPath ? undefined : { cursor: "default" }}
                 >
                   <div className="pengaduan-card-top">
-                    <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>{t.kategori}</h3>
+                    <div className="kas-card-top-left">
+                      <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>{t.kategori}</h3>
+                      <span className="meta-item kas-card-date"><Calendar size={12} /> {formatTanggal(t.tanggal)}</span>
+                    </div>
                     <div className="kas-card-top-right">
                       <KasTipeBadge tipe={t.tipe} />
-                      <span className="pengaduan-meta-item">{formatTanggal(t.tanggal)}</span>
                     </div>
                   </div>
                   {semuaArea && (

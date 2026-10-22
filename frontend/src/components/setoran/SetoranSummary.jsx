@@ -1,6 +1,6 @@
 "use client";
 
-import { formatJam, formatRupiah, formatTanggal } from "@/lib/useSetoranDetail";
+import { formatRupiah, formatTanggal } from "@/lib/useSetoranDetail";
 
 export default function SetoranSummary({ data, derived, isMobile }) {
   if (isMobile) {
@@ -21,10 +21,11 @@ export default function SetoranSummary({ data, derived, isMobile }) {
             <em>Disetor</em>
             <b>{formatTanggal(data.createDate)}</b>
           </span>
+          <span>
+            <em>Disetor oleh</em>
+            <b>{data.createBy || "-"}</b>
+          </span>
         </div>
-        <span className="sd-summary-by">
-          oleh {data.createBy || "-"} · {formatJam(data.createDate)}
-        </span>
       </div>
     );
   }

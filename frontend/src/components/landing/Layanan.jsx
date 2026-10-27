@@ -1,61 +1,39 @@
 import Reveal from "./Reveal";
-import { ServiceIcon } from "./icons";
+import SectionHead from "./SectionHead";
 import { layanan } from "@/lib/landing-data";
+
+const AKSES = {
+  publik: "Terbuka untuk umum",
+  login: "Perlu login warga",
+  pengurus: "Khusus pengurus",
+};
 
 export default function Layanan({ items = layanan }) {
   return (
-    <section id="layanan" className="lp-section" style={{ background: "#F8FAFC" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <Reveal style={{ marginBottom: 48 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
-            Layanan yang Tersedia
-          </p>
-          <h2 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em", marginBottom: 12 }}>
-            Administrasi Warga Secara Digital
-          </h2>
-          <p style={{ fontSize: 15, color: "#64748B", maxWidth: 560, lineHeight: 1.7, marginBottom: 24 }}>
-            Seluruh layanan administrasi yang sebelumnya dikelola secara manual kini dapat diakses melalui
-            portal ini.
-          </p>
-        </Reveal>
+    <section id="layanan" className="lp-section tz-gelap">
+      <div className="tz-wrap">
+        <SectionHead
+          dark
+          varian="b"
+          label="Layanan"
+          title="Urusan warga yang kini bisa selesai lewat portal"
+          lead="Yang dulu lewat grup WhatsApp dan catatan tangan, sekarang tercatat rapi dan bisa dipantau."
+        />
 
-        <div
-          className="lp-layanan-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2,1fr)",
-            gap: 1,
-            background: "#E2E8F0",
-            borderRadius: 10,
-            overflow: "hidden",
-          }}
-        >
+        <ul className="tz-ledger">
           {items.map((s, i) => (
-            <Reveal key={s.id} style={{ transitionDelay: `${i * 50}ms` }}>
-              <div id={s.id === "pengaduan" ? "pengaduan" : undefined} className="lp-card" style={{ height: "100%", background: "white", padding: "32px 28px" }}>
-                <div
-                  className="lp-layanan-icon"
-                  style={{
-                    width: 44,
-                    height: 44,
-                    background: "#ECFDF5",
-                    borderRadius: 8,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 18,
-                  }}
-                >
-                  <ServiceIcon name={s.icon} />
+            <li key={s.id} id={s.id === "pengaduan" ? "pengaduan" : undefined}>
+              <Reveal variant={i % 2 === 0 ? "left" : "right"} delay={i * 80}>
+                <div className="tz-row">
+                  <span className="tz-row-no" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                  <h3 className="tz-row-judul">{s.judul}</h3>
+                  <p className="tz-row-isi">{s.deskripsi}</p>
+                  <span className={`tz-tag tz-tag-${s.akses}`}>{AKSES[s.akses] ?? s.akses}</span>
                 </div>
-                <h3 className="lp-layanan-title" style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 16, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>
-                  {s.judul}
-                </h3>
-                <p className="lp-layanan-desc" style={{ fontSize: 13, color: "#64748B", lineHeight: 1.7 }}>{s.deskripsi}</p>
-              </div>
-            </Reveal>
+              </Reveal>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

@@ -1,0 +1,61 @@
+/* Menu bawah + halaman Pengaturan untuk warga di HP */
+
+.bottom-nav { display: none; }
+
+@media (max-width: 899px) {
+  /* Warga: menu pindah ke bawah, hamburger & sidebar tidak dipakai */
+  .dashboard-shell.is-warga .header-menu-btn,
+  .dashboard-shell.is-warga .dashboard-sidebar,
+  .dashboard-shell.is-warga .sidebar-overlay { display: none; }
+  .dashboard-shell.is-warga .dashboard-main { padding-bottom: calc(46px + env(safe-area-inset-bottom)); }
+
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 90;
+    background: var(--db-surface);
+    border-top: 1px solid var(--db-border);
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bottom-nav-item {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    padding: 5px 4px 4px;
+    color: var(--db-slate-500);
+    font-size: 0.6rem; font-weight: 600;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bottom-nav-item.is-active { color: var(--db-primary); }
+  /* Tulisan hak cipta di HP warga hanya muncul di halaman Pengaturan */
+  .dashboard-shell.is-warga:not(.is-pengaturan) .dashboard-footer { display: none; }
+  .dashboard-shell.is-warga .dashboard-footer { padding: 6px 12px; font-size: 0.62rem; line-height: 1.3; }
+  .bottom-nav-item svg { width: 18px; height: 18px; }
+  /* Header lebih ramping untuk warga di HP */
+  .dashboard-shell.is-warga .dashboard-header { padding: 7px 14px; gap: 10px; }
+  .dashboard-shell.is-warga .header-left h1 { font-size: 1rem; }
+  .dashboard-shell.is-warga .header-actions { gap: 8px; }
+  .dashboard-shell.is-warga .header-icon-btn { box-sizing: border-box; flex: 0 0 34px; width: 34px; min-width: 34px; height: 34px; min-height: 34px; }
+  .dashboard-shell.is-warga .header-icon-btn svg { width: 16px; height: 16px; }
+  .dashboard-shell.is-warga .header-install-btn { box-sizing: border-box; flex: 0 0 34px; width: 34px; min-width: 34px; height: 34px; min-height: 34px; padding: 0; gap: 0; align-self: center; justify-content: center; border-radius: 50%; }
+  .dashboard-shell.is-warga .header-install-btn svg { width: 14px; height: 14px; }
+  .dashboard-shell.is-warga .header-user { display: none; } /* sisa ruang kosong di kanan lonceng */
+  .dashboard-shell.is-warga .notif-panel { top: 52px; }
+  .bottom-nav-item.is-active svg { stroke-width: 2.4; }
+}
+
+/* Pengaturan */
+.pengaturan-profil { display: flex; align-items: center; gap: 14px; background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 14px; padding: 16px; }
+.pengaturan-profil strong { display: block; color: var(--db-slate-700); font-size: 1rem; }
+.pengaturan-profil span:not(.pengaturan-avatar) { color: var(--db-muted); font-size: 0.82rem; }
+.pengaturan-avatar { width: 48px; height: 48px; border-radius: 50%; background: #ccfbf1; color: var(--db-primary); display: grid; place-items: center; flex-shrink: 0; }
+.pengaturan-daftar { background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 14px; overflow: hidden; }
+.pengaturan-baris { width: 100%; display: flex; align-items: center; gap: 12px; padding: 15px 16px; background: none; border: 0; border-bottom: 1px solid var(--db-border); font-size: 0.95rem; font-weight: 600; color: var(--db-slate-700); cursor: pointer; text-align: left; }
+.pengaturan-baris:last-child { border-bottom: 0; }
+.pengaturan-baris:active { background: var(--db-bg); }
+.pengaturan-baris span { flex: 1; }
+.pengaturan-panah { color: var(--db-slate-400); }
+.pengaturan-keluar { color: var(--db-danger); }

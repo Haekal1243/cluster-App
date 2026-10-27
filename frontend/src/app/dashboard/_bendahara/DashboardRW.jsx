@@ -97,11 +97,19 @@ export default function DashboardRW({ user }) {
       if (cancelled) return;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const batasSelesai = new Date(today);
+      batasSelesai.setDate(batasSelesai.getDate() - 7); // sama dengan lama kegiatan dianggap aktif
       const akanDatang = (data || []).filter((k) => {
         const t = new Date(k.tanggalAcara);
-        return Number.isNaN(t.getTime()) || t >= today;
+        return Number.isNaN(t.getTime()) || t >= batasSelesai;
       });
-      akanDatang.sort((a, b) => new Date(a.tanggalAcara).getTime() - new Date(b.tanggalAcara).getTime());
+      // yang akan datang paling dekat di depan; yang baru selesai (masih bisa dinilai) di belakang
+      const hariIni = (k) => new Date(k.tanggalAcara) >= today;
+      akanDatang.sort((a, b) => {
+        if (hariIni(a) !== hariIni(b)) return hariIni(a) ? -1 : 1;
+        const d = new Date(a.tanggalAcara).getTime() - new Date(b.tanggalAcara).getTime();
+        return hariIni(a) ? d : -d;
+      });
       setKegiatan(akanDatang);
     }
     loadKegiatan();
@@ -280,6 +288,7 @@ export default function DashboardRW({ user }) {
                   )}
                   <div className="portal-kegiatan-meta">
                     <span className="meta-item"><Calendar size={13} /> {formatKegiatanDate(k.tanggalAcara)}</span>
+                    {new Date(k.tanggalAcara) < new Date() && <span className="fb-chip-selesai">Selesai · beri masukan</span>}
                   </div>
                 </div>
               </div>
@@ -340,7 +349,7 @@ export default function DashboardRW({ user }) {
         />
       )}
       {selectedKegiatan && (
-        <KegiatanDetailModal kegiatan={selectedKegiatan} onClose={() => setSelectedKegiatan(null)} />
+        <KegiatanDetailModal tampilMasukan kegiatan={selectedKegiatan} onClose={() => setSelectedKegiatan(null)} />
       )}
       {selectedPengumuman && (
         <PengumumanDetailModal pengumuman={selectedPengumuman} onClose={() => setSelectedPengumuman(null)} />

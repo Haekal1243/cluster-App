@@ -137,6 +137,14 @@ export const kegiatanApi = {
   ajukan: (id) => request(`/kegiatan/${id}/ajukan`, { method: "POST" }),
   putuskanPengajuan: (id, payload) => request(`/kegiatan/${id}/pengajuan`, json("PATCH", payload)),
 
+  // Masukan warga
+  feedbackRekap: () => request("/kegiatan/feedback/rekap"),
+  feedbackDaftar: (id) => request(`/kegiatan/${id}/feedback`),
+  feedbackBisaDiberi: () => request("/kegiatan/feedback/bisa-diberi"),
+  feedbackBeri: (id, payload) => request(`/kegiatan/${id}/feedback`, json("PUT", payload)),
+  feedbackSembunyi: (id, disembunyikan) =>
+    request(`/kegiatan/feedback/${id}/sembunyi`, json("PATCH", { disembunyikan })),
+
   imageUrl: fileUrl,
 };
 

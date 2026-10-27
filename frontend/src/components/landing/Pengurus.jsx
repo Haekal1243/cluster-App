@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Reveal from "./Reveal";
+import SectionHead from "./SectionHead";
 import { pengurus as pengurusFallback } from "@/lib/landing-data";
 import { pengurusApi } from "@/lib/api";
 
@@ -33,7 +34,6 @@ function petakanDariDb(slots) {
     warna: WARNA_JABATAN[s.kode] ?? "#64748B",
     jabatan: s.jabatan,
     nama: s.nama ?? "Belum ditetapkan",
-    kontak: s.nama ? "Hubungi Sekretariat RW" : "-",
     wa: s.nama && s.kontak ? `https://wa.me/${s.kontak}?text=${encodeURIComponent(`Halo, saya warga Cluster ingin bertanya kepada ${s.jabatan}.`)}` : null,
   }));
 }
@@ -61,6 +61,10 @@ export default function Pengurus({ items: itemsProp }) {
 
   const total     = items.length;
   const angleStep = 360 / total;
+  /* Tinggi kartu/panggung ikut ada-tidaknya foto, supaya kartu tanpa foto tidak mengambang di ruang kosong. */
+  const adaFoto   = items.some((o) => o.foto);
+  const cardH     = adaFoto ? CARD_H : 168;
+  const stageH    = adaFoto ? 380 : 270;
 
   /* Auto-rotate tiap 2.8 detik */
   useEffect(() => {
@@ -85,21 +89,14 @@ export default function Pengurus({ items: itemsProp }) {
     <section className="lp-section lp-pengurus-section" style={{ background: "white" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
-        <Reveal style={{ marginBottom: 40 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
-            Susunan Kepengurusan
-          </p>
-          <h2 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em" }}>
-            Pengurus RW 21 &amp; RT
-          </h2>
-        </Reveal>
+        <SectionHead varian="e" label="Susunan kepengurusan" title="Pengurus RW 21 & RT" />
 
-        <Reveal>
+        <Reveal variant="zoom">
           {/* ── 3D Globe Scene ─────────────────────────────────── */}
           <div className="lp-pengurus-globe" style={{
             perspective      : "1000px",
             perspectiveOrigin: "50% 50%",
-            height           : 380,
+            height           : stageH,
             position         : "relative",
             marginTop        : 8,
           }}>
@@ -129,7 +126,7 @@ export default function Pengurus({ items: itemsProp }) {
                       top               : "50%",
                       width             : 200,
                       marginLeft        : -100,
-                      marginTop         : -(CARD_H / 2),
+                      marginTop         : -(cardH / 2),
                       cursor            : "pointer",
                       transformStyle    : "preserve-3d",
                       backfaceVisibility: "hidden",
@@ -144,13 +141,18 @@ export default function Pengurus({ items: itemsProp }) {
                       borderRadius : 10,
                       padding      : "28px 20px",
                       border       : isActive ? "1.5px solid #0D9488" : "1px solid #E2E8F0",
+                      minHeight    : cardH,
+                      display      : "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
                       textAlign    : "center",
-                      boxShadow    : isActive ? "0 24px 64px rgba(13,148,136,0.22)" : "0 2px 8px rgba(0,0,0,0.06)",
+                      /* garis warna jabatan di sisi atas: inset shadow, supaya tidak bentrok dengan shorthand border */
+                      boxShadow    : `inset 0 4px 0 ${o.warna}, ${isActive ? "0 12px 32px rgba(13,148,136,0.18)" : "0 2px 8px rgba(0,0,0,0.06)"}`,
                       transform    : isActive ? "scale(1.10)" : "scale(1)",
                       transition   : "transform 0.5s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.4s ease, border-color 0.4s ease",
                     }}>
-                      {/* Foto lingkaran */}
-                      <div style={{
+                      {/* Foto lingkaran — disembunyikan kalau belum ada foto */}
+                      {o.foto && <div style={{
                         width          : 90,
                         height         : 90,
                         borderRadius   : "50%",
@@ -165,27 +167,21 @@ export default function Pengurus({ items: itemsProp }) {
                         justifyContent : "center",
                         flexShrink     : 0,
                       }}>
-                        {o.foto ? (
-                          <img
-                            src={o.foto}
-                            alt={o.nama}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        ) : (
-                          <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 22, fontWeight: 700, color: "white", background: o.warna, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {o.inisial}
-                          </span>
-                        )}
-                      </div>
+                        <img
+                          src={o.foto}
+                          alt={o.nama}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      </div>}
 
                       {/* Jabatan */}
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
                         {o.jabatan}
                       </div>
                       <h4 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700, color: "#0F172A", marginBottom: 4 }}>
                         {o.nama}
                       </h4>
-                      {o.wa ? (
+                      {o.wa && (
                         <a
                           href={o.wa}
                           target="_blank"
@@ -195,8 +191,6 @@ export default function Pengurus({ items: itemsProp }) {
                         >
                           Hubungi via WhatsApp
                         </a>
-                      ) : (
-                        <p style={{ fontSize: 12, color: "#94A3B8" }}>{o.kontak}</p>
                       )}
                     </div>
                   </div>

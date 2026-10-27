@@ -42,6 +42,17 @@
 .auth-logo {
   max-width: 85%;
   height: auto;
+  /* Goyang pelan seperti bandul yang bergoyang tertiup angin: miring kiri-kanan sambil naik-turun sedikit.
+     Titik putarnya di bawah-tengah, jadi bagian atas logo yang paling banyak bergerak. */
+  transform-origin: 50% 85%;
+  animation: authGoyang 5.5s ease-in-out infinite;
+}
+@keyframes authGoyang {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-9px) rotate(4deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-logo { animation: none; }
 }
 
 .auth-right {

@@ -5,30 +5,29 @@ const footerLinks = [
   { href: "#beranda", label: "Beranda" },
   { href: "#pengumuman", label: "Pengumuman" },
   { href: "#layanan", label: "Layanan" },
+  { href: "#peta", label: "Peta Cluster" },
   { href: "#pengaduan", label: "Pengaduan" },
   { href: "#panduan", label: "Panduan Portal" },
 ];
 
 export default function Footer() {
   return (
-    <footer id="kontak" className="lp-section" style={{ background: "#0F172A", borderTop: "1px solid #1E293B", paddingTop: 64, paddingBottom: 32 }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <footer id="kontak" className="lp-section tz-footer">
+      <div className="tz-wrap">
         <div className="lp-footer-grid">
           <div>
             <Image src={LogoTopaz} alt="Cluster Topaz" height={52} style={{ height: 52, width: "auto", display: "block", marginBottom: 20 }} />
-            <p style={{ fontSize: 13, color: "#475569", lineHeight: 1.8, maxWidth: 300, marginBottom: 20 }}>
+            <p className="tz-footer-teks" style={{ maxWidth: 320, marginBottom: 20 }}>
               Portal resmi administrasi warga RW 21 Cluster Topaz, Perumahan Permata Cimanggis, Kota Depok.
               Dikelola oleh kepengurusan RW 21.
             </p>
-            <div style={{ fontSize: 12, color: "#334155" }}>
-              Dikembangkan bersama <span style={{ color: "#0D9488", fontWeight: 600 }}>Nawasena</span>
+            <div className="tz-footer-kecil">
+              Dikembangkan bersama <span style={{ color: "#2DD4BF", fontWeight: 600 }}>Nawasena</span>
             </div>
           </div>
 
           <div>
-            <h5 style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 18 }}>
-              Navigasi
-            </h5>
+            <h5 className="tz-footer-judul">Navigasi</h5>
             <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
               {footerLinks.map((l) => (
                 <a key={l.href} href={l.href} className="lp-footer-link">
@@ -39,15 +38,11 @@ export default function Footer() {
           </div>
 
           <div>
-            <h5 style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 18 }}>
-              Sekretariat RW 21
-            </h5>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <h5 className="tz-footer-judul">Sekretariat RW 21</h5>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>
-                  Alamat
-                </div>
-                <div style={{ fontSize: 13, color: "#334155", lineHeight: 1.6 }}>
+                <div className="tz-footer-label">Alamat</div>
+                <div className="tz-footer-teks">
                   Cluster Topaz, RW 21
                   <br />
                   Permata Cimanggis, Kel. Cilangkap
@@ -56,10 +51,8 @@ export default function Footer() {
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#475569", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>
-                  Jam Pelayanan
-                </div>
-                <div style={{ fontSize: 13, color: "#334155" }}>
+                <div className="tz-footer-label">Jam Pelayanan</div>
+                <div className="tz-footer-teks">
                   Senin - Jumat
                   <br />
                   08.00 - 17.00 WIB
@@ -70,8 +63,8 @@ export default function Footer() {
         </div>
 
         <div className="lp-footer-bottom">
-          <div style={{ fontSize: 11, color: "#334155" }}>© 2026 RW 21 Cluster Topaz, Permata Cimanggis. Hak cipta dilindungi.</div>
-          <div style={{ fontSize: 11, color: "#334155" }}>Portal Administrasi Warga - Kota Depok, Jawa Barat</div>
+          <div className="tz-footer-kecil">© 2026 RW 21 Cluster Topaz, Permata Cimanggis. Hak cipta dilindungi.</div>
+          <div className="tz-footer-kecil">Portal Administrasi Warga - Kota Depok, Jawa Barat</div>
         </div>
       </div>
     </footer>

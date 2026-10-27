@@ -5,8 +5,10 @@ import Kegiatan from "@/components/landing/Kegiatan";
 import Pengumuman from "@/components/landing/Pengumuman";
 import Pengurus from "@/components/landing/Pengurus";
 import Panduan from "@/components/landing/Panduan";
+import PetaRt from "@/components/landing/PetaRt";
 import Faq from "@/components/landing/Faq";
 import Footer from "@/components/landing/Footer";
+import LogoTerbang from "@/components/landing/LogoTerbang";
 import { API_BASE_URL } from "@/lib/api";
 
 export const metadata = {
@@ -33,7 +35,9 @@ export default async function HomePage() {
   ]);
 
   return (
-    <main>
+    // relative: logo yang terbang (LogoTerbang) memakai koordinat relatif ke <main>; clip: logo yang melewati tepi tidak memicu scroll samping
+    <main style={{ position: "relative", overflowX: "clip" }}>
+      <LogoTerbang />
       <Navbar />
       <Hero />
       <Panduan />
@@ -41,6 +45,7 @@ export default async function HomePage() {
       <Kegiatan items={kegiatanItems} />
       <Pengumuman items={pengumumanItems} />
       <Pengurus />
+      <PetaRt />
       <Faq />
       <Footer />
     </main>

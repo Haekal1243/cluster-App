@@ -1,51 +1,26 @@
 import Reveal from "./Reveal";
+import SectionHead from "./SectionHead";
 import { panduan } from "@/lib/landing-data";
 
 export default function Panduan({ items = panduan }) {
   return (
-    <section id="panduan" className="lp-section" style={{ background: "#0F172A" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <Reveal style={{ marginBottom: 52 }}>
-          <div style={{ textAlign: "center" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
-              Cara Menggunakan Portal
-            </p>
-            <h2 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "white", letterSpacing: "-0.015em" }}>
-              Tiga Langkah Memulai
-            </h2>
-          </div>
-        </Reveal>
+    <section id="panduan" className="lp-section tz-terang">
+      <div className="tz-wrap">
+        <SectionHead varian="a" label="Cara memakai portal" title="Tiga langkah, dari akun sampai selesai" />
 
-        <div className="lp-panduan-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 2, background: "#1E293B", borderRadius: 10, overflow: "hidden" }}>
+        <ol className="tz-steps">
           {items.map((s, i) => (
-            <Reveal key={s.no} style={{ transitionDelay: `${i * 60}ms` }}>
-              <div className="lp-card-dark" style={{ height: "100%", background: "#0F172A", padding: "40px 32px" }}>
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    background: "#0D9488",
-                    borderRadius: 8,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 20,
-                    fontFamily: "var(--font-jakarta), sans-serif",
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: "white",
-                  }}
-                >
-                  {s.no}
+            <li key={s.no}>
+              <Reveal variant="zoom" delay={i * 140} style={{ height: "100%" }}>
+                <div className="tz-step lp-card">
+                  <span className="tz-step-no" aria-hidden="true">{String(s.no).padStart(2, "0")}</span>
+                  <h3>{s.judul}</h3>
+                  <p>{s.isi}</p>
                 </div>
-                <h3 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 17, fontWeight: 700, color: "white", marginBottom: 12 }}>
-                  {s.judul}
-                </h3>
-                <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.75 }}>{s.isi}</p>
-              </div>
-            </Reveal>
+              </Reveal>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

@@ -145,6 +145,7 @@ export function resolveLabel(value, user) {
 
 export function pageTitle(pathname, user) {
   if (pathname === "/dashboard") return "Beranda";
+  if (pathname === "/dashboard/pengaturan") return "Pengaturan";
   const item = navItemFor(pathname);
   if (!item) return "Beranda";
   return resolveLabel(item.title, user) || resolveLabel(item.label, user);

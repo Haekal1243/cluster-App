@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Query,
   UploadedFile,
   UseInterceptors,
@@ -18,13 +19,18 @@ import { UpdateStatusKegiatanDto } from './dto/update-status-kegiatan.dto';
 import { KeputusanPengajuanDto } from '../common/dto/pengajuan.dto';
 import { kegiatanMulterOptions } from './kegiatan.multer';
 import { KegiatanService } from './kegiatan.service';
+import { KegiatanFeedbackService } from './kegiatan-feedback.service';
+import { BeriFeedbackDto, SembunyikanFeedbackDto } from './dto/beri-feedback.dto';
 import { Public } from '../auth/public.decorator';
 import { Access, RequirePermission } from '../auth/permission.decorators';
 import type { AccessContext } from '../auth/auth.types';
 
 @Controller('kegiatan')
 export class KegiatanController {
-  constructor(private readonly kegiatanService: KegiatanService) {}
+  constructor(
+    private readonly kegiatanService: KegiatanService,
+    private readonly feedbackService: KegiatanFeedbackService,
+  ) {}
 
   @Post()
   @RequirePermission('kegiatan', 'create')
@@ -66,6 +72,48 @@ export class KegiatanController {
   @Get('portofolio')
   portofolio() {
     return this.kegiatanService.portofolio();
+  }
+
+  // --- Masukan warga (rute statis harus di atas :id) ---
+
+  /** Kartu kegiatan yang sudah punya masukan (pengurus). */
+  @Get('feedback/rekap')
+  @RequirePermission('kegiatan', 'feedback_lihat')
+  feedbackRekap(@Access() ctx: AccessContext) {
+    return this.feedbackService.rekap(ctx);
+  }
+
+  /** Kegiatan yang baru selesai dan bisa diberi masukan oleh user ini. */
+  @Get('feedback/bisa-diberi')
+  @RequirePermission('kegiatan', 'feedback_beri')
+  feedbackBisaDiberi(@Access() ctx: AccessContext) {
+    return this.feedbackService.bisaDiberi(ctx);
+  }
+
+  @Patch('feedback/:id/sembunyi')
+  @RequirePermission('kegiatan', 'feedback_moderasi')
+  feedbackSembunyi(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SembunyikanFeedbackDto,
+  ) {
+    return this.feedbackService.sembunyikan(ctx, id, dto);
+  }
+
+  @Get(':id/feedback')
+  @RequirePermission('kegiatan', 'feedback_lihat')
+  feedbackDaftar(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.feedbackService.daftar(ctx, id);
+  }
+
+  @Put(':id/feedback')
+  @RequirePermission('kegiatan', 'feedback_beri')
+  feedbackBeri(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: BeriFeedbackDto,
+  ) {
+    return this.feedbackService.beri(ctx, id, dto);
   }
 
   @Get(':id')

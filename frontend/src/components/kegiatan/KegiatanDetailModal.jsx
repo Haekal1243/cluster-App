@@ -3,8 +3,9 @@
 import { Calendar } from "lucide-react";
 import { kegiatanApi } from "@/lib/api";
 import { formatTanggalLengkap as formatDate } from "@/lib/format";
+import BeriMasukan from "./BeriMasukan";
 
-export default function KegiatanDetailModal({ kegiatan, onClose }) {
+export default function KegiatanDetailModal({ kegiatan, onClose, tampilMasukan = false }) {
   if (!kegiatan) return null;
 
   return (
@@ -43,6 +44,8 @@ export default function KegiatanDetailModal({ kegiatan, onClose }) {
               <strong>Alasan ditolak:</strong> {kegiatan.alasanTolak}
             </p>
           )}
+
+          {tampilMasukan && <BeriMasukan kegiatan={kegiatan} />}
         </div>
       </div>
     </div>

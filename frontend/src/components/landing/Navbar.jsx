@@ -4,15 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Home, Megaphone, GalleryHorizontal, Layers, MessageCircle, Phone, LogIn } from "lucide-react";
+import { Menu, X, Home, Megaphone, GalleryHorizontal, Layers, Map as MapIcon, MessageCircle, Phone, LogIn } from "lucide-react";
 import LogoTopaz from "@/assets/LogoTopaz.svg";
 import { navLinks } from "@/lib/landing-data";
+import LinkMasuk from "./LinkMasuk";
 
 const NAV_ICONS = {
   "#beranda": Home,
   "#pengumuman": Megaphone,
-  "/landingpage/portofolio": GalleryHorizontal,
+  "/landingpage/riwayat-kegiatan": GalleryHorizontal,
   "#layanan": Layers,
+  "#peta": MapIcon,
   "#pengaduan": MessageCircle,
   "#kontak": Phone,
 };
@@ -22,7 +24,6 @@ export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [spinCount, setSpinCount] = useState(0);
   const drawerRef = useRef(null);
-  const progressRef = useRef(null);
 
   // key={spinCount} bikin tombolnya remount tiap klik, supaya animasi spin 360°
   // selalu terputar ulang dari awal (bukan cuma sekali lalu diam).
@@ -38,11 +39,6 @@ export default function Navbar() {
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 50);
-      // Update langsung lewat ref (bukan setState) supaya progress bar mulus tanpa
-      // memicu re-render React di setiap piksel scroll.
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      const pct = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
-      if (progressRef.current) progressRef.current.style.transform = `scaleX(${pct})`;
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -111,9 +107,9 @@ export default function Navbar() {
           </a>
         ))}
         <div className="lp-navbar-cta" style={{ width: 1, height: 20, background: "#1E293B" }} />
-        <Link href="/login" className="lp-btn-primary lp-btn-sm lp-navbar-cta">
+        <LinkMasuk href="/login" className="lp-btn-primary lp-btn-sm lp-navbar-cta">
           Masuk
-        </Link>
+        </LinkMasuk>
 
         {/* Tombol buka sidebar drawer — pengganti .lp-nav-link di layar <=1024px. */}
         <button
@@ -126,11 +122,6 @@ export default function Navbar() {
         >
           <Menu size={22} />
         </button>
-      </div>
-
-      {/* Scroll progress — nempel di tepi bawah navbar, nunjukin seberapa jauh halaman sudah dibaca */}
-      <div className="lp-scroll-progress-track" aria-hidden="true">
-        <div className="lp-scroll-progress-bar" ref={progressRef} />
       </div>
 
       {/* Overlay + sidebar drawer (mobile/tablet) */}
@@ -178,9 +169,9 @@ export default function Navbar() {
         </div>
 
         <div className="lp-drawer-footer">
-          <Link href="/login" className="lp-btn-primary lp-drawer-login" onClick={() => setDrawerOpen(false)}>
+          <LinkMasuk href="/login" className="lp-btn-primary lp-drawer-login" onClick={() => setDrawerOpen(false)}>
             <LogIn size={16} /> Masuk ke Portal
-          </Link>
+          </LinkMasuk>
         </div>
       </aside>
     </nav>

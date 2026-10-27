@@ -2,16 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Reveal from "./Reveal";
+import SectionHead from "./SectionHead";
 import { PhotoIcon } from "./icons";
 import { fileUrl } from "@/lib/api";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatTanggalPanjang as formatTanggalAcara } from "@/lib/format";
-
-const labelStyle = {
-  background: "rgba(13,148,136,0.85)",
-  color: "white",
-  border: "none",
-};
 
 export default function Kegiatan({ items = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -63,16 +58,7 @@ export default function Kegiatan({ items = [] }) {
   return (
     <section id="kegiatan" className="lp-section" style={{ background: "white" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <Reveal className="lp-kegiatan-header" style={{ marginBottom: 40 }}>
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
-              Dokumentasi Kegiatan
-            </p>
-            <h2 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em", margin: 0 }}>
-              Kegiatan Warga RW 21
-            </h2>
-          </div>
-          
+        <SectionHead varian="c" label="Dokumentasi kegiatan" title="Kegiatan warga RW 21">
           {/* Navigasi Kiri & Kanan */}
           {isSliderActive && (
             <div style={{ display: "flex", gap: 12 }}>
@@ -94,14 +80,14 @@ export default function Kegiatan({ items = [] }) {
               </button>
             </div>
           )}
-        </Reveal>
+        </SectionHead>
 
         {items.length === 0 ? (
           <div style={{ padding: "48px 0", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
             Belum ada kegiatan yang ditampilkan.
           </div>
         ) : (
-        <Reveal>
+        <Reveal variant="zoom">
           <div style={{ position: "relative", overflow: "hidden" }}>
             {/* Slider Track */}
             <div
@@ -118,7 +104,7 @@ export default function Kegiatan({ items = [] }) {
                 const img = fileUrl(k.gambarUrl);
                 return (
                   <div key={`${k.id}-${idx}`} className="lp-kegiatan-item" style={{ flex: "0 0 calc(33.333333% - 13.333333px)", boxSizing: "border-box" }}>
-                    <div className="lp-card" style={{ background: "white", borderRadius: 10, overflow: "hidden", border: "1px solid #E2E8F0" }}>
+                    <div className="lp-card" style={{ background: "white", borderRadius: 16, overflow: "hidden", border: "1px solid #E2E8F0" }}>
                       <div
                         style={{
                           background: "#134E4A",
@@ -134,13 +120,11 @@ export default function Kegiatan({ items = [] }) {
                         ) : (
                           <PhotoIcon />
                         )}
-                        <div style={{ position: "absolute", top: 12, left: 12, borderRadius: 4, padding: "3px 8px", ...labelStyle }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", color: labelStyle.color }}>KEGIATAN</span>
-                        </div>
+                        {/* tanggal sebagai pil di atas foto, bukan teks abu-abu kecil di bawah */}
+                        <span className="tz-pil-tanggal">{formatTanggalAcara(k.tanggalAcara)}</span>
                       </div>
                       <div style={{ padding: 20 }}>
-                        <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 6 }}>{formatTanggalAcara(k.tanggalAcara)}</div>
-                        <h4 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>
+                        <h4 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 16, fontWeight: 700, color: "#0F172A", marginBottom: 8, lineHeight: 1.35 }}>
                           {k.judul}
                         </h4>
                         <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6, margin: 0 }}>{k.deskripsi}</p>

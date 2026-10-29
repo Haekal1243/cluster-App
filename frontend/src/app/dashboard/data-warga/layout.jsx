@@ -9,13 +9,15 @@ export default function WargaLayout({ children }) {
   const pathname = usePathname();
   const { user } = useUser();
   const bolehApprove = can(user, "warga.approve_registrasi");
-  // Yang punya rumah.create (CRUD penuh) dikelola lewat menu Admin > Kelola Rumah,
-  // bukan tab ini (tab ini untuk pengurus RT/RW yang cuma boleh lihat & ubah).
-  const bolehLihatTabRumah = can(user, "rumah.read") && !can(user, "rumah.create");
+  // Yang punya rumah.create (CRUD penuh, admin) memakai tab "Kelola Rumah"; pengurus RT/RW
+  // yang cuma boleh lihat & ubah memakai tab "Blok Rumah".
+  const bolehKelolaRumah = can(user, "rumah.create");
+  const bolehLihatTabRumah = can(user, "rumah.read") && !bolehKelolaRumah;
 
   const isRumah = pathname?.includes("/blok-rumah");
+  const isKelolaRumah = pathname?.includes("/kelola-rumah");
   const isPendaftaran = pathname?.includes("/pendaftaran");
-  const isDataWarga = !isRumah && !isPendaftaran;
+  const isDataWarga = !isRumah && !isKelolaRumah && !isPendaftaran;
 
   return (
     <div className="page-stack">
@@ -43,6 +45,16 @@ export default function WargaLayout({ children }) {
             className={`db-toggle-btn ${isRumah ? "is-active" : ""}`}
           >
             Blok Rumah
+          </Link>
+        )}
+        {bolehKelolaRumah && (
+          <Link
+            href="/dashboard/data-warga/kelola-rumah"
+            role="tab"
+            aria-selected={isKelolaRumah}
+            className={`db-toggle-btn ${isKelolaRumah ? "is-active" : ""}`}
+          >
+            Kelola Rumah
           </Link>
         )}
         {bolehApprove && (

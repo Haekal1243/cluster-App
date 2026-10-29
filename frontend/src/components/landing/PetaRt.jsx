@@ -337,10 +337,7 @@ export default function PetaRt() {
             <div className="sh-teks">
               <p className="lp-peta-kicker">Peta wilayah</p>
               <h2 className="lp-peta-title">
-                Peta Cluster Topaz
-                {/* titik tujuan logo menempel di kanan judul, sejajar tulisan (lihat .tz-anchor-sebaris) */}
-                <span className="tz-anchor tz-anchor-sebaris tz-v-f" data-tz-anchor="f" aria-hidden="true" />
-              </h2>
+                Peta Cluster Topaz              </h2>
               <p className="lp-peta-lead">
                 Lihat pembagian RT, blok rumah, dan fasilitas umum. Ketuk sebuah area untuk memperbesarnya.
               </p>

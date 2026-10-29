@@ -1036,77 +1036,9 @@ html {
 .tz-step h3, .tz-row-judul { font-family: var(--font-display), Georgia, serif; font-weight: 600; font-variation-settings: "SOFT" 60; }
 .tz-step-no, .tz-row-no, .tz-faq-no, .rk-day, .rk-year-num, .lp-peta-stats dd, .rk-stats dd { font-variant-numeric: lining-nums; }
 
-/* Satu logo Topaz yang terbang antar judul bagian (LogoTerbang). Tiap judul punya titik tujuan kosong (.tz-anchor)
-   yang menentukan di mana logo mendarat: ukuran (--u), kemiringan (--rot), keburaman (--op). Di Hero titik tujuannya
-   .tz-anchor-hero. Logonya sendiri (.tz-terbang) bergerak lewat transform ke titik tujuan yang sedang aktif. */
 .sh-wrap { position: relative; }
 .sh, .lp-peta-head { position: relative; }
 .sh-teks { position: relative; z-index: 1; }
-
-.tz-anchor {
-  --u: 160px; --rot: 0deg; --op: 0.95;
-  position: absolute; z-index: 0; display: block; width: var(--u); height: var(--u); pointer-events: none;
-}
-/* Posisi dan ukuran sengaja beda-beda: kanan besar, kanan-tengah kecil, kiri (teks digeser), tengah atas, dst. */
-.tz-v-a { --u: 220px; --rot: -8deg;  right: 0;      top: -30px; }          /* Panduan: kanan, besar */
-.tz-v-b { --u: 130px; --rot: 14deg;  right: 22%;    top: -6px; }           /* Layanan: kanan-tengah, kecil */
-.tz-v-c { --u: 100px; --rot: -12deg; left: 0;       top: -10px; }          /* Kegiatan: di KIRI judul (teks digeser sedikit) */
-.tz-v-d { --u: 104px; --rot: 16deg;  }                                     /* Pengumuman: menempel di kanan teks judul (sebaris) */
-.tz-v-e { --u: 150px; --rot: 6deg;   left: 0;       top: -8px; }           /* Pengurus: di KIRI judul (teks digeser) */
-.tz-v-f { --u: 100px; --rot: -6deg;  right: 34%;    top: -16px; }          /* Peta: tengah, kecil (kanan ada angka) */
-.tz-v-g { --u: 160px; --rot: 10deg;  right: -40px;  top: -36px; }          /* FAQ: sedang, agak keluar tepi kolom, di atas daftar (tidak menutup tanda +) */
-.tz-anchor-hero { --rot: 0deg; --op: 1; display: block; width: 420px; height: 420px; max-width: 100%; }
-
-/* Titik tujuan sebaris: ikut mengalir di ujung kanan teks judul. Margin negatif atas-bawah supaya baris judul tidak membesar;
-   perataan vertikal memakai titik tengah, jadi tetap sejajar tulisan berapa pun ukuran logonya. */
-.tz-anchor.tz-anchor-sebaris {
-  position: relative; display: inline-block; vertical-align: middle; right: auto; left: auto; top: -6px;
-  margin: -34px 0 -34px 18px;
-}
-/* Judul yang logonya di kiri (Kegiatan, Pengurus): teks digeser ke kanan supaya tidak menimpa logo */
-.sh-v-c .sh { padding-left: 128px; }
-.sh-v-e .sh { padding-left: 190px; }
-
-.tz-terbang {
-  position: absolute; left: 0; top: 0; z-index: 6; width: 420px; height: 420px; opacity: 1; pointer-events: none;
-  transform: translate(-9999px, -9999px); transform-origin: 50% 50%; will-change: transform, opacity;
-  transition: none;
-}
-/* Tanpa transisi CSS: posisi, ukuran, dan kemiringan dihitung dari posisi scroll tiap frame (LogoTerbang),
-   jadi logo bergerak persis mengikuti gulir. */
-.tz-terbang-img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; animation: tzApung 5s ease-in-out infinite; }
-@keyframes tzApung {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-10px) rotate(1deg); }
-  75% { transform: translateY(7px) rotate(-1deg); }
-}
-.tz-terbang-glow {
-  position: absolute; inset: 11%; border-radius: 50%; opacity: 0; transition: opacity 0.9s ease; filter: blur(28px);
-  background: radial-gradient(circle, rgba(13, 148, 136, 0.55) 0%, rgba(13, 148, 136, 0.22) 45%, transparent 72%);
-}
-.tz-terbang-hero .tz-terbang-glow { opacity: 1; animation: tzCahaya 4s ease-in-out infinite; }
-@keyframes tzCahaya { 0%, 100% { transform: scale(0.94); opacity: 0.65; } 50% { transform: scale(1.06); opacity: 1; } }
-
-/* HP: titik tujuan di kanan judul (terlihat, tidak tertutup menu atas); ukuran dan tinggi tetap dibedakan per bagian */
-@media (max-width: 860px) {
-  .tz-anchor-hero { width: 180px; height: 180px; }
-  /* HP: logo di KANAN judul, sejajar baris judul (bukan di atas label). Dulu di ruang kosong atas label, dan di situ
-     tertutup menu atas yang menempel di layar tiap kali judul berada di posisi baca. Teks judul diberi ruang di kanan. */
-  .sh-v-c .sh, .sh-v-e .sh { padding-left: 0; } /* di HP tidak ada ruang di kiri judul */
-  .sh-v-a .sh-teks, .sh-v-b .sh-teks, .sh-v-c .sh-teks, .sh-v-e .sh-teks, .sh-v-g .sh-teks { padding-right: 80px; }
-  .sh-wrap > .tz-anchor { left: auto; right: 0; top: 22px; --u: 64px; }
-  .sh-wrap > .tz-v-a { --u: 72px; top: 16px; }
-  .sh-wrap > .tz-v-b { --u: 56px; top: 30px; }
-  .sh-wrap > .tz-v-c { --u: 60px; top: 24px; }
-  /* Logo sebaris di HP (Pengumuman, Peta): kecil, dan judul Pengumuman dikecilkan sedikit supaya logo tidak turun ke baris bawah */
-  .sh-v-d .sh-title { font-size: 26px; }
-  .tz-anchor.tz-anchor-sebaris { --u: 36px; margin: -12px 0 -12px 8px; top: -4px; }
-  .sh-wrap > .tz-v-e { --u: 68px; top: 18px; }
-  .sh-wrap > .tz-v-g { --u: 62px; top: 28px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tz-terbang-img, .tz-terbang-hero .tz-terbang-glow { animation: none; }
-}
 
 /* Footer: kontras diperbaiki (sebelumnya #334155 di atas navy, sekitar 1,9:1) */
 .tz-footer { padding-top: 64px; padding-bottom: 32px; background: #0f172a; border-top: 1px solid #1e293b; }
@@ -1143,3 +1075,34 @@ html {
   .lp-card:hover::after, .lp-card-dark:hover::after { opacity: 1; }
 }
 
+
+/* Logo Hero: goyang pelan (miring kiri-kanan + naik-turun), tanpa terbang antar bagian */
+.tz-goyang-wrap { position: relative; width: 420px; height: 420px; max-width: 100%; }
+.tz-goyang { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; animation: tzGoyang 3.6s ease-in-out infinite; }
+.tz-goyang-glow {
+  position: absolute; inset: 11%; border-radius: 50%; filter: blur(28px);
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.55) 0%, rgba(13, 148, 136, 0.22) 45%, transparent 72%);
+  animation: tzCahaya 4s ease-in-out infinite;
+}
+@keyframes tzGoyang {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+@keyframes tzCahaya { 0%, 100% { transform: scale(0.94); opacity: 0.65; } 50% { transform: scale(1.06); opacity: 1; } }
+@media (max-width: 860px) { .tz-goyang-wrap { width: 180px; height: 180px; } }
+@media (prefers-reduced-motion: reduce) { .tz-goyang, .tz-goyang-glow { animation: none; } }
+
+/* Logo kecil di tiap judul bagian: muncul dari buram ke jelas, lalu melayang pelan */
+.tz-muncul {
+  position: absolute; z-index: 0; top: 0; left: 0; width: 104px; height: 104px; pointer-events: none;
+  opacity: 0; filter: blur(14px); transform: scale(0.9);
+  transition: opacity 1s ease, filter 1s ease, transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tz-muncul img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.tz-muncul-on { opacity: 1; filter: none; transform: none; }
+.tz-muncul-on img { animation: tzGoyang 3.6s ease-in-out 1s infinite; }
+.tz-muncul-kanan { left: auto; right: 0; }
+.sh-kiri .sh { padding-left: 124px; }
+.sh-kanan .sh { padding-right: 124px; }
+@media (max-width: 860px) { .tz-muncul { width: 52px; height: 52px; top: 2px; } .sh-kiri .sh { padding-left: 64px; } .sh-kanan .sh { padding-right: 64px; } }
+@media (prefers-reduced-motion: reduce) { .tz-muncul, .tz-muncul-on img { transition: none; animation: none; } }

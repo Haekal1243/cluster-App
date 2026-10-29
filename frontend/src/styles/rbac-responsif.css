@@ -26,6 +26,21 @@
   .rbac-role-head { align-items: stretch; }
   .rbac-role-actions { width: 100%; }
   .rbac-role-actions button { flex: 1 1 auto; justify-content: center; }
+
+  /* Editor izin: nama izin di atas, pilihan cakupan selebar kartu di bawahnya (dulu berdesakan satu baris) */
+  .rbac-menu { padding: 12px; }
+  .rbac-quick { width: 100%; }
+  .rbac-quick button { flex: 1 1 auto; padding: 8px 10px; }
+  .rbac-table, .rbac-table tbody, .rbac-table tr, .rbac-table td { display: block; width: 100%; }
+  .rbac-table tr { padding: 10px 0; border-top: 1px solid var(--db-border); }
+  .rbac-table td { padding: 0; border-top: 0; }
+  .rbac-table tr.is-changed { background: #fffbeb; margin: 0 -12px; padding: 10px 12px; }
+  .rbac-table tr.is-changed td { background: transparent; }
+  .rbac-perm-kode { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+  .rbac-perm-scope { width: 100%; margin-top: 8px; }
+  .rbac-legend { flex-direction: column; gap: 4px; }
+  .rbac-count { margin-left: 0; }
+  .rbac-role-title { min-width: 0; width: 100%; }
 }
 
 @media (max-width: 767px) {

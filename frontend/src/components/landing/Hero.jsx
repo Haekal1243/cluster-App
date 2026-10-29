@@ -44,7 +44,7 @@ export default function Hero() {
 
           </div>
 
-          {/* Kolom kanan - Logo Topaz (ikut bergeser saat di-scroll) */}
+          {/* Kolom kanan - Logo Topaz, goyang pelan */}
           <HeroLogo />
         </div>
       </div>

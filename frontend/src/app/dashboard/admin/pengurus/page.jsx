@@ -18,14 +18,6 @@ function cekFoto(file) {
   return null;
 }
 
-function Avatar({ nama, foto }) {
-  return (
-    <span className="pengurus-avatar">
-      {foto ? <img src={pengurusApi.fotoUrl(foto)} alt={nama} /> : (nama?.[0] ?? "?").toUpperCase()}
-    </span>
-  );
-}
-
 /** Format 62812... -> 0812... untuk ditampilkan/diedit admin. */
 const nomorLokal = (n) => (n ? n.replace(/^62/, "0") : "");
 
@@ -320,7 +312,6 @@ export default function PengurusPage() {
             <ul className="pengurus-list">
               {list.map((s) => (
                 <li key={`${s.role.id}-${s.area}`} className="pengurus-item">
-                  {s.pemegang && <Avatar nama={s.pemegang.namaUser} foto={s.pemegang.foto} />}
                   <div className="pengurus-info">
                     <span className="pengurus-role">{s.role.nama}</span>
                     {s.pemegang ? (

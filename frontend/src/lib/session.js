@@ -125,6 +125,11 @@ export function isWargaView(user) {
   return user?.roleLevel === 3;
 }
 
+/** Tampilan HP dengan menu bawah: warga, dan akun sistem tanpa ipl.read (mis. Admin). Pengurus RT/RW tetap pakai sidebar. */
+export function pakaiMenuBawah(user) {
+  return !!user && (isWargaView(user) || !can(user, "ipl.read"));
+}
+
 /** Pengurus RT: bukan warga, area-nya RT_xx (scope AREA). Jabatan (ketua/sekre/bendahara)
 // dibedakan lewat permission, bukan lewat sini. */
 export function isPengurusRt(user) {

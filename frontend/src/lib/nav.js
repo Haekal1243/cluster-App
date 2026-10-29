@@ -43,7 +43,8 @@ export const NAV_ITEMS = [
     label: "Beranda RW",
     href: "/dashboard/rw",
     icon: Landmark,
-    allow: (u) => isPengurusRw(u),
+    // Akun sistem tanpa ipl.read sudah punya "Beranda" (PanelSistem), jadi tidak perlu Beranda RW.
+    allow: (u) => isPengurusRw(u) && can(u, "ipl.read"),
   },
   {
     label: "Data Warga",
@@ -100,10 +101,12 @@ export const NAV_ITEMS = [
     label: "Riwayat Aktivitas",
     href: "/dashboard/aktivitas",
     icon: History,
-    allow: (u) => can(u, "audit.read"),
+    // Akun sistem (tanpa ipl.read) melihat riwayat langsung di Beranda (PanelSistem), jadi tidak perlu menu sendiri.
+    allow: (u) => can(u, "audit.read") && can(u, "ipl.read"),
   },
   {
     label: "Peran & Hak Akses",
+    labelBawah: "Peran",
     href: "/dashboard/admin/role",
     icon: ShieldCheck,
     allow: (u) => can(u, "role.manage"),
@@ -113,12 +116,6 @@ export const NAV_ITEMS = [
     href: "/dashboard/admin/pengurus",
     icon: UserCog,
     allow: (u) => can(u, "pengurus.manage"),
-  },
-  {
-    label: "Kelola Rumah",
-    href: "/dashboard/admin/rumah",
-    icon: Home,
-    allow: (u) => can(u, "rumah.create"),
   },
 ];
 

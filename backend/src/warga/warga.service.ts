@@ -16,7 +16,7 @@ import { SALT_ROUNDS } from '../auth/auth.service';
 import { AccessContext } from '../auth/auth.types';
 import { resolvePeriode } from '../common/periode.helper';
 import { areaFilter, assertInArea, rtFilter, wargaBacaWhere } from '../common/scope.helper';
-import { generatePassword, LEVEL_WARGA, totalTagihan, withTotal } from '../common/helpers';
+import { generatePassword, LEVEL_ADMIN, LEVEL_WARGA, totalTagihan, withTotal } from '../common/helpers';
 import { CreateWargaDto } from './dto/create-warga.dto';
 import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
@@ -361,14 +361,27 @@ export class WargaService {
    */
   private async findWargaScoped(ctx: AccessContext, id: number, tulis = false) {
     const area = areaFilter(ctx);
+    // Admin (scope ALL) boleh mengubah warga maupun pengurus, tapi akun administrator tidak ikut dikelola di sini.
+    const penuh = area === null && (await this.adalahAdmin(ctx));
     const warga = await this.prisma.user.findFirst({
-      where: tulis
-        ? { id, role: { level: LEVEL_WARGA }, ...(area && { area }) }
-        : { AND: [{ id }, wargaBacaWhere(area)] },
+      where: penuh
+        ? { AND: [{ id }, wargaBacaWhere(null)] }
+        : tulis
+          ? { id, role: { level: LEVEL_WARGA }, ...(area && { area }) }
+          : { AND: [{ id }, wargaBacaWhere(area)] },
       select: WARGA_SELECT,
     });
     if (!warga) throw new NotFoundException(`Warga dengan ID ${id} tidak ditemukan`);
     return warga;
+  }
+
+  /** Dilihat dari level role pemanggil, bukan nama role, supaya role admin baru ikut berlaku. */
+  private async adalahAdmin(ctx: AccessContext): Promise<boolean> {
+    const role = await this.prisma.role.findUnique({
+      where: { id: ctx.user.roleId },
+      select: { level: true },
+    });
+    return role?.level === LEVEL_ADMIN;
   }
 
   private handleUniqueError(error: any): never {
@@ -505,6 +518,9 @@ export class WargaService {
   }
 
   async remove(ctx: AccessContext, id: number) {
+    if (id === ctx.user.sub) {
+      throw new BadRequestException('Akun yang sedang Anda pakai tidak bisa dihapus.');
+    }
     await this.findWargaScoped(ctx, id, true);
 
     // Rumah kosong pun sudah pasti terjual: akun tidak boleh dihapus selama masih

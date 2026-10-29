@@ -7,33 +7,49 @@
   .dashboard-shell.is-warga .header-menu-btn,
   .dashboard-shell.is-warga .dashboard-sidebar,
   .dashboard-shell.is-warga .sidebar-overlay { display: none; }
-  .dashboard-shell.is-warga .dashboard-main { padding-bottom: calc(46px + env(safe-area-inset-bottom)); }
+  .dashboard-shell.is-warga .dashboard-main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
 
+  /* Dock melayang: sudut membulat, sedikit renggang dari tepi layar, ikon aktif diberi pil teal */
   .bottom-nav {
     display: flex;
+    gap: 2px;
     position: fixed;
-    left: 0; right: 0; bottom: 0;
+    left: 10px; right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
     z-index: 90;
+    padding: 6px;
     background: var(--db-surface);
-    border-top: 1px solid var(--db-border);
-    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
-    padding-bottom: env(safe-area-inset-bottom);
+    border: 1px solid var(--db-border);
+    border-radius: 22px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+    overflow-x: auto; /* jaga-jaga kalau menunya lebih banyak dari lebar layar */
+    scrollbar-width: none;
   }
+  .bottom-nav::-webkit-scrollbar { display: none; }
   .bottom-nav-item {
-    flex: 1; min-width: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-    padding: 5px 4px 4px;
+    flex: 1; min-width: 58px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: 4px 2px 3px;
     color: var(--db-slate-500);
-    font-size: 0.6rem; font-weight: 600;
+    font-size: 0.62rem; font-weight: 600; letter-spacing: 0.01em;
     text-decoration: none;
     -webkit-tap-highlight-color: transparent;
   }
-  .bottom-nav-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bottom-nav-item.is-active { color: var(--db-primary); }
+  .bottom-nav-ikon {
+    display: grid; place-items: center;
+    width: 44px; height: 26px; border-radius: 13px;
+    transition: background-color 0.2s ease, color 0.2s ease, width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .bottom-nav-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bottom-nav-item:active .bottom-nav-ikon { background: var(--db-bg); }
+  .bottom-nav-item.is-active { color: var(--db-primary); font-weight: 700; }
+  .bottom-nav-item.is-active .bottom-nav-ikon { width: 52px; background: var(--db-success-bg); }
+  .bottom-nav-item.is-active svg { stroke-width: 2.4; }
+  /* Banner notifikasi naik supaya tidak tertutup dock */
+  .dashboard-shell.is-warga .notif-prompt { bottom: calc(84px + env(safe-area-inset-bottom)); }
   /* Tulisan hak cipta di HP warga hanya muncul di halaman Pengaturan */
   .dashboard-shell.is-warga:not(.is-pengaturan) .dashboard-footer { display: none; }
   .dashboard-shell.is-warga .dashboard-footer { padding: 6px 12px; font-size: 0.62rem; line-height: 1.3; }
-  .bottom-nav-item svg { width: 18px; height: 18px; }
   /* Header lebih ramping untuk warga di HP */
   .dashboard-shell.is-warga .dashboard-header { padding: 7px 14px; gap: 10px; }
   .dashboard-shell.is-warga .header-left h1 { font-size: 1rem; }
@@ -44,7 +60,6 @@
   .dashboard-shell.is-warga .header-install-btn svg { width: 14px; height: 14px; }
   .dashboard-shell.is-warga .header-user { display: none; } /* sisa ruang kosong di kanan lonceng */
   .dashboard-shell.is-warga .notif-panel { top: 52px; }
-  .bottom-nav-item.is-active svg { stroke-width: 2.4; }
 }
 
 /* Pengaturan */

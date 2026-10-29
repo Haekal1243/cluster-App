@@ -8,7 +8,6 @@ import Panduan from "@/components/landing/Panduan";
 import PetaRt from "@/components/landing/PetaRt";
 import Faq from "@/components/landing/Faq";
 import Footer from "@/components/landing/Footer";
-import LogoTerbang from "@/components/landing/LogoTerbang";
 import { API_BASE_URL } from "@/lib/api";
 
 export const metadata = {
@@ -35,9 +34,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    // relative: logo yang terbang (LogoTerbang) memakai koordinat relatif ke <main>; clip: logo yang melewati tepi tidak memicu scroll samping
     <main style={{ position: "relative", overflowX: "clip" }}>
-      <LogoTerbang />
       <Navbar />
       <Hero />
       <Panduan />

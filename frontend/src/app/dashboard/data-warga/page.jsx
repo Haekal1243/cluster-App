@@ -64,6 +64,8 @@ export default function WargaPage() {
   // Kolom/footer Aksi cuma ditampilin kalau role ini punya salah satu hak tulis;
   // Bendahara dkk yang cuma "read" gak perlu lihat kolom kosong.
   const bisaAksiWarga = bolehUbah || bolehReset || bolehHapus;
+  // Admin (level 0) mengelola semua akun; selain itu hanya warga biasa (level 3) yang boleh diubah.
+  const bisaKelola = (w) => user?.roleLevel === 0 || w.role?.level === 3;
   const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
 
   const loadData = async () => {
@@ -371,7 +373,7 @@ export default function WargaPage() {
                 {!isLoading &&
                   wargaPage.map((w, index) => {
                     // Warga biasa boleh diubah; pengurus yang kebetulan tinggal di RT ini hanya bisa dilihat.
-                    const bisaDiubah = w.role?.level === 3;
+                    const bisaDiubah = bisaKelola(w);
                     return (
                       <tr key={w.id}>
                         <td>{(pageWarga - 1) * 10 + index + 1}</td>
@@ -458,7 +460,7 @@ export default function WargaPage() {
                       </span>
                     ))}
                   </div>
-                  {w.role?.level === 3 && (bolehUbah || bolehReset || bolehHapus) && (
+                  {bisaKelola(w) && (bolehUbah || bolehReset || bolehHapus) && (
                     <div className="warga-grid-footer">
                       <div className="table-actions warga-grid-actions">
                         {bolehUbah && (

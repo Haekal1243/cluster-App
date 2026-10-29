@@ -18,7 +18,7 @@ const STATUS_RUMAH = {
   DIHUNI_KONTRAK: { label: "Kontrak", cls: "kontrak" },
 };
 
-export default function AdminRumahPage() {
+export default function KelolaRumahPage() {
   const [warga, setWarga] = useState([]);
   const [rumah, setRumah] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,13 +120,6 @@ export default function AdminRumahPage() {
 
   return (
     <div className="page-stack">
-      <div className="page-toolbar">
-        <div>
-          <h2>Kelola Rumah</h2>
-          <p>Data master blok rumah cluster. Hanya admin yang bisa menambah atau menghapus rumah.</p>
-        </div>
-      </div>
-
       <div className="ipl-summary-grid keu-summary-grid">
         <div className="ipl-summary-card keu-card keu-teal">
           <div className="keu-icon-circle"><Users size={22} strokeWidth={2} /></div>

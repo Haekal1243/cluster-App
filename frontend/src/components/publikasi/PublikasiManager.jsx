@@ -147,7 +147,7 @@ export default function PublikasiManager({
   const handleAjukan = async (item) => {
     const confirmed = await showConfirm(
       "Ajukan ke RW?",
-      `${noun} "${item.judul}" akan diajukan agar tampil ke seluruh warga.`,
+      `${noun} "${item.judul}" akan diajukan ke RW.`,
       "question",
       "Ya, ajukan",
       "Batal",

@@ -147,9 +147,11 @@ export class KegiatanFeedbackService {
     }
 
     const komentar = dto.komentar?.trim() || null;
-    const anonim = dto.anonim ?? false;
     const kunci = { kegiatanId_userId: { kegiatanId, userId: ctx.user.sub } };
-    const sudah = await this.prisma.kegiatanFeedback.findUnique({ where: kunci, select: { id: true } });
+    const sudah = await this.prisma.kegiatanFeedback.findUnique({ where: kunci, select: { id: true, anonim: true } });
+    // Bila flag anonim tidak dikirim saat mengubah, pertahankan pilihan sebelumnya
+    // (jangan diam-diam membuka identitas warga yang tadinya memilih anonim).
+    const anonim = dto.anonim ?? sudah?.anonim ?? false;
 
     await this.prisma.kegiatanFeedback.upsert({
       where: kunci,

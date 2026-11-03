@@ -101,7 +101,6 @@ export default function GantiPasswordModal({ wajib = false, onClose, onSuccess }
                 minLength={6}
                 required
               />
-              <span className="field-hint">Minimal 6 karakter.</span>
             </div>
             <div className="form-group">
               <label htmlFor="konfirmasi">

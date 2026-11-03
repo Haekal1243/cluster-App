@@ -70,7 +70,6 @@ export default function KeputusanPengajuanModal({ open, item, noun = "kegiatan",
                   value={durasiHari}
                   onChange={(e) => setDurasiHari(e.target.value)}
                 />
-                <span className="field-hint">Setelah lewat, {noun} hilang dari beranda warga.</span>
               </div>
             ) : (
               <div className="form-group">

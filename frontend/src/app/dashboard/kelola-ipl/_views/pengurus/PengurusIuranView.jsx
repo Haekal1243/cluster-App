@@ -62,7 +62,7 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
     }
     const confirmed = await showConfirm(
       "Buat Tagihan?",
-      `Tagihan periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode}: IPL ${formatRupiah(form.nominalIpl)} + kas ${formatRupiah(form.nominalKas || 0)} = ${formatRupiah(total)} per rumah ber-pemilik (termasuk rumah kosong, porsi IPL-nya masuk kas RT). Generate ulang periode yang sama hanya menagih rumah baru yang belum punya tagihan.`,
+      `Tagihan ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode} sebesar ${formatRupiah(total)} per rumah.`,
       "question",
       "Ya, Buat!"
     );
@@ -230,7 +230,6 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
               value={form.alasan}
               onChange={(e) => setForm({ ...form, alasan: e.target.value })}
             />
-            <span className="field-hint">Koreksi tercatat di riwayat aktivitas dan diteruskan ke RW.</span>
           </div>
           <div className="ipl-modal-footer">
             <button type="button" className="btn-ipl-secondary" onClick={onClose} disabled={loading}>Batal</button>

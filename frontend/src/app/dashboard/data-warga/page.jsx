@@ -179,7 +179,7 @@ export default function WargaPage() {
   const handleResetPassword = async (w) => {
     const ok = await showConfirm(
       "Atur ulang kata sandi?",
-      `Kata sandi ${w.namaUser} akan diganti dengan kata sandi sementara. Warga wajib menggantinya saat masuk.`,
+      `Kata sandi ${w.namaUser} akan diganti dengan kata sandi sementara.`,
       "warning",
       "Ya, atur ulang",
       "Batal",
@@ -201,7 +201,7 @@ export default function WargaPage() {
   const handleDeleteWarga = async (w) => {
     const ok = await showConfirm(
       "Hapus warga?",
-      `Akun ${w.namaUser} akan dihapus dan rumahnya dikosongkan.`,
+      `Akun ${w.namaUser} akan dihapus.`,
       "warning",
       "Ya, hapus",
       "Batal",

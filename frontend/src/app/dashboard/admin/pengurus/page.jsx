@@ -60,9 +60,6 @@ function KontakModal({ pemegang, jabatan, onClose, onSubmit }) {
                 onChange={(e) => setNomor(e.target.value)}
                 autoFocus
               />
-              <span className="field-hint">
-                Kosongkan lalu simpan untuk menyembunyikan. Kontak otomatis disembunyikan saat jabatan dilepas.
-              </span>
             </div>
           </div>
           <div className="modal-footer">
@@ -141,11 +138,6 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
                   label: `${k.namaUser} · ${areaLabel(k.area)}${k.rumah?.length ? ` · ${k.rumah.map((r) => r.blokRumah).join(", ")}` : ""}`,
                 }))}
               />
-              <span className="field-hint">
-                {slot.role.level === 2
-                  ? `Hanya warga ${areaLabel(slot.area)} yang bisa menjadi ${slot.role.nama}.`
-                  : "Pengurus RW dipilih dari seluruh warga."}
-              </span>
             </div>
             <div className="form-group">
               <label htmlFor="foto-pengurus">Foto pengurus</label>
@@ -159,9 +151,6 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
                 hint="JPG / PNG · Maks. 5 MB"
                 onError={(msg) => showMessage("Foto Tidak Valid", msg, "error")}
               />
-              <span className="field-hint">
-                Tampil di halaman depan; foto ini milik pemegang baru dan bisa diubah kapan saja.
-              </span>
             </div>
           </div>
           <div className="modal-footer">
@@ -273,7 +262,7 @@ export default function PengurusPage() {
   const kosongkan = async (slot) => {
     const ok = await showConfirm(
       "Kosongkan jabatan?",
-      `${slot.pemegang.namaUser} dilepas dari ${slot.role.nama} ${areaLabel(slot.area)} dan kembali menjadi warga biasa.`,
+      `${slot.pemegang.namaUser} dilepas dari jabatan ${slot.role.nama} ${areaLabel(slot.area)}.`,
       "warning",
       "Ya, kosongkan",
       "Batal",

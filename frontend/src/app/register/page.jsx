@@ -120,7 +120,6 @@ export default function DataDiriPage() {
                   maxLength="13"
                   placeholder="081234567890"
                 />
-                <span className="field-hint">Nomor HP ini jadi nama pengguna untuk masuk.</span>
               </div>
 
               <div className="address-row">

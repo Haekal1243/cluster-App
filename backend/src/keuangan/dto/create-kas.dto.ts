@@ -2,20 +2,23 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
   Max,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { Area, TipeKas } from '@prisma/client';
 
 export class CreateKasDto {
   @IsEnum(TipeKas, { message: 'tipe harus PEMASUKAN atau PENGELUARAN' })
   tipe: TipeKas;
 
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @IsNotEmpty({ message: 'kategori wajib diisi' })
   @MaxLength(60)
   kategori: string;
 

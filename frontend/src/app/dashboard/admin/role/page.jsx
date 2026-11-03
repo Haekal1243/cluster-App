@@ -81,7 +81,6 @@ function TambahRoleModal({ onClose, onSubmit }) {
               <label htmlFor="kode">Kode peran <span className="required-star">*</span></label>
               <input id="kode" className="form-control" placeholder="Contoh: ADMIN_DKM" value={form.kode}
                 onChange={(e) => setForm({ ...form, kode: e.target.value.toUpperCase() })} pattern="[A-Z][A-Z0-9_]{1,49}" required />
-              <span className="field-hint">Huruf besar, angka, underscore. Tidak bisa diubah setelah dibuat.</span>
             </div>
             <div className="form-group">
               <label htmlFor="nama">Nama peran <span className="required-star">*</span></label>
@@ -100,7 +99,6 @@ function TambahRoleModal({ onClose, onSubmit }) {
                   { value: "3", label: "Level warga (tampilan portal warga)" },
                 ]}
               />
-              <span className="field-hint">Menentukan di mana jabatan ini bisa ditetapkan pada menu Pengurus.</span>
             </div>
           </div>
           <div className="modal-footer">
@@ -217,7 +215,7 @@ export default function RolePermissionPage() {
   };
 
   const hapusRole = async () => {
-    const ok = await showConfirm("Hapus peran?", `Peran "${role.nama}" akan dihapus beserta hak aksesnya.`, "warning", "Ya, hapus", "Batal");
+    const ok = await showConfirm("Hapus peran?", `Peran "${role.nama}" akan dihapus.`, "warning", "Ya, hapus", "Batal");
     if (!ok) return;
     try {
       await rbacApi.removeRole(role.id);

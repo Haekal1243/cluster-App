@@ -398,6 +398,7 @@ async function seedDummy(roleId: Map<string, number>) {
     pengajuan?: StatusPengajuan; alasan?: string; landing?: boolean; tampilSampai?: Date | null;
   };
   const kegiatan: K[] = [
+    { judul: 'Pembentukan Panitia Cluster', deskripsi: 'Pertemuan perdana warga membentuk kepanitiaan kegiatan cluster. Contoh tahun lama agar filter tahun terlihat melompat.', tanggal: new Date(thn - 6, 10, 5), area: 'RW', warna: '#475569', landing: true },
     { judul: 'Peringatan HUT RI ke-77', deskripsi: 'Lomba dan upacara bendera bersama seluruh warga cluster.', tanggal: new Date(thn - 4, 7, 17), area: 'RW', warna: '#dc2626', landing: true },
     { judul: 'Kerja Bakti Massal Cluster', deskripsi: 'Pembersihan saluran air dan taman seluruh blok.', tanggal: new Date(thn - 3, 2, 12), area: 'RW', warna: '#16a34a', landing: true },
     { judul: 'Bazar Ramadan', deskripsi: 'Bazar takjil dan santunan anak yatim di lapangan cluster.', tanggal: new Date(thn - 3, 3, 8), area: 'RW', warna: '#ca8a04', landing: true },
@@ -415,8 +416,9 @@ async function seedDummy(roleId: Map<string, number>) {
     { judul: 'Jalan Sehat RT 03', deskripsi: 'Jalan sehat keliling cluster, terbuka untuk seluruh warga.', tanggal: hariIni(14), area: 'RT_03', warna: '#0891b2', pengajuan: 'DISETUJUI', tampilSampai: hariIni(14) },
     { judul: 'Bazar Kuliner RT 04', deskripsi: 'Bazar kuliner warga RT 04.', tanggal: hariIni(16), area: 'RT_04', warna: '#c026d3', pengajuan: 'DITOLAK', alasan: 'Jadwal bentrok dengan Rapat Warga Tahunan. Mohon ajukan di tanggal lain.' },
   ];
+  const idKegiatanLanding: number[] = [];
   for (const k of kegiatan) {
-    await prisma.kegiatan.create({
+    const dibuat = await prisma.kegiatan.create({
       data: {
         judul: k.judul,
         deskripsi: k.deskripsi,
@@ -431,7 +433,40 @@ async function seedDummy(roleId: Map<string, number>) {
         createBy: k.area === 'RW' ? 'Ferry Setiawan' : RT_SEED.find((x) => x.rt === k.area)!.sekre,
       },
     });
+    if (k.landing && k.tanggal < now) idKegiatanLanding.push(dibuat.id);
   }
+
+  // Masukan warga (bintang + komentar) untuk kegiatan portofolio yang sudah lewat; sebagian anonim, satu disembunyikan.
+  const wargaFb = await prisma.user.findMany({ where: { roleId: roleId.get('WARGA')! }, select: { id: true }, take: 12 });
+  const KOMENTAR = [
+    'Acaranya seru dan tertib, anak-anak senang sekali.',
+    'Panitia sigap, semoga tahun depan diadakan lagi.',
+    'Bagus, tapi tempat parkirnya agak sempit.',
+    'Terima kasih pengurus, warga jadi makin kompak.',
+    'Mantap! Konsumsinya enak dan cukup untuk semua.',
+    'Jadwalnya sedikit molor, selebihnya lancar.',
+    'Sangat bermanfaat, mohon dibuat rutin tiap tahun.',
+    null,
+  ];
+  let jumlahFb = 0;
+  for (const [i, idKeg] of idKegiatanLanding.entries()) {
+    const peserta = wargaFb.slice(0, 3 + ((i * 2) % 6));
+    for (const [j, w] of peserta.entries()) {
+      const komentar = KOMENTAR[(i + j) % KOMENTAR.length];
+      await prisma.kegiatanFeedback.create({
+        data: {
+          kegiatanId: idKeg,
+          userId: w.id,
+          rating: 3 + ((i + j) % 3),
+          komentar,
+          anonim: j % 2 === 0,
+          disembunyikan: i === 0 && j === 0, // contoh komentar yang disembunyikan pengurus (tidak tampil di publik)
+        },
+      });
+      jumlahFb++;
+    }
+  }
+  console.log(`   ✔ ${jumlahFb} masukan warga untuk kegiatan portofolio`);
   console.log(`   ✔ ${kegiatan.length} kegiatan (9 portofolio 5 tahun, 2 mendatang, 4 dari RT)`);
 
   // ---------- Pengumuman ----------

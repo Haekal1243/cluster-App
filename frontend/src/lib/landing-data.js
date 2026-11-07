@@ -13,17 +13,17 @@ export const layanan = [
     id: "kas-ipl",
     icon: "kartu",
     akses: "login",
-    judul: "Kas & Iuran IPL",
+    judul: "Tagihan & Iuran IPL",
     deskripsi:
-      "Pembayaran iuran pengelolaan lingkungan (IPL) beserta riwayat pembayaran rumah tangga masing-masing. Rincian hanya terlihat oleh pemilik akun.",
+      "Lihat tagihan iuran pengelolaan lingkungan (IPL) dan riwayat pembayaran rumah tangga masing-masing. Rincian hanya terlihat oleh pemilik akun.",
   },
   {
     id: "pengumuman",
     icon: "dokumen",
     akses: "publik",
-    judul: "Pengumuman Resmi",
+    judul: "Pengumuman & Kegiatan",
     deskripsi:
-      "Informasi dan agenda kegiatan RW yang diterbitkan secara resmi oleh pengurus, menggantikan penyebaran melalui grup WhatsApp.",
+      "Informasi, agenda, dan dokumentasi kegiatan RW yang diterbitkan secara resmi oleh pengurus, menggantikan penyebaran melalui grup WhatsApp.",
   },
   {
     id: "pengaduan",
@@ -34,12 +34,28 @@ export const layanan = [
       "Pelaporan gangguan lingkungan, keamanan, atau infrastruktur. Status penanganan dapat dipantau langsung oleh pelapor.",
   },
   {
+    id: "keuangan",
+    icon: "kartu",
+    akses: "pengurus",
+    judul: "Keuangan RT & RW",
+    deskripsi:
+      "Pencatatan pemasukan, pengeluaran, dan setoran kas RT ke RW secara transparan oleh pengurus.",
+  },
+  {
+    id: "catatan-rapat",
+    icon: "dokumen",
+    akses: "pengurus",
+    judul: "Catatan Rapat",
+    deskripsi:
+      "Notulen dan hasil keputusan rapat pengurus tersimpan rapi dan mudah ditelusuri kembali.",
+  },
+  {
     id: "kependudukan",
     icon: "warga",
     akses: "pengurus",
-    judul: "Data Kependudukan",
+    judul: "Data Warga",
     deskripsi:
-      "Pengelolaan data warga dan rumah oleh pengurus RT/RW, termasuk persetujuan pendaftaran warga baru.",
+      "Pengelolaan data warga dan rumah oleh pengurus RT/RW sesuai wilayah masing-masing.",
   },
 ];
 
@@ -94,6 +110,4 @@ export const navLinks = [
   { href: "/landingpage/riwayat-kegiatan", label: "Riwayat Kegiatan" },
   { href: "#layanan", label: "Layanan" },
   { href: "#peta", label: "Peta" },
-  { href: "#pengaduan", label: "Pengaduan" },
-  { href: "#kontak", label: "Kontak" },
 ];

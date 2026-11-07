@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  Wallet, AlertTriangle, CheckCircle, Clock, ArrowRight, Home,
+  AlertTriangle, CheckCircle, Clock, ArrowRight, Home,
   Megaphone, CalendarDays, Calendar, FileText, ChevronDown, Check,
 } from "lucide-react";
 import { portalApi, kegiatanApi, pengumumanApi } from "@/lib/api";
@@ -181,10 +181,6 @@ export function WargaDashboardView({ user }) {
   };
 
   const firstName = (user?.nama || user?.name || "Warga").split(" ")[0];
-  const periodeBulanIni = getMonthLabel(bulanIni, tahunIni);
-  const countLunas = tagihanLunasList.length;
-  const countBelum = tagihanAllList.filter((t) => t.statusPembayaran === "BELUM_LUNAS").length;
-  const countMenunggu = tagihanAllList.filter((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI").length;
   // Forward-looking info untuk state lunas
   const pembayaranTerakhir = [...tagihanLunasList]
     .filter((t) => t.pembayaran?.[0]?.tanggalBayar)
@@ -225,18 +221,6 @@ export function WargaDashboardView({ user }) {
                 ? `Kelola ${rumahList.length} unit rumah Anda dalam satu tempat.`
                 : "Selamat datang di Beranda Warga Cluster Topaz."}
             </p>
-            <div className="portal-hero-meta">
-              <span className="portal-hero-periode">
-                <Wallet size={13} /> IPL {periodeBulanIni}
-                {rumahList.length > 1 ? ` · ${rumahList.length} unit` : ""}
-              </span>
-              {tagihanAllList.length > 0 && (
-                <span className="portal-hero-summary">
-                  {countLunas} lunas · {countBelum} belum
-                  {countMenunggu > 0 ? ` · ${countMenunggu} menunggu` : ""}
-                </span>
-              )}
-            </div>
           </div>
           <div className="portal-hero-right">
             {isLunasSemua ? (
@@ -260,12 +244,14 @@ export function WargaDashboardView({ user }) {
             ) : adaTunggakan ? (
               <>
                 <span className="portal-hero-label">Total Tagihan Belum Lunas</span>
-                <span className="portal-hero-value">Rp {totalTunggakanNominal.toLocaleString("id-ID")}</span>
-                {tunggakanList.some((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI") ? (
-                  <StatusBadge status="MENUNGGU_KONFIRMASI" />
-                ) : (
-                  <StatusBadge status="BELUM_LUNAS" />
-                )}
+                <div className="portal-hero-nominal-row">
+                  <span className="portal-hero-value">Rp {totalTunggakanNominal.toLocaleString("id-ID")}</span>
+                  {tunggakanList.some((t) => t.statusPembayaran === "MENUNGGU_KONFIRMASI") ? (
+                    <StatusBadge status="MENUNGGU_KONFIRMASI" />
+                  ) : (
+                    <StatusBadge status="BELUM_LUNAS" />
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -286,9 +272,15 @@ export function WargaDashboardView({ user }) {
           <div className="warga-tunggakan-header">
             <div className="warga-tunggakan-header-left">
               <h3>Rincian Tunggakan</h3>
-              <span className="warga-detail-sub">{breakdownList.length} periode · {tunggakanList.length} tagihan · {rumahList.length} unit rumah</span>
+              <div className="warga-tunggakan-chips">
+                <span className="warga-tunggakan-chip"><CalendarDays size={12} aria-hidden /> {breakdownList.length} periode</span>
+                <span className="warga-tunggakan-chip"><FileText size={12} aria-hidden /> {tunggakanList.length} tagihan</span>
+                <span className="warga-tunggakan-chip"><Home size={12} aria-hidden /> {rumahList.length} unit rumah</span>
+              </div>
             </div>
-            <span className="warga-tunggakan-total">Rp {totalTunggakanNominal.toLocaleString("id-ID")}</span>
+            <span className="warga-tunggakan-total">
+              <span className="warga-tunggakan-total-label">Total</span> Rp {totalTunggakanNominal.toLocaleString("id-ID")}
+            </span>
           </div>
           <ul className="warga-tunggakan-groups">
             {breakdownList.map((b) => {
@@ -304,12 +296,12 @@ export function WargaDashboardView({ user }) {
                     aria-label={`${isExpanded ? "Tutup" : "Buka"} rincian ${b.label}`}
                   >
                     <span className="warga-tunggakan-group-left">
-                      <span className="warga-tunggakan-group-title">{b.label}</span>
+                      <span className="warga-tunggakan-group-title">
+                        {b.label}
+                      </span>
                       <span className="warga-tunggakan-group-sub">{b.count} unit belum lunas</span>
                     </span>
                     <span className="warga-tunggakan-group-right">
-                      <strong>Rp {b.nominal.toLocaleString("id-ID")}</strong>
-                      <span className={`portal-badge-mini ${b.isBulanIni ? "badge-bulan-ini" : "badge-tertunggak"}`}>{b.isBulanIni ? "Bulan ini" : "Tertunggak"}</span>
                       <ChevronDown size={16} className={`warga-tunggakan-chevron ${isExpanded ? "is-open" : ""}`} aria-hidden />
                     </span>
                   </button>
@@ -318,7 +310,7 @@ export function WargaDashboardView({ user }) {
                       {b.tagihans.map((t) => (
                         <li key={t.id} className="warga-tunggakan-unit-row">
                           <span className="warga-tunggakan-unit-left">
-                            {t._rumah.blokRumah} <small>· {String(t._rumah.rt || "").replace("_", " ")}</small>
+                            <span className="warga-tunggakan-unit-blok"><Home size={14} aria-hidden /> {t._rumah.blokRumah}</span>
                           </span>
                           <span className="warga-tunggakan-unit-right">Rp {(t.nominal || 0).toLocaleString("id-ID")}</span>
                         </li>
@@ -457,7 +449,6 @@ export function WargaDashboardView({ user }) {
                   )}
                   <div className="portal-kegiatan-meta">
                     <span className="meta-item"><Calendar size={13} /> {formatKegiatanDate(k.tanggalAcara)}</span>
-                    {new Date(k.tanggalAcara) < new Date() && <span className="fb-chip-selesai">Selesai · beri masukan</span>}
                   </div>
                 </div>
               </div>

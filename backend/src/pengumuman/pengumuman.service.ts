@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Area, Prisma } from '@prisma/client';
+import { TtlCache } from '../common/ttl-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePengumumanDto } from './dto/create-pengumuman.dto';
 import { UpdatePengumumanDto } from './dto/update-pengumuman.dto';
@@ -80,19 +81,26 @@ export class PengumumanService {
     return { message: 'Pengumuman berhasil dibuat', data };
   }
 
-  findAll(ctx: AccessContext, params: { pengajuan?: string; area?: string } = {}) {
+  /** Alasan penolakan RW adalah catatan internal pengurus: warga biasa tidak ikut menerimanya. */
+  private async sembunyikanAlasan<T extends { alasanTolak?: string | null }>(ctx: AccessContext, rows: T[]): Promise<T[]> {
+    if ((await this.permissions.scopeOf(ctx.user.roleId, 'pengumuman.update')) !== null) return rows;
+    return rows.map((r) => ({ ...r, alasanTolak: null }));
+  }
+
+  async findAll(ctx: AccessContext, params: { pengajuan?: string; area?: string } = {}) {
     const and: Prisma.PengumumanWhereInput[] = [{ isDelete: false }, visibilitasKelolaWhere(ctx)];
     if (params.pengajuan) and.push({ statusPengajuan: params.pengajuan as any });
     if (params.area && ctx.scope === 'ALL') and.push({ area: params.area as Area });
-    return this.prisma.pengumuman.findMany({
+    const rows = await this.prisma.pengumuman.findMany({
       where: { AND: and },
       orderBy: { createDate: 'desc' },
     });
+    return this.sembunyikanAlasan(ctx, rows);
   }
 
   /** Umpan dashboard warga: yang boleh dilihatnya, aktif, dan belum lewat batas tampil. */
-  feed(ctx: AccessContext) {
-    return this.prisma.pengumuman.findMany({
+  async feed(ctx: AccessContext) {
+    const rows = await this.prisma.pengumuman.findMany({
       where: {
         AND: [
           { isDelete: false, status: 'active' },
@@ -103,10 +111,18 @@ export class PengumumanService {
       orderBy: { createDate: 'desc' },
       take: 20,
     });
+    return this.sembunyikanAlasan(ctx, rows);
   }
 
   /** Publik (landing): hanya konten level RW / yang sudah di-ACC RW. */
+  private readonly cacheActive = new TtlCache<unknown[]>(15_000);
+
   findActive(scope?: 'aktif' | 'arsip') {
+    // Endpoint landing page: dibaca tiap pengunjung, jadi hasilnya dipakai ulang beberapa detik.
+    return this.cacheActive.get(scope ?? 'aktif', () => this.queryActive(scope));
+  }
+
+  private queryActive(scope?: 'aktif' | 'arsip') {
     if (scope === 'arsip') {
       return this.prisma.pengumuman.findMany({
         where: { isDelete: false, status: 'unactived', ...tampilKeSemua },
@@ -131,7 +147,7 @@ export class PengumumanService {
     if (!pengumuman) {
       throw new NotFoundException(`Pengumuman dengan ID ${id} tidak ditemukan`);
     }
-    return pengumuman;
+    return (await this.sembunyikanAlasan(ctx, [pengumuman]))[0];
   }
 
   private async findForWrite(ctx: AccessContext, id: number) {

@@ -111,6 +111,7 @@ enum TipeNotifikasi {
   PENGAJUAN_DITOLAK
   PERUBAHAN_DATA
   FEEDBACK_KEGIATAN
+  PENGINGAT_IPL
 }
 
 // ==========================================
@@ -269,6 +270,7 @@ model Ipl {
   nominalKas       Int              @default(0) @map("nominal_kas")
   statusPembayaran StatusPembayaran @default(BELUM_LUNAS) @map("status_pembayaran")
   setoranId        Int?             @map("setoran_id") // null = porsi IPL belum disetor ke RW
+  jatuhTempo       DateTime?        @map("jatuh_tempo") @db.Date // batas bayar warga; null = tagihan lama, pengingat memakai tanggal bawaan
 
   // Relasi
   rumah            Rumah            @relation(fields: [idRumah], references: [id])
@@ -460,6 +462,35 @@ model PendaftaranWarga {
   @@map("tb_PendaftaranWarga")
 }
 
+enum StatusPengajuanHapus {
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+}
+
+// Pengajuan penghapusan akun warga yang sudah tidak tinggal di cluster: pemegang
+// `warga.ajukan_hapus` (mis. sekre RT) mengajukan, pemegang `warga.approve_hapus` (RW)
+// menyetujui/menolak. Tanpa FK ke tb_User supaya riwayatnya tetap ada setelah akunnya
+// terhapus; nama & RT disalin saat diajukan.
+model PengajuanHapusWarga {
+  id             Int                    @id @default(autoincrement())
+  userId         Int
+  namaUser       String
+  rt             Area
+  alasan         String                 @db.Text
+  status         StatusPengajuanHapus   @default(MENUNGGU)
+  diajukanOleh   String
+  diajukanOlehId Int
+  alasanTolak    String?                @db.Text
+  diprosesOleh   String?
+  diprosesAt     DateTime?
+  createdAt      DateTime               @default(now())
+
+  @@index([status, rt])
+  @@index([userId])
+  @@map("tb_PengajuanHapusWarga")
+}
+
 model Notifikasi {
   id        Int            @id @default(autoincrement())
   idUser    Int
@@ -473,6 +504,7 @@ model Notifikasi {
   createdAt DateTime       @default(now())
 
   @@index([isRead, readAt])
+  @@index([idUser, createdAt])
   @@map("tb_Notifikasi")
 }
 

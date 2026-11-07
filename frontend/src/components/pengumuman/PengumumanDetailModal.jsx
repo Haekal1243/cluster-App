@@ -3,9 +3,14 @@
 import { Megaphone, FileText, Calendar } from "lucide-react";
 import { pengumumanApi } from "@/lib/api";
 import { formatTanggalPanjang as formatDate } from "@/lib/format";
+import { can } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
 
 export default function PengumumanDetailModal({ pengumuman, onClose }) {
+  const { user } = useUser();
   if (!pengumuman) return null;
+  // Alasan penolakan RW hanya untuk pengurus (yang bisa mengelola pengumuman), bukan warga.
+  const bolehLihatAlasan = !!user && can(user, "pengumuman.update");
 
   return (
     <div className="ipl-modal-overlay" onClick={onClose}>
@@ -37,7 +42,7 @@ export default function PengumumanDetailModal({ pengumuman, onClose }) {
             </p>
           )}
 
-          {pengumuman.statusPengajuan === "DITOLAK" && pengumuman.alasanTolak && (
+          {bolehLihatAlasan && pengumuman.statusPengajuan === "DITOLAK" && pengumuman.alasanTolak && (
             <p className="portal-info-card-desc" style={{ whiteSpace: "pre-wrap" }}>
               <strong>Alasan ditolak:</strong> {pengumuman.alasanTolak}
             </p>

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -42,6 +43,7 @@ export class IplService {
 
   async generateTagihan(ctx: AccessContext, dto: GenerateIplDto) {
     const { bulanPeriode, tahunPeriode, nominalIpl, nominalKas } = dto;
+    const jatuhTempo = new Date(dto.jatuhTempo.slice(0, 10));
 
     const area = areaFilter(ctx);
     let rt: RT;
@@ -88,6 +90,7 @@ export class IplService {
         tahunPeriode,
         nominalIpl,
         nominalKas,
+        jatuhTempo,
       })),
     });
 
@@ -96,7 +99,7 @@ export class IplService {
       rumahBaru.map((r) => r.userId).filter((id): id is number => id !== null),
       'TAGIHAN_BARU',
       'Tagihan IPL Baru',
-      `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${total.toLocaleString('id-ID')} telah diterbitkan.`,
+      `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${total.toLocaleString('id-ID')} telah diterbitkan. Jatuh tempo ${jatuhTempo.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}.`,
       '/dashboard/kelola-ipl/tagihan-warga',
     );
 
@@ -540,6 +543,10 @@ export class IplService {
   // KONFIRMASI / TOLAK PEMBAYARAN
   // ================================================================
 
+  private sudahDiputuskan() {
+    return new ConflictException('Pembayaran ini baru saja diputuskan oleh pengguna lain. Muat ulang halaman.');
+  }
+
   async konfirmasiPembayaran(user: AuthUser, pembayaranId: number, dto: KonfirmasiIplDto) {
     const pembayaran = await this.prisma.pembayaranIpl.findUnique({
       where: { idPembayaran: pembayaranId },
@@ -595,16 +602,19 @@ export class IplService {
     }
 
     if (dto.action === 'TERIMA') {
-      await this.prisma.$transaction([
-        this.prisma.ipl.update({
-          where: { id: pembayaran.idIpl },
+      await this.prisma.$transaction(async (tx) => {
+        // Klaim atomik pada status MENUNGGU_KONFIRMASI: pengecekan di atas di luar transaksi,
+        // jadi TERIMA dan TOLAK (atau dua klik) yang datang bersamaan sama-sama lolos.
+        const klaim = await tx.ipl.updateMany({
+          where: { id: pembayaran.idIpl, statusPembayaran: 'MENUNGGU_KONFIRMASI' },
           data: { statusPembayaran: 'LUNAS' },
-        }),
-        this.prisma.pembayaranIpl.update({
+        });
+        if (klaim.count !== 1) throw this.sudahDiputuskan();
+        await tx.pembayaranIpl.update({
           where: { idPembayaran: pembayaranId },
           data: { tanggalKonfirmasi: new Date() },
-        }),
-      ]);
+        });
+      });
 
       await this.notifikasiService.kirim(
         pembayaran.idUser,
@@ -624,16 +634,17 @@ export class IplService {
     }
 
     // TOLAK: kembalikan status ke BELUM_LUNAS + simpan catatan
-    await this.prisma.$transaction([
-      this.prisma.ipl.update({
-        where: { id: pembayaran.idIpl },
+    await this.prisma.$transaction(async (tx) => {
+      const klaim = await tx.ipl.updateMany({
+        where: { id: pembayaran.idIpl, statusPembayaran: 'MENUNGGU_KONFIRMASI' },
         data: { statusPembayaran: 'BELUM_LUNAS' },
-      }),
-      this.prisma.pembayaranIpl.update({
+      });
+      if (klaim.count !== 1) throw this.sudahDiputuskan();
+      await tx.pembayaranIpl.update({
         where: { idPembayaran: pembayaranId },
         data: { catatan: dto.catatan ?? null },
-      }),
-    ]);
+      });
+    });
 
     await this.notifikasiService.kirim(
       pembayaran.idUser,

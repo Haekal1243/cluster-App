@@ -34,7 +34,7 @@ export function BintangInput({ value, onChange, size = 30, disabled = false }) {
           <Star size={size} className={n <= value ? "fb-bintang-on" : "fb-bintang-off"} />
         </button>
       ))}
-      <span className="fb-bintang-label">{value ? LABEL[value] : "Pilih bintang"}</span>
+      {value ? <span className="fb-bintang-label">{LABEL[value]}</span> : null}
     </div>
   );
 }

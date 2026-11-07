@@ -1,0 +1,681 @@
+/*
+ * Perbaikan tampilan HP (dimuat paling akhir supaya menang atas aturan lama).
+ * Hasil cek di lebar 360px: elemen kepotong, keluar dari kartu, atau kepepet sampai teksnya
+ * pecah jadi banyak baris. Setiap blok di bawah menyebut masalah yang diperbaikinya.
+ */
+
+/* 1. Tombol aksi (ubah/kunci/hapus) di kartu grid 2 kolom: 3 tombol x 38px lebih lebar
+      daripada isi kartu (~111px), jadi tombol terakhir keluar dari kartu. */
+@media (max-width: 768px) {
+  .warga-grid-footer .table-actions,
+  .pengumuman-grid-footer .table-actions,
+  .kegiatan-grid-footer .table-actions {
+    flex-wrap: wrap;
+    max-width: 100%;
+    gap: 4px;
+  }
+
+  .warga-grid-footer .btn-icon,
+  .pengumuman-grid-footer .btn-icon,
+  .kegiatan-grid-footer .btn-icon {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* 2. Kartu kegiatan di beranda: label "Selesai · beri masukan" lebih lebar daripada kartu
+      2 kolom sehingga terpotong dan teksnya jadi kolom sempit. Label sekarang turun ke baris
+      sendiri, dan kartu tunggal memakai lebar penuh supaya tidak separuh kosong. */
+@media (max-width: 640px) {
+  .portal-kegiatan-meta {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .fb-chip-selesai {
+    margin-left: 0;
+    display: inline-block;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.3;
+    border-radius: 10px;
+  }
+
+  .portal-kegiatan-grid > .portal-kegiatan-card:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .portal-kegiatan-grid > .portal-kegiatan-card:only-child .portal-kegiatan-img-wrap {
+    aspect-ratio: 16 / 9;
+  }
+
+  .portal-kegiatan-grid > .portal-kegiatan-card:only-child .portal-kegiatan-title {
+    font-size: 0.92rem;
+  }
+
+  .portal-kegiatan-grid > .portal-kegiatan-card:only-child .portal-kegiatan-meta {
+    font-size: 0.74rem;
+  }
+}
+
+/* 3. Rincian tunggakan (beranda warga): "1 unit belum lunas" terjepit jadi 3 baris di samping
+      nominal + label + panah. Teks kiri dijaga satu baris; sisi kanan boleh turun baris. */
+@media (max-width: 480px) {
+  .warga-tunggakan-group-header {
+    align-items: flex-start;
+  }
+
+  .warga-tunggakan-group-left {
+    flex: 0 0 auto;
+  }
+
+  .warga-tunggakan-group-sub {
+    white-space: nowrap;
+  }
+
+  .warga-tunggakan-group-right {
+    flex: 1 1 auto;
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 6px;
+    column-gap: 8px;
+    min-width: 0;
+  }
+}
+
+/* 4. Banner sambutan (judul + tombol Filter periode): di layar sempit subjudul terjepit
+      jadi 4 baris di kiri tombol. Di bawah 480px tombol turun ke baris sendiri, lebar penuh. */
+@media (max-width: 480px) {
+  .welcome-banner {
+    grid-template-columns: 1fr;
+    grid-template-areas: "title" "sub" "filter";
+    row-gap: 10px;
+  }
+
+  .welcome-banner .filter-popover {
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .welcome-banner .filter-popover-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 7. Catatan rapat: kartu 2 kolom di HP terlalu sempit. Badge RT keluar dari kartu, tanggal
+      pecah jadi 3 baris, tombol ubah/hapus terjepit, dan muncul scroll horizontal. Di bawah
+      560px jadi 1 kolom. */
+@media (max-width: 560px) {
+  .catatan-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .catatan-card-head h3 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .catatan-card-head .rt-badge {
+    flex-shrink: 0;
+  }
+}
+
+/* 6. Tombol logo melayang (kembali ke atas) menutupi baris paling bawah footer landing. */
+@media (max-width: 640px) {
+  .tz-footer {
+    padding-bottom: 88px;
+  }
+}
+
+/* 5. Header halaman dengan tombol Export (Keuangan): judul terjepit sampai pecah jadi
+      "Keuangan RT / 01". Di layar sempit tombol turun ke bawah judul. */
+@media (max-width: 420px) {
+  .ipl-page-header {
+    flex-wrap: wrap;
+  }
+
+  .ipl-page-header > div:first-child {
+    flex: 1 1 100%;
+  }
+
+  .ipl-page-header .export-split {
+    width: 100%;
+  }
+
+  .ipl-page-header .export-split > .btn-ipl-teal:first-child {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+/* 8. Banner beranda warga: di HP label status (Belum Lunas / Menunggu) sejajar di kanan nominal.
+      Di desktop pembungkusnya "menghilang" (display: contents) sehingga tata letak tetap seperti semula. */
+.portal-hero-nominal-row {
+  display: contents;
+}
+
+@media (max-width: 640px) {
+  .portal-hero-nominal-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+}
+
+/* 9. Rincian Tunggakan: ringkasan "periode · tagihan · unit rumah" jadi label kecil berikon,
+      bukan satu baris teks abu-abu. Berlaku di desktop dan HP; di HP boleh turun baris. */
+.warga-tunggakan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.warga-tunggakan-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.warga-tunggakan-chip svg {
+  color: #0d9488;
+  flex-shrink: 0;
+}
+
+/* 10. Desktop: label ringkasan sejajar satu baris di samping judul "Rincian Tunggakan".
+       HP tetap di bawah judul (bagian 9). */
+@media (min-width: 641px) {
+  .warga-tunggakan-header {
+    align-items: center;
+  }
+
+  .warga-tunggakan-header-left {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+  }
+
+  .warga-tunggakan-header-left .warga-tunggakan-chips {
+    margin-top: 0;
+  }
+}
+
+/* 11. Rincian Tunggakan: tiap periode jadi kartu sendiri. Label status di samping nama bulan,
+       nominal + panah di kanan, daftar unit di panel abu-abu di bawahnya. Dulu barisnya polos,
+       kosong di tengah, dan nominalnya terlihat dobel. */
+.warga-tunggakan-groups {
+  gap: 10px;
+}
+
+.warga-tunggakan-group {
+  border: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.warga-tunggakan-group:last-child {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.warga-tunggakan-group-header {
+  padding: 14px 16px;
+  border-radius: 0;
+  align-items: center;
+}
+
+.warga-tunggakan-group-title {
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.warga-tunggakan-unit-list {
+  margin: 0;
+  padding: 6px 8px;
+  border-left: 0;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.warga-tunggakan-unit-row:hover {
+  background: #f1f5f9;
+}
+
+.warga-tunggakan-unit-left {
+  gap: 10px;
+}
+
+.warga-tunggakan-unit-blok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.warga-tunggakan-unit-blok svg {
+  color: #0d9488;
+}
+
+.warga-tunggakan-unit-left .warga-tunggakan-unit-rt {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .warga-tunggakan-group-header {
+    align-items: center;
+    padding: 12px 14px;
+  }
+
+  .warga-tunggakan-group-right {
+    flex-wrap: nowrap;
+  }
+}
+
+/* Nominal periode tidak boleh pecah ("Rp / 140.000"); sisi kiri (bulan + label) yang mengalah. */
+.warga-tunggakan-group-right strong {
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .warga-tunggakan-group-left {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .warga-tunggakan-group-right {
+    flex: 0 0 auto;
+  }
+}
+
+/* 12. Form masukan kegiatan: komentar lebih kecil, keterangan anonim sebaris di samping
+       "Kirim sebagai anonim" dalam tanda kurung. */
+.fb-panel textarea.form-control {
+  font-size: 0.85rem;
+}
+
+.fb-panel textarea.form-control::placeholder {
+  font-size: 0.82rem;
+}
+
+.fb-anonim-cek {
+  align-items: center;
+}
+
+.fb-anonim-cek input {
+  margin-top: 0;
+}
+
+.fb-anonim-cek small {
+  display: inline;
+}
+
+/* 13. Header Rincian Tunggakan: kata "Total" di depan nominal. */
+.warga-tunggakan-total-label {
+  margin-right: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0;
+}
+
+/* 14. HP: "Total Rp ..." sejajar di kanan judul "Rincian Tunggakan", label ringkasan di bawahnya.
+       Pembungkus kiri dilepas (display: contents) supaya judul, label, dan total bisa disusun
+       dalam satu grid. */
+@media (max-width: 640px) {
+  .warga-tunggakan-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "judul total"
+      "label label";
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 8px;
+  }
+
+  .warga-tunggakan-header-left {
+    display: contents;
+  }
+
+  .warga-tunggakan-header-left h3 {
+    grid-area: judul;
+    min-width: 0;
+  }
+
+  .warga-tunggakan-header-left .warga-tunggakan-chips {
+    grid-area: label;
+    margin-top: 0;
+  }
+
+  .warga-tunggakan-header .warga-tunggakan-total {
+    grid-area: total;
+    font-size: 1.05rem;
+    justify-self: end;
+  }
+
+  .warga-tunggakan-total-label {
+    font-size: 0.72rem;
+    margin-right: 3px;
+  }
+}
+
+/* 15. HP: tombol "Bayar Sekarang" selebar kartu. */
+@media (max-width: 640px) {
+  .warga-detail-cta-wrap {
+    display: block;
+  }
+
+  .warga-detail-cta {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 16. Modal detail kegiatan/pengumuman: isi modal berupa kolom flex yang bisa di-scroll, sehingga
+       gambar dan judul ikut "diperas" (gambar jadi pendek, judul tertutup). Anak-anaknya tidak
+       boleh menyusut; kalau kepanjangan, yang scroll adalah isi modalnya. */
+.ipl-modal-body > * {
+  flex-shrink: 0;
+}
+
+.ipl-modal .portal-kegiatan-img-wrap {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+}
+
+/* 17. Form masukan (bintang + komentar) terlalu besar: font dan bintang dikecilkan. */
+.fb-panel h4 {
+  font-size: 0.88rem;
+}
+
+.fb-bintang-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.fb-bintang-label {
+  font-size: 0.78rem;
+}
+
+.fb-panel textarea.form-control {
+  font-size: 0.8rem;
+  padding: 9px 12px;
+}
+
+.fb-panel textarea.form-control::placeholder {
+  font-size: 0.78rem;
+}
+
+.fb-anonim-cek {
+  font-size: 0.8rem;
+}
+
+.fb-anonim-cek small {
+  font-size: 0.72rem;
+}
+
+.fb-anonim-cek input {
+  width: 16px;
+  height: 16px;
+}
+
+.fb-panel .btn-primary {
+  font-size: 0.82rem;
+  padding: 9px 16px;
+}
+
+.ipl-modal .portal-kegiatan-desc,
+.ipl-modal .portal-info-card-desc {
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+/* Judul di dalam modal ikut aturan kartu grid HP (kecil + dipotong 2 baris); di modal harus normal. */
+.ipl-modal .portal-kegiatan-title {
+  font-size: 1rem;
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  margin-bottom: 6px;
+}
+
+/* 18. HP: header modal terlalu tinggi (padding + tombol tutup 44px). Dipadatkan. */
+@media (max-width: 768px) {
+  .ipl-modal-header {
+    padding: 6px 12px 6px 16px;
+  }
+
+  .ipl-modal-header .ipl-modal-close {
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1rem;
+  }
+}
+
+/* 19. Tombol "Kirim Masukan" selebar form. */
+.fb-panel .btn-primary {
+  align-self: stretch;
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+/* 20. Modal Riwayat Transaksi (warga): nama data dan isinya satu baris, dipisah titik dua dengan
+       lebar label sama supaya ":" sejajar. Di desktop tetap susunan lama (titik dua disembunyikan). */
+.riwayat-info-grid .review-info-sep {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .riwayat-info-grid .review-info-item {
+    display: grid;
+    grid-template-columns: 112px 10px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 4px;
+  }
+
+  .riwayat-info-grid .review-info-sep {
+    display: block;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .riwayat-info-grid .review-info-label {
+    white-space: nowrap;
+  }
+}
+
+/* Modal Riwayat Transaksi: nominal tagihan memakai warna dan ketebalan sama dengan data lain. */
+.riwayat-info-grid .review-nominal {
+  color: inherit;
+  font-weight: inherit;
+}
+
+/* 21. Pop up Filter di HP kegedean (hampir 80% layar; tiap pilihan status setinggi 48px).
+       Dipadatkan: panel lebih pendek, jarak antar kolom dan font dikecilkan, pilihan lebih rapat. */
+@media (max-width: 767px) {
+  .filter-popover-panel {
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+    width: min(290px, calc(100vw - 80px));
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 12px;
+    gap: 8px;
+    max-height: min(64vh, 440px);
+    max-height: min(64dvh, 440px);
+  }
+
+  .filter-popover-fields {
+    gap: 10px;
+  }
+
+  .filter-popover-field {
+    gap: 4px;
+  }
+
+  .filter-popover-field label {
+    font-size: 0.72rem;
+  }
+
+  .filter-popover-field input.form-control {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .combobox-radio-list.ipl-select {
+    padding: 4px 6px;
+  }
+
+  .combobox-radio {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    min-height: 36px;
+  }
+
+  .combobox-radio .combobox-radio-label {
+    font-size: 0.8rem;
+    line-height: 1.3;
+  }
+
+  .filter-popover-footer button {
+    min-height: 38px;
+    font-size: 0.78rem;
+  }
+
+  .filter-popover-hint {
+    font-size: 0.68rem;
+  }
+}
+
+/* Bug: daftar pilihan (radio) di filter ikut kelas .ipl-select sehingga muncul ikon panah dropdown
+   nyasar di tengah kanan. Daftar ini bukan dropdown, jadi panahnya dibuang. */
+.combobox-radio-list.ipl-select {
+  background-image: none;
+}
+
+/* 22. Pop up Filter di HP, putaran kedua: di tengah layar (bukan menempel di bawah), lebih kecil,
+       latar belakang digelapkan, dan halaman di belakangnya terkunci (tidak bisa di-scroll) selama
+       pop up terbuka. */
+@media (max-width: 767px) {
+  body:has(.filter-popover-panel),
+  body:has(.filter-popover-panel) .dashboard-main {
+    overflow: hidden;
+  }
+
+  .filter-popover-panel {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    height: fit-content;
+    width: min(270px, calc(100vw - 96px));
+    max-height: min(60vh, 400px);
+    max-height: min(60dvh, 400px);
+    padding: 10px;
+    gap: 6px;
+    border-radius: 12px;
+    box-shadow: 0 0 0 100vmax rgba(15, 23, 42, 0.4), 0 12px 32px rgba(15, 23, 42, 0.2);
+  }
+
+  .filter-popover-fields {
+    gap: 8px;
+  }
+
+  .filter-popover-field label {
+    font-size: 0.68rem;
+  }
+
+  .filter-popover-field input.form-control,
+  .filter-popover-panel .ipl-input {
+    padding: 5px 8px;
+    font-size: 0.76rem;
+  }
+
+  .combobox-radio {
+    min-height: 32px;
+    padding: 4px 8px;
+    font-size: 0.76rem;
+  }
+
+  .combobox-radio .combobox-radio-label {
+    font-size: 0.76rem;
+  }
+
+  .filter-popover-footer button {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 0.74rem;
+  }
+
+  .filter-popover-hint {
+    font-size: 0.64rem;
+  }
+}
+
+/* 23. Menu bawah (dock) warga di HP menutupi tombol pop up/form. Dock-nya berada di lapisan
+       tumpukan berbeda dari isi halaman, jadi overlay pop up (z-index 1000) tidak menutupinya
+       dan tombol "Batal/Kirim" di dasar form tertimpa. Selama ada pop up terbuka, dock diturunkan ke belakang overlay, di-blur dan diredupkan (tetap kelihatan). */
+@media (max-width: 899px) {
+  body:has(.modal-overlay, .ipl-modal-overlay, .sd-overlay, .sd-sheet-overlay, .filter-popover-panel, .protected-lightbox-overlay) .bottom-nav {
+    z-index: 0;
+    filter: blur(3px) brightness(.8);
+    opacity: .7;
+    pointer-events: none;
+  }
+}
+
+/* Penghitung karakter (mis. 0/50) di dalam kolom isian, bukan di bawahnya. */
+.input-dengan-hitung {
+  position: relative;
+}
+
+.input-dengan-hitung .form-control {
+  padding-right: 56px;
+}
+
+.input-hitung {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  color: var(--db-muted, #94a3b8);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 24. Header modal form (Ajukan Pengaduan dll): jarak atas-bawah dirapatkan di HP */
+@media (max-width: 768px) {
+  .modal-box .modal-header {
+    padding: 7px 10px 7px 16px;
+  }
+  .modal-box .modal-header .modal-close {
+    width: 32px;
+    height: 32px;
+  }
+}

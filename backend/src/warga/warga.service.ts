@@ -6,7 +6,14 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, RT, StatusPembayaran, StatusPendaftaran, StatusRumah } from '@prisma/client';
+import {
+  Prisma,
+  RT,
+  StatusPembayaran,
+  StatusPendaftaran,
+  StatusPengajuanHapus,
+  StatusRumah,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotifikasiService } from '../notifikasi/notifikasi.service';
@@ -439,18 +446,25 @@ export class WargaService {
           select: { id: true },
         });
 
-        await tx.rumah.update({
-          where: { id: rumah.id },
-          data: { userId: created.id, status, isDelete: false, updateBy: actor, updateDate: new Date() },
+        // Klaim rumah secara atomik: pengecekan `rumah.userId` di atas bisa lolos bersamaan untuk
+        // dua request, jadi hanya yang berhasil mengubah baris yang boleh lanjut. Yang kalah
+        // melempar error sehingga akun yang baru dibuatnya ikut dibatalkan (rollback).
+        const klaim = await tx.rumah.updateMany({
+          where: { id: rumah.id, userId: null, isDelete: false },
+          data: { userId: created.id, status, updateBy: actor, updateDate: new Date() },
         });
+        if (klaim.count !== 1) {
+          throw new ConflictException(`Blok ${dto.blokRumah} sudah ada pemilik/penanggung jawab lain.`);
+        }
         return created;
       });
 
       return {
         message: 'Akun warga dan data rumah berhasil dibuat!',
         data: await this.findWargaScoped(ctx, user.id),
-        // Hanya dikirim bila digenerate; pengurus wajib menyampaikannya ke warga.
-        ...(dto.password ? {} : { passwordAwal }),
+        // Selalu dikirim (juga bila diketik pengurus sendiri) supaya frontend bisa menampilkan
+        // kartu akun untuk di-screenshot dan disampaikan ke warga.
+        passwordAwal,
       };
     } catch (error) {
       this.handleUniqueError(error);
@@ -578,6 +592,162 @@ export class WargaService {
       message: `Kata sandi ${warga.namaUser} berhasil diatur ulang. Sampaikan kata sandi sementara ini ke warga.`,
       passwordSementara,
     };
+  }
+
+  // ================================================================
+  // PENGAJUAN HAPUS AKUN — pemegang warga.ajukan_hapus (mis. sekre RT) mengajukan untuk
+  // warga yang sudah tidak tinggal di cluster; pemegang warga.approve_hapus (RW) memutuskan.
+  // ================================================================
+
+  async ajukanHapus(ctx: AccessContext, id: number, alasan: string) {
+    if (id === ctx.user.sub) {
+      throw new BadRequestException('Akun yang sedang Anda pakai tidak bisa diajukan untuk dihapus.');
+    }
+    const warga = await this.findWargaScoped(ctx, id, true);
+
+    const area = warga.area ?? 'RW';
+    // Kunci baris warga dulu (SELECT ... FOR UPDATE) supaya klik ganda / dua pengurus bersamaan
+    // diproses bergantian; tanpa ini keduanya lolos cek "belum ada pengajuan" dan terbuat dobel.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM tb_User WHERE id = ${id} FOR UPDATE`;
+      const sudahAda = await tx.pengajuanHapusWarga.findFirst({
+        where: { userId: id, status: 'MENUNGGU' },
+        select: { id: true },
+      });
+      if (sudahAda) {
+        throw new ConflictException('Warga ini sudah punya pengajuan hapus yang menunggu keputusan RW.');
+      }
+      return tx.pengajuanHapusWarga.create({
+        data: {
+          userId: id,
+          namaUser: warga.namaUser,
+          rt: area,
+          alasan: alasan.trim(),
+          diajukanOleh: ctx.user.nama,
+          diajukanOlehId: ctx.user.sub,
+        },
+        select: { id: true },
+      });
+    });
+    await this.audit.catat(ctx.user.sub, 'warga.ajukan_hapus', {
+      target: 'User',
+      targetId: id,
+      keterangan: `Mengajukan hapus akun ${warga.namaUser}: ${alasan.trim()}`,
+    });
+    await this.notifikasiService.kirimKePermission(
+      'warga.approve_hapus',
+      null, // diputuskan RW untuk seluruh RT
+      'PENGAJUAN_MASUK',
+      'Pengajuan Hapus Akun Warga',
+      `${ctx.user.nama} mengajukan penghapusan akun ${warga.namaUser} (${area.replace('_', ' ')}), menunggu persetujuan.`,
+      '/dashboard/data-warga/pengajuan-hapus',
+      ctx.user.sub,
+    );
+
+    return { message: `Pengajuan hapus akun ${warga.namaUser} dikirim ke RW untuk disetujui.` };
+  }
+
+  /** AREA: pengajuan di wilayahnya; ALL: semua RT. Default hanya yang masih menunggu. */
+  async getPengajuanHapus(ctx: AccessContext, status?: string) {
+    const area = areaFilter(ctx);
+    return this.prisma.pengajuanHapusWarga.findMany({
+      where: {
+        ...(area !== null && { rt: area }),
+        ...(status !== 'SEMUA' && { status: (status as StatusPengajuanHapus) || 'MENUNGGU' }),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+  }
+
+  private async findPengajuanHapusMenunggu(id: number) {
+    const p = await this.prisma.pengajuanHapusWarga.findUnique({ where: { id } });
+    if (!p) throw new NotFoundException(`Pengajuan dengan ID ${id} tidak ditemukan`);
+    if (p.status !== 'MENUNGGU') {
+      throw new BadRequestException('Pengajuan ini sudah diputuskan sebelumnya.');
+    }
+    return p;
+  }
+
+  async setujuiHapus(ctx: AccessContext, id: number) {
+    const p = await this.findPengajuanHapusMenunggu(id);
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: p.userId, role: { level: LEVEL_WARGA } },
+      select: { id: true, namaUser: true },
+    });
+    if (!user) {
+      throw new NotFoundException('Akun warga ini sudah tidak ada. Tolak pengajuan ini untuk menutupnya.');
+    }
+
+    // Riwayat bayar/pengaduan terikat ke akun (FK), jadi akun tidak bisa dihapus bila ada.
+    // Dicek sebelum rumahnya dilepas supaya kalau gagal, tidak ada yang berubah.
+    const [pembayaran, pengaduan] = await Promise.all([
+      this.prisma.pembayaranIpl.count({ where: { idUser: p.userId } }),
+      this.prisma.pengaduan.count({ where: { idUser: p.userId } }),
+    ]);
+    if (pembayaran > 0 || pengaduan > 0) {
+      throw new BadRequestException(
+        'Akun ini punya riwayat pembayaran/pengaduan sehingga tidak bisa dihapus permanen. Tolak pengajuan ini, atau kosongkan rumahnya lewat Ubah Rumah.',
+      );
+    }
+
+    const rumah = await this.prisma.rumah.findMany({
+      where: { userId: p.userId, isDelete: false },
+      select: { id: true, blokRumah: true, rt: true },
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      // Klaim pengajuan dulu: dua pemegang approve yang menekan Setujui bersamaan tidak boleh
+      // sama-sama menghapus akunnya (yang kedua akan gagal di user.delete dengan error 500).
+      const klaim = await tx.pengajuanHapusWarga.updateMany({
+        where: { id, status: 'MENUNGGU' },
+        data: { status: 'DISETUJUI', diprosesOleh: ctx.user.nama, diprosesAt: new Date() },
+      });
+      if (klaim.count !== 1) throw new BadRequestException('Pengajuan ini sudah diputuskan sebelumnya.');
+
+      // Rumah yang tadinya atas nama akun ini dilepas jadi kosong tanpa akun pemilik,
+      // supaya penghuni/pemilik berikutnya bisa mendaftar ke blok itu.
+      await tx.rumah.updateMany({
+        where: { userId: p.userId },
+        data: { userId: null, status: 'KOSONG', updateBy: ctx.user.nama, updateDate: new Date() },
+      });
+      await tx.notifikasi.deleteMany({ where: { idUser: p.userId } });
+      await tx.user.delete({ where: { id: p.userId } });
+    });
+
+    const blok = rumah.map((r) => `${r.blokRumah} (${r.rt.replace('_', ' ')})`).join(', ');
+    await this.audit.catat(ctx.user.sub, 'warga.hapus', {
+      target: 'User',
+      targetId: p.userId,
+      keterangan: `Akun ${p.namaUser} dihapus atas pengajuan ${p.diajukanOleh}${blok ? `; rumah dilepas: ${blok}` : ''}`,
+    });
+    await this.notifikasiService.kirim(
+      p.diajukanOlehId,
+      'PENGAJUAN_DISETUJUI',
+      'Pengajuan Hapus Akun Disetujui',
+      `Akun ${p.namaUser} sudah dihapus oleh ${ctx.user.nama}.`,
+      '/dashboard/data-warga',
+    );
+
+    return { message: `Akun ${p.namaUser} dihapus.${blok ? ` Rumah ${blok} kini berstatus kosong.` : ''}` };
+  }
+
+  async tolakHapus(ctx: AccessContext, id: number, alasan: string) {
+    const p = await this.findPengajuanHapusMenunggu(id);
+    const klaim = await this.prisma.pengajuanHapusWarga.updateMany({
+      where: { id, status: 'MENUNGGU' },
+      data: { status: 'DITOLAK', alasanTolak: alasan.trim(), diprosesOleh: ctx.user.nama, diprosesAt: new Date() },
+    });
+    if (klaim.count !== 1) throw new BadRequestException('Pengajuan ini sudah diputuskan sebelumnya.');
+    await this.notifikasiService.kirim(
+      p.diajukanOlehId,
+      'PENGAJUAN_DITOLAK',
+      'Pengajuan Hapus Akun Ditolak',
+      `Pengajuan hapus akun ${p.namaUser} ditolak: ${alasan.trim()}`,
+      '/dashboard/data-warga/pengajuan-hapus',
+    );
+    return { message: `Pengajuan hapus akun ${p.namaUser} ditolak.` };
   }
 
   // ================================================================
@@ -881,20 +1051,22 @@ export class WargaService {
           select: { id: true },
         });
 
-        await tx.rumah.update({
-          where: { id: rumah.id },
-          data: {
-            userId: created.id,
-            status: statusAwal,
-            updateBy: ctx.user.nama,
-            updateDate: new Date(),
-          },
+        // Klaim atomik: rumah harus masih tanpa pemilik, dan pendaftaran masih PENDING. Dua
+        // persetujuan bersamaan (rumah yang sama, atau pendaftaran yang sama) tidak boleh lolos
+        // dua-duanya; yang kalah melempar error sehingga akun yang baru dibuatnya dibatalkan.
+        const klaimRumah = await tx.rumah.updateMany({
+          where: { id: rumah.id, userId: null, isDelete: false },
+          data: { userId: created.id, status: statusAwal, updateBy: ctx.user.nama, updateDate: new Date() },
         });
-
-        await tx.pendaftaranWarga.update({
-          where: { id: pendaftaran.id },
+        const klaimDaftar = await tx.pendaftaranWarga.updateMany({
+          where: { id: pendaftaran.id, status: 'PENDING' },
           data: { status: 'DISETUJUI', diprosesOleh: ctx.user.nama, diprosesAt: new Date() },
         });
+        if (klaimRumah.count !== 1 || klaimDaftar.count !== 1) {
+          throw new ConflictException(
+            'Pendaftaran ini baru saja diproses atau rumahnya sudah terisi warga lain. Muat ulang halaman.',
+          );
+        }
 
         return created;
       });

@@ -24,6 +24,8 @@ export const PERMISSIONS: Record<string, Record<string, string>> = {
     delete: 'Hapus warga',
     reset_password: 'Atur ulang kata sandi warga',
     approve_registrasi: 'Setujui/tolak pendaftaran mandiri warga',
+    ajukan_hapus: 'Ajukan penghapusan akun warga (perlu persetujuan RW)',
+    approve_hapus: 'Setujui/tolak pengajuan penghapusan akun warga',
   },
   ipl: {
     read: 'Lihat tagihan IPL',
@@ -112,6 +114,7 @@ const CRUD = (menu: string, scope: ScopeKode): Grant[] => [
 export const MATRIX: Record<string, Grant[]> = {
   KETUA_RW: [
     ['warga.read', 'ALL'],
+    ['warga.approve_hapus', 'ALL'],
     ['rumah.read', 'ALL'],
     ['ipl.read', 'ALL'],
     ['ipl.bayar', 'OWN'],
@@ -153,6 +156,7 @@ export const MATRIX: Record<string, Grant[]> = {
   ],
   SEKRE_RW: [
     ['warga.read', 'ALL'],
+    ['warga.approve_hapus', 'ALL'],
     ['rumah.read', 'ALL'],
     ['ipl.read', 'ALL'],
     ['ipl.bayar', 'OWN'],
@@ -210,7 +214,11 @@ export const MATRIX: Record<string, Grant[]> = {
     ['catatan_rapat.read', 'AREA'],
   ],
   SEKRE_RT: [
-    ...CRUD('warga', 'AREA'),
+    // Tanpa warga.delete: hapus akun warga lewat pengajuan ke RW (warga.ajukan_hapus).
+    ['warga.read', 'AREA'],
+    ['warga.create', 'AREA'],
+    ['warga.update', 'AREA'],
+    ['warga.ajukan_hapus', 'AREA'],
     ['warga.reset_password', 'AREA'],
     ['warga.approve_registrasi', 'AREA'],
     ['rumah.read', 'AREA'],

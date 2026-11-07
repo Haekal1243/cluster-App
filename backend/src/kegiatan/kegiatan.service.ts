@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Area, Prisma } from '@prisma/client';
+import { TtlCache } from '../common/ttl-cache';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateKegiatanDto } from './dto/create-kegiatan.dto';
 import { UpdateKegiatanDto } from './dto/update-kegiatan.dto';
@@ -96,6 +97,12 @@ export class KegiatanService {
   }
 
   /** Daftar untuk halaman kelola. Filter opsional: ?pengajuan=DIAJUKAN, ?area=RT_01 (scope ALL). */
+  /** Alasan penolakan RW adalah catatan internal pengurus: warga biasa tidak ikut menerimanya. */
+  private async sembunyikanAlasan<T extends { alasanTolak?: string | null }>(ctx: AccessContext, rows: T[]): Promise<T[]> {
+    if ((await this.permissions.scopeOf(ctx.user.roleId, 'kegiatan.update')) !== null) return rows;
+    return rows.map((r) => ({ ...r, alasanTolak: null }));
+  }
+
   async findAll(ctx: AccessContext, params: { pengajuan?: string; area?: string } = {}) {
     const and: Prisma.KegiatanWhereInput[] = [{ isDelete: false }, visibilitasKelolaWhere(ctx)];
     if (params.pengajuan) and.push({ statusPengajuan: params.pengajuan as any });
@@ -106,12 +113,13 @@ export class KegiatanService {
     });
     // Kegiatan otomatis non-aktif seminggu setelah tanggal acara (tanpa menulis ke DB).
     const batas = batasAktif();
-    return rows.map((k) => (k.tanggalAcara < batas ? { ...k, status: 'unactived' as const } : k));
+    const hasil = rows.map((k) => (k.tanggalAcara < batas ? { ...k, status: 'unactived' as const } : k));
+    return this.sembunyikanAlasan(ctx, hasil);
   }
 
   /** Umpan dashboard warga: yang boleh dilihatnya, aktif, dan belum lewat batas tampil. */
-  feed(ctx: AccessContext) {
-    return this.prisma.kegiatan.findMany({
+  async feed(ctx: AccessContext) {
+    const rows = await this.prisma.kegiatan.findMany({
       where: {
         AND: [
           { isDelete: false, status: 'active', tanggalAcara: { gte: batasAktif() } },
@@ -122,10 +130,18 @@ export class KegiatanService {
       orderBy: { tanggalAcara: 'desc' },
       take: 20,
     });
+    return this.sembunyikanAlasan(ctx, rows);
   }
 
   /** Publik (landing): hanya konten level RW / yang sudah di-ACC RW. */
+  private readonly cacheActive = new TtlCache<unknown[]>(15_000);
+
   findActive(scope?: 'aktif' | 'arsip') {
+    // Endpoint landing page: dibaca tiap pengunjung, jadi hasilnya dipakai ulang beberapa detik.
+    return this.cacheActive.get(scope ?? 'aktif', () => this.queryActive(scope));
+  }
+
+  private queryActive(scope?: 'aktif' | 'arsip') {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (scope === 'arsip') {
@@ -145,32 +161,57 @@ export class KegiatanService {
     });
   }
 
-  /** Publik (landing): portofolio cluster 5 tahun ke belakang s/d 5 tahun ke depan, dikelompokkan per tahun. */
-  async portofolio() {
-    const sekarang = new Date();
-    const mulai = new Date();
-    mulai.setFullYear(mulai.getFullYear() - 5);
-    const batas = new Date();
-    batas.setFullYear(batas.getFullYear() + 5);
+  /**
+   * Publik (landing): riwayat kegiatan yang diaktifkan tampil, dikelompokkan per tahun.
+   * `tahunTersedia` hanya berisi tahun yang benar-benar punya data (untuk filter); `tahun` opsional
+   * mempersempit hasil ke satu tahun tsb. Masukan warga ikut dikirim TANPA identitas (anonim maupun tidak),
+   * dan yang disembunyikan pengurus tidak ikut.
+   */
+  async portofolio(tahunDipilih?: number) {
+    const dasar: Prisma.KegiatanWhereInput = {
+      isDelete: false,
+      status: 'active',
+      tampilDiLanding: true,
+      ...tampilKeSemua,
+    };
+
+    const semuaTanggal = await this.prisma.kegiatan.findMany({
+      where: dasar,
+      select: { tanggalAcara: true },
+    });
+    const tahunTersedia = [...new Set(semuaTanggal.map((r) => r.tanggalAcara.getFullYear()))].sort((a, b) => b - a);
+    const tahunFilter = tahunDipilih && tahunTersedia.includes(tahunDipilih) ? tahunDipilih : undefined;
+
     const rows = await this.prisma.kegiatan.findMany({
-      where: {
-        isDelete: false,
-        status: 'active',
-        tampilDiLanding: true,
-        ...tampilKeSemua,
-        tanggalAcara: { gte: mulai, lte: batas },
-      },
+      where: tahunFilter
+        ? { ...dasar, tanggalAcara: { gte: new Date(tahunFilter, 0, 1), lt: new Date(tahunFilter + 1, 0, 1) } }
+        : dasar,
       orderBy: { tanggalAcara: 'asc' },
-      select: RINGKAS,
+      select: {
+        ...RINGKAS,
+        feedback: {
+          where: { disembunyikan: false },
+          orderBy: { createdAt: 'desc' },
+          select: { rating: true, komentar: true, createdAt: true },
+        },
+      },
     });
 
-    const perTahun = new Map<number, typeof rows>();
-    for (const r of rows) {
-      const tahun = r.tanggalAcara.getFullYear();
-      perTahun.set(tahun, [...(perTahun.get(tahun) ?? []), r]);
+    const perTahun = new Map<number, unknown[]>();
+    for (const { feedback, ...k } of rows) {
+      const jumlah = feedback.length;
+      const masukan = {
+        jumlah,
+        rata: jumlah ? Math.round((feedback.reduce((t, f) => t + f.rating, 0) / jumlah) * 10) / 10 : 0,
+        komentar: feedback.filter((f) => f.komentar?.trim()).slice(0, 50),
+      };
+      const tahun = k.tanggalAcara.getFullYear();
+      perTahun.set(tahun, [...(perTahun.get(tahun) ?? []), { ...k, masukan }]);
     }
     return {
       total: rows.length,
+      tahunTersedia,
+      tahunDipilih: tahunFilter ?? null,
       tahun: [...perTahun.entries()]
         .sort((a, b) => a[0] - b[0])
         .map(([tahun, kegiatan]) => ({ tahun, kegiatan })),
@@ -184,7 +225,7 @@ export class KegiatanService {
     if (!kegiatan) {
       throw new NotFoundException(`Kegiatan dengan ID ${id} tidak ditemukan`);
     }
-    return kegiatan;
+    return (await this.sembunyikanAlasan(ctx, [kegiatan]))[0];
   }
 
   /** Ambil untuk diubah/dihapus: harus di dalam wilayah tulis user. */

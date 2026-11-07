@@ -67,11 +67,12 @@ export class KegiatanController {
     return this.kegiatanService.findActive(scope as 'aktif' | 'arsip' | undefined);
   }
 
-  /** Portofolio 5 tahun untuk landing page, per tahun. */
+  /** Portofolio (semua tahun) untuk landing page, per tahun. */
   @Public()
   @Get('portofolio')
-  portofolio() {
-    return this.kegiatanService.portofolio();
+  portofolio(@Query('tahun') tahun?: string) {
+    const th = Number(tahun);
+    return this.kegiatanService.portofolio(Number.isInteger(th) ? th : undefined);
   }
 
   // --- Masukan warga (rute statis harus di atas :id) ---

@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsPositive, IsOptional, IsEnum, Matches, Max, Min } from 'class-validator';
+import { IsString, IsDateString, IsInt, IsPositive, IsOptional, IsEnum, Matches, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RT } from '@prisma/client';
 
@@ -10,6 +10,10 @@ export class GenerateIplDto {
   @IsString()
   @Matches(/^\d{4}$/, { message: 'tahunPeriode harus format 4 digit, contoh "2026"' })
   tahunPeriode: string;
+
+  /** Batas bayar tagihan periode ini (YYYY-MM-DD); warga diingatkan setiap hari sejak tanggal ini bila belum bayar. */
+  @IsDateString({ strict: true }, { message: 'jatuhTempo harus tanggal format YYYY-MM-DD' })
+  jatuhTempo: string;
 
   /** Porsi IPL yang nanti disetor RT ke RW. */
   @Type(() => Number)

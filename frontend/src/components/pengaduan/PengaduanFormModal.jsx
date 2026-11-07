@@ -86,20 +86,22 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
               <label htmlFor="judul">
                 Judul <span className="required-star">*</span>
               </label>
-              <input
-                id="judul"
-                name="judul"
-                type="text"
-                className="form-control"
-                placeholder="Contoh: Lampu jalan mati"
-                value={form.judul}
-                onChange={handleChange}
-                maxLength={JUDUL_MAX_LENGTH}
-                required
-              />
-              <span className="field-hint" style={{ display: "block", textAlign: "right" }}>
-                {form.judul.length}/{JUDUL_MAX_LENGTH}
-              </span>
+              <div className="input-dengan-hitung">
+                <input
+                  id="judul"
+                  name="judul"
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: Lampu jalan mati"
+                  value={form.judul}
+                  onChange={handleChange}
+                  maxLength={JUDUL_MAX_LENGTH}
+                  required
+                />
+                <span className="input-hitung" aria-hidden>
+                  {form.judul.length}/{JUDUL_MAX_LENGTH}
+                </span>
+              </div>
             </div>
 
             <div className="form-group">

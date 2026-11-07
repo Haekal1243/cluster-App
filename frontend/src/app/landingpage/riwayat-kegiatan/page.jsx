@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
+import RiwayatItem from "./RiwayatItem";
+import FilterTahun from "./FilterTahun";
 import { API_BASE_URL, fileUrl } from "@/lib/api";
 
 export const metadata = {
@@ -8,21 +10,24 @@ export const metadata = {
   description: "Dokumentasi dan agenda kegiatan warga RW 21 Cluster Topaz dari tahun ke tahun.",
 };
 
-async function getRiwayat() {
+const KOSONG = { total: 0, tahunTersedia: [], tahunDipilih: null, tahun: [] };
+
+async function getRiwayat(tahun) {
   try {
-    const res = await fetch(`${API_BASE_URL}/kegiatan/portofolio`, { cache: "no-store" });
-    if (!res.ok) return { total: 0, tahun: [] };
-    return await res.json();
+    const q = tahun ? `?tahun=${encodeURIComponent(tahun)}` : "";
+    const res = await fetch(`${API_BASE_URL}/kegiatan/portofolio${q}`, { cache: "no-store" });
+    if (!res.ok) return KOSONG;
+    return { ...KOSONG, ...(await res.json()) };
   } catch {
-    return { total: 0, tahun: [] };
+    return KOSONG;
   }
 }
 
 const gambar = fileUrl;
-const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
-export default async function RiwayatKegiatanPage() {
-  const { total, tahun } = await getRiwayat();
+export default async function RiwayatKegiatanPage({ searchParams }) {
+  const { tahun: tahunQuery } = await searchParams;
+  const { total, tahun, tahunTersedia, tahunDipilih } = await getRiwayat(Array.isArray(tahunQuery) ? tahunQuery[0] : tahunQuery);
   const sekarang = new Date();
 
   // Terbaru di atas: tahun terbaru dulu, dan di tiap tahun kegiatan terdekat ke akhir tahun dulu.
@@ -49,23 +54,15 @@ export default async function RiwayatKegiatanPage() {
             Catatan acara dan kerja bakti warga RW 21, disusun dari yang terbaru sampai yang paling lama.
           </p>
 
-          {urut.length > 0 && (
+          {(urut.length > 0 || tahunTersedia.length > 0) && (
             <div className="rk-hero-foot">
               <dl className="rk-stats">
                 <div>
                   <dt>Kegiatan tercatat</dt>
                   <dd>{total}</dd>
                 </div>
-                <div>
-                  <dt>Rentang tahun</dt>
-                  <dd>{urut.length > 1 ? `${urut[urut.length - 1].tahun}–${urut[0].tahun}` : urut[0].tahun}</dd>
-                </div>
               </dl>
-              <nav className="rk-years" aria-label="Loncat ke tahun">
-                {urut.map(({ tahun: th }) => (
-                  <a key={th} href={`#tahun-${th}`}>{th}</a>
-                ))}
-              </nav>
+              <FilterTahun tahunTersedia={tahunTersedia} tahunDipilih={tahunDipilih} />
             </div>
           )}
         </div>
@@ -89,27 +86,8 @@ export default async function RiwayatKegiatanPage() {
 
                 <ol className="rk-list">
                   {kegiatan.map((k) => {
-                    const tgl = new Date(k.tanggalAcara);
-                    const img = gambar(k.gambarUrl);
-                    const akanDatang = tgl > sekarang;
-                    return (
-                      <li key={k.id} className="rk-item">
-                        <div className="rk-date" aria-label={tgl.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}>
-                          <span className="rk-day">{tgl.getDate()}</span>
-                          <span className="rk-month">{BULAN[tgl.getMonth()]}</span>
-                        </div>
-
-                        <div className="rk-text">
-                          {akanDatang && <span className="rk-badge">Akan datang</span>}
-                          <h3>{k.judul}</h3>
-                          {k.deskripsi && <p>{k.deskripsi}</p>}
-                        </div>
-
-                        <div className="rk-thumb">
-                          {img && <img src={img} alt={k.judul} loading="lazy" />}
-                        </div>
-                      </li>
-                    );
+                    const akanDatang = new Date(k.tanggalAcara) > sekarang;
+                    return <RiwayatItem key={k.id} kegiatan={k} img={gambar(k.gambarUrl)} akanDatang={akanDatang} />;
                   })}
                 </ol>
               </div>

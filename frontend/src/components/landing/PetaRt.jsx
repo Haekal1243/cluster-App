@@ -7,20 +7,20 @@ import Reveal from "./Reveal";
 const PALET = ["#0D9488", "#1D4ED8", "#B45309", "#7C3AED", "#BE123C", "#4D7C0F", "#0369A1", "#A21CAF"];
 /* Warna tiap blok rumah (satu nama blok = satu warna, walau areanya terpisah). */
 const PALET_BLOK = [
-  "#2563EB", "#F59E0B", "#DC2626", "#92400E", "#0891B2", "#65A30D", // tanpa ungu: ungu dipakai fasilitas umum
+  "#2563EB", "#F59E0B", "#DC2626", "#92400E", "#0891B2", "#65A30D", // jangan pakai warna yang mirip warna fasilitas (lihat WARNA_FAS_KATA)
   "#DB2777", "#EA580C", "#4F46E5", "#0D9488", "#CA8A04", "#475569",
 ];
-/* Warna fasilitas umum: tiap nama beda. Urutan cek: properti `warna` > kata kunci nama > palet otomatis. */
+/* Warna fasilitas umum: tiap nama beda, dan sengaja dijauhkan dari palet blok & warna RT di atas
+   (jarak warna dicek) supaya tidak ada yang kembar. Urutan cek: properti `warna` > kata kunci nama > palet otomatis. */
 const WARNA_FAS_KATA = [
-  [/masjid|musholla|mushola/i, "#047857"],
-  [/taman|lapangan/i, "#16A34A"],
-  [/danau|kolam|sungai/i, "#0EA5E9"],
-  [/posyandu|puskesmas|klinik/i, "#E11D48"],
-  [/bank sampah/i, "#7C3AED"],
-  [/satpam|pos/i, "#1F2937"],
-  [/saung/i, "#D946EF"],
+  [/masjid|musholla|mushola/i, "#C4B5FD"],
+  [/taman|lapangan/i, "#4ADE80"],
+  [/posyandu|puskesmas|klinik/i, "#FDA4AF"],
+  [/bank sampah/i, "#E879F9"],
+  [/satpam|pos/i, "#000000"],
+  [/saung/i, "#FDE047"],
 ];
-const PALET_FAS = ["#EA580C", "#0F766E", "#BE185D", "#4338CA", "#A16207", "#0369A1"];
+const PALET_FAS = ["#D4D4D8", "#5EEAD4", "#FDBA74"];
 const warnaFasilitas = (nama, props, urutan) =>
   props.warna ||
   props.fill ||
@@ -314,12 +314,10 @@ export default function PetaRt() {
     }
     if (s.jenis === "blok") {
       const d = daftarBlok.find((x) => x.id === s.id);
-      const n = blokRef.current[s.id]?.layers.length ?? 1;
-      return d && { nama: `Blok ${d.nama}`, warna: d.warna, sub: n > 1 ? `Blok rumah · ${n} area` : "Blok rumah" };
+      return d && { nama: `Blok ${d.nama}`, warna: d.warna, sub: "Blok rumah" };
     }
     const d = daftarFas.find((x) => x.id === s.id);
-    const n = fasRef.current[s.id]?.length ?? 1;
-    return d && { nama: d.nama, warna: d.warna, sub: n > 1 ? `Fasilitas umum · ${n} lokasi` : "Fasilitas umum" };
+    return d && { nama: d.nama, warna: d.warna, sub: "Fasilitas umum" };
   };
   const info = infoDari(aktif ?? dipilih);
 
@@ -433,9 +431,6 @@ export default function PetaRt() {
                         <span className="lp-peta-swatch" style={{ background: d.warna }} />
                         <span className="lp-peta-item-teks">
                           <strong>Blok {d.nama}</strong>
-                          {(blokRef.current[d.id]?.layers.length ?? 1) > 1 && (
-                            <small>{blokRef.current[d.id].layers.length} area</small>
-                          )}
                         </span>
                       </button>
                     </li>

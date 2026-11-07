@@ -75,7 +75,6 @@ export default function BeriMasukan({ kegiatan }) {
   return (
     <form className="fb-panel" onSubmit={kirim}>
       <h4>{pernah ? "Masukan Anda" : "Bagaimana kegiatannya?"}</h4>
-      <p className="fb-sub">Masukan hanya dibaca pengurus.</p>
 
       <BintangInput value={rating} onChange={setRating} />
 
@@ -92,10 +91,12 @@ export default function BeriMasukan({ kegiatan }) {
       <label className="fb-anonim-cek">
         <input type="checkbox" checked={anonim} onChange={(e) => setAnonim(e.target.checked)} />
         <span>
-          Kirim sebagai anonim
-          <small>Nama Anda tidak ditampilkan ke pengurus.</small>
+          Kirim sebagai anonim{" "}
+          <small>(Nama Anda tidak ditampilkan)</small>
         </span>
       </label>
+
+      <p className="fb-sub fb-panel-info">Komentar Anda bisa tampil tanpa nama di halaman Riwayat Kegiatan.</p>
 
       <button type="submit" className="btn-primary" disabled={menyimpan}>
         {menyimpan ? "Mengirim..." : pernah ? "Simpan Perubahan" : "Kirim Masukan"}

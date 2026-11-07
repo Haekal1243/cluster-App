@@ -23,6 +23,7 @@ import { DaftarMandiriDto } from './dto/daftar-mandiri.dto';
 import { BayarIplDto } from './dto/bayar-ipl.dto';
 import { SetujuiPendaftaranDto } from './dto/setujui-pendaftaran.dto';
 import { TolakPendaftaranDto } from './dto/tolak-pendaftaran.dto';
+import { AjukanHapusDto } from './dto/ajukan-hapus.dto';
 import { buktiMulterOptions } from './bukti.multer';
 import { Access, RequirePermission } from '../auth/permission.decorators';
 import { Public } from '../auth/public.decorator';
@@ -190,6 +191,31 @@ export class WargaController {
   }
 
   // -------------------------------------------------------
+  // PENGAJUAN HAPUS AKUN — diajukan sekre RT, diputuskan RW
+  // -------------------------------------------------------
+  @Get('pengajuan-hapus')
+  @RequirePermission('warga', 'read')
+  getPengajuanHapus(@Access() ctx: AccessContext, @Query('status') status?: string) {
+    return this.wargaService.getPengajuanHapus(ctx, status);
+  }
+
+  @Patch('pengajuan-hapus/:id/setuju')
+  @RequirePermission('warga', 'approve_hapus')
+  setujuiHapus(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
+    return this.wargaService.setujuiHapus(ctx, id);
+  }
+
+  @Patch('pengajuan-hapus/:id/tolak')
+  @RequirePermission('warga', 'approve_hapus')
+  tolakHapus(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: TolakPendaftaranDto,
+  ) {
+    return this.wargaService.tolakHapus(ctx, id, dto.alasan);
+  }
+
+  // -------------------------------------------------------
   // Dengan :id — ditaruh paling bawah agar tidak menimpa route statis di atas
   // -------------------------------------------------------
   @Get(':id')
@@ -212,6 +238,17 @@ export class WargaController {
   @RequirePermission('warga', 'delete')
   remove(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
     return this.wargaService.remove(ctx, id);
+  }
+
+  /** Ajukan hapus akun warga yang sudah tidak tinggal di sini; menunggu persetujuan RW. */
+  @Post(':id/ajukan-hapus')
+  @RequirePermission('warga', 'ajukan_hapus')
+  ajukanHapus(
+    @Access() ctx: AccessContext,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AjukanHapusDto,
+  ) {
+    return this.wargaService.ajukanHapus(ctx, id, dto.alasan);
   }
 
   /** Pengurus RT membuatkan password sementara untuk warga yang lupa password. */

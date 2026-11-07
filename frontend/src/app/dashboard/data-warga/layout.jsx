@@ -17,7 +17,9 @@ export default function WargaLayout({ children }) {
   const isRumah = pathname?.includes("/blok-rumah");
   const isKelolaRumah = pathname?.includes("/kelola-rumah");
   const isPendaftaran = pathname?.includes("/pendaftaran");
-  const isDataWarga = !isRumah && !isKelolaRumah && !isPendaftaran;
+  const isPengajuanHapus = pathname?.includes("/pengajuan-hapus");
+  const isDataWarga = !isRumah && !isKelolaRumah && !isPendaftaran && !isPengajuanHapus;
+  const bolehLihatPengajuanHapus = can(user, "warga.approve_hapus") || can(user, "warga.ajukan_hapus");
 
   return (
     <div className="page-stack">
@@ -65,6 +67,16 @@ export default function WargaLayout({ children }) {
             className={`db-toggle-btn ${isPendaftaran ? "is-active" : ""}`}
           >
             Pendaftaran Masuk
+          </Link>
+        )}
+        {bolehLihatPengajuanHapus && (
+          <Link
+            href="/dashboard/data-warga/pengajuan-hapus"
+            role="tab"
+            aria-selected={isPengajuanHapus}
+            className={`db-toggle-btn ${isPengajuanHapus ? "is-active" : ""}`}
+          >
+            Pengajuan Hapus
           </Link>
         )}
       </div>

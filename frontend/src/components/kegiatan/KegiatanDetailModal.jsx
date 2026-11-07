@@ -4,9 +4,14 @@ import { Calendar } from "lucide-react";
 import { kegiatanApi } from "@/lib/api";
 import { formatTanggalLengkap as formatDate } from "@/lib/format";
 import BeriMasukan from "./BeriMasukan";
+import { can } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
 
 export default function KegiatanDetailModal({ kegiatan, onClose, tampilMasukan = false }) {
+  const { user } = useUser();
   if (!kegiatan) return null;
+  // Alasan penolakan RW hanya untuk pengurus (yang bisa mengelola kegiatan), bukan warga.
+  const bolehLihatAlasan = !!user && can(user, "kegiatan.update");
 
   return (
     <div className="ipl-modal-overlay" onClick={onClose}>
@@ -39,7 +44,7 @@ export default function KegiatanDetailModal({ kegiatan, onClose, tampilMasukan =
             </p>
           )}
 
-          {kegiatan.statusPengajuan === "DITOLAK" && kegiatan.alasanTolak && (
+          {bolehLihatAlasan && kegiatan.statusPengajuan === "DITOLAK" && kegiatan.alasanTolak && (
             <p className="portal-kegiatan-desc" style={{ whiteSpace: "pre-wrap" }}>
               <strong>Alasan ditolak:</strong> {kegiatan.alasanTolak}
             </p>

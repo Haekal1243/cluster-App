@@ -58,7 +58,10 @@ export default function WargaPage() {
 
   const bolehTambah = can(user, "warga.create");
   const bolehUbah = can(user, "warga.update");
-  const bolehHapus = can(user, "warga.delete");
+  const bolehHapusLangsung = can(user, "warga.delete");
+  // Tanpa hak hapus langsung (mis. sekre RT), tombol Hapus mengajukan ke RW dan baru terhapus setelah disetujui.
+  const bolehAjukanHapus = !bolehHapusLangsung && can(user, "warga.ajukan_hapus");
+  const bolehHapus = bolehHapusLangsung || bolehAjukanHapus;
   const bolehReset = can(user, "warga.reset_password");
   const bolehApprove = can(user, "warga.approve_registrasi");
   // Kolom/footer Aksi cuma ditampilin kalau role ini punya salah satu hak tulis;
@@ -157,16 +160,15 @@ export default function WargaPage() {
         const res = await wargaApi.create(payload);
         setWargaModal({ open: false, mode: "create", data: null });
         await loadData();
-        if (res.passwordAwal) {
-          await showCredentials({
-            title: "Akun warga dibuat",
-            nama: res.data?.namaUser,
-            username: res.data?.username,
-            password: res.passwordAwal,
-          });
-        } else {
-          showMessage("Berhasil", "Akun warga dan data rumah berhasil dibuat.", "success");
-        }
+        const rumahBaru = res.data?.rumah?.[0];
+        await showCredentials({
+          title: "Akun warga dibuat",
+          nama: res.data?.namaUser,
+          username: res.data?.username,
+          password: res.passwordAwal ?? payload.password,
+          blok: rumahBaru ? `${rumahBaru.blokRumah} · ${areaLabel(rumahBaru.rt)}` : undefined,
+          loginUrl: typeof window !== "undefined" ? `${window.location.origin}/login` : undefined,
+        });
         return;
       }
       setWargaModal({ open: false, mode: "create", data: null });
@@ -198,7 +200,29 @@ export default function WargaPage() {
     }
   };
 
+  const handleAjukanHapus = async (w) => {
+    const { value: alasan } = await Swal.fire({
+      title: `Ajukan hapus akun ${w.namaUser}?`,
+      text: "Pengajuan dikirim ke RW. Akun baru terhapus setelah RW menyetujui, dan rumahnya menjadi kosong.",
+      input: "textarea",
+      inputLabel: "Alasan",
+      inputPlaceholder: "Contoh: sudah pindah dan mengontrak di luar cluster",
+      showCancelButton: true,
+      confirmButtonText: "Kirim pengajuan",
+      cancelButtonText: "Batal",
+      inputValidator: (v) => (!v?.trim() ? "Alasan wajib diisi" : undefined),
+    });
+    if (!alasan) return;
+    try {
+      const res = await wargaApi.ajukanHapus(w.id, alasan.trim());
+      showMessage("Pengajuan Terkirim", res.message, "success");
+    } catch (error) {
+      showMessage("Gagal Mengajukan", error.message, "error");
+    }
+  };
+
   const handleDeleteWarga = async (w) => {
+    if (bolehAjukanHapus) return handleAjukanHapus(w);
     const ok = await showConfirm(
       "Hapus warga?",
       `Akun ${w.namaUser} akan dihapus.`,
@@ -423,7 +447,7 @@ export default function WargaPage() {
                                 </button>
                               )}
                               {bisaDiubah && bolehHapus && (
-                                <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus warga" onClick={() => handleDeleteWarga(w)}>
+                                <button type="button" className="btn-icon danger" title={bolehAjukanHapus ? "Ajukan hapus ke RW" : "Hapus"} aria-label="Hapus warga" onClick={() => handleDeleteWarga(w)}>
                                   <Trash2 size={15} />
                                 </button>
                               )}

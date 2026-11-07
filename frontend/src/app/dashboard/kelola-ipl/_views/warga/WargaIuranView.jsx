@@ -55,47 +55,47 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
           <button className="ipl-modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="ipl-modal-body">
+          {/* Bukti transfer (di atas data tagihan) */}
+          <div className="review-bukti-section">
+            <ProtectedImage path={buktiPath} alt="Bukti Transfer" className="review-bukti-img" />
+          </div>
+
           {/* Info tagihan */}
-          <div className="review-info-grid">
+          <div className="review-info-grid riwayat-info-grid">
             <div className="review-info-item">
               <span className="review-info-label">Unit</span>
+              <span className="review-info-sep" aria-hidden>:</span>
               <span className="review-info-value">
-                {ipl?.rumah ? `${ipl.rumah.blokRumah} · ${formatRt(ipl.rumah.rt)}` : `Rumah #${ipl?.idRumah}`}
+                {ipl?.rumah ? `${ipl.rumah.blokRumah} (${formatRt(ipl.rumah.rt)})` : `Rumah #${ipl?.idRumah}`}
               </span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Periode</span>
+              <span className="review-info-sep" aria-hidden>:</span>
               <span className="review-info-value">{getMonthLabel(ipl?.bulanPeriode, ipl?.tahunPeriode)}</span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Nominal Tagihan</span>
+              <span className="review-info-sep" aria-hidden>:</span>
               <span className="review-info-value review-nominal">{rupiah(ipl?.nominal)}</span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Nominal Dibayar</span>
+              <span className="review-info-sep" aria-hidden>:</span>
               <span className="review-info-value">{pembayaran ? rupiah(pembayaran.nominal) : "-"}</span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Tanggal Bayar</span>
+              <span className="review-info-sep" aria-hidden>:</span>
               <span className="review-info-value">{formatTanggal(pembayaran?.tanggalBayar)}</span>
             </div>
             <div className="review-info-item">
               <span className="review-info-label">Status</span>
+              <span className="review-info-sep" aria-hidden>:</span>
               <span className="review-info-value"><WargaStatusBadge status={ipl?.statusPembayaran} /></span>
             </div>
           </div>
 
-          {/* Bukti transfer */}
-          <div className="review-bukti-section">
-            <p className="review-bukti-label">Bukti Transfer</p>
-            <ProtectedImage path={buktiPath} alt="Bukti Transfer" className="review-bukti-img" />
-          </div>
-
-          <div className="ipl-modal-footer">
-            <button type="button" className="btn-ipl-secondary" onClick={onClose}>
-              Tutup
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -506,15 +506,18 @@ export function WargaIuranView({ user }) {
             <div className="iuran-grid">
               {riwayatPage.map((ipl) => {
                 const bisaRiwayat = ipl.statusPembayaran === "LUNAS" && !!ipl.pembayaran?.[0];
+                const bisaBayar = ipl.statusPembayaran === "BELUM_LUNAS";
+                // Kartu belum lunas: klik membuka pop up bayar. Kartu lunas: klik membuka riwayat transaksi.
+                const aksiKartu = bisaBayar ? () => setModalIpl(ipl) : bisaRiwayat ? () => setRiwayatIpl(ipl) : null;
                 return (
                 <div
                   key={ipl.id}
-                  className={`iuran-grid-card${bisaRiwayat ? " card-clickable" : ""}`}
-                  {...(bisaRiwayat && {
+                  className={`iuran-grid-card${aksiKartu ? " card-clickable" : ""}`}
+                  {...(aksiKartu && {
                     role: "button",
                     tabIndex: 0,
-                    onClick: () => setRiwayatIpl(ipl),
-                    onKeyDown: (e) => { if (e.key === "Enter") setRiwayatIpl(ipl); },
+                    onClick: aksiKartu,
+                    onKeyDown: (e) => { if (e.key === "Enter") aksiKartu(); },
                   })}
                 >
                   <h3 className="iuran-grid-title">
@@ -527,17 +530,6 @@ export function WargaIuranView({ user }) {
                     </span>
                   )}
                   <div className="iuran-grid-footer">
-                    {ipl.statusPembayaran === "BELUM_LUNAS" ? (
-                      <button
-                        type="button"
-                        className="btn-primary btn-sm"
-                        onClick={(e) => { e.stopPropagation(); setModalIpl(ipl); }}
-                      >
-                        <Upload size={12} /> Bayar
-                      </button>
-                    ) : (
-                      <span />
-                    )}
                     <WargaStatusBadge status={ipl.statusPembayaran} />
                   </div>
                 </div>

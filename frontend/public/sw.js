@@ -24,12 +24,21 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      data: { url: data.url || "/" },
-    }),
+    (async () => {
+      // Bunyi: saat aplikasi tidak terbuka, bunyi ditentukan HP (nada notifikasi bawaan) selama
+      // silent:false; web push tidak bisa memasang nada kustom. Saat aplikasi terbuka, halaman
+      // diberi tahu supaya memutar nada sendiri (lihat lib/notifSound.js).
+      await self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        data: { url: data.url || "/" },
+        silent: false,
+        vibrate: [200, 100, 200],
+      });
+      const klien = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      klien.forEach((c) => c.postMessage({ type: "push-masuk" }));
+    })(),
   );
 });
 

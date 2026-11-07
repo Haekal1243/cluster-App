@@ -157,6 +157,12 @@ export const wargaApi = {
   remove: (id) => request(`/warga/${id}`, { method: "DELETE" }),
   resetPassword: (id) => request(`/warga/${id}/reset-password`, { method: "POST" }),
 
+  // Pengajuan hapus akun: diajukan sekre RT, diputuskan RW.
+  ajukanHapus: (id, alasan) => request(`/warga/${id}/ajukan-hapus`, json("POST", { alasan })),
+  getPengajuanHapus: (status) => request(`/warga/pengajuan-hapus${qs({ status })}`),
+  setujuiHapus: (id) => request(`/warga/pengajuan-hapus/${id}/setuju`, { method: "PATCH" }),
+  tolakHapus: (id, alasan) => request(`/warga/pengajuan-hapus/${id}/tolak`, json("PATCH", { alasan })),
+
   // Rumah / blok
   getAllRumah: () => request("/warga/rumah/list"),
   createRumah: (payload) => request("/warga/rumah", json("POST", payload)),

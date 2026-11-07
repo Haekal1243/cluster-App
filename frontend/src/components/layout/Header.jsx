@@ -7,6 +7,7 @@ import { notifikasiApi } from "@/lib/api";
 import { areaLabel } from "@/lib/session";
 import { pageTitle } from "@/lib/nav";
 import { useUser } from "@/lib/useUser";
+import { aktifkanBunyiNotif, bunyiNotif } from "@/lib/notifSound";
 
 const POLL_INTERVAL_MS = 45 * 1000;
 
@@ -61,14 +62,42 @@ export default function Header({ onMenuClick }) {
 
   useEffect(() => {
     let cancelled = false;
+    let sudahMuat = false; // muatan pertama tidak dibunyikan, hanya notifikasi baru sesudahnya
+    const dilihat = new Set();
     const load = () => {
+      if (document.hidden) return; // tab tidak dilihat: lewati, hemat request ke server
       notifikasiApi.getAll()
-        .then((data) => { if (!cancelled) setNotifications(data || []); })
+        .then((data) => {
+          if (cancelled) return;
+          const list = data || [];
+          const baru = list.some((n) => !n.isRead && !dilihat.has(n.id));
+          list.forEach((n) => dilihat.add(n.id));
+          if (sudahMuat && baru) bunyiNotif();
+          sudahMuat = true;
+          setNotifications(list);
+        })
         .catch(() => {});
     };
     load();
     const interval = setInterval(load, POLL_INTERVAL_MS);
-    return () => { cancelled = true; clearInterval(interval); };
+    // Push masuk saat aplikasi terbuka: service worker mengabari halaman, lalu halaman membunyikan nada.
+    const onPesanSw = (e) => {
+      if (e.data?.type === "push-masuk") {
+        bunyiNotif();
+        load();
+      }
+    };
+    const onTampil = () => { if (!document.hidden) load(); }; // kembali ke tab: langsung segarkan
+    document.addEventListener("visibilitychange", onTampil);
+    navigator.serviceWorker?.addEventListener("message", onPesanSw);
+    const lepasBunyi = aktifkanBunyiNotif();
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onTampil);
+      navigator.serviceWorker?.removeEventListener("message", onPesanSw);
+      lepasBunyi();
+    };
   }, []);
 
   useEffect(() => {

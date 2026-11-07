@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, KeyRound, LogOut, UserRound } from "lucide-react";
+import { ChevronRight, KeyRound, LogOut } from "lucide-react";
 import GantiPasswordModal from "@/components/auth/GantiPasswordModal";
 import { areaLabel, clearSession, pakaiMenuBawah } from "@/lib/session";
 import { showConfirm } from "@/lib/message";
@@ -32,7 +32,6 @@ export default function PengaturanPage() {
   return (
     <div className="page-stack">
       <div className="pengaturan-profil">
-        <span className="pengaturan-avatar" aria-hidden="true"><UserRound size={26} /></span>
         <div>
           <strong>{user.nama}</strong>
           <span>{user.roleNama}{user.area ? ` · ${areaLabel(user.area)}` : ""}</span>

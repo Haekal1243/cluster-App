@@ -36,6 +36,9 @@ export function PengurusStatusBadge({ status }) {
   const { label, cls } = map[status] || { label: status, cls: "" };
   return <span className={`ipl-badge ${cls}`}>{label}</span>;
 }
+/** Tanggal bawaan jatuh tempo: tanggal 10 di bulan periode (format YYYY-MM-DD untuk input date). */
+const jatuhTempoBawaan = (bulan, tahun) => `${tahun}-${bulan}-10`;
+
 // ── Modal: Generate Tagihan (2 input: IPL + kas RT) ───────────────────────────
 function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
   const now = new Date();
@@ -44,8 +47,16 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
     tahunPeriode: String(now.getFullYear()),
     nominalIpl: "",
     nominalKas: "",
+    jatuhTempo: jatuhTempoBawaan(String(now.getMonth() + 1).padStart(2, "0"), String(now.getFullYear())),
     rt: "RT_01",
   });
+  // Selama belum diubah manual, jatuh tempo ikut bulan/tahun yang dipilih.
+  const [jatuhTempoDiubah, setJatuhTempoDiubah] = useState(false);
+  const ubahPeriode = (patch) => {
+    const next = { ...form, ...patch };
+    if (!jatuhTempoDiubah) next.jatuhTempo = jatuhTempoBawaan(next.bulanPeriode, next.tahunPeriode);
+    setForm(next);
+  };
   const [loading, setLoading] = useState(false);
 
   const total = (Number(form.nominalIpl) || 0) + (Number(form.nominalKas) || 0);
@@ -60,9 +71,13 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
       showMessage("Validasi", "Nominal kas tidak boleh negatif.", "warning");
       return;
     }
+    if (!form.jatuhTempo) {
+      showMessage("Validasi", "Tanggal jatuh tempo wajib diisi.", "warning");
+      return;
+    }
     const confirmed = await showConfirm(
       "Buat Tagihan?",
-      `Tagihan ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode} sebesar ${formatRupiah(total)} per rumah.`,
+      `Tagihan ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode} sebesar ${formatRupiah(total)} per rumah, jatuh tempo ${formatTanggal(form.jatuhTempo)}.`,
       "question",
       "Ya, Buat!"
     );
@@ -75,6 +90,7 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
         tahunPeriode: form.tahunPeriode,
         nominalIpl: Number(form.nominalIpl),
         nominalKas: Number(form.nominalKas || 0),
+        jatuhTempo: form.jatuhTempo,
         ...(pilihRt ? { rt: form.rt } : {}),
       });
       showMessage("Berhasil!", res.message, "success");
@@ -111,7 +127,7 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
               <label>Bulan</label>
               <Select
                 value={form.bulanPeriode}
-                onChange={(v) => setForm({ ...form, bulanPeriode: v })}
+                onChange={(v) => ubahPeriode({ bulanPeriode: v })}
                 className="ipl-select"
                 options={BULAN_OPTIONS.map(({ val, label }) => ({ value: val, label }))}
               />
@@ -120,7 +136,7 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
               <label>Tahun</label>
               <Select
                 value={form.tahunPeriode}
-                onChange={(v) => setForm({ ...form, tahunPeriode: v })}
+                onChange={(v) => ubahPeriode({ tahunPeriode: v })}
                 className="ipl-select"
                 options={TAHUN_OPTIONS.map((y) => ({ value: y, label: y }))}
               />
@@ -144,6 +160,19 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
                 onChange={(v) => setForm({ ...form, nominalKas: v })}
               />
             </div>
+          </div>
+          <div className="ipl-form-group">
+            <label>Jatuh tempo <span className="label-optional">warga diingatkan tiap hari sejak tanggal ini bila belum bayar</span></label>
+            <input
+              type="date"
+              className="ipl-input"
+              value={form.jatuhTempo}
+              onChange={(e) => {
+                setJatuhTempoDiubah(true);
+                setForm({ ...form, jatuhTempo: e.target.value });
+              }}
+              required
+            />
           </div>
           <div className="ipl-total-box">
             <span>Total yang dibayar warga</span>

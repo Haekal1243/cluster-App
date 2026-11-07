@@ -28,16 +28,19 @@ export const showConfirm = (
 };
 
 /** Tampilkan kredensial sementara (username + password) supaya pengurus bisa menyampaikannya ke warga. */
-export const showCredentials = ({ title, nama, username, password, catatan }) => {
+export const showCredentials = ({ title, nama, username, password, catatan, blok, loginUrl }) => {
   const esc = (v) =>
     String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  // Satu kartu rapi berisi semua yang dibutuhkan warga, supaya cukup di-screenshot lalu dikirim.
   return Swal.fire({
     title,
     icon: "success",
-    confirmButtonText: "Sudah saya catat",
+    confirmButtonText: "Sudah saya kirim / catat",
     html:
       `<div style="text-align:left;font-size:0.92rem;line-height:1.7">` +
       (nama ? `<div><span style="color:#64748b">Nama</span><br/><b>${esc(nama)}</b></div>` : "") +
+      (blok ? `<div style="margin-top:6px"><span style="color:#64748b">Blok rumah</span><br/><b>${esc(blok)}</b></div>` : "") +
+      (loginUrl ? `<div style="margin-top:6px"><span style="color:#64748b">Alamat portal</span><br/><b>${esc(loginUrl)}</b></div>` : "") +
       (username ? `<div style="margin-top:6px"><span style="color:#64748b">Nama pengguna</span><br/><b>${esc(username)}</b></div>` : "") +
       `<div style="margin-top:6px"><span style="color:#64748b">Kata sandi sementara</span><br/>` +
       `<code style="font-size:1.15rem;background:#f1f5f9;padding:4px 10px;border-radius:6px;user-select:all">${esc(password)}</code></div>` +

@@ -64,7 +64,6 @@ export default function Footer() {
 
         <div className="lp-footer-bottom">
           <div className="tz-footer-kecil">© 2026 RW 21 Cluster Topaz, Permata Cimanggis. Hak cipta dilindungi.</div>
-          <div className="tz-footer-kecil">Portal Administrasi Warga - Kota Depok, Jawa Barat</div>
         </div>
       </div>
     </footer>

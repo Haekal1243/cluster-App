@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Home, Megaphone, GalleryHorizontal, Layers, Map as MapIcon, MessageCircle, Phone, LogIn } from "lucide-react";
+import { Menu, X, Home, Megaphone, GalleryHorizontal, Layers, Map as MapIcon, LogIn } from "lucide-react";
 import LogoTopaz from "@/assets/LogoTopaz.svg";
 import { navLinks } from "@/lib/landing-data";
 import LinkMasuk from "./LinkMasuk";
@@ -15,8 +15,6 @@ const NAV_ICONS = {
   "/landingpage/riwayat-kegiatan": GalleryHorizontal,
   "#layanan": Layers,
   "#peta": MapIcon,
-  "#pengaduan": MessageCircle,
-  "#kontak": Phone,
 };
 
 export default function Navbar() {

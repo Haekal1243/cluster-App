@@ -51,13 +51,13 @@ export function BillSummaryCard({
 
       <div className="relative">
         {/* Chip row */}
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
-            <Home size={13} />
+        <div className="flex flex-wrap gap-x-1.5 gap-y-1.5 sm:gap-2">
+          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600 sm:gap-1.5 sm:px-3 sm:text-xs">
+            <Home size={12} className="shrink-0" />
             {unitLabel}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
-            <Calendar size={13} />
+          <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600 sm:gap-1.5 sm:px-3 sm:text-xs">
+            <Calendar size={12} className="shrink-0" />
             {periodLabel}
           </span>
         </div>

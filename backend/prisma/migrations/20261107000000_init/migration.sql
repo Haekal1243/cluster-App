@@ -1,64 +1,3 @@
--- RBAC berbasis database, area RW/RT, blok rumah bersatus, tagihan IPL + kas,
--- setoran RT ke RW, catatan rapat, dan alur pengajuan kegiatan/pengumuman.
---
--- PERHATIAN: migrasi ini MENGHAPUS DAN MEMBUAT ULANG tabel user, rumah, IPL, kegiatan,
--- pengumuman, pengaduan, dan notifikasi (rename ke prefix tb_ dan kolom wajib baru).
--- Seluruh isi tabel-tabel itu hilang. Sesuai keputusan: data yang ada hanya data
--- percobaan dan dibuat ulang lewat npx prisma db seed. Jangan jalankan di DB berisi
--- data asli.
---
--- Catatan: nama tabel lama tampil huruf kecil karena MySQL di Windows meng-lowercase
--- nama tabel, jadi Prisma membacanya sebagai tabel berbeda dari tb_User dst.
-
--- DropForeignKey
-ALTER TABLE `notifikasi` DROP FOREIGN KEY `Notifikasi_idUser_fkey`;
-
--- DropForeignKey
-ALTER TABLE `pengaduan` DROP FOREIGN KEY `Pengaduan_idUser_fkey`;
-
--- DropForeignKey
-ALTER TABLE `tb_rumah` DROP FOREIGN KEY `tb_Rumah_id_user_fkey`;
-
--- DropForeignKey
-ALTER TABLE `trx_ipl` DROP FOREIGN KEY `trx_IPL_Id_rumah_fkey`;
-
--- DropForeignKey
-ALTER TABLE `trx_pembayaran_ipl` DROP FOREIGN KEY `trx_pembayaran_ipl_Id_IPL_fkey`;
-
--- DropForeignKey
-ALTER TABLE `trx_pembayaran_ipl` DROP FOREIGN KEY `trx_pembayaran_ipl_id_user_fkey`;
-
--- Riwayat pembayaran lama mengacu ke user/tagihan yang ikut dihapus di bawah;
--- dibersihkan supaya foreign key baru bisa dipasang.
-DELETE FROM `trx_pembayaran_ipl`;
-
--- AlterTable
-ALTER TABLE `trx_kas` ADD COLUMN `area` ENUM('RW', 'RT_01', 'RT_02', 'RT_03', 'RT_04') NOT NULL DEFAULT 'RW';
-
--- DropTable
-DROP TABLE `kegiatan`;
-
--- DropTable
-DROP TABLE `notifikasi`;
-
--- DropTable
-DROP TABLE `pengaduan`;
-
--- DropTable
-DROP TABLE `tb_pengumuman`;
-
--- DropTable
-DROP TABLE `tb_role_permission`;
-
--- DropTable
-DROP TABLE `tb_rumah`;
-
--- DropTable
-DROP TABLE `tb_user`;
-
--- DropTable
-DROP TABLE `trx_ipl`;
-
 -- CreateTable
 CREATE TABLE `tb_Role` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
@@ -113,6 +52,19 @@ CREATE TABLE `tb_AuditLog` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `tb_File` (
+    `id` VARCHAR(36) NOT NULL,
+    `nama_asli` VARCHAR(191) NOT NULL,
+    `mime_type` VARCHAR(191) NOT NULL,
+    `ukuran` INTEGER NOT NULL,
+    `publik` BOOLEAN NOT NULL DEFAULT false,
+    `data` LONGBLOB NOT NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `tb_User` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `nama_user` VARCHAR(191) NOT NULL,
@@ -120,6 +72,8 @@ CREATE TABLE `tb_User` (
     `email` VARCHAR(191) NULL,
     `password` VARCHAR(191) NOT NULL,
     `no_telp` VARCHAR(191) NULL,
+    `foto` VARCHAR(191) NULL,
+    `kontak_publik` VARCHAR(191) NULL,
     `role_id` INTEGER NOT NULL,
     `area` ENUM('RW', 'RT_01', 'RT_02', 'RT_03', 'RT_04') NULL,
     `wajib_ganti_password` BOOLEAN NOT NULL DEFAULT false,
@@ -162,6 +116,20 @@ CREATE TABLE `trx_IPL` (
 
     INDEX `trx_IPL_setoran_id_idx`(`setoran_id`),
     PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `trx_pembayaran_ipl` (
+    `id_pembayaran` INTEGER NOT NULL AUTO_INCREMENT,
+    `id_user` INTEGER NOT NULL,
+    `Id_IPL` INTEGER NOT NULL,
+    `tanggal_bayar` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `tanggal_konfirmasi` DATETIME(3) NULL,
+    `bukti_transaksi` VARCHAR(191) NULL,
+    `Nominal` INTEGER NOT NULL,
+    `catatan` VARCHAR(191) NULL,
+
+    PRIMARY KEY (`id_pembayaran`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -210,7 +178,7 @@ CREATE TABLE `tb_Pengumuman` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `judul_pengumuman` VARCHAR(191) NOT NULL,
     `file_pengumuman` VARCHAR(191) NULL,
-    `keterangan_pengumuman` TEXT NULL,
+    `keterangan_pengumuman` TEXT NOT NULL,
     `status` ENUM('active', 'unactived') NOT NULL DEFAULT 'active',
     `area` ENUM('RW', 'RT_01', 'RT_02', 'RT_03', 'RT_04') NOT NULL DEFAULT 'RW',
     `status_pengajuan` ENUM('TIDAK', 'DIAJUKAN', 'DISETUJUI', 'DITOLAK') NOT NULL DEFAULT 'TIDAK',
@@ -231,7 +199,7 @@ CREATE TABLE `tb_CatatanRapat` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `area` ENUM('RW', 'RT_01', 'RT_02', 'RT_03', 'RT_04') NOT NULL,
     `judul` VARCHAR(191) NOT NULL,
-    `isi_notulen` TEXT NOT NULL,
+    `isi_notulen` TEXT NULL,
     `file_notulen` VARCHAR(191) NULL,
     `is_delete` BOOLEAN NOT NULL DEFAULT false,
     `create_by` VARCHAR(191) NULL,
@@ -254,10 +222,33 @@ CREATE TABLE `tb_Pengaduan` (
     `status` ENUM('MENUNGGU', 'DIPROSES', 'SELESAI', 'DITOLAK') NOT NULL DEFAULT 'MENUNGGU',
     `tanggapan` TEXT NULL,
     `tanggapanBy` VARCHAR(191) NULL,
+    `tujuan` ENUM('RW', 'RT_01', 'RT_02', 'RT_03', 'RT_04') NOT NULL,
+    `diteruskanAt` DATETIME(3) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NULL,
     `isDelete` BOOLEAN NOT NULL DEFAULT false,
 
+    INDEX `tb_Pengaduan_tujuan_status_idx`(`tujuan`, `status`),
+    INDEX `tb_Pengaduan_status_createdAt_idx`(`status`, `createdAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `tb_PendaftaranWarga` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `namaUser` VARCHAR(191) NOT NULL,
+    `noTelp` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NULL,
+    `password` VARCHAR(191) NOT NULL,
+    `rt` ENUM('RT_01', 'RT_02', 'RT_03', 'RT_04') NOT NULL,
+    `rumahId` INTEGER NOT NULL,
+    `status` ENUM('PENDING', 'DISETUJUI', 'DITOLAK') NOT NULL DEFAULT 'PENDING',
+    `alasanTolak` VARCHAR(191) NULL,
+    `diprosesOleh` VARCHAR(191) NULL,
+    `diprosesAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `tb_PendaftaranWarga_rt_status_idx`(`rt`, `status`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -265,18 +256,49 @@ CREATE TABLE `tb_Pengaduan` (
 CREATE TABLE `tb_Notifikasi` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `idUser` INTEGER NOT NULL,
-    `tipe` ENUM('TAGIHAN_BARU', 'PEMBAYARAN_DIKONFIRMASI', 'PEMBAYARAN_DITOLAK', 'PEMBAYARAN_MASUK', 'PENGADUAN_BARU', 'PENGADUAN_DITANGGAPI', 'PENGUMUMAN_BARU', 'KEGIATAN_BARU', 'SETORAN_MASUK', 'SETORAN_DIKONFIRMASI', 'SETORAN_DITOLAK', 'PENGAJUAN_MASUK', 'PENGAJUAN_DISETUJUI', 'PENGAJUAN_DITOLAK') NOT NULL,
+    `tipe` ENUM('TAGIHAN_BARU', 'PEMBAYARAN_DIKONFIRMASI', 'PEMBAYARAN_DITOLAK', 'PEMBAYARAN_MASUK', 'PENGADUAN_BARU', 'PENGADUAN_DITANGGAPI', 'PENGADUAN_DITERUSKAN', 'PENDAFTARAN_BARU', 'PENGUMUMAN_BARU', 'KEGIATAN_BARU', 'SETORAN_MASUK', 'SETORAN_DIKONFIRMASI', 'SETORAN_DITOLAK', 'PENGAJUAN_MASUK', 'PENGAJUAN_DISETUJUI', 'PENGAJUAN_DITOLAK', 'PERUBAHAN_DATA') NOT NULL,
     `judul` VARCHAR(191) NOT NULL,
     `pesan` TEXT NOT NULL,
     `link` VARCHAR(191) NULL,
     `isRead` BOOLEAN NOT NULL DEFAULT false,
+    `read_at` DATETIME(3) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    INDEX `tb_Notifikasi_isRead_read_at_idx`(`isRead`, `read_at`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- CreateIndex
-CREATE INDEX `trx_kas_area_idx` ON `trx_kas`(`area`);
+-- CreateTable
+CREATE TABLE `tb_PushSubscription` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `idUser` INTEGER NOT NULL,
+    `endpoint` VARCHAR(512) NOT NULL,
+    `p256dh` VARCHAR(255) NOT NULL,
+    `auth` VARCHAR(255) NOT NULL,
+    `user_agent` VARCHAR(191) NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `tb_PushSubscription_idUser_endpoint_key`(`idUser`, `endpoint`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `trx_kas` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `tipe` ENUM('PEMASUKAN', 'PENGELUARAN') NOT NULL,
+    `area` ENUM('RW', 'RT_01', 'RT_02', 'RT_03', 'RT_04') NOT NULL DEFAULT 'RW',
+    `kategori` VARCHAR(191) NOT NULL,
+    `nominal` INTEGER NOT NULL,
+    `tanggal` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `keterangan` TEXT NULL,
+    `bukti_file` VARCHAR(191) NULL,
+    `create_by` VARCHAR(191) NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updated_at` DATETIME(3) NULL,
+
+    INDEX `trx_kas_area_idx`(`area`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
 ALTER TABLE `tb_Role_permission` ADD CONSTRAINT `tb_Role_permission_role_id_fkey` FOREIGN KEY (`role_id`) REFERENCES `tb_Role`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -306,5 +328,11 @@ ALTER TABLE `trx_pembayaran_ipl` ADD CONSTRAINT `trx_pembayaran_ipl_Id_IPL_fkey`
 ALTER TABLE `tb_Pengaduan` ADD CONSTRAINT `tb_Pengaduan_idUser_fkey` FOREIGN KEY (`idUser`) REFERENCES `tb_User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `tb_PendaftaranWarga` ADD CONSTRAINT `tb_PendaftaranWarga_rumahId_fkey` FOREIGN KEY (`rumahId`) REFERENCES `tb_Rumah`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `tb_Notifikasi` ADD CONSTRAINT `tb_Notifikasi_idUser_fkey` FOREIGN KEY (`idUser`) REFERENCES `tb_User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `tb_PushSubscription` ADD CONSTRAINT `tb_PushSubscription_idUser_fkey` FOREIGN KEY (`idUser`) REFERENCES `tb_User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 

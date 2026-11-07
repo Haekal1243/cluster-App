@@ -27,3 +27,6 @@ PERUBAHAN-22-SEP-2026.md
 RENCANA-KEAMANAN-CYBER.md
 RENCANA-PERBAIKAN-SISTEM.md
 UAT-CHECKLIST.md
+
+# backup migrasi lama (lokal saja)
+backend/prisma/migrations_old_local/

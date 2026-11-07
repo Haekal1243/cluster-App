@@ -2,25 +2,30 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
+  Max,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { Area, TipeKas } from '@prisma/client';
 
 export class CreateKasDto {
   @IsEnum(TipeKas, { message: 'tipe harus PEMASUKAN atau PENGELUARAN' })
   tipe: TipeKas;
 
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @IsNotEmpty({ message: 'kategori wajib diisi' })
   @MaxLength(60)
   kategori: string;
 
   @Type(() => Number)
   @IsInt()
   @IsPositive({ message: 'nominal harus lebih dari 0' })
+  @Max(1_000_000_000, { message: 'nominal terlalu besar (maksimal Rp 1.000.000.000)' })
   nominal: number;
 
   @IsDateString({}, { message: 'tanggal harus format ISO, contoh 2026-09-15' })
@@ -28,6 +33,7 @@ export class CreateKasDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   keterangan?: string;
 
   /** Hanya untuk user ber-scope ALL (mis. admin). Selain itu area otomatis dari jabatan. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Plus, Search, Wallet, TrendingUp, TrendingDown, Scale, PiggyBank, Eye, Pencil, Trash2, Download, ChevronDown } from "lucide-react";
+import { Plus, Search, Wallet, TrendingUp, TrendingDown, Calendar, Scale, PiggyBank, Eye, Pencil, Trash2, Download, ChevronDown } from "lucide-react";
 import { keuanganApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -12,6 +12,7 @@ import { usePagination } from "@/lib/usePagination";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { formatRupiah, formatTanggalPendek as formatTanggal, getCurrentYm, formatYmPendek, formatYmPanjang as formatYmLengkap } from "@/lib/format";
 import { KATEGORI_MASUK, KATEGORI_KELUAR, TIPE_FILTER_OPTIONS, KasTipeBadge, getBuktiPath, ArusKasChart, KasFormModal } from "../shared/KeuanganShared";
+import FitText from "@/components/ui/FitText";
 
 // ── Keuangan per wilayah (area terkunci dari route) ─────────────────────────────
 // areaTetap: RW / RT_0x = kunci ke kas itu (pengurus). null = bebas pilih (akun area-null scope ALL).
@@ -289,28 +290,28 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
             <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
             <div className="keu-card-text">
               <span className="ipl-summary-label">Saldo Kas Saat Ini</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoKas)}</span>
+              <FitText>{formatRupiah(ringkasan.saldoKas)}</FitText>
             </div>
           </div>
           <div className="ipl-summary-card keu-card keu-green">
             <div className="keu-icon-circle"><TrendingUp size={22} strokeWidth={2} /></div>
             <div className="keu-card-text">
               <span className="ipl-summary-label">Pemasukan Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPemasukan)}</span>
+              <FitText>{formatRupiah(ringkasan.totalPemasukan)}</FitText>
             </div>
           </div>
           <div className="ipl-summary-card keu-card keu-red">
             <div className="keu-icon-circle"><TrendingDown size={22} strokeWidth={2} /></div>
             <div className="keu-card-text">
               <span className="ipl-summary-label">Pengeluaran Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.totalPengeluaran)}</span>
+              <FitText>{formatRupiah(ringkasan.totalPengeluaran)}</FitText>
             </div>
           </div>
           <div className="ipl-summary-card keu-card keu-purple">
             <div className="keu-icon-circle"><Scale size={22} strokeWidth={2} /></div>
             <div className="keu-card-text">
               <span className="ipl-summary-label">Selisih Periode</span>
-              <span className="ipl-summary-value">{formatRupiah(ringkasan.saldoPeriode)}</span>
+              <FitText>{formatRupiah(ringkasan.saldoPeriode)}</FitText>
             </div>
           </div>
         </div>
@@ -556,10 +557,12 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
                       {buktiPath ? (
                         <button
                           type="button"
-                          className="btn-ipl-view"
+                          className="btn-icon"
+                          title="Lihat bukti"
+                          aria-label="Lihat bukti"
                           onClick={() => openProtectedFile(buktiPath)}
                         >
-                          <Eye size={14} /> Lihat
+                          <Eye size={14} />
                         </button>
                       ) : (
                         <span className="text-muted">-</span>
@@ -609,12 +612,26 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
               const canEdit = (isManual || isIplKas) && bolehUbah;
               const canDelete = (isManual || isIplKas) && bolehHapus;
               return (
-                <div key={t.id} className="pengaduan-card" style={{ cursor: "default" }}>
+                <div
+                  key={t.id}
+                  className="pengaduan-card"
+                  {...(buktiPath
+                    ? {
+                        role: "button",
+                        tabIndex: 0,
+                        onClick: () => openProtectedFile(buktiPath),
+                        onKeyDown: (e) => { if (e.key === "Enter") openProtectedFile(buktiPath); },
+                      }
+                    : {})}
+                  style={buktiPath ? undefined : { cursor: "default" }}
+                >
                   <div className="pengaduan-card-top">
-                    <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>{t.kategori}</h3>
+                    <div className="kas-card-top-left">
+                      <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>{t.kategori}</h3>
+                      <span className="meta-item kas-card-date"><Calendar size={12} /> {formatTanggal(t.tanggal)}</span>
+                    </div>
                     <div className="kas-card-top-right">
                       <KasTipeBadge tipe={t.tipe} />
-                      <span className="pengaduan-meta-item">{formatTanggal(t.tanggal)}</span>
                     </div>
                   </div>
                   {semuaArea && (
@@ -627,12 +644,7 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
                     <span style={{ fontWeight: 700, color: t.tipe === "PEMASUKAN" ? "#15803d" : "#dc2626" }}>
                       {t.tipe === "PEMASUKAN" ? "+" : "−"}{formatRupiah(t.nominal)}
                     </span>
-                    <div className="table-actions">
-                      {buktiPath && (
-                        <button type="button" className="btn-icon" onClick={() => openProtectedFile(buktiPath)} aria-label="Lihat bukti" title="Lihat bukti">
-                          <Eye size={15} />
-                        </button>
-                      )}
+                    <div className="table-actions" onClick={(e) => e.stopPropagation()}>
                       {canEdit && (
                         <button type="button" className="btn-icon" onClick={() => { setEditItem(t); setShowForm(true); }} aria-label="Ubah transaksi" title="Ubah transaksi">
                           <Pencil size={15} />
@@ -666,4 +678,4 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
       )}
     </div>
   );
-}
+}

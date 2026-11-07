@@ -15,6 +15,7 @@ import {
   belumLewatBatasTampil,
   tampilKeSemua,
   tampilSampaiDari,
+  assertBolehUbahKonten,
   visibilitasKelolaWhere,
   visibilitasWhere,
 } from '../common/publikasi.helper';
@@ -139,6 +140,7 @@ export class PengumumanService {
       throw new NotFoundException(`Pengumuman dengan ID ${id} tidak ditemukan`);
     }
     assertInArea(ctx, pengumuman.area);
+    assertBolehUbahKonten(ctx, pengumuman);
     return pengumuman;
   }
 

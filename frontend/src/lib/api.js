@@ -32,7 +32,9 @@ async function request(path, options = {}) {
   return body;
 }
 
-/** Unduh file yang dilindungi (butuh login), lalu buka di tab baru. */
+export const PROTECTED_FILE_EVENT = "protected-file:open";
+
+/** Unduh file yang dilindungi (butuh login), lalu tampilkan di pop up (ProtectedFileViewer). */
 export async function openProtectedFile(path) {
   const token = getToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -44,8 +46,7 @@ export async function openProtectedFile(path) {
   }
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
-  window.open(url, "_blank", "noopener");
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  window.dispatchEvent(new CustomEvent(PROTECTED_FILE_EVENT, { detail: { url, type: blob.type } }));
 }
 
 /** URL file publik (foto/gambar/lampiran); isinya disimpan di database, bukan folder statis. */
@@ -135,6 +136,14 @@ export const kegiatanApi = {
 
   ajukan: (id) => request(`/kegiatan/${id}/ajukan`, { method: "POST" }),
   putuskanPengajuan: (id, payload) => request(`/kegiatan/${id}/pengajuan`, json("PATCH", payload)),
+
+  // Masukan warga
+  feedbackRekap: () => request("/kegiatan/feedback/rekap"),
+  feedbackDaftar: (id) => request(`/kegiatan/${id}/feedback`),
+  feedbackBisaDiberi: () => request("/kegiatan/feedback/bisa-diberi"),
+  feedbackBeri: (id, payload) => request(`/kegiatan/${id}/feedback`, json("PUT", payload)),
+  feedbackSembunyi: (id, disembunyikan) =>
+    request(`/kegiatan/feedback/${id}/sembunyi`, json("PATCH", { disembunyikan })),
 
   imageUrl: fileUrl,
 };

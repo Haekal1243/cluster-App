@@ -30,3 +30,14 @@ UAT-CHECKLIST.md
 
 # backup migrasi lama (lokal saja)
 backend/prisma/migrations_old_local/
+
+# File instruksi agen AI (AGENTS.md dibuat ulang otomatis oleh next dev)
+frontend/AGENTS.md
+frontend/CLAUDE.md
+
+# Berkas unggahan lama (bukti bayar warga = data pribadi). Upload kini disimpan di DB (tb_File).
+backend/uploads/
+build.log
+*.tmp.js
+*.tmp.js.map
+*.tmp.d.ts

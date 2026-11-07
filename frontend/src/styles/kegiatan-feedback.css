@@ -1,0 +1,107 @@
+/* Masukan (feedback) kegiatan: tab pengurus + form warga */
+
+.fb-sub { color: var(--db-muted); font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px; }
+.fb-label { font-size: 0.78rem; font-weight: 600; color: var(--db-slate-600); margin-bottom: 4px; }
+
+/* Bintang */
+.fb-bintang { display: inline-flex; gap: 2px; vertical-align: middle; }
+.fb-bintang-on { color: #f59e0b; fill: #f59e0b; }
+.fb-bintang-off { color: #cbd5e1; fill: transparent; }
+.fb-bintang-input { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.fb-bintang-btn { background: none; border: 0; padding: 4px; cursor: pointer; border-radius: 8px; line-height: 0; }
+.fb-bintang-btn:hover:not(:disabled) .fb-bintang-off { color: #fbbf24; }
+.fb-bintang-btn:focus-visible { outline: 2px solid var(--db-primary); outline-offset: 1px; }
+.fb-bintang-label { margin-left: 8px; font-size: 0.85rem; color: var(--db-slate-600); font-weight: 600; }
+
+/* Kartu kegiatan */
+.fb-kartu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.fb-kartu {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left;
+  padding: 16px; background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 14px;
+  cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.fb-kartu:hover { border-color: var(--db-primary); box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); transform: translateY(-1px); }
+.fb-kartu h3 { font-size: 0.98rem; font-weight: 700; color: var(--db-slate-700); line-height: 1.3; }
+.fb-kartu-skor { display: flex; align-items: center; gap: 8px; }
+.fb-skor-angka { font-size: 2rem; font-weight: 700; line-height: 1; color: var(--db-slate-700); }
+.fb-skor-kecil { font-size: 1.3rem; }
+
+/* Ringkasan satu kegiatan */
+.fb-ringkasan { background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+.fb-kembali { align-self: flex-start; }
+.fb-ringkasan-isi { display: grid; grid-template-columns: minmax(0, 1.4fr) auto minmax(180px, 1fr); gap: 20px; align-items: center; }
+.fb-ringkasan-judul { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fb-ringkasan-judul h3 { font-size: 1.05rem; font-weight: 700; color: var(--db-slate-700); }
+.fb-ringkasan-skor { display: flex; align-items: center; gap: 12px; }
+.fb-ringkasan-skor > div:last-child { display: flex; flex-direction: column; gap: 4px; }
+.fb-sebaran { display: flex; flex-direction: column; gap: 3px; }
+.fb-sebaran-baris { display: grid; grid-template-columns: 24px 1fr 24px; gap: 8px; align-items: center; font-size: 0.74rem; color: var(--db-muted); }
+.fb-sebaran-track { height: 6px; border-radius: 99px; background: #f1f5f9; overflow: hidden; }
+.fb-sebaran-isi { height: 100%; background: #f59e0b; border-radius: 99px; }
+.fb-sebaran-jml { text-align: right; }
+
+/* Tabel */
+.fb-tabel-header { gap: 10px; flex-wrap: wrap; }
+.fb-tabel-kontrol { display: flex; gap: 8px; flex-wrap: wrap; }
+.fb-anonim { color: var(--db-muted); font-style: italic; }
+.data-table td:has(.fb-ada-komentar) { white-space: nowrap; }
+.fb-ada-komentar { margin-left: 6px; color: var(--db-slate-400); vertical-align: middle; }
+.fb-baris-sembunyi { opacity: 0.6; }
+.fb-badge-sembunyi { margin-left: 8px; background: #f1f5f9; color: var(--db-slate-500); }
+
+/* Kartu mini (HP): 2 per baris */
+.fb-mini-grid { display: none; }
+
+/* Modal detail */
+.fb-modal { max-width: 480px; }
+.fb-detail-siapa { display: flex; align-items: center; gap: 12px; }
+.fb-detail-siapa strong,
+.fb-modal .ipl-modal-body > div > strong { display: block; }
+.fb-avatar { width: 38px; height: 38px; border-radius: 50%; background: #f1f5f9; color: var(--db-slate-500); display: grid; place-items: center; flex-shrink: 0; }
+.fb-detail-rating { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--db-slate-700); }
+.fb-komentar { white-space: pre-wrap; word-break: break-word; line-height: 1.55; color: var(--db-slate-700); background: var(--db-bg); border-radius: 10px; padding: 12px 14px; }
+.fb-kosong { color: var(--db-muted); font-style: italic; font-size: 0.88rem; }
+.fb-info-sembunyi { font-size: 0.82rem; color: var(--db-warning); background: #fffbeb; border-radius: 10px; padding: 8px 12px; }
+
+/* Form warga */
+.fb-hitung { align-self: flex-end; }
+.fb-anonim-cek { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.9rem; color: var(--db-slate-700); }
+.fb-anonim-cek input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--db-primary); }
+.fb-anonim-cek small { display: block; color: var(--db-muted); font-size: 0.78rem; }
+
+/* Bagian "Bagaimana kegiatannya?" di dashboard */
+.fb-beri { background: var(--db-surface); border: 1px solid var(--db-border); border-left: 4px solid #f59e0b; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.fb-beri .db-section-header h3 { display: inline-flex; align-items: center; gap: 8px; }
+.fb-beri-ket { margin: 0; }
+.fb-beri-list { display: flex; flex-direction: column; gap: 10px; }
+.fb-beri-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--db-bg); border-radius: 10px; }
+.fb-beri-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fb-beri-info strong { font-size: 0.92rem; color: var(--db-slate-700); }
+.fb-beri-item button { flex-shrink: 0; }
+
+@media (max-width: 768px) {
+  .fb-ringkasan-isi { grid-template-columns: 1fr; gap: 12px; }
+  .fb-tabel-wrapper { display: none; }
+  .fb-mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+  .fb-mini {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left;
+    padding: 12px; background: var(--db-surface); border: 1px solid var(--db-border); border-radius: 12px; cursor: pointer;
+  }
+  .fb-mini:active { background: var(--db-bg); }
+  .fb-mini-nama { font-weight: 600; font-size: 0.88rem; color: var(--db-slate-700); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fb-mini-tag { font-size: 0.68rem; color: var(--db-slate-500); background: #f1f5f9; border-radius: 99px; padding: 1px 8px; }
+  .fb-kartu-grid { grid-template-columns: 1fr; }
+
+  /* detail jadi lembar dari bawah di HP */
+  .fb-overlay { align-items: flex-end; padding: 0; }
+  .fb-overlay .fb-modal { max-width: 100%; border-radius: 18px 18px 0 0; max-height: 85vh; }
+  .fb-beri-item { flex-direction: column; align-items: stretch; }
+}
+
+/* Panel masukan di dalam detail kegiatan */
+.fb-panel { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--db-border); padding-top: 16px; margin-top: 4px; }
+.fb-panel h4 { font-size: 0.95rem; font-weight: 700; color: var(--db-slate-700); }
+.fb-panel .btn-primary { align-self: flex-start; }
+.fb-chip-selesai { margin-left: 8px; font-size: 0.7rem; font-weight: 600; color: #b45309; background: #fffbeb; border-radius: 99px; padding: 2px 9px; }
+
+.fb-panel-info { border-top: 1px solid var(--db-border); padding-top: 12px; }

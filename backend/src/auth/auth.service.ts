@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { PermissionsService } from './permissions.service';
+import { sidikJariSandi } from './token-fingerprint';
 
 export const SALT_ROUNDS = 10;
 
@@ -39,7 +40,7 @@ export class AuthService {
     if (!valid) throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
 
     const token = await this.jwtService.signAsync(
-      { sub: user.id, username: user.username },
+      { sub: user.id, username: user.username, pv: sidikJariSandi(user.password) },
       remember ? { expiresIn: REMEMBER_EXPIRES_IN } : undefined,
     );
 
@@ -81,15 +82,19 @@ export class AuthService {
       throw new BadRequestException('Kata sandi baru harus berbeda dari kata sandi lama.');
     }
 
+    const hashBaru = await bcrypt.hash(passwordBaru, SALT_ROUNDS);
     await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        password: await bcrypt.hash(passwordBaru, SALT_ROUNDS),
-        wajibGantiPassword: false,
-      },
+      data: { password: hashBaru, wajibGantiPassword: false },
     });
     await this.audit.catat(userId, 'password.ganti', { target: 'User', targetId: userId });
 
-    return { message: 'Kata sandi berhasil diganti.' };
+    // Semua token lama kini tidak berlaku (lihat JwtAuthGuard); beri token baru untuk sesi yang sedang berjalan.
+    const token = await this.jwtService.signAsync({
+      sub: user.id,
+      username: user.username,
+      pv: sidikJariSandi(hashBaru),
+    });
+    return { message: 'Kata sandi berhasil diganti.', token };
   }
 }

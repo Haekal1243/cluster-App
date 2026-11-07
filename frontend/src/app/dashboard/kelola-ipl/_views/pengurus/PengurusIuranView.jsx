@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Eye, Wallet, FileX, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Eye, ClipboardCheck, Wallet, FileX, Pencil, Trash2 } from "lucide-react";
 import { iplApi, portalApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -14,6 +14,7 @@ import CurrencyInput from "@/components/ui/CurrencyInput";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import { formatRupiah, formatTanggalPendek as formatTanggal, BULAN_PANJANG as BULAN_NAMES, BULAN_OPTIONS, getCurrentYm, formatYmPendek, formatYmPanjang } from "@/lib/format";
 import { RekapRtPanel } from "./RekapRtPanel";
+import FitText from "@/components/ui/FitText";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const currentYear = new Date().getFullYear();
@@ -61,7 +62,7 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
     }
     const confirmed = await showConfirm(
       "Buat Tagihan?",
-      `Tagihan periode ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode}: IPL ${formatRupiah(form.nominalIpl)} + kas ${formatRupiah(form.nominalKas || 0)} = ${formatRupiah(total)} per rumah ber-pemilik (termasuk rumah kosong — porsi IPL-nya masuk kas RT). Generate ulang periode yang sama hanya menagih rumah baru yang belum punya tagihan.`,
+      `Tagihan ${BULAN_NAMES[form.bulanPeriode]} ${form.tahunPeriode} sebesar ${formatRupiah(total)} per rumah.`,
       "question",
       "Ya, Buat!"
     );
@@ -229,7 +230,6 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
               value={form.alasan}
               onChange={(e) => setForm({ ...form, alasan: e.target.value })}
             />
-            <span className="field-hint">Koreksi tercatat di riwayat aktivitas dan diteruskan ke RW.</span>
           </div>
           <div className="ipl-modal-footer">
             <button type="button" className="btn-ipl-secondary" onClick={onClose} disabled={loading}>Batal</button>
@@ -502,14 +502,14 @@ export function PengurusIuranView({ user }) {
             <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
             <div className="keu-card-text">
               <span className="ipl-summary-label">Total Tagihan</span>
-              <span className="ipl-summary-value">{formatRupiah(summary.totalNominal)}</span>
+              <FitText>{formatRupiah(summary.totalNominal)}</FitText>
             </div>
           </div>
           <div className="ipl-summary-card keu-card keu-green">
             <div className="keu-icon-circle"><CheckCircle size={22} strokeWidth={2} /></div>
             <div className="keu-card-text">
               <span className="ipl-summary-label">Terkumpul</span>
-              <span className="ipl-summary-value">{formatRupiah(summary.totalTerkumpul)}</span>
+              <FitText>{formatRupiah(summary.totalTerkumpul)}</FitText>
             </div>
           </div>
           <div className={`ipl-summary-card keu-card ${summary.menungguKonfirmasi > 0 ? "keu-amber" : "keu-muted"}`}>
@@ -640,9 +640,8 @@ export function PengurusIuranView({ user }) {
               <thead>
                 <tr>
                   <th>No</th>
-                  <th>Blok / RT</th>
+                  <th>{semuaRt ? "Blok / RT" : "Blok"}</th>
                   <th>Penghuni</th>
-                  <th>Periode</th>
                   <th>Total</th>
                   <th>Status</th>
                   <th>Tanggal Bayar</th>
@@ -659,10 +658,9 @@ export function PengurusIuranView({ user }) {
                       <td>{(page - 1) * 10 + index + 1}</td>
                       <td>
                         <span className="ipl-blok">{t.rumah?.blokRumah}</span>
-                        <span className="ipl-rt">{t.rumah?.rt?.replace("_", " ")}</span>
+                        {semuaRt && <span className="ipl-rt">{t.rumah?.rt?.replace("_", " ")}</span>}
                       </td>
                       <td>{t.rumah?.penghuni?.namaUser || <em className="text-muted">Kosong</em>}</td>
-                      <td>{BULAN_NAMES[t.bulanPeriode]} {t.tahunPeriode}</td>
                       <td className="ipl-nominal">
                         {formatRupiah(t.nominal)}
                         <span className="ipl-nominal-split">IPL {formatRupiah(t.nominalIpl)} + kas {formatRupiah(t.nominalKas)}</span>
@@ -678,19 +676,23 @@ export function PengurusIuranView({ user }) {
                         <div className="table-actions">
                           {t.statusPembayaran === "MENUNGGU_KONFIRMASI" && bisaKonfirmasiBaris ? (
                             <button
-                              className="btn-ipl-review"
+                              type="button"
+                              className="btn-icon"
                               onClick={() => setReviewItem(t)}
-                              title="Review bukti pembayaran"
+                              title="Tinjau bukti pembayaran"
+                              aria-label="Tinjau bukti pembayaran"
                             >
-                              <Eye size={14} /> Review
+                              <ClipboardCheck size={14} />
                             </button>
                           ) : pembayaran?.buktiTransaksi && t.statusPembayaran !== "BELUM_LUNAS" ? (
                             <button
                               type="button"
-                              className="btn-ipl-view"
+                              className="btn-icon"
+                              title="Lihat bukti"
+                              aria-label="Lihat bukti"
                               onClick={() => openProtectedFile(portalApi.buktiPath(pembayaran.idPembayaran))}
                             >
-                              <Eye size={14} /> Lihat Bukti
+                              <Eye size={14} />
                             </button>
                           ) : null}
                           {t.statusPembayaran === "BELUM_LUNAS" && bolehUbah && (
@@ -720,49 +722,59 @@ export function PengurusIuranView({ user }) {
               const pembayaran = t.pembayaran?.[0];
               const penghuniPengurus = (t.rumah?.penghuni?.role?.level ?? 3) < 3;
               const bisaKonfirmasiBaris = bolehKonfirmasi || (bolehKonfirmasiPengurus && penghuniPengurus);
+              const bisaReview = t.statusPembayaran === "MENUNGGU_KONFIRMASI" && bisaKonfirmasiBaris;
+              const bisaLihatBukti = !bisaReview && !!pembayaran?.buktiTransaksi && t.statusPembayaran !== "BELUM_LUNAS";
+              const bukaCard = bisaReview
+                ? () => setReviewItem(t)
+                : bisaLihatBukti
+                  ? () => openProtectedFile(portalApi.buktiPath(pembayaran.idPembayaran))
+                  : null;
               return (
-                <div key={t.id} className="pengaduan-card" style={{ cursor: "default" }}>
+                <div
+                  key={t.id}
+                  className="pengaduan-card"
+                  {...(bukaCard && {
+                    role: "button",
+                    tabIndex: 0,
+                    onClick: bukaCard,
+                    onKeyDown: (e) => { if (e.key === "Enter") bukaCard(); },
+                  })}
+                  style={bukaCard ? undefined : { cursor: "default" }}
+                >
                   <div className="pengaduan-card-top">
                     <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
-                      {t.rumah?.blokRumah} <span className="rt-badge">{t.rumah?.rt?.replace("_", " ")}</span>
+                      {t.rumah?.blokRumah}
+                      <span className="ipl-penghuni">{t.rumah?.penghuni?.namaUser || <em className="text-muted">Kosong</em>}</span>
                     </h3>
-                    <PengurusStatusBadge status={t.statusPembayaran} />
+                    <div className="pengaduan-card-badges">
+                      {semuaRt && <span className="rt-badge">{t.rumah?.rt?.replace("_", " ")}</span>}
+                      <PengurusStatusBadge status={t.statusPembayaran} />
+                    </div>
                   </div>
-                  <div className="pengaduan-card-meta">
-                    <span className="pengaduan-meta-item">{t.rumah?.penghuni?.namaUser || "Kosong"}</span>
-                    <span className="pengaduan-meta-item">{BULAN_NAMES[t.bulanPeriode]} {t.tahunPeriode}</span>
-                    {pembayaran?.tanggalBayar && <span className="pengaduan-meta-item">{formatTanggal(pembayaran.tanggalBayar)}</span>}
-                  </div>
+                  {pembayaran?.tanggalBayar && (
+                    <div className="pengaduan-card-meta">
+                      <span className="pengaduan-meta-item">Dibayar {formatTanggal(pembayaran.tanggalBayar)}</span>
+                    </div>
+                  )}
                   <span className="warga-grid-penghuni">
                     {formatRupiah(t.nominal)} <span className="text-muted" style={{ fontWeight: 400 }}>(IPL {formatRupiah(t.nominalIpl)} + kas {formatRupiah(t.nominalKas)})</span>
                   </span>
-                  <div className="pengaduan-card-actions">
-                    <div className="table-actions">
-                      {t.statusPembayaran === "MENUNGGU_KONFIRMASI" && bisaKonfirmasiBaris ? (
-                        <button className="btn-ipl-review" onClick={() => setReviewItem(t)} title="Review bukti pembayaran">
-                          <Eye size={14} /> Review
-                        </button>
-                      ) : pembayaran?.buktiTransaksi && t.statusPembayaran !== "BELUM_LUNAS" ? (
-                        <button
-                          type="button"
-                          className="btn-ipl-view"
-                          onClick={() => openProtectedFile(portalApi.buktiPath(pembayaran.idPembayaran))}
-                        >
-                          <Eye size={14} /> Lihat Bukti
-                        </button>
-                      ) : null}
-                      {t.statusPembayaran === "BELUM_LUNAS" && bolehUbah && (
-                        <button type="button" className="btn-icon" title="Koreksi nominal" aria-label="Koreksi nominal" onClick={() => setEditItem(t)}>
-                          <Pencil size={15} />
-                        </button>
-                      )}
-                      {t.statusPembayaran === "BELUM_LUNAS" && bolehHapus && !pembayaran && (
-                        <button type="button" className="btn-icon danger" title="Hapus tagihan" aria-label="Hapus tagihan" onClick={() => handleHapus(t)}>
-                          <Trash2 size={15} />
-                        </button>
-                      )}
+                  {t.statusPembayaran === "BELUM_LUNAS" && (bolehUbah || (bolehHapus && !pembayaran)) && (
+                    <div className="pengaduan-card-actions" onClick={(e) => e.stopPropagation()}>
+                      <div className="table-actions">
+                        {t.statusPembayaran === "BELUM_LUNAS" && bolehUbah && (
+                          <button type="button" className="btn-icon" title="Koreksi nominal" aria-label="Koreksi nominal" onClick={() => setEditItem(t)}>
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        {t.statusPembayaran === "BELUM_LUNAS" && bolehHapus && !pembayaran && (
+                          <button type="button" className="btn-icon danger" title="Hapus tagihan" aria-label="Hapus tagihan" onClick={() => handleHapus(t)}>
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}

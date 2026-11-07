@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle, XCircle, Clock, Eye, Landmark, Upload, Wallet } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, ClipboardCheck, Landmark, Upload, Wallet } from "lucide-react";
 import { setoranApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
@@ -12,12 +12,14 @@ import Select from "@/components/ui/Select";
 import FileDropzone from "@/components/ui/FileDropzone";
 import { usePagination } from "@/lib/usePagination";
 import SetoranDetailModal from "@/components/setoran/SetoranDetailModal";
+import { formatJam } from "@/lib/useSetoranDetail";
 import {
   formatRupiah as rupiah,
   formatTanggalPendek as tanggal,
   formatYmPendek,
   getCurrentYm,
 } from "@/lib/format";
+import FitText from "@/components/ui/FitText";
 
 const STATUS = {
   MENUNGGU_KONFIRMASI: { label: "Menunggu Konfirmasi", cls: "badge-menunggu" },
@@ -222,7 +224,7 @@ export default function SetoranPage() {
               <div className="keu-icon-circle"><Landmark size={22} strokeWidth={2} /></div>
               <div className="keu-card-text">
                 <span className="ipl-summary-label">Siap Disetor {pilihRtSetor ? areaLabel(siap.rt) : ""}</span>
-                <span className="ipl-summary-value">{rupiah(siap.totalIpl)}</span>
+                <FitText>{rupiah(siap.totalIpl)}</FitText>
                 {siap.dikecualikanRumahKosong?.jumlahTagihan > 0 && (
                   <span className="ipl-summary-sub">
                     {siap.dikecualikanRumahKosong.jumlahTagihan} tagihan rumah kosong masuk kas RT
@@ -237,14 +239,14 @@ export default function SetoranPage() {
                 <div className="keu-icon-circle"><CheckCircle size={22} strokeWidth={2} /></div>
                 <div className="keu-card-text">
                   <span className="ipl-summary-label">Sudah Dikonfirmasi</span>
-                  <span className="ipl-summary-value">{rupiah(summary.totalDikonfirmasi)}</span>
+                  <FitText>{rupiah(summary.totalDikonfirmasi)}</FitText>
                 </div>
               </div>
               <div className="ipl-summary-card keu-card keu-amber">
                 <div className="keu-icon-circle"><Clock size={22} strokeWidth={2} /></div>
                 <div className="keu-card-text">
                   <span className="ipl-summary-label">Menunggu Konfirmasi</span>
-                  <span className="ipl-summary-value">{rupiah(summary.totalMenunggu)}</span>
+                  <FitText>{rupiah(summary.totalMenunggu)}</FitText>
                 </div>
               </div>
               <div className="ipl-summary-card keu-card keu-red">
@@ -393,13 +395,27 @@ export default function SetoranPage() {
                       )}
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className={s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "btn-ipl-review" : "btn-ipl-view"}
-                        onClick={() => setDetailId(s.id)}
-                      >
-                        <Eye size={14} /> {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "Review" : "Detail"}
-                      </button>
+                      {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title="Tinjau setoran"
+                          aria-label="Tinjau setoran"
+                          onClick={() => setDetailId(s.id)}
+                        >
+                          <ClipboardCheck size={14} />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          title="Lihat detail"
+                          aria-label="Lihat detail"
+                          onClick={() => setDetailId(s.id)}
+                        >
+                          <Eye size={14} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -409,10 +425,17 @@ export default function SetoranPage() {
 
           <div className="pengaduan-cards">
             {listPage.map((s) => (
-              <div key={s.id} className="pengaduan-card" style={{ cursor: "default" }}>
+              <div
+                key={s.id}
+                className="pengaduan-card"
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailId(s.id)}
+                onKeyDown={(e) => { if (e.key === "Enter") setDetailId(s.id); }}
+              >
                 <div className="pengaduan-card-top">
                   <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
-                    <span className="rt-badge">{areaLabel(s.area)}</span> {tanggal(s.createDate)}
+                    <span className="rt-badge">{areaLabel(s.area)}</span> {tanggal(s.createDate)} · {formatJam(s.createDate)}
                   </h3>
                   <StatusBadge status={s.status} />
                 </div>
@@ -425,15 +448,6 @@ export default function SetoranPage() {
                     {s.konfirmasiBy} <span className="text-muted" style={{ fontWeight: 400 }}>· {tanggal(s.tanggalKonfirmasi)}</span>
                   </span>
                 )}
-                <div className="pengaduan-card-actions">
-                  <button
-                    type="button"
-                    className={s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "btn-ipl-review" : "btn-ipl-view"}
-                    onClick={() => setDetailId(s.id)}
-                  >
-                    <Eye size={14} /> {s.status === "MENUNGGU_KONFIRMASI" && bolehKonfirmasi ? "Review" : "Detail"}
-                  </button>
-                </div>
               </div>
             ))}
           </div>

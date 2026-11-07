@@ -1,4 +1,5 @@
 import Reveal from "./Reveal";
+import SectionHead from "./SectionHead";
 import { formatTanggalPanjang as formatTanggalPengumuman } from "@/lib/format";
 
 const badgeStyle = { background: "#ECFDF5", color: "#0D9488" };
@@ -7,18 +8,7 @@ export default function Pengumuman({ items = [] }) {
   return (
     <section id="pengumuman" className="lp-section" style={{ background: "#F8FAFC" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <Reveal style={{ marginBottom: 32 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#0D9488", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
-                Papan Pengumuman
-              </p>
-              <h2 style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: "#0F172A", letterSpacing: "-0.015em" }}>
-                Pengumuman Terbaru
-              </h2>
-            </div>
-          </div>
-        </Reveal>
+        <SectionHead varian="d" sebaris label="Papan pengumuman" title="Pengumuman terbaru" lead="Informasi resmi dari pengurus RW dan RT." />
 
         {items.length === 0 ? (
           <div style={{ padding: "48px 0", textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
@@ -30,14 +20,14 @@ export default function Pengumuman({ items = [] }) {
             display: "flex",
             flexDirection: "column",
             border: "1px solid #E2E8F0",
-            borderRadius: 10,
+            borderRadius: 16,
             overflow: "hidden",
             background: "white",
           }}
         >
           {items.map((p, i) => {
             return (
-              <Reveal key={p.id} style={{ transitionDelay: `${i * 50}ms` }}>
+              <Reveal key={p.id} variant="left" delay={i * 90}>
                 <div
                   className="lp-row lp-pengumuman-row"
                   style={{
@@ -67,7 +57,7 @@ export default function Pengumuman({ items = [] }) {
                     <p style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{p.keteranganPengumuman}</p>
                   </div>
                   <div className="lp-pengumuman-tanggal" style={{ textAlign: "right", whiteSpace: "nowrap", paddingTop: 2 }}>
-                    <div style={{ fontSize: 12, color: "#94A3B8" }}>{formatTanggalPengumuman(p.createDate)}</div>
+                    <span className="tz-pil-tanggal tz-pil-tanggal-terang">{formatTanggalPengumuman(p.createDate)}</span>
                   </div>
                 </div>
               </Reveal>

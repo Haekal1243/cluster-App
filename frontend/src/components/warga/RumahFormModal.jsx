@@ -88,7 +88,12 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
   );
 
   const pilihPemilik = (u) => {
-    setForm((prev) => ({ ...prev, userId: u ? u.id : "" }));
+    // Tanpa pemilik, status "Dihuni" tidak sah: otomatis jadi Kosong supaya simpan tidak gagal.
+    setForm((prev) => ({
+      ...prev,
+      userId: u ? u.id : "",
+      status: !u && prev.status.startsWith("DIHUNI") ? "KOSONG" : prev.status,
+    }));
     setPemilikQuery(u ? u.namaUser : "");
     setPemilikOpen(false);
   };
@@ -98,12 +103,15 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
     if (!isBlokValid) return;
     setIsSubmitting(true);
     try {
+      const userId = form.userId ? Number(form.userId) : null;
+      // Pemilik dikosongkan lewat ketikan (bukan klik opsi "Kosong") tetap tidak boleh berstatus Dihuni.
+      const status = !userId && form.status.startsWith("DIHUNI") ? "KOSONG" : form.status;
       await onSubmit({
         blokRumah: form.blokRumah.trim(),
         rt: form.rt,
-        userId: form.userId ? Number(form.userId) : null,
+        userId,
         // Kosong = ikut penghuni (ada penghuni -> tetap, tanpa penghuni -> kosong)
-        ...(form.status ? { status: form.status } : {}),
+        ...(status ? { status } : {}),
       });
     } finally {
       setIsSubmitting(false);
@@ -199,10 +207,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
                   </ul>
                 )}
               </div>
-              <p className="form-hint">
-                Pilih warga yang bertanggung jawab membayar IPL untuk rumah ini.
-                Rumah kosong pun sudah pasti ada pemiliknya - tetap pilih pemiliknya.
-              </p>
             </div>
 
             {/* Status rumah */}
@@ -217,10 +221,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
                   ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
                 ]}
               />
-              <p className="form-hint">
-                Kosong = tidak dihuni, tetapi pemiliknya tetap membayar IPL dan masuk kas RT.
-                Tandai rumah yang dikontrakkan supaya terlihat berbeda dari rumah tetap.
-              </p>
             </div>
           </div>
 

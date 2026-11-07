@@ -91,8 +91,9 @@ export const faq = [
 export const navLinks = [
   { href: "#beranda", label: "Beranda" },
   { href: "#pengumuman", label: "Pengumuman" },
-  { href: "/landingpage/portofolio", label: "Portofolio" },
+  { href: "/landingpage/riwayat-kegiatan", label: "Riwayat Kegiatan" },
   { href: "#layanan", label: "Layanan" },
+  { href: "#peta", label: "Peta" },
   { href: "#pengaduan", label: "Pengaduan" },
   { href: "#kontak", label: "Kontak" },
 ];

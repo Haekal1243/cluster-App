@@ -5,13 +5,16 @@ import { scopeOf } from "./session";
 export const PENGAJUAN = {
   TIDAK: { label: "Hanya RT ini", cls: "muted" },
   DIAJUKAN: { label: "Menunggu ACC RW", cls: "menunggu" },
-  DISETUJUI: { label: "Tampil ke semua warga", cls: "lunas" },
+  DISETUJUI: { label: "Semua warga", cls: "lunas" },
   DITOLAK: { label: "Ditolak RW", cls: "belum" },
 };
 
 /** Boleh mengubah/menghapus item ini? Scope ALL = semua; AREA = hanya item wilayahnya. */
 export function bolehTulis(user, kode, item) {
   const scope = scopeOf(user, kode);
+  // Konten RT yang hanya tampil di RT-nya (belum diajukan/ditolak RW): pengurus RW cuma bisa melihat.
+  const hanyaRt = item.area !== "RW" && (item.statusPengajuan === "TIDAK" || item.statusPengajuan === "DITOLAK");
+  if (hanyaRt && user?.area && user.area !== item.area) return false;
   if (scope === "ALL") return true;
   if (scope === "AREA") return !!user?.area && item.area === user.area;
   return false;

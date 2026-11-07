@@ -1,0 +1,326 @@
+/* ==========================================
+   DATA WARGA & RUMAH
+   ========================================== */
+
+.warga-add-row,
+.page-add-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Toolbar gabungan: tombol Tambah di kiri, search+filter di kanan (desktop).
+   Di mobile, tombol Tambah pindah ke barisnya sendiri (lihat @media). */
+.page-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-toolbar-row > .list-toolbar-row,
+.page-toolbar-row > .warga-filter-bar {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  /* Tombol Tambah/Catat/Generate tampil di atas search+filter di mobile,
+     walau di desktop dia ada di kanan (setelah search+filter) sejajar Filter.
+     align-items di-stretch supaya field search (dan tombolnya) tetap selebar
+     penuh — tanpa ini, .page-toolbar-row { align-items:center } bikin semua
+     anaknya ke-center dan menyusut ke lebar kontennya pas arahnya jadi kolom. */
+  .warga-toolbar-row,
+  .toolbar-row-reverse-mobile {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+/* Stats row */
+.warga-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.warga-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--db-surface);
+  border: 1px solid var(--db-border);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.warga-stat-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.warga-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.warga-stat-card.tone-info .warga-stat-icon {
+  background: rgba(14, 165, 233, 0.1);
+  color: #0ea5e9;
+}
+
+.warga-stat-card.tone-success .warga-stat-icon {
+  background: var(--db-success-bg);
+  color: var(--db-primary);
+}
+
+.warga-stat-card.tone-warning .warga-stat-icon {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+/* Aksen border kiri berwarna, sama kayak metric card di Dashboard */
+.warga-stat-card.tone-info    { border-left: 4px solid #0ea5e9; }
+.warga-stat-card.tone-success { border-left: 4px solid var(--db-primary); }
+.warga-stat-card.tone-warning { border-left: 4px solid #f59e0b; }
+
+.warga-stat-value {
+  display: block;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--db-slate-700);
+  line-height: 1;
+}
+
+.warga-stat-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--db-slate-500);
+  margin-top: 4px;
+}
+
+/* Filter bar */
+.warga-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.warga-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.warga-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--db-slate-400);
+  pointer-events: none;
+}
+
+.warga-search-input {
+  width: 100%;
+  padding: 9px 12px 9px 36px;
+  border: 1px solid var(--db-border);
+  border-radius: 10px;
+  background: var(--db-surface);
+  color: var(--db-slate-700);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.warga-search-input:focus {
+  border-color: var(--db-primary);
+}
+
+.warga-filter-select {
+  width: auto;
+  min-width: 130px;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding: 8px 32px 8px 12px;
+  font-size: 0.875rem;
+}
+
+.warga-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Penghuni cell */
+.penghuni-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.penghuni-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--db-primary), var(--db-primary-hover));
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.penghuni-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--db-slate-700);
+}
+
+.penghuni-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.penghuni-email {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--db-slate-500);
+}
+
+.penghuni-empty {
+  color: var(--db-slate-400);
+  font-size: 0.88rem;
+}
+
+/* Multi-house badge */
+.penghuni-multi-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.12);
+  color: #0ea5e9;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* RT badge */
+.rt-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* WhatsApp link */
+.wa-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #16a34a;
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.wa-link:hover {
+  color: #15803d;
+  text-decoration: underline;
+}
+
+/* Form hint text */
+.form-hint {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--db-slate-500);
+}
+
+/* Responsive warga stats */
+@media (max-width: 640px) {
+  .warga-add-row .btn-primary,
+  .page-toolbar-row .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .page-toolbar-row { gap: 8px; }
+
+  .warga-stat-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .warga-stat-card {
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .warga-stat-top {
+    gap: 8px;
+  }
+
+  .warga-stat-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .warga-stat-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .warga-stat-value {
+    font-size: 1.05rem;
+  }
+
+  .warga-stat-label {
+    font-size: 0.6rem;
+    margin-top: 1px;
+  }
+
+  .warga-filter-bar {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .warga-search-wrap {
+    min-width: 0;
+  }
+
+  .warga-filter-row {
+    gap: 8px;
+  }
+
+  .warga-filter-select {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+  }
+}
+

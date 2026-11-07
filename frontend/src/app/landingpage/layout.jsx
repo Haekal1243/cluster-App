@@ -1,4 +1,5 @@
 import "./globals.css";
+import ScrollFx from "@/components/landing/ScrollFx";
 
 export const metadata = {
   title: "Portal Warga RW 21 - Cluster Topaz",
@@ -6,8 +7,13 @@ export const metadata = {
 };
 
 // Segmen layout tidak boleh merender <html>/<body> sendiri — itu hanya milik
-// root app/layout.jsx. Variabel font (--font-syne/--font-jakarta) sudah
+// root app/layout.jsx. Variabel font (--font-display/--font-jakarta) sudah
 // dipasang di <html> root, jadi komponen landing tetap bisa memakainya.
 export default function LandingpageLayout({ children }) {
-  return <>{children}</>;
+  return (
+    <>
+      <ScrollFx />
+      {children}
+    </>
+  );
 }

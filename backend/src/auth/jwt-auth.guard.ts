@@ -10,6 +10,7 @@ import { Request } from 'express';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthedRequest } from './auth.types';
+import { sidikJariSandi } from './token-fingerprint';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -33,9 +34,11 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     let sub: number;
+    let pv: string | undefined;
     try {
-      const payload = await this.jwtService.verifyAsync<{ sub: number }>(token);
+      const payload = await this.jwtService.verifyAsync<{ sub: number; pv?: string }>(token);
       sub = payload.sub;
+      pv = payload.pv;
     } catch {
       throw new UnauthorizedException('Token tidak valid atau sudah kedaluwarsa.');
     }
@@ -50,11 +53,16 @@ export class JwtAuthGuard implements CanActivate {
         namaUser: true,
         area: true,
         roleId: true,
+        password: true,
         role: { select: { kode: true } },
       },
     });
     if (!user) {
       throw new UnauthorizedException('Akun tidak ditemukan.');
+    }
+    // Token diterbitkan sebelum sandi terakhir diganti/di-reset (atau tanpa klaim pv) = dicabut.
+    if (!pv || pv !== sidikJariSandi(user.password)) {
+      throw new UnauthorizedException('Sesi sudah tidak berlaku. Silakan masuk kembali.');
     }
 
     request.user = {

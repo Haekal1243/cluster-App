@@ -18,14 +18,6 @@ function cekFoto(file) {
   return null;
 }
 
-function Avatar({ nama, foto }) {
-  return (
-    <span className="pengurus-avatar">
-      {foto ? <img src={pengurusApi.fotoUrl(foto)} alt={nama} /> : (nama?.[0] ?? "?").toUpperCase()}
-    </span>
-  );
-}
-
 /** Format 62812... -> 0812... untuk ditampilkan/diedit admin. */
 const nomorLokal = (n) => (n ? n.replace(/^62/, "0") : "");
 
@@ -68,9 +60,6 @@ function KontakModal({ pemegang, jabatan, onClose, onSubmit }) {
                 onChange={(e) => setNomor(e.target.value)}
                 autoFocus
               />
-              <span className="field-hint">
-                Kosongkan lalu simpan untuk menyembunyikan. Kontak otomatis disembunyikan saat jabatan dilepas.
-              </span>
             </div>
           </div>
           <div className="modal-footer">
@@ -149,11 +138,6 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
                   label: `${k.namaUser} · ${areaLabel(k.area)}${k.rumah?.length ? ` · ${k.rumah.map((r) => r.blokRumah).join(", ")}` : ""}`,
                 }))}
               />
-              <span className="field-hint">
-                {slot.role.level === 2
-                  ? `Hanya warga ${areaLabel(slot.area)} yang bisa menjadi ${slot.role.nama}.`
-                  : "Pengurus RW dipilih dari seluruh warga."}
-              </span>
             </div>
             <div className="form-group">
               <label htmlFor="foto-pengurus">Foto pengurus</label>
@@ -167,9 +151,6 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
                 hint="JPG / PNG · Maks. 5 MB"
                 onError={(msg) => showMessage("Foto Tidak Valid", msg, "error")}
               />
-              <span className="field-hint">
-                Tampil di halaman depan; foto ini milik pemegang baru dan bisa diubah kapan saja.
-              </span>
             </div>
           </div>
           <div className="modal-footer">
@@ -281,7 +262,7 @@ export default function PengurusPage() {
   const kosongkan = async (slot) => {
     const ok = await showConfirm(
       "Kosongkan jabatan?",
-      `${slot.pemegang.namaUser} dilepas dari ${slot.role.nama} ${areaLabel(slot.area)} dan kembali menjadi warga biasa.`,
+      `${slot.pemegang.namaUser} dilepas dari jabatan ${slot.role.nama} ${areaLabel(slot.area)}.`,
       "warning",
       "Ya, kosongkan",
       "Batal",
@@ -320,7 +301,6 @@ export default function PengurusPage() {
             <ul className="pengurus-list">
               {list.map((s) => (
                 <li key={`${s.role.id}-${s.area}`} className="pengurus-item">
-                  {s.pemegang && <Avatar nama={s.pemegang.namaUser} foto={s.pemegang.foto} />}
                   <div className="pengurus-info">
                     <span className="pengurus-role">{s.role.nama}</span>
                     {s.pemegang ? (

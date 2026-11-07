@@ -20,7 +20,7 @@ export class PushService {
     if (publicKey && privateKey && subject) {
       webpush.setVapidDetails(subject, publicKey, privateKey);
     } else {
-      this.logger.warn('VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY/VAPID_SUBJECT belum di-set — push notification nonaktif.');
+      this.logger.warn('VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY/VAPID_SUBJECT belum di-set, push notification nonaktif.');
     }
   }
 

@@ -20,6 +20,7 @@ import { UpdateWargaDto } from './dto/update-warga.dto';
 import { CreateRumahDto } from './dto/create-rumah.dto';
 import { UpdateRumahDto } from './dto/update-rumah.dto';
 import { DaftarMandiriDto } from './dto/daftar-mandiri.dto';
+import { BayarIplDto } from './dto/bayar-ipl.dto';
 import { SetujuiPendaftaranDto } from './dto/setujui-pendaftaran.dto';
 import { TolakPendaftaranDto } from './dto/tolak-pendaftaran.dto';
 import { buktiMulterOptions } from './bukti.multer';
@@ -135,14 +136,10 @@ export class WargaController {
   @UseInterceptors(FileInterceptor('file', buktiMulterOptions))
   uploadBuktiPembayaran(
     @Access() ctx: AccessContext,
-    @Body() body: { idIpl: string; nominal?: string },
+    @Body() body: BayarIplDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.wargaService.uploadBuktiPembayaran(ctx, {
-      idIpl: +body.idIpl,
-      nominal: body.nominal ? +body.nominal : undefined,
-      bukti: file,
-    });
+    return this.wargaService.uploadBuktiPembayaran(ctx, { idIpl: body.idIpl, bukti: file });
   }
 
   // -------------------------------------------------------

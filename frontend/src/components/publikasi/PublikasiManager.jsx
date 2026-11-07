@@ -23,12 +23,11 @@ import {
   bolehAjukan,
   bolehPutuskan,
   bolehTulis,
-  formatTanggalPendek,
 } from "@/lib/publikasi";
 import Switch from "@/components/ui/switch";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import KeputusanPengajuanModal from "./KeputusanPengajuanModal";
-import { formatTanggalPanjang as formatDate } from "@/lib/format";
+import { formatTanggalPendek as formatDate } from "@/lib/format";
 
 const PAGE_SIZE = 10;
 
@@ -148,7 +147,7 @@ export default function PublikasiManager({
   const handleAjukan = async (item) => {
     const confirmed = await showConfirm(
       "Ajukan ke RW?",
-      `${noun} "${item.judul}" akan diajukan agar tampil ke seluruh warga.`,
+      `${noun} "${item.judul}" akan diajukan ke RW.`,
       "question",
       "Ya, ajukan",
       "Batal",
@@ -204,36 +203,31 @@ export default function PublikasiManager({
   if (!ready || !user) return null;
 
   const renderPengajuanBadge = (item) => {
-    const p = PENGAJUAN[item.statusPengajuan] ?? PENGAJUAN.TIDAK;
+    // Item area RW otomatis tampil ke semua warga, sama seperti pengajuan yang disetujui.
+    // Ditolak RW tampil sebagai "Hanya RT ini"; alasan penolakannya ada di detail & tooltip.
+    const p = item.area === "RW"
+      ? PENGAJUAN.DISETUJUI
+      : item.statusPengajuan === "DITOLAK"
+        ? PENGAJUAN.TIDAK
+        : PENGAJUAN[item.statusPengajuan] ?? PENGAJUAN.TIDAK;
     return (
       <span className={`ipl-badge badge-${p.cls}`} title={item.alasanTolak || undefined}>
-        {item.area === "RW" ? "Level RW" : p.label}
+        {p.label}
       </span>
     );
   };
 
-  const renderPengajuanExtra = (item) => (
-    <>
-      {item.statusPengajuan === "DITOLAK" && item.alasanTolak && (
-        <span className="pengajuan-alasan">{item.alasanTolak}</span>
-      )}
-      {item.tampilSampai && (
-        <span className="pengajuan-alasan">Tampil s/d {formatTanggalPendek(item.tampilSampai)}</span>
-      )}
-      {item.tampilDiLanding && <span className="pengajuan-alasan">Portofolio landing</span>}
-    </>
-  );
-
-  const renderActions = (item, size) => (
+  // `hideDetail`: dipakai di kartu HP — kartunya sendiri bisa diklik buat buka detail.
+  const renderActions = (item, size, hideDetail = false) => (
     <div className="table-actions">
-      {DetailModal && (
+      {DetailModal && !hideDetail && (
         <button type="button" className="btn-icon" onClick={() => setDetailItem(item)} aria-label="Lihat detail" title="Lihat detail">
           <Eye size={size} />
         </button>
       )}
       {bolehPutuskan(user, menu, item) && (
-        <button type="button" className="btn-ipl-review" onClick={() => setKeputusan(item)} title="Putuskan pengajuan">
-          <Check size={14} /> Putuskan
+        <button type="button" className="btn-icon" onClick={() => setKeputusan(item)} aria-label="Putuskan pengajuan" title="Putuskan pengajuan">
+          <Check size={size} />
         </button>
       )}
       {bolehAjukan(user, menu, item) && (
@@ -255,12 +249,11 @@ export default function PublikasiManager({
   );
 
   const renderStatus = (item) => {
-    if (!bisaUbahStatusMenu) return null;
+    if (!bisaUbahStatusMenu || !bolehUbahStatus(item)) return null;
     return (
       <div className="status-cell">
         <Switch
           checked={item.status === "active"}
-          disabled={!bolehUbahStatus(item)}
           onCheckedChange={(checked) => handleToggleStatus(item, checked)}
           label={`Status ${item.judul}`}
         />
@@ -413,25 +406,35 @@ export default function PublikasiManager({
           </table>
         </div>
 
-        <div className="pengumuman-grid">
+        {/* Role pengelola (punya aksi ubah/hapus/ajukan) dapat 1 kartu per baris biar tombolnya lega. */}
+        <div className={`pengumuman-grid${bolehTambah ? " pengumuman-grid-single" : ""}`}>
           {!isLoading &&
             paginatedItems.map((item) => (
-              <div key={item.id} className="pengumuman-grid-card">
+              <div
+                key={item.id}
+                className={`pengumuman-grid-card${DetailModal ? " card-clickable" : ""}`}
+                {...(DetailModal && {
+                  role: "button",
+                  tabIndex: 0,
+                  onClick: () => setDetailItem(item),
+                  onKeyDown: (e) => { if (e.key === "Enter") setDetailItem(item); },
+                })}
+              >
                 <h3 className="pengumuman-grid-title">
-                  {item.judul} {lihatSemuaWilayah && <span className="rt-badge">{areaLabel(item.area)}</span>}
+                  {item.judul}
                 </h3>
                 <span className="meta-item pengumuman-grid-date">
                   <Calendar size={11} /> {formatDate(item[dateField])}
                 </span>
-                {((item.statusPengajuan === "DITOLAK" && item.alasanTolak) || item.tampilSampai || item.tampilDiLanding) && (
-                  <div className="pengajuan-cell">{renderPengajuanExtra(item)}</div>
-                )}
-                <div className="pengumuman-grid-footer">
-                  <div className="pengumuman-grid-footer-left">
-                    {renderPengajuanBadge(item)}
-                    {renderActions(item, 14)}
+                <span className="pengumuman-grid-badge">
+                  {lihatSemuaWilayah && <span className="rt-badge">{areaLabel(item.area)}</span>}
+                  {renderPengajuanBadge(item)}
+                </span>
+                <div className="pengumuman-grid-footer" onClick={(e) => e.stopPropagation()}>
+                  <div className="pengumuman-grid-footer-row">
+                    {renderActions(item, 16, true)}
+                    {renderStatus(item)}
                   </div>
-                  {renderStatus(item)}
                 </div>
               </div>
             ))}

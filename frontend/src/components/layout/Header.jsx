@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Bell, CheckCheck, Inbox, KeyRound, Download } from "lucide-react";
+import { Menu, Bell, CheckCheck, Inbox, Download } from "lucide-react";
 import { notifikasiApi } from "@/lib/api";
 import { areaLabel } from "@/lib/session";
 import { pageTitle } from "@/lib/nav";
 import { useUser } from "@/lib/useUser";
-import GantiPasswordModal from "@/components/auth/GantiPasswordModal";
 
 const POLL_INTERVAL_MS = 45 * 1000;
 
@@ -28,7 +27,6 @@ export default function Header({ onMenuClick }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user: currentUser } = useUser();
-  const [showGantiPassword, setShowGantiPassword] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const panelRef = useRef(null);
@@ -112,7 +110,6 @@ export default function Header({ onMenuClick }) {
   const displayRole = currentUser?.roleNama
     ? `${currentUser.roleNama}${currentUser.area ? ` · ${areaLabel(currentUser.area)}` : ""}`
     : "Pengguna";
-  const avatarInitial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="dashboard-header">
@@ -196,25 +193,13 @@ export default function Header({ onMenuClick }) {
           )}
         </div>
 
-        <button
-          type="button"
-          className="header-icon-btn"
-          aria-label="Ganti kata sandi"
-          title="Ganti kata sandi"
-          onClick={() => setShowGantiPassword(true)}
-        >
-          <KeyRound size={18} />
-        </button>
-
         <div className="header-user">
-          <div className="header-avatar">{avatarInitial}</div>
           <div className="header-user-info">
             <span className="header-user-name">{displayName}</span>
             <span className="header-user-role">{displayRole}</span>
           </div>
         </div>
       </div>
-      {showGantiPassword && <GantiPasswordModal onClose={() => setShowGantiPassword(false)} />}
     </header>
   );
 }

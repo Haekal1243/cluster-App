@@ -36,6 +36,12 @@ export default function PengumumanDetailModal({ pengumuman, onClose }) {
               {pengumuman.keteranganPengumuman}
             </p>
           )}
+
+          {pengumuman.statusPengajuan === "DITOLAK" && pengumuman.alasanTolak && (
+            <p className="portal-info-card-desc" style={{ whiteSpace: "pre-wrap" }}>
+              <strong>Alasan ditolak:</strong> {pengumuman.alasanTolak}
+            </p>
+          )}
         </div>
       </div>
     </div>

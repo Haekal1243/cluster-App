@@ -15,9 +15,17 @@ import {
   belumLewatBatasTampil,
   tampilKeSemua,
   tampilSampaiDari,
+  assertBolehUbahKonten,
   visibilitasKelolaWhere,
   visibilitasWhere,
 } from '../common/publikasi.helper';
+
+/** Kegiatan dianggap non-aktif mulai 7 hari setelah tanggal acara; ini batas tanggal acara terlamanya. */
+const batasAktif = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d;
+};
 
 const RINGKAS = {
   id: true,
@@ -88,14 +96,17 @@ export class KegiatanService {
   }
 
   /** Daftar untuk halaman kelola. Filter opsional: ?pengajuan=DIAJUKAN, ?area=RT_01 (scope ALL). */
-  findAll(ctx: AccessContext, params: { pengajuan?: string; area?: string } = {}) {
+  async findAll(ctx: AccessContext, params: { pengajuan?: string; area?: string } = {}) {
     const and: Prisma.KegiatanWhereInput[] = [{ isDelete: false }, visibilitasKelolaWhere(ctx)];
     if (params.pengajuan) and.push({ statusPengajuan: params.pengajuan as any });
     if (params.area && ctx.scope === 'ALL') and.push({ area: params.area as Area });
-    return this.prisma.kegiatan.findMany({
+    const rows = await this.prisma.kegiatan.findMany({
       where: { AND: and },
       orderBy: { tanggalAcara: 'desc' },
     });
+    // Kegiatan otomatis non-aktif seminggu setelah tanggal acara (tanpa menulis ke DB).
+    const batas = batasAktif();
+    return rows.map((k) => (k.tanggalAcara < batas ? { ...k, status: 'unactived' as const } : k));
   }
 
   /** Umpan dashboard warga: yang boleh dilihatnya, aktif, dan belum lewat batas tampil. */
@@ -103,7 +114,7 @@ export class KegiatanService {
     return this.prisma.kegiatan.findMany({
       where: {
         AND: [
-          { isDelete: false, status: 'active' },
+          { isDelete: false, status: 'active', tanggalAcara: { gte: batasAktif() } },
           visibilitasWhere(ctx),
           belumLewatBatasTampil(),
         ],
@@ -183,6 +194,7 @@ export class KegiatanService {
       throw new NotFoundException(`Kegiatan dengan ID ${id} tidak ditemukan`);
     }
     assertInArea(ctx, kegiatan.area);
+    assertBolehUbahKonten(ctx, kegiatan);
     return kegiatan;
   }
 

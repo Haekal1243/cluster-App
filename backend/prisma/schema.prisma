@@ -110,6 +110,7 @@ enum TipeNotifikasi {
   PENGAJUAN_DISETUJUI
   PENGAJUAN_DITOLAK
   PERUBAHAN_DATA
+  FEEDBACK_KEGIATAN
 }
 
 // ==========================================
@@ -222,6 +223,7 @@ model User {
   pengaduan  Pengaduan[]
   notifikasi Notifikasi[]
   pushSubscriptions PushSubscription[]
+  kegiatanFeedback  KegiatanFeedback[]
 
   @@index([roleId])
   @@index([area])
@@ -340,8 +342,31 @@ model Kegiatan {
   updatedAt       DateTime?
   isDelete        Boolean         @default(false)
 
+  feedback        KegiatanFeedback[]
+
   @@index([area])
   @@map("tb_Kegiatan")
+}
+
+// Masukan warga untuk kegiatan: bintang 1-5 + komentar opsional. Satu per warga per kegiatan.
+// Hanya pengurus (permission kegiatan.feedback_lihat) yang boleh melihat; kalau anonim, nama tidak dikirim ke klien.
+model KegiatanFeedback {
+  id            Int      @id @default(autoincrement())
+  kegiatanId    Int      @map("kegiatan_id")
+  userId        Int      @map("user_id")
+  rating        Int
+  komentar      String?  @db.Text
+  anonim        Boolean  @default(false)
+  disembunyikan Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  kegiatan      Kegiatan @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([kegiatanId, userId])
+  @@index([userId])
+  @@map("tb_Kegiatan_Feedback")
 }
 
 model Pengumuman {

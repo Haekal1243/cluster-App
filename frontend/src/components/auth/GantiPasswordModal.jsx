@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { KeyRound, X } from "lucide-react";
 import { authApi } from "@/lib/api";
-import { getUser, saveUser } from "@/lib/session";
+import { getUser, replaceToken, saveUser } from "@/lib/session";
 import { showMessage } from "@/lib/message";
 
 /**
@@ -26,10 +26,11 @@ export default function GantiPasswordModal({ wajib = false, onClose, onSuccess }
 
     setIsSaving(true);
     try {
-      await authApi.gantiPassword({
+      const hasil = await authApi.gantiPassword({
         passwordLama: form.passwordLama,
         passwordBaru: form.passwordBaru,
       });
+      replaceToken(hasil?.token);
       const user = getUser();
       if (user) saveUser({ ...user, wajibGantiPassword: false });
       await showMessage("Berhasil", "Kata sandi berhasil diganti.", "success");
@@ -100,7 +101,6 @@ export default function GantiPasswordModal({ wajib = false, onClose, onSuccess }
                 minLength={6}
                 required
               />
-              <span className="field-hint">Minimal 6 karakter.</span>
             </div>
             <div className="form-group">
               <label htmlFor="konfirmasi">

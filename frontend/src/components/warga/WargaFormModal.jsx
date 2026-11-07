@@ -150,7 +150,6 @@ export default function WargaFormModal({
                 onChange={handleChange}
                 required
               />
-              {!isEdit && <span className="field-hint">Dipakai sebagai nama pengguna untuk masuk bila kolom nama pengguna dikosongkan.</span>}
             </div>
 
             {!isEdit && (
@@ -257,7 +256,6 @@ export default function WargaFormModal({
                 minLength={6}
                 autoComplete="new-password"
               />
-              <span className="field-hint">Warga wajib menggantinya saat masuk pertama kali.</span>
             </div>
           </div>
 

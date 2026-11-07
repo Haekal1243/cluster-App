@@ -51,6 +51,14 @@ export function setToken(token, remember) {
   }
 }
 
+// Ganti kata sandi membatalkan semua token lama (termasuk token sesi ini); backend mengirim token
+// baru dan kita tulis ke penyimpanan yang sama dengan token lama supaya mode "Ingat saya" tidak berubah.
+export function replaceToken(token) {
+  if (typeof window === "undefined" || !token) return;
+  if (localStorage.getItem(TOKEN_KEY)) localStorage.setItem(TOKEN_KEY, token);
+  else sessionStorage.setItem(TOKEN_KEY, token);
+}
+
 export function clearSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(USER_KEY);
@@ -115,6 +123,11 @@ export function canAny(user, kodeList) {
 /** Level warga (level 3): melihat tampilan portal warga, bukan tampilan pengurus. */
 export function isWargaView(user) {
   return user?.roleLevel === 3;
+}
+
+/** Tampilan HP dengan menu bawah: warga, dan akun sistem tanpa ipl.read (mis. Admin). Pengurus RT/RW tetap pakai sidebar. */
+export function pakaiMenuBawah(user) {
+  return !!user && (isWargaView(user) || !can(user, "ipl.read"));
 }
 
 /** Pengurus RT: bukan warga, area-nya RT_xx (scope AREA). Jabatan (ketua/sekre/bendahara)

@@ -486,11 +486,12 @@ export function WargaIuranView({ user }) {
                         ) : ipl.statusPembayaran === "LUNAS" && ipl.pembayaran?.[0] ? (
                           <button
                             type="button"
-                            className="btn-ipl-neutral"
+                            className="btn-icon"
                             onClick={() => setRiwayatIpl(ipl)}
                             title="Lihat riwayat transaksi"
+                            aria-label="Lihat riwayat transaksi"
                           >
-                            <Eye size={14} /> Riwayat
+                            <Eye size={14} />
                           </button>
                         ) : (
                           <span className="text-muted">-</span>
@@ -503,8 +504,19 @@ export function WargaIuranView({ user }) {
             </div>
 
             <div className="iuran-grid">
-              {riwayatPage.map((ipl) => (
-                <div key={ipl.id} className="iuran-grid-card">
+              {riwayatPage.map((ipl) => {
+                const bisaRiwayat = ipl.statusPembayaran === "LUNAS" && !!ipl.pembayaran?.[0];
+                return (
+                <div
+                  key={ipl.id}
+                  className={`iuran-grid-card${bisaRiwayat ? " card-clickable" : ""}`}
+                  {...(bisaRiwayat && {
+                    role: "button",
+                    tabIndex: 0,
+                    onClick: () => setRiwayatIpl(ipl),
+                    onKeyDown: (e) => { if (e.key === "Enter") setRiwayatIpl(ipl); },
+                  })}
+                >
                   <h3 className="iuran-grid-title">
                     {getMonthLabel(ipl.bulanPeriode, ipl.tahunPeriode)}
                   </h3>
@@ -519,18 +531,9 @@ export function WargaIuranView({ user }) {
                       <button
                         type="button"
                         className="btn-primary btn-sm"
-                        onClick={() => setModalIpl(ipl)}
+                        onClick={(e) => { e.stopPropagation(); setModalIpl(ipl); }}
                       >
                         <Upload size={12} /> Bayar
-                      </button>
-                    ) : ipl.statusPembayaran === "LUNAS" && ipl.pembayaran?.[0] ? (
-                      <button
-                        type="button"
-                        className="btn-ipl-neutral"
-                        onClick={() => setRiwayatIpl(ipl)}
-                        title="Lihat riwayat transaksi"
-                      >
-                        <Eye size={12} /> Riwayat
                       </button>
                     ) : (
                       <span />
@@ -538,7 +541,8 @@ export function WargaIuranView({ user }) {
                     <WargaStatusBadge status={ipl.statusPembayaran} />
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <Pagination page={pageRiwayat} totalPages={totalPagesRiwayat} total={displayData.length} onPrev={prevRiwayat} onNext={nextRiwayat} />
           </>

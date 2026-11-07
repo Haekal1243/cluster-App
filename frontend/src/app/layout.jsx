@@ -1,10 +1,12 @@
 import "./globals.css";
-import { Syne, Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 
-const syne = Syne({
+// Huruf judul landing page: serif lembut (Fraunces), lebih hangat dan manusiawi daripada sans lebar yang kaku.
+// Variabel font (tanpa `weight`) supaya bobot 600–700 dan sumbu SOFT bisa dipakai.
+const display = Fraunces({
   subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-syne",
+  axes: ["opsz", "SOFT"],
+  variable: "--font-display",
   display: "swap",
 });
 
@@ -41,7 +43,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id" suppressHydrationWarning className={`${syne.variable} ${jakarta.variable}`}>
+    <html lang="id" suppressHydrationWarning className={`${display.variable} ${jakarta.variable}`}>
       <body>{children}</body>
     </html>
   );

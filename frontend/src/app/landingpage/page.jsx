@@ -5,6 +5,7 @@ import Kegiatan from "@/components/landing/Kegiatan";
 import Pengumuman from "@/components/landing/Pengumuman";
 import Pengurus from "@/components/landing/Pengurus";
 import Panduan from "@/components/landing/Panduan";
+import PetaRt from "@/components/landing/PetaRt";
 import Faq from "@/components/landing/Faq";
 import Footer from "@/components/landing/Footer";
 import { API_BASE_URL } from "@/lib/api";
@@ -33,7 +34,7 @@ export default async function HomePage() {
   ]);
 
   return (
-    <main>
+    <main style={{ position: "relative", overflowX: "clip" }}>
       <Navbar />
       <Hero />
       <Panduan />
@@ -41,6 +42,7 @@ export default async function HomePage() {
       <Kegiatan items={kegiatanItems} />
       <Pengumuman items={pengumumanItems} />
       <Pengurus />
+      <PetaRt />
       <Faq />
       <Footer />
     </main>

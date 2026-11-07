@@ -5,10 +5,11 @@ import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
+import BottomNav from "./BottomNav";
 import GantiPasswordModal from "@/components/auth/GantiPasswordModal";
 import NotifPrompt from "@/components/push/NotifPrompt";
 import { authApi } from "@/lib/api";
-import { getToken, getUser, saveUser, clearSession } from "@/lib/session";
+import { getToken, getUser, saveUser, clearSession, pakaiMenuBawah } from "@/lib/session";
 import { isPathAllowed } from "@/lib/nav";
 import { useUser } from "@/lib/useUser";
 import { showMessage } from "@/lib/message";
@@ -100,6 +101,10 @@ export default function DashboardShell({ children }) {
 
   // Di layar sempit (mobile), tombol hamburger buka/tutup sidebar overlay.
   // Di layar lebar (desktop), tombol yang sama menciutkan/melebarkan sidebar.
+  // Menu bawah ala warga di HP juga dipakai akun sistem (Admin) yang menunya sedikit;
+  // nama kelas "is-warga" dipertahankan karena CSS tampilan HP bergantung padanya.
+  const isWarga = pakaiMenuBawah(user);
+
   const handleMenuClick = () => {
     if (typeof window !== "undefined" && window.innerWidth < 900) {
       setIsMobileOpen((prev) => !prev);
@@ -109,7 +114,7 @@ export default function DashboardShell({ children }) {
   };
 
   return (
-    <div className="dashboard-shell">
+    <div className={`dashboard-shell${isWarga ? " is-warga" : ""}${pathname === "/dashboard/pengaturan" ? " is-pengaturan" : ""}`}>
       <Sidebar
         isOpen={isMobileOpen}
         onClose={() => setIsMobileOpen(false)}
@@ -124,6 +129,8 @@ export default function DashboardShell({ children }) {
 
       {/* Login pertama dengan password sementara dari pengurus RT: wajib ganti dulu */}
       {user?.wajibGantiPassword && <GantiPasswordModal wajib />}
+
+      {isWarga && <BottomNav user={user} />}
 
       <NotifPrompt />
     </div>

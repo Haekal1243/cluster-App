@@ -2,11 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-/**
- * Logo Topaz di Hero: tegak (tidak miring), melayang naik-turun pelan, dan makin buram lalu hilang
- * seiring halaman di-scroll ke bawah. Di bagian lain logo muncul lagi lewat LogoMuncul.
- * Opacity/blur ditulis langsung ke elemen (bukan state) supaya tidak render ulang tiap frame scroll.
- */
 export default function HeroLogo() {
   const ref = useRef(null);
 

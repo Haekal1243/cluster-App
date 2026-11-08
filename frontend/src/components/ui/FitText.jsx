@@ -2,11 +2,6 @@
 
 import { useLayoutEffect, useRef } from "react";
 
-/**
- * Teks satu baris yang mengecil otomatis sampai muat di lebar wadahnya
- * (untuk nominal Rupiah di kartu ringkasan: tampil penuh, tidak disingkat,
- * tidak terpotong "…"). Ukuran font bawaan CSS tetap dipakai selama masih muat.
- */
 export default function FitText({
   as: Tag = "span",
   className = "ipl-summary-value",

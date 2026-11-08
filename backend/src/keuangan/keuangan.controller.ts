@@ -29,7 +29,6 @@ export class KeuanganController {
     private readonly files: FileService,
   ) {}
 
-  /** POST /keuangan — Catat transaksi kas manual (bukti opsional) */
   @Post()
   @RequirePermission('keuangan', 'create')
   @UseInterceptors(FileInterceptor('bukti', keuanganMulterOptions))
@@ -41,7 +40,6 @@ export class KeuanganController {
     return this.keuanganService.create(ctx, dto, file);
   }
 
-  /** GET /keuangan/ringkasan — Ringkasan pemasukan otomatis + kas manual */
   @Get('ringkasan')
   @RequirePermission('keuangan', 'read')
   getRingkasan(
@@ -53,7 +51,6 @@ export class KeuanganController {
     return this.keuanganService.getRingkasan(ctx, { dari, sampai, area });
   }
 
-  /** GET /keuangan — Riwayat transaksi kas manual dengan filter opsional */
   @Get()
   @RequirePermission('keuangan', 'read')
   findAll(
@@ -68,7 +65,6 @@ export class KeuanganController {
     return this.keuanganService.findAll(ctx, { dari, sampai, tipe, kategori, search, area });
   }
 
-  /** GET /keuangan/export — Unduh Riwayat Kas (CSV/XLSX + saldo berjalan). Wajib di atas ':id'. */
   @Get('export')
   @RequirePermission('keuangan', 'read')
   async export(
@@ -84,21 +80,18 @@ export class KeuanganController {
     res.send(file.buffer);
   }
 
-  /** GET /keuangan/:id/bukti — unduh bukti file transaksi (butuh login + scope area). Wajib di atas ':id'. */
   @Get(':id/bukti')
   @RequirePermission('keuangan', 'read')
   async bukti(@Access() ctx: AccessContext, @Param('id') id: string, @Res() res: Response) {
     await this.files.kirim(res, await this.keuanganService.fileIdBukti(ctx, id));
   }
 
-  /** GET /keuangan/:id — Detail satu transaksi */
   @Get(':id')
   @RequirePermission('keuangan', 'read')
   findOne(@Access() ctx: AccessContext, @Param('id') id: string) {
     return this.keuanganService.findOne(ctx, id as any);
   }
 
-  /** PATCH /keuangan/:id — Perbarui transaksi */
   @Patch(':id')
   @RequirePermission('keuangan', 'update')
   @UseInterceptors(FileInterceptor('bukti', keuanganMulterOptions))
@@ -111,7 +104,6 @@ export class KeuanganController {
     return this.keuanganService.update(ctx, id as any, dto, file);
   }
 
-  /** DELETE /keuangan/:id — Hapus transaksi */
   @Delete(':id')
   @RequirePermission('keuangan', 'delete')
   remove(@Access() ctx: AccessContext, @Param('id') id: string) {

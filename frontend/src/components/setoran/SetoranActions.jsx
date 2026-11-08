@@ -4,10 +4,6 @@ import { useEffect, useRef } from "react";
 import { CheckCircle, Send, XCircle } from "lucide-react";
 import { areaLabel } from "@/lib/session";
 
-/**
- * Action bar + mode tolak. Desktop: footer / panel merah muda.
- * Mobile: sticky action bar / bottom sheet.
- */
 export default function SetoranActions({
   isMobile,
   data,

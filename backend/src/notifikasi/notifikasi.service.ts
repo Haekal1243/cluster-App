@@ -1,10 +1,10 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Area, ScopeAkses, TipeNotifikasi } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushService } from '../push/push.service';
 
-const RETENSI_SETELAH_DIBACA_MS = 24 * 60 * 60 * 1000; // 1 hari
+const RETENSI_SETELAH_DIBACA_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class NotifikasiService implements OnApplicationBootstrap {
@@ -15,15 +15,12 @@ export class NotifikasiService implements OnApplicationBootstrap {
     private pushService: PushService,
   ) {}
 
-  /** Job pembersih juga jalan sekali saat start, supaya keterlambatan (backend sempat mati) terkejar. */
   onApplicationBootstrap() {
     this.hapusNotifikasiDibaca().catch((err) =>
       this.logger.error('Gagal menjalankan pembersihan notifikasi saat start', err),
     );
   }
 
-  /** Notifikasi yang sudah ditandai dibaca otomatis dihapus 1 hari kemudian — biar tabel
-   * tb_Notifikasi tidak menumpuk tanpa batas. Yang belum dibaca tidak pernah dihapus otomatis. */
   @Cron(CronExpression.EVERY_HOUR)
   async hapusNotifikasiDibaca() {
     const batas = new Date(Date.now() - RETENSI_SETELAH_DIBACA_MS);
@@ -33,8 +30,6 @@ export class NotifikasiService implements OnApplicationBootstrap {
     if (count > 0) this.logger.log(`Menghapus ${count} notifikasi yang sudah dibaca >1 hari.`);
   }
 
-  /** Lempar push notification tanpa ditunggu (fire-and-forget) — kalau gagal, cukup
-   * di-log, tidak boleh bikin pembuatan notifikasi in-app (pemanggil method ini) ikut gagal. */
   private kirimPush(idUserList: number[], judul: string, pesan: string, link?: string | null) {
     this.pushService
       .kirimKeBanyak(idUserList, { title: judul, body: pesan, url: link })
@@ -44,6 +39,24 @@ export class NotifikasiService implements OnApplicationBootstrap {
   async kirim(idUser: number, tipe: TipeNotifikasi, judul: string, pesan: string, link?: string) {
     const data = await this.prisma.notifikasi.create({
       data: { idUser, tipe, judul, pesan, link },
+    });
+    this.kirimPush([idUser], judul, pesan, link);
+    return data;
+  }
+
+  async kirimAtauPerbarui(idUser: number, tipe: TipeNotifikasi, judul: string, pesan: string, link: string) {
+    const ada = await this.prisma.notifikasi.findMany({
+      where: { idUser, tipe, link, isRead: false },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (ada.length === 0) return this.kirim(idUser, tipe, judul, pesan, link);
+    const [utama, ...kembar] = ada;
+    if (kembar.length > 0) {
+      await this.prisma.notifikasi.deleteMany({ where: { id: { in: kembar.map((n) => n.id) } } });
+    }
+    const data = await this.prisma.notifikasi.update({
+      where: { id: utama.id },
+      data: { judul, pesan, createdAt: new Date() },
     });
     this.kirimPush([idUser], judul, pesan, link);
     return data;
@@ -65,15 +78,6 @@ export class NotifikasiService implements OnApplicationBootstrap {
     return data;
   }
 
-  /**
-   * Kirim ke semua user yang role-nya punya permission `kode` di tb_Role_permission,
-   * sesuai jangkauannya:
-   *   - scope ALL  : selalu ikut
-   *   - scope AREA : hanya bila area user sama dengan `area`
-   * `area` kosong atau RW berarti berlaku untuk seluruh RW, jadi semua pemegang
-   * permission (apa pun area-nya) ikut menerima.
-   * `kecualiUserId` dipakai supaya pembuat aksi tidak menotifikasi dirinya sendiri.
-   */
   async kirimKePermission(
     kode: string,
     area: Area | null | undefined,
@@ -102,13 +106,6 @@ export class NotifikasiService implements OnApplicationBootstrap {
     return this.kirimBanyak(users.map((u) => u.id), tipe, judul, pesan, link);
   }
 
-  /**
-   * Sama seperti `kirimKePermission`, tapi `area` SELALU dicocokkan persis (termasuk saat
-   * areanya 'RW') — tanpa shortcut "RW = seluruh RW" di atas. Dipakai Pengaduan, karena
-   * pengurus RW dan pengurus RT punya `pengaduan.respon` di area masing-masing, dan
-   * notifikasi pengaduan tujuan RW TIDAK boleh ikut nyasar ke pengurus RT (beda dari
-   * Kegiatan/Pengumuman/Pengajuan yang memang "RW = pengumuman berlaku untuk semua").
-   */
   async kirimKePermissionAreaPersis(
     kode: string,
     area: Area,
@@ -133,33 +130,32 @@ export class NotifikasiService implements OnApplicationBootstrap {
     return this.kirimBanyak(users.map((u) => u.id), tipe, judul, pesan, link);
   }
 
-  findByUser(userId: number) {
-    return this.prisma.notifikasi.findMany({
-      where: { idUser: userId },
-      orderBy: { createdAt: 'desc' },
-      take: 30,
-    });
+  async findByUser(userId: number) {
+    const [items, belumDibaca] = await Promise.all([
+      this.prisma.notifikasi.findMany({
+        where: { idUser: userId },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+      this.prisma.notifikasi.count({ where: { idUser: userId, isRead: false } }),
+    ]);
+    return { items, belumDibaca };
   }
 
   async markRead(id: number, userId: number) {
     const notif = await this.prisma.notifikasi.findUnique({ where: { id } });
     if (!notif) {
-      throw new NotFoundException(`Notifikasi dengan ID ${id} tidak ditemukan`);
+      return { id, dihapus: true };
     }
     if (notif.idUser !== userId) {
       throw new ForbiddenException('Anda tidak berhak mengubah notifikasi ini');
     }
-    return this.prisma.notifikasi.update({
-      where: { id },
-      data: { isRead: true, readAt: new Date() },
-    });
+    await this.prisma.notifikasi.delete({ where: { id } });
+    return { id, dihapus: true };
   }
 
   async markAllRead(userId: number) {
-    await this.prisma.notifikasi.updateMany({
-      where: { idUser: userId, isRead: false },
-      data: { isRead: true, readAt: new Date() },
-    });
-    return { message: 'Semua notifikasi ditandai sudah dibaca' };
+    const { count } = await this.prisma.notifikasi.deleteMany({ where: { idUser: userId } });
+    return { message: 'Semua notifikasi sudah dibaca dan dihapus', jumlah: count };
   }
 }

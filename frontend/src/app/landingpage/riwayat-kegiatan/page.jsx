@@ -30,7 +30,6 @@ export default async function RiwayatKegiatanPage({ searchParams }) {
   const { total, tahun, tahunTersedia, tahunDipilih } = await getRiwayat(Array.isArray(tahunQuery) ? tahunQuery[0] : tahunQuery);
   const sekarang = new Date();
 
-  // Terbaru di atas: tahun terbaru dulu, dan di tiap tahun kegiatan terdekat ke akhir tahun dulu.
   const urut = [...tahun]
     .sort((a, b) => b.tahun - a.tahun)
     .map((t) => ({
@@ -42,7 +41,6 @@ export default async function RiwayatKegiatanPage({ searchParams }) {
     <main>
       <Navbar />
 
-      {/* ── Kepala halaman ─────────────────────────────────────── */}
       <section className="rk-hero">
         <div className="rk-wrap">
           <Link href="/landingpage" className="rk-back">← Kembali ke beranda</Link>
@@ -68,7 +66,6 @@ export default async function RiwayatKegiatanPage({ searchParams }) {
         </div>
       </section>
 
-      {/* ── Daftar per tahun ───────────────────────────────────── */}
       <section className="rk-body">
         <div className="rk-wrap">
           {urut.length === 0 ? (

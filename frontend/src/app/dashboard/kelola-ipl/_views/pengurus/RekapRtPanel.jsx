@@ -5,7 +5,6 @@ import { iplApi } from "@/lib/api";
 import { areaLabel } from "@/lib/session";
 import { formatRupiah, formatYmPanjang } from "@/lib/format";
 
-// ── Rekap per RT (tampilan RW): tracking per RT, ikut filter aktif (periode/status/RT, tanpa search) ──
 export function RekapRtPanel({ dari, sampai, status, rt, refreshKey }) {
   const [rekap, setRekap] = useState(null);
 

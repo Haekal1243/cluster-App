@@ -7,7 +7,6 @@ import { NotifikasiService } from '../notifikasi/notifikasi.service';
 const SEMUA_RT: RT[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 const MS_HARI = 24 * 60 * 60 * 1000;
 
-/** Tanggal bawaan untuk tagihan lama yang belum punya jatuh tempo; bisa diubah lewat .env tanpa mengubah kode. */
 const hariDariEnv = (nama: string, bawaan: number) => {
   const n = Number(process.env[nama]);
   return Number.isInteger(n) && n >= 1 && n <= 28 ? n : bawaan;
@@ -17,20 +16,11 @@ const TANGGAL_JATUH_TEMPO_SETORAN = hariDariEnv('SETORAN_JATUH_TEMPO_TANGGAL', 1
 
 const rupiah = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
-/** Jatuh tempo periode "bulan/tahun" = tanggal `hari` di bulan itu, pukul 00.00. */
 const jatuhTempo = (bulan: string, tahun: string, hari: number) =>
   new Date(Number(tahun), Number(bulan) - 1, hari);
 
-/** Berapa hari sudah lewat dari jatuh tempo (0 = tepat hari ini, negatif = belum). */
 const hariTelat = (tempo: Date, hariIni: Date) => Math.floor((hariIni.getTime() - tempo.getTime()) / MS_HARI);
 
-/**
- * Pengingat harian, dikirim pukul 09.00 WIB selama belum beres:
- *  - Warga: tagihan IPL BELUM_LUNAS yang sudah jatuh tempo.
- *  - Pengurus RT (pemegang setoran.create di RT-nya): porsi IPL lunas yang belum disetor ke RW.
- * Pengingat kemarin yang belum dibaca diganti yang baru, jadi lonceng tidak menumpuk
- * berhari-hari. Tagihan berstatus MENUNGGU_KONFIRMASI tidak diingatkan (bukti sudah dikirim).
- */
 @Injectable()
 export class PengingatIplService {
   private readonly logger = new Logger(PengingatIplService.name);
@@ -57,7 +47,7 @@ export class PengingatIplService {
     const belum = await this.prisma.ipl.findMany({
       where: {
         statusPembayaran: 'BELUM_LUNAS',
-        rumah: { isDelete: false, userId: { not: null } },
+        rumah: { isDelete: false, OR: [{ userId: { not: null } }, { penyewaId: { not: null } }] },
       },
       select: {
         bulanPeriode: true,
@@ -65,19 +55,19 @@ export class PengingatIplService {
         nominalIpl: true,
         nominalKas: true,
         jatuhTempo: true,
+        idPenyewa: true,
         rumah: { select: { userId: true } },
       },
     });
 
     const perWarga = new Map<number, { jumlah: number; total: number; telat: number }>();
     for (const t of belum) {
-      // Kolom DATE terbaca sebagai UTC 00.00; ambil bagian tanggalnya supaya tidak bergeser sehari di WIB.
       const tempo = t.jatuhTempo
         ? new Date(t.jatuhTempo.getUTCFullYear(), t.jatuhTempo.getUTCMonth(), t.jatuhTempo.getUTCDate())
         : jatuhTempo(t.bulanPeriode, t.tahunPeriode, TANGGAL_JATUH_TEMPO_IPL);
       const telat = hariTelat(tempo, hariIni);
-      const userId = t.rumah.userId;
-      if (telat < 0 || userId === null) continue;
+      const userId = t.idPenyewa ?? t.rumah.userId;
+      if (telat < 0 || userId === null || userId === undefined) continue;
       const cur = perWarga.get(userId) ?? { jumlah: 0, total: 0, telat: 0 };
       cur.jumlah += 1;
       cur.total += t.nominalIpl + t.nominalKas;
@@ -136,11 +126,7 @@ export class PengingatIplService {
     return terkirim;
   }
 
-  /** Hapus pengingat lama yang belum dibaca di tautan yang sama, lalu kirim yang baru. */
   private async ganti(userId: number, link: string, judul: string, pesan: string) {
-    await this.prisma.notifikasi.deleteMany({
-      where: { idUser: userId, tipe: 'PENGINGAT_IPL', isRead: false, link },
-    });
-    await this.notifikasi.kirim(userId, 'PENGINGAT_IPL', judul, pesan, link);
+    await this.notifikasi.kirimAtauPerbarui(userId, 'PENGINGAT_IPL', judul, pesan, link);
   }
 }

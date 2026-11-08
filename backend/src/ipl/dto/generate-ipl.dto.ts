@@ -11,25 +11,21 @@ export class GenerateIplDto {
   @Matches(/^\d{4}$/, { message: 'tahunPeriode harus format 4 digit, contoh "2026"' })
   tahunPeriode: string;
 
-  /** Batas bayar tagihan periode ini (YYYY-MM-DD); warga diingatkan setiap hari sejak tanggal ini bila belum bayar. */
   @IsDateString({ strict: true }, { message: 'jatuhTempo harus tanggal format YYYY-MM-DD' })
   jatuhTempo: string;
 
-  /** Porsi IPL yang nanti disetor RT ke RW. */
   @Type(() => Number)
   @IsInt()
   @IsPositive({ message: 'nominalIpl harus lebih dari 0' })
   @Max(100_000_000, { message: 'nominalIpl terlalu besar (maksimal Rp 100.000.000)' })
   nominalIpl: number;
 
-  /** Potongan kas RT; tidak ikut disetor ke RW. */
   @Type(() => Number)
   @IsInt()
   @Min(0, { message: 'nominalKas tidak boleh negatif' })
   @Max(100_000_000, { message: 'nominalKas terlalu besar (maksimal Rp 100.000.000)' })
   nominalKas: number;
 
-  /** Hanya dipakai user ber-scope ALL (mis. admin); pengurus RT otomatis RT-nya sendiri. */
   @IsOptional()
   @IsEnum(RT)
   rt?: RT;

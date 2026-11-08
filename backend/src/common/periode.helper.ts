@@ -13,13 +13,6 @@ export interface ResolvedPeriode {
   sampaiYm: string;
 }
 
-/**
- * Expand ?dari=YYYY-MM&sampai=YYYY-MM menjadi daftar periode bulanan.
- * - Satu sisi saja boleh (dianggap satu bulan).
- * - Sisi terbalik otomatis ditukar.
- * - Maksimal 12 bulan.
- * - Tanpa param sama sekali → null (tanpa filter).
- */
 export function resolvePeriode(
   dari?: string,
   sampai?: string,
@@ -75,10 +68,6 @@ export function resolvePeriode(
   };
 }
 
-/**
- * Batas tanggal (inklusif-awal, eksklusif-akhir) dari YM agar bisa dipakai
- * untuk filter kolom DateTime seperti KasTransaksi.tanggal.
- */
 export function ymRangeToDates(dariYm: string, sampaiYm: string) {
   const [y1, m1] = dariYm.split('-').map(Number);
   const [y2, m2] = sampaiYm.split('-').map(Number);
@@ -88,7 +77,6 @@ export function ymRangeToDates(dariYm: string, sampaiYm: string) {
   };
 }
 
-/** YM bulan berjalan, mis. "2026-09". */
 export function currentYm() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

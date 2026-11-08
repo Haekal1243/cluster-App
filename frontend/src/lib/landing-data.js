@@ -1,5 +1,3 @@
-// Data landing page Portal Topaz.
-// Nantinya seluruh isi file ini diganti hasil query database (Prisma / API backend).
 
 export const statistik = {
   rw: "RW 21",

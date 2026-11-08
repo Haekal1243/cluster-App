@@ -20,12 +20,8 @@ export default function Sidebar({
   const { user } = useUser();
   const [showGantiPassword, setShowGantiPassword] = useState(false);
 
-  // Menu mengikuti hak akses (permission) user dari database, bukan nama role.
   const navItems = user ? NAV_ITEMS.filter((item) => item.allow(user)) : [];
 
-  // Menu aktif mengikuti prefix path (mis. /dashboard/kelola-ipl/tagihan-warga membuat
-  // menu Pengelolaan IPL aktif), konsisten dengan judul halaman & guard akses.
-  // Beranda ditangani khusus karena navItemFor() mengembalikannya null.
   const activeHref = pathname === "/dashboard" ? "/dashboard" : navItemFor(pathname)?.href;
 
   const handleLogout = async () => {
@@ -83,7 +79,6 @@ export default function Sidebar({
         </nav>
 
         <div className="sidebar-footer">
-          {/* Hak dasar akun: tampil untuk semua user login, tidak lewat permission menu */}
           <button
             type="button"
             className="sidebar-logout-btn sidebar-password-btn"

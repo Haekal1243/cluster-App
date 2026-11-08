@@ -5,7 +5,7 @@ import { Bell, X } from "lucide-react";
 import { pushApi } from "@/lib/api";
 
 const DISMISS_KEY = "notif-prompt-dismissed-at";
-const DISMISS_ULANG_HARI = 7; // muncul lagi 7 hari setelah ditutup, bukan hilang selamanya
+const DISMISS_ULANG_HARI = 7;
 
 function sudahDitutupBaruBaruIni() {
   const ts = Number(localStorage.getItem(DISMISS_KEY) || 0);
@@ -34,11 +34,6 @@ async function subscribeToPush(registration) {
   await pushApi.subscribe(sub.toJSON());
 }
 
-/** Banner kecil dismissible nawarin aktifkan push notification. Hanya tampil kalau
- * browser support (Chrome Android, dkk) dan izin belum pernah diputuskan ("default").
- * Ditutup manual → nongol lagi 7 hari kemudian (bukan hilang selamanya), karena orang
- * bisa aja nutup refleks tanpa benar-benar menolak. Kalau izin sudah "granted" dari
- * sebelumnya, diam-diam memastikan subscription masih aktif tanpa nge-nag. */
 export default function NotifPrompt() {
   const [show, setShow] = useState(false);
   const [registration, setRegistration] = useState(null);
@@ -76,8 +71,6 @@ export default function NotifPrompt() {
         await subscribeToPush(registration);
       }
     } catch (err) {
-      // Push bukan fitur kritikal — tidak perlu modal error ke user, tapi tetap di-log
-      // biar ketauan kalau ada yang gagal pas didiagnosis lewat console.
       console.error("[push] Gagal aktifkan notifikasi:", err);
     } finally {
       setBusy(false);

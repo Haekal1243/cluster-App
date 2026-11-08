@@ -23,10 +23,6 @@ function StatusBadge({ status }) {
   return <span className={`sd-status ${cls}`}>{STATUS_LABEL[status] || status}</span>;
 }
 
-/**
- * Modal Detail Setoran RT: dialog dua kolom di desktop (>=768px),
- * full-screen sheet di mobile. State di-hook agar utuh saat rotate/resize.
- */
 export default function SetoranDetailModal({ id, bolehKonfirmasi, onClose, onSuccess }) {
   const isMobile = useMediaQuery("(max-width: 767px)");
   const detail = useSetoranDetail(id, { onSuccess, onClose });
@@ -50,8 +46,6 @@ export default function SetoranDetailModal({ id, bolehKonfirmasi, onClose, onSuc
   const dialogRef = useRef(null);
   const stateRef = useRef({ pushed: false, closing: false });
   const onCloseRef = useRef(onClose);
-  // Mirror untuk handler history/focus yang hidup di luar render.
-  // Di-sync di effect (bukan saat render) agar tidak melanggar react-hooks/refs.
   const apiRef = useRef({ modeTolak: false, kotor: false, batalTolak: () => {} });
   const requestCloseRef = useRef(() => {});
 
@@ -74,7 +68,6 @@ export default function SetoranDetailModal({ id, bolehKonfirmasi, onClose, onSuc
       try {
         window.history.back();
       } catch {
-        /* abaikan, lanjut tutup langsung */
       }
     }
     onCloseRef.current();
@@ -90,7 +83,6 @@ export default function SetoranDetailModal({ id, bolehKonfirmasi, onClose, onSuc
     requestCloseRef.current = requestClose;
   });
 
-  // Scroll lock + fokus awal + tombol back (sheet dulu, lalu modal).
   useEffect(() => {
     const st = stateRef.current;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -110,7 +102,6 @@ export default function SetoranDetailModal({ id, bolehKonfirmasi, onClose, onSuc
         try {
           window.history.pushState({ sdModal: id }, "");
         } catch {
-          /* abaikan */
         }
         showConfirm(
           "Buang alasan penolakan?",
@@ -127,7 +118,6 @@ export default function SetoranDetailModal({ id, bolehKonfirmasi, onClose, onSuc
         try {
           window.history.pushState({ sdModal: id }, "");
         } catch {
-          /* abaikan */
         }
         api.batalTolak();
         return;

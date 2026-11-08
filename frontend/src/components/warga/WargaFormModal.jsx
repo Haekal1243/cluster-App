@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { isValidBlokRumah, sanitizePhoneInput } from "@/lib/validators";
 import Select from "@/components/ui/Select";
+import { wargaApi } from "@/lib/api";
+import { can } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
 
 const ALL_RT = ["RT_01", "RT_02", "RT_03", "RT_04"];
 
@@ -13,16 +16,11 @@ const EMPTY_FORM = {
   rt: "RT_01",
   blokRumah: "",
   statusRumah: "DIHUNI_TETAP",
+  sebagaiPenyewa: false,
   username: "",
-  email: "",
   password: "",
 };
 
-/**
- * Tambah / ubah warga. Saat tambah, akun dibuatkan sekalian (registrasi mandiri sudah
- * dihapus): login pakai username (default no HP) dan password sementara dari pengurus RT.
- * `allowedRts` membatasi RT yang boleh dipilih; `rumahKosong` untuk saran blok.
- */
 export default function WargaFormModal({
   open,
   mode = "create",
@@ -35,6 +33,10 @@ export default function WargaFormModal({
   const [form, setForm] = useState(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
   const [blokOpen, setBlokOpen] = useState(false);
+  const [usernameManual, setUsernameManual] = useState(false);
+  const [cekUsername, setCekUsername] = useState({ status: "idle", username: "" });
+  const { user } = useUser();
+  const bolehKontrak = !!user && can(user, "rumah.kontrak");
   const blokRef = useRef(null);
   const isEdit = mode === "edit";
 
@@ -56,18 +58,62 @@ export default function WargaFormModal({
 
   useEffect(() => {
     if (!open) return;
+    setUsernameManual(false);
+    setCekUsername({ status: "idle", username: "" });
     if (isEdit && initialData) {
       setForm({
         ...EMPTY_FORM,
         nama: initialData.namaUser ?? "",
         no_hp: initialData.noTelp ?? "",
         username: initialData.username ?? "",
-        email: initialData.email ?? "",
       });
     } else {
       setForm({ ...EMPTY_FORM, rt: allowedRts[0] ?? "RT_01" });
     }
   }, [open, isEdit, initialData, allowedRts]);
+
+  const abaikanId = isEdit ? initialData?.id : undefined;
+
+  useEffect(() => {
+    if (!open || isEdit || usernameManual) return;
+    const nama = form.nama.trim();
+    if (!nama) return;
+    let batal = false;
+    const t = setTimeout(() => {
+      wargaApi
+        .saranUsername({ nama, noHp: form.no_hp })
+        .then((r) => {
+          if (batal || !r?.username) return;
+          setForm((p) => ({ ...p, username: r.username }));
+          setCekUsername({ status: "ok", username: r.username });
+        })
+        .catch(() => {});
+    }, 400);
+    return () => {
+      batal = true;
+      clearTimeout(t);
+    };
+  }, [open, isEdit, usernameManual, form.nama, form.no_hp]);
+
+  useEffect(() => {
+    if (!open) return;
+    const u = form.username.trim();
+    if (!u) return;
+    if (cekUsername.username === u && cekUsername.status !== "cek") return;
+    let batal = false;
+    const t = setTimeout(() => {
+      setCekUsername({ status: "cek", username: u });
+      wargaApi
+        .cekUsername({ username: u, abaikanId })
+        .then((r) => { if (!batal) setCekUsername({ status: r?.tersedia ? "ok" : "dipakai", username: u }); })
+        .catch(() => { if (!batal) setCekUsername({ status: "idle", username: u }); });
+    }, 400);
+    return () => {
+      batal = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, form.username, abaikanId]);
 
   if (!open) return null;
 
@@ -86,9 +132,12 @@ export default function WargaFormModal({
     r.blokRumah.toUpperCase().includes(form.blokRumah.trim().toUpperCase())
   );
 
+  const usernameDipakai = form.username.trim() !== "" && cekUsername.username === form.username.trim() && cekUsername.status === "dipakai";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!blokValid) return;
+    if (usernameDipakai) return;
     setIsSaving(true);
     try {
       const payload = isEdit
@@ -96,7 +145,6 @@ export default function WargaFormModal({
             nama: form.nama,
             no_hp: form.no_hp,
             username: form.username || undefined,
-            email: form.email || undefined,
             ...(form.password ? { password: form.password } : {}),
           }
         : {
@@ -104,9 +152,8 @@ export default function WargaFormModal({
             no_hp: form.no_hp,
             rt: form.rt,
             blokRumah: form.blokRumah.trim(),
-            statusRumah: form.statusRumah,
+            ...(form.sebagaiPenyewa ? { sebagaiPenyewa: true } : { statusRumah: form.statusRumah }),
             username: form.username || undefined,
-            email: form.email || undefined,
             password: form.password || undefined,
           };
       await onSubmit(payload);
@@ -154,7 +201,7 @@ export default function WargaFormModal({
 
             {!isEdit && (
               <>
-                <div className="form-row-2">
+                <div className="form-row-2 form-row-tetap">
                   <div className="form-group">
                     <label htmlFor="rt">
                       RT <span className="required-star">*</span>
@@ -209,39 +256,61 @@ export default function WargaFormModal({
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="statusRumah">Status Rumah</label>
-                  <Select
-                    id="statusRumah"
-                    value={form.statusRumah}
-                    onChange={(v) => setForm((p) => ({ ...p, statusRumah: v }))}
-                    options={[
-                      { value: "DIHUNI_TETAP", label: "Dihuni (tetap)" },
-                      { value: "DIHUNI_KONTRAK", label: "Dihuni (kontrak)" },
-                      { value: "KOSONG", label: "Kosong (ada pemilik)" },
-                    ]}
-                  />
-                </div>
+                {bolehKontrak && (
+                  <label className="fb-anonim-cek" style={{ marginBottom: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={form.sebagaiPenyewa}
+                      onChange={(e) => setForm((p) => ({ ...p, sebagaiPenyewa: e.target.checked }))}
+                    />
+                    <span>
+                      Penyewa kontrak <small>(blok ini sudah punya pemilik; tagihan IPL baru ke akun ini)</small>
+                    </span>
+                  </label>
+                )}
+
+                {!form.sebagaiPenyewa && (
+                  <div className="form-group">
+                    <label htmlFor="statusRumah">Status Rumah</label>
+                    <Select
+                      id="statusRumah"
+                      value={form.statusRumah}
+                      onChange={(v) => setForm((p) => ({ ...p, statusRumah: v }))}
+                      options={[
+                        { value: "DIHUNI_TETAP", label: "Dihuni (tetap)" },
+                        { value: "DIHUNI_KONTRAK", label: "Dihuni (kontrak)" },
+                        { value: "KOSONG", label: "Kosong (ada pemilik)" },
+                      ]}
+                    />
+                  </div>
+                )}
               </>
             )}
 
-            <div className="form-row-2">
-              <div className="form-group">
-                <label htmlFor="username">Nama Pengguna</label>
-                <input
-                  id="username"
-                  name="username"
-                  className="form-control"
-                  placeholder="Kosong = pakai no. HP"
-                  value={form.username}
-                  onChange={handleChange}
-                  autoComplete="off"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="email">Email (opsional)</label>
-                <input id="email" name="email" type="email" className="form-control" value={form.email} onChange={handleChange} />
-              </div>
+            <div className="form-group">
+              <label htmlFor="username">Nama Pengguna</label>
+              <input
+                id="username"
+                name="username"
+                className="form-control"
+                placeholder="Otomatis dari nama + angka"
+                value={form.username}
+                onChange={(e) => {
+                  setUsernameManual(true);
+                  handleChange(e);
+                }}
+                autoComplete="off"
+              />
+              {form.username.trim() !== "" && cekUsername.username === form.username.trim() && (
+                <small className="field-hint" style={{ display: "block", color: cekUsername.status === "dipakai" ? "#dc2626" : cekUsername.status === "ok" ? "#0d9488" : undefined }}>
+                  {cekUsername.status === "cek" && "Memeriksa…"}
+                  {cekUsername.status === "ok" && "Nama pengguna tersedia."}
+                  {cekUsername.status === "dipakai" && "Nama pengguna sudah dipakai akun lain."}
+                </small>
+              )}
+              {!isEdit && !usernameManual && form.username && (
+                <small className="field-hint" style={{ display: "block" }}>Saran otomatis; boleh diubah.</small>
+              )}
             </div>
 
             <div className="form-group">

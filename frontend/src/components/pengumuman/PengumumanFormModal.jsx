@@ -52,7 +52,6 @@ export default function PengumumanFormModal({
 
     setIsSaving(true);
     try {
-      // Batas tampil hanya boleh diatur pengurus yang berhak menyetujui (ketua/sekre RW).
       const { durasiHari, ...dasar } = form;
       await onSubmit({ ...dasar, ...(canApprove ? { durasiHari } : {}), file });
     } finally {

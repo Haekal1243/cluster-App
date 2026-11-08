@@ -1,11 +1,9 @@
-/* ==========================================
-   DASHBOARD LAYOUT (Header, Sidebar, Footer)
-   ========================================== */
+
 
 .dashboard-shell {
   display: flex;
   height: 100vh;
-  height: 100dvh; /* tinggi layar yang benar-benar kelihatan di HP */
+  height: 100dvh;
   background: var(--db-bg);
   overflow: hidden;
 }
@@ -147,7 +145,7 @@
   background: rgba(255, 255, 255, 0.18);
 }
 
-/* Sidebar Footer — Logout */
+
 .sidebar-footer {
   padding: 14px;
   padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
@@ -193,7 +191,7 @@
   color: #ff4444;
 }
 
-/* Varian netral (Ganti Password) — bentuk sama dengan Keluar, tanpa warna merah */
+
 .sidebar-logout-btn.sidebar-password-btn {
   color: rgba(255, 255, 255, 0.75);
   margin-bottom: 4px;
@@ -209,7 +207,7 @@
   color: inherit;
 }
 
-/* collapsed state: hide text labels in footer */
+
 .dashboard-sidebar.collapsed .sidebar-footer .sidebar-link-label {
   display: none;
 }
@@ -346,7 +344,7 @@
   box-shadow: 0 0 0 2px var(--db-surface);
 }
 
-/* ---- Notifikasi ---- */
+
 .notif-wrap {
   position: relative;
 }
@@ -538,10 +536,7 @@
   gap: 24px;
 }
 
-/* Grid 2 kolom x 2 baris: judul selalu baris atas, tombol filter "nempel" di
-   kolom kanan menyatu tinggi sama judul+subjudul di desktop. Di mobile (lihat
-   media query di bawah), areanya diubah supaya judul selalu satu baris penuh
-   dan tombol filter turun sejajar subjudul — sesuai desain Figma. */
+
 .welcome-banner {
   display: grid;
   grid-template-columns: 1fr auto;

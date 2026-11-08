@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { getUser } from "./session";
 
-/** User yang sedang login (dari localStorage) dan ikut berubah saat `saveUser` dipanggil. */
 export function useUser() {
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);

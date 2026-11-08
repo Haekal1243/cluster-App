@@ -1,6 +1,4 @@
-/* =========================================================================
-   Perbaikan responsif (mobile) untuk komponen RBAC / setoran / pengajuan
-   ========================================================================= */
+
 .rt-badge { white-space: nowrap; }
 .content-card .ipl-table-header { flex-wrap: wrap; gap: 6px; }
 .pengumuman-grid-card, .warga-grid-card, .catatan-card { min-width: 0; }
@@ -9,14 +7,14 @@
 .keu-rincian-list li span { min-width: 0; }
 
 @media (max-width: 900px) {
-  /* Daftar role jadi baris yang bisa digeser, editor hak akses langsung terlihat di bawahnya */
+
   .rbac-role-list { flex-direction: row; overflow-x: auto; gap: 8px; padding-bottom: 6px; }
   .rbac-role-item { min-width: 168px; flex: 0 0 auto; }
   .rbac-add { width: auto; }
 }
 
 @media (max-width: 720px) {
-  /* Tab + pencarian + tombol tidak berebut satu baris */
+
   .page-toolbar-row .db-section-toggle { flex: 1 1 100%; }
   .page-toolbar-row > .warga-filter-bar,
   .page-toolbar-row > .list-toolbar-row { flex: 1 1 100%; }
@@ -27,7 +25,7 @@
   .rbac-role-actions { width: 100%; }
   .rbac-role-actions button { flex: 1 1 auto; justify-content: center; }
 
-  /* Editor izin: nama izin di atas, pilihan cakupan selebar kartu di bawahnya (dulu berdesakan satu baris) */
+
   .rbac-menu { padding: 12px; }
   .rbac-quick { width: 100%; }
   .rbac-quick button { flex: 1 1 auto; padding: 8px 10px; }
@@ -52,12 +50,12 @@
   .pengajuan-banner .btn-outline-neutral { margin-left: 0; }
 }
 
-/* Layout matriks role: kolom grid tidak boleh melebar mengikuti isi yang bisa digeser */
+
 .rbac-layout { grid-template-columns: 280px minmax(0, 1fr); }
 .rbac-roles { min-width: 0; }
 @media (max-width: 900px) { .rbac-layout { grid-template-columns: minmax(0, 1fr); } }
 
-/* Dashboard pengelola sistem (Admin) */
+
 .panel-sistem-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
 .panel-sistem-link {
   display: flex; align-items: center; gap: 12px; padding: 14px 16px; text-decoration: none;
@@ -68,7 +66,7 @@
 .panel-sistem-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: var(--db-success-bg); color: var(--db-primary); }
 .panel-sistem-arrow { margin-left: auto; color: var(--db-slate-400); }
 
-/* ── Dashboard Bendahara RW ── */
+
 .rw-hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .rw-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; }
 .rw-persen { font-weight: 800; color: #065f46; }
@@ -110,7 +108,7 @@
 @media (max-width: 767px) {
   .rw-hero-actions .rw-cta { width: 100%; justify-content: center; }
 }
-/* Rekap per RT (Tagihan Warga, tampilan RW): pasangan label-nilai di kartu HP. */
+
 .rekap-rt-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -121,7 +119,7 @@
 .rekap-rt-grid dt { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--db-slate-400); }
 .rekap-rt-grid dd { margin: 2px 0 0; font-size: 0.85rem; font-weight: 600; color: var(--db-slate-700); overflow-wrap: anywhere; }
 
-/* ── Banner "aktifkan notifikasi" (push) ── */
+
 .notif-prompt {
   position: fixed;
   left: 16px;
@@ -166,8 +164,7 @@
   .notif-prompt-actions { width: 100%; justify-content: flex-end; }
 }
 
-/* Kartu data (pengganti baris tabel di mobile; di desktop dipakai Catatan Rapat, Pengaduan, dll): bayangan tipis biar terasa terangkat dan
-   gampang dibedakan antar kartu. Border tetap ada; hover masing-masing kartu menimpa ini. */
+
 .pengaduan-card,
 .pengumuman-grid-card,
 .kegiatan-grid-card,
@@ -177,13 +174,13 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-/* Kartu summary: bayangan lebih halus dari kartu data karena sudah berwarna/berikon. */
+
 .ipl-summary-card,
 .keu-card {
   box-shadow: 0 3px 10px rgba(15, 23, 42, 0.10), 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
-/* Kartu kegiatan & pengumuman di beranda (semua role): bayangan dasar, hover tetap menimpa. */
+
 .portal-kegiatan-card,
 .portal-info-card {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.07), 0 1px 2px rgba(15, 23, 42, 0.04);

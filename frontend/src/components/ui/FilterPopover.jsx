@@ -4,8 +4,6 @@ import { Children, cloneElement, isValidElement, useCallback, useEffect, useRef,
 import { Filter, ChevronDown } from "lucide-react";
 import Select from "./Select";
 
-// Di mobile, semua Select di dalam popover otomatis jadi radio list inline
-// (tanpa dropdown-dalam-dropdown). Input lain (month, teks) dibiarkan apa adanya.
 function withMobileSelect(children) {
   return Children.map(children, (child) => {
     if (!isValidElement(child)) return child;
@@ -34,12 +32,8 @@ export default function FilterPopover({
   applyDisabled = false,
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
-  // Mode controlled (bila prop open diberikan) atau uncontrolled seperti semula.
-  // Pemakaian lama tanpa prop baru tetap berperilaku sama persis.
   const open = controlledOpen ?? internalOpen;
 
-  // Simpan nilai terbaru di ref agar setOpen tidak perlu open sebagai dependency,
-  // sehingga ukuran deps array useEffect selalu konstan.
   const openRef = useRef(open);
   openRef.current = open;
 
@@ -60,8 +54,6 @@ export default function FilterPopover({
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e) => {
-      // Klik di dalam menu dropdown (portal) milik Select dianggap klik di dalam:
-      // pilih opsi tidak ikut menutup popover.
       if (e.target?.closest?.("[data-select-menu]")) return;
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };

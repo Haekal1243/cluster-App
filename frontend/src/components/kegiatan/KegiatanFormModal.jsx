@@ -62,7 +62,6 @@ export default function KegiatanFormModal({
 
     setIsSaving(true);
     try {
-      // Portofolio landing & batas tampil hanya boleh diatur pengurus yang berhak menyetujui (ketua/sekre RW).
       const { tampilDiLanding, durasiHari, ...dasar } = form;
       await onSubmit({
         ...dasar,

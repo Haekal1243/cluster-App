@@ -18,13 +18,11 @@ export default function Hero() {
     >
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "#0D9488" }} />
 
-      {/* Blob gradient melayang pelan di background — cuma transform yang di-animate, murah buat GPU */}
       <div className="lp-hero-blob lp-hero-blob-a" aria-hidden="true" />
       <div className="lp-hero-blob lp-hero-blob-b" aria-hidden="true" />
 
       <div className="lp-hero-inner" style={{ position: "relative", zIndex: 1, maxWidth: 1200, margin: "0 auto", padding: "72px 48px 56px", width: "100%" }}>
         <div className="lp-hero-grid">
-          {/* Kolom kiri - Teks */}
           <div className="tz-hero-kiri" style={{ animation: "lpFadeUp 0.6s ease both" }}>
             <p className="tz-hero-eyebrow">Portal Resmi · RW 21 · Permata Cimanggis · Kota Depok</p>
             <h1 className="tz-hero-title">
@@ -44,7 +42,6 @@ export default function Hero() {
 
           </div>
 
-          {/* Kolom kanan - Logo Topaz, goyang pelan */}
           <HeroLogo />
         </div>
       </div>

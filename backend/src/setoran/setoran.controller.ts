@@ -28,14 +28,12 @@ export class SetoranController {
     private readonly files: FileService,
   ) {}
 
-  /** GET /setoran/siap-setor — pratinjau total porsi IPL yang belum disetor */
   @Get('siap-setor')
   @RequirePermission('setoran', 'create')
   siapSetor(@Access() ctx: AccessContext, @Query('rt') rt?: RT) {
     return this.setoranService.siapSetor(ctx, rt);
   }
 
-  /** POST /setoran — setor semua porsi IPL lunas yang belum disetor (multipart: bukti) */
   @Post()
   @RequirePermission('setoran', 'create')
   @UseInterceptors(FileInterceptor('bukti', setoranMulterOptions))
@@ -65,7 +63,6 @@ export class SetoranController {
     return this.setoranService.findOne(ctx, id);
   }
 
-  /** GET /setoran/:id/bukti — unduh bukti transfer setoran (butuh login + scope area) */
   @Get(':id/bukti')
   @RequirePermission('setoran', 'read')
   async bukti(
@@ -76,7 +73,6 @@ export class SetoranController {
     await this.files.kirim(res, await this.setoranService.fileIdBukti(ctx, id));
   }
 
-  /** PATCH /setoran/:id/konfirmasi — bendahara RW menerima/menolak setoran */
   @Patch(':id/konfirmasi')
   @RequirePermission('setoran', 'konfirmasi')
   konfirmasi(

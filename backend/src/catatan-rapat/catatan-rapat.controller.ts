@@ -55,7 +55,6 @@ export class CatatanRapatController {
     return this.catatanRapatService.findOne(ctx, id);
   }
 
-  /** Unduh file notulen (butuh login + berada di wilayah yang sama). */
   @Get(':id/file')
   @RequirePermission('catatan_rapat', 'read')
   async file(

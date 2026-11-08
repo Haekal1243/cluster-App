@@ -26,7 +26,6 @@ export class SetoranService {
     private files: FileService,
   ) {}
 
-  /** Tentukan RT yang disetor: RT sendiri untuk bendahara RT, atau dipilih untuk scope ALL. */
   private resolveRt(ctx: AccessContext, rt?: RT): RT {
     const area = areaFilter(ctx);
     if (area === null) {
@@ -37,10 +36,6 @@ export class SetoranService {
     return area;
   }
 
-  /**
-   * Tagihan lunas yang porsi IPL-nya belum pernah disetor. Rumah KOSONG
-   * dikecualikan: porsi IPL-nya dialihkan menjadi kas RT (tidak disetor ke RW).
-   */
   private tagihanSiapSetor(rt: RT): Prisma.IplWhereInput {
     return {
       statusPembayaran: 'LUNAS',
@@ -49,7 +44,6 @@ export class SetoranService {
     };
   }
 
-  /** Tagihan lunas rumah KOSONG: tetap dibayar pemiliknya tapi masuk kas RT. */
   private tagihanKosongDikecualikan(rt: RT): Prisma.IplWhereInput {
     return {
       statusPembayaran: 'LUNAS',
@@ -58,9 +52,6 @@ export class SetoranService {
     };
   }
 
-  // ================================================================
-  // PRATINJAU — berapa yang akan disetor bila klik "Setor" sekarang
-  // ================================================================
 
   async siapSetor(ctx: AccessContext, rt?: RT) {
     const target = this.resolveRt(ctx, rt);
@@ -85,9 +76,6 @@ export class SetoranService {
     };
   }
 
-  // ================================================================
-  // BUAT SETORAN — bendahara RT mengumpulkan semua porsi IPL yang belum disetor
-  // ================================================================
 
   async create(ctx: AccessContext, rt: RT | undefined, file?: Express.Multer.File) {
     const target = this.resolveRt(ctx, rt);
@@ -120,7 +108,6 @@ export class SetoranService {
         },
       });
 
-      // Klaim hanya yang masih kosong; kalau ada yang keburu diambil setoran lain, batalkan semua.
       const diklaim = await tx.ipl.updateMany({
         where: { id: { in: tagihan.map((t) => t.id) }, setoranId: null },
         data: { setoranId: created.id },
@@ -130,7 +117,6 @@ export class SetoranService {
       }
       return created;
     }).catch(async (err) => {
-      // Setoran gagal dibuat: jangan tinggalkan bukti yatim di database.
       await this.files.hapus(buktiId);
       throw err;
     });
@@ -154,9 +140,6 @@ export class SetoranService {
     return { message: 'Setoran berhasil dikirim. Menunggu konfirmasi bendahara RW.', data: setoran };
   }
 
-  // ================================================================
-  // DAFTAR & DETAIL
-  // ================================================================
 
   async findAll(
     ctx: AccessContext,
@@ -169,8 +152,6 @@ export class SetoranService {
     };
     const range = resolvePeriode(params.dari, params.sampai);
     if (range) {
-      // Filter berdasarkan periode tagihan yang ada di dalam setoran (bukan tanggal setor),
-      // agar tracking per RT sinkron dengan filter periode di tabel Tagihan IPL.
       (where as any).tagihan = { some: { OR: range.periodeOr } };
     }
     const data = await this.prisma.setoranIpl.findMany({
@@ -215,11 +196,6 @@ export class SetoranService {
     if (!setoran) throw new NotFoundException(`Setoran dengan ID ${id} tidak ditemukan.`);
     assertInArea(ctx, setoran.area);
 
-    // Konteks untuk RW: tagihan yang TIDAK ikut setoran ini, dibatasi pada
-    // periode yang ada di setoran agar ringkas dan relevan —
-    // (1) rumah kosong (masuk kas RT, semua status, ber-badge),
-    // (2) pembayaran menunggu konfirmasi RT,
-    // (3) tagihan BELUM_LUNAS rumah dihuni.
     const periodeSet = new Map(
       setoran.tagihan.map((t) => [`${t.tahunPeriode}-${t.bulanPeriode}`, { bulanPeriode: t.bulanPeriode, tahunPeriode: t.tahunPeriode }]),
     );
@@ -294,16 +270,12 @@ export class SetoranService {
     return { ...setoran, konteks: { kosongDikecualikan, menunggu, belumBayar } };
   }
 
-  /** Id file bukti transfer setoran; dicek scope dulu, file ini tidak boleh diambil lewat GET /files/:id publik. */
   async fileIdBukti(ctx: AccessContext, id: number) {
     const setoran = await this.findOne(ctx, id);
     if (!setoran.buktiTransaksi) throw new NotFoundException('Setoran ini tidak memiliki bukti transfer.');
     return setoran.buktiTransaksi;
   }
 
-  // ================================================================
-  // KONFIRMASI / TOLAK — bendahara RW
-  // ================================================================
 
   async konfirmasi(ctx: AccessContext, id: number, dto: KonfirmasiSetoranDto) {
     const setoran = await this.findOne(ctx, id);
@@ -311,8 +283,6 @@ export class SetoranService {
       throw new BadRequestException('Setoran ini tidak dalam status "Menunggu Konfirmasi".');
     }
 
-    // Keputusan dikunci atomik pada status MENUNGGU_KONFIRMASI: pengecekan di atas di luar transaksi,
-    // sehingga TERIMA dan TOLAK yang datang bersamaan sama-sama lolos. Hanya satu yang boleh menang.
     const sudahDiputuskan = () =>
       new ConflictException('Setoran ini baru saja diputuskan oleh pengguna lain. Muat ulang halaman.');
 
@@ -347,7 +317,6 @@ export class SetoranService {
     if (!dto.catatan?.trim()) {
       throw new BadRequestException('Alasan penolakan wajib diisi.');
     }
-    // Tagihan dilepas lagi supaya otomatis ikut setoran berikutnya.
     await this.prisma.$transaction(async (tx) => {
       const hasil = await tx.setoranIpl.updateMany({
         where: { id, status: 'MENUNGGU_KONFIRMASI' },

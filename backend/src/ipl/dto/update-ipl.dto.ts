@@ -16,10 +16,6 @@ export class UpdateIplDto {
   @Max(100_000_000, { message: 'nominalKas terlalu besar (maksimal Rp 100.000.000)' })
   nominalKas?: number;
 
-  /**
-   * Alasan koreksi — wajib diisi bila nominal berubah. Dicatat di jejak audit
-   * dan diteruskan ke RW agar koreksi tidak bisa dilakukan diam-diam.
-   */
   @IsOptional()
   @IsString()
   @MaxLength(500)

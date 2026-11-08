@@ -1,8 +1,4 @@
-/*
- * Target sentuh minimal 44x44 px (WCAG 2.5.5 / pedoman Apple & Material) untuk perangkat sentuh
- * dan layar sempit. Tombol ikon kecil diperbesar area kliknya; tampilan ikon tetap sama karena
- * isinya dipusatkan.
- */
+
 @media (pointer: coarse), (max-width: 768px) {
   .sidebar-close,
   .header-menu-btn,
@@ -24,7 +20,6 @@
   }
 }
 
-/* Tombol ikon aksi (ubah/hapus/lihat/centang) seragam di mobile untuk semua menu. */
 @media (max-width: 768px) {
   .btn-icon {
     width: 38px;

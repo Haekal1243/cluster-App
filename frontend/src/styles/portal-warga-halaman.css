@@ -1,4 +1,4 @@
-/* ---- Portal Pengumuman List ---- */
+
 .portal-pengumuman-list {
   list-style: none;
   padding: 0;
@@ -41,7 +41,7 @@
   margin-top: 2px !important;
 }
 
-/* ---- Portal Pengumuman Expandable (dashboard) ---- */
+
 .portal-peng-expandable {
   gap: 4px;
 }
@@ -132,7 +132,7 @@
   text-decoration: underline;
 }
 
-/* ---- Portal Kegiatan Strip (dashboard): kartu foto geser horizontal ---- */
+
 .portal-keg-section {
   padding: 22px 24px;
 }
@@ -244,7 +244,7 @@
   line-height: 1.6;
 }
 
-/* ---- Portal Info Card (Pengumuman page) ---- */
+
 .portal-card-list {
   display: flex;
   flex-direction: column;
@@ -313,7 +313,7 @@
 
 .portal-download-link:hover { text-decoration: underline; }
 
-/* ---- Portal Kegiatan Grid ---- */
+
 .portal-kegiatan-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -374,9 +374,7 @@
   color: var(--db-muted);
 }
 
-/* Card kegiatan sempit (grid 2 kolom di mobile) bikin tanggal sering turun
-   2 baris — ikon kalender disejajarkan ke baris pertama, bukan ke tengah,
-   biar nggak numpuk/dempet sama baris keduanya. */
+
 .portal-kegiatan-meta .meta-item {
   align-items: flex-start;
 }
@@ -384,9 +382,7 @@
   margin-top: 2px;
 }
 
-/* Baris ikon + teks (mis. ikon kalender + tanggal) di dalam meta row manapun —
-   pakai di setiap <span>/<a> yang membungkus sebuah ikon lucide + teks singkat,
-   supaya ikon dan teks selalu sejajar vertikal. */
+
 .meta-item {
   display: inline-flex;
   align-items: center;
@@ -399,7 +395,7 @@
   flex-shrink: 0;
 }
 
-/* ---- Tagihan Hero Card ---- */
+
 .portal-tagihan-hero {
   background: var(--db-surface);
   border: 1px solid var(--db-border);
@@ -479,7 +475,7 @@
   transform: translateY(-1px);
 }
 
-/* ---- Portal Rumah Selector ---- */
+
 .portal-rumah-selector {
   display: flex;
   align-items: center;
@@ -526,7 +522,7 @@
   pointer-events: none;
 }
 
-/* ---- IPL Status Badges ---- */
+
 .ipl-status-badge {
   display: inline-flex;
   align-items: center;
@@ -553,7 +549,7 @@
   color: #d97706;
 }
 
-/* ---- Status Pengaduan (dipakai bareng .ipl-status-badge) ---- */
+
 .ipl-status-badge.status-diproses {
   background: rgba(29,78,216,0.12);
   color: var(--db-info);
@@ -569,7 +565,7 @@
   color: var(--db-danger);
 }
 
-/* ---- Bukti Upload Modal ---- */
+
 .bukti-info-card {
   background: var(--db-bg);
   border: 1px solid var(--db-border);
@@ -683,7 +679,7 @@
 
 .bukti-ganti-btn:hover { border-color: #6366f1; color: #6366f1; }
 
-/* ---- Misc ---- */
+
 .text-muted { color: var(--db-muted); }
 .text-success { color: #16a34a; }
 .text-sm { font-size: 0.82rem; }
@@ -718,14 +714,14 @@
 
 .link-lihat-semua:hover { text-decoration: underline; }
 
-/* Portal collapsed sidebar */
+
 .portal-sidebar.collapsed .portal-user-card,
 .portal-sidebar.collapsed .portal-user-info,
 .portal-sidebar.collapsed .portal-user-role {
   display: none;
 }
 
-/* Portal responsive */
+
 @media (max-width: 900px) {
   .portal-main {
     margin-left: 0;
@@ -767,7 +763,7 @@
     line-height: 1.3;
   }
 
-  /* Nominal di kiri dan jumlah tagihan di kanan, satu baris, dipisah garis tipis dari judul. */
+
   .portal-tagihan-hero-right {
     flex-direction: row;
     align-items: baseline;
@@ -845,8 +841,7 @@
   }
 }
 
-/* Dashboard Warga — mobile compact (sesuai desain Figma mobile), lebih padat
-   daripada breakpoint 900px di atas yang sekadar men-stack layout desktop. */
+
 @media (max-width: 640px) {
   .page-stack {
     gap: 16px;
@@ -856,7 +851,7 @@
     padding: 16px;
   }
 
-  /* Welcome banner lebih ringkas */
+
   .portal-welcome-banner {
     padding: 16px 18px;
   }
@@ -878,7 +873,7 @@
     top: -30px;
   }
 
-  /* Stat cards: tetap 2 kolom berdampingan, dipadatkan */
+
   .portal-stat-row {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -913,7 +908,7 @@
     font-size: 0.66rem;
   }
 
-  /* Kegiatan: grid 2 kolom, card compact/square seperti di Figma */
+
   .portal-kegiatan-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -938,10 +933,7 @@
     overflow: hidden;
   }
 
-  /* Deskripsi disembunyikan di grid mobile — cukup judul + tanggal.
-     Discope ke .portal-kegiatan-card aja (card compact di grid), soalnya
-     class yang sama juga dipakai buat isi Detail Kegiatan modal — kalau
-     nggak discope, deskripsi di modal ikut ke-hide di mobile. */
+
   .portal-kegiatan-card .portal-kegiatan-desc {
     display: none;
   }
@@ -951,7 +943,7 @@
     gap: 6px;
   }
 
-  /* Pengumuman: card lebih padat, deskripsi dipotong 2 baris saja */
+
   .portal-info-card {
     padding: 14px;
     gap: 12px;
@@ -974,10 +966,7 @@
     margin-bottom: 4px;
   }
 
-  /* Deskripsi dipotong 2 baris cuma di card list (.portal-info-card) —
-     class yang sama dipakai juga di Detail Pengumuman modal, jadi discope
-     biar deskripsi lengkap di modal nggak ikut kepotong (lihat kasus sama
-     di .portal-kegiatan-desc). */
+
   .portal-info-card .portal-info-card-desc {
     font-size: 0.78rem;
     line-height: 1.45;

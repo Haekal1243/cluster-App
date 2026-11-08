@@ -1,8 +1,8 @@
 import "./globals.css";
+import PesanValidasi from "@/components/ui/PesanValidasi";
+import DialogHost from "@/components/ui/DialogHost";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 
-// Huruf judul landing page: serif lembut (Fraunces), lebih hangat dan manusiawi daripada sans lebar yang kaku.
-// Variabel font (tanpa `weight`) supaya bobot 600–700 dan sumbu SOFT bisa dipakai.
 const display = Fraunces({
   subsets: ["latin"],
   axes: ["opsz", "SOFT"],
@@ -28,11 +28,6 @@ export const metadata = {
   },
 };
 
-// maximumScale 1 + userScalable false mematikan pinch-zoom/double-tap-zoom di seluruh
-// halaman supaya app terasa seperti app native, bukan tab browser. Zoom foto bukti
-// pembayaran tetap jalan karena pakai touch-action: pinch-zoom per-elemen (lihat
-// .protected-lightbox-overlay.is-fullscreen di globals.css), yang didukung browser
-// modern meski viewport-nya sendiri mengunci skala.
 export const viewport = {
   themeColor: "#0d9488",
   width: "device-width",
@@ -44,7 +39,11 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id" suppressHydrationWarning className={`${display.variable} ${jakarta.variable}`}>
-      <body>{children}</body>
+      <body>
+        <PesanValidasi />
+        <DialogHost />
+        {children}
+      </body>
     </html>
   );
 }

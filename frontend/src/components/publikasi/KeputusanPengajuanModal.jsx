@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { areaLabel } from "@/lib/session";
 
-/** Ketua/sekre RW memutuskan pengajuan tampil ke seluruh warga: setujui (dengan batas tampil) atau tolak (dengan alasan). */
 export default function KeputusanPengajuanModal({ open, item, noun = "kegiatan", onClose, onSubmit }) {
   const [action, setAction] = useState("SETUJU");
   const [durasiHari, setDurasiHari] = useState("");

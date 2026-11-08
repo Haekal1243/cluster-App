@@ -32,19 +32,16 @@ export class CreateKegiatanDto {
   @IsOptional()
   status?: StatusKegiatan;
 
-  /** Hanya dipakai user ber-scope ALL (admin). Selain itu area otomatis dari jabatan. */
   @IsOptional()
   @Transform(kosongJadiUndefined)
   @IsEnum(Area)
   area?: Area;
 
-  /** Khusus pengurus yang berhak menyetujui (ketua/sekre RW): tampil di portofolio landing page. */
   @IsOptional()
   @Transform(keBoolean)
   @IsBoolean()
   tampilDiLanding?: boolean;
 
-  /** Khusus pengurus yang berhak menyetujui: berapa hari tampil di dashboard warga (0 = tanpa batas). */
   @IsOptional()
   @Transform(kosongJadiUndefined)
   @Type(() => Number)

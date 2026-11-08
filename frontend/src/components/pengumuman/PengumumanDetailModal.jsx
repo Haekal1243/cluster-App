@@ -1,6 +1,7 @@
 "use client";
 
-import { Megaphone, FileText, Calendar } from "lucide-react";
+import { Megaphone, FileText } from "lucide-react";
+import DetailModal from "@/components/ui/DetailModal";
 import { pengumumanApi } from "@/lib/api";
 import { formatTanggalPanjang as formatDate } from "@/lib/format";
 import { can } from "@/lib/session";
@@ -9,46 +10,40 @@ import { useUser } from "@/lib/useUser";
 export default function PengumumanDetailModal({ pengumuman, onClose }) {
   const { user } = useUser();
   if (!pengumuman) return null;
-  // Alasan penolakan RW hanya untuk pengurus (yang bisa mengelola pengumuman), bukan warga.
   const bolehLihatAlasan = !!user && can(user, "pengumuman.update");
 
+  const info = [{ label: "Tanggal", value: formatDate(pengumuman.createDate), penuh: !pengumuman.filePengumuman }];
+  if (pengumuman.filePengumuman) {
+    info.push({
+      label: "Lampiran",
+      value: (
+        <a
+          href={pengumumanApi.fileUrl?.(pengumuman.filePengumuman) || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="portal-download-link"
+        >
+          <FileText size={12} /> Lihat Lampiran
+        </a>
+      ),
+    });
+  }
+
   return (
-    <div className="ipl-modal-overlay" onClick={onClose}>
-      <div className="ipl-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="ipl-modal-header">
-          <h3><Megaphone size={16} /> Detail Pengumuman</h3>
-          <button className="ipl-modal-close" onClick={onClose}>✕</button>
+    <DetailModal
+      title="Detail Pengumuman"
+      icon={Megaphone}
+      onClose={onClose}
+      judul={pengumuman.judul}
+      info={info}
+      deskripsi={pengumuman.keteranganPengumuman}
+    >
+      {bolehLihatAlasan && pengumuman.statusPengajuan === "DITOLAK" && pengumuman.alasanTolak && (
+        <div className="review-desc-card">
+          <span className="review-info-label">Alasan Ditolak</span>
+          <p className="review-desc-text">{pengumuman.alasanTolak}</p>
         </div>
-        <div className="ipl-modal-body">
-          <h3 className="portal-info-card-title">{pengumuman.judul}</h3>
-
-          <div className="portal-info-card-meta">
-            <span className="meta-item"><Calendar size={12} /> {formatDate(pengumuman.createDate)}</span>
-            {pengumuman.filePengumuman && (
-              <a
-                href={pengumumanApi.fileUrl?.(pengumuman.filePengumuman) || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="portal-download-link"
-              >
-                <FileText size={12} /> Lihat Lampiran
-              </a>
-            )}
-          </div>
-
-          {pengumuman.keteranganPengumuman && (
-            <p className="portal-info-card-desc" style={{ whiteSpace: "pre-wrap" }}>
-              {pengumuman.keteranganPengumuman}
-            </p>
-          )}
-
-          {bolehLihatAlasan && pengumuman.statusPengajuan === "DITOLAK" && pengumuman.alasanTolak && (
-            <p className="portal-info-card-desc" style={{ whiteSpace: "pre-wrap" }}>
-              <strong>Alasan ditolak:</strong> {pengumuman.alasanTolak}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </DetailModal>
   );
 }

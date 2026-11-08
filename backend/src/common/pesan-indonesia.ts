@@ -10,13 +10,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 
-/**
- * Seluruh pesan error yang sampai ke warga harus berbahasa Indonesia. Pesan buatan
- * aplikasi sudah Indonesia; file ini menerjemahkan yang berasal dari pustaka
- * (class-validator, NestJS, multer) yang bawaannya berbahasa Inggris.
- */
 
-// Nama field (camelCase di DTO) -> nama yang wajar dibaca pengguna
 const LABEL: Record<string, string> = {
   nama: 'Nama',
   no_hp: 'No. HP',
@@ -26,7 +20,6 @@ const LABEL: Record<string, string> = {
   blokRumah: 'Blok rumah',
   statusRumah: 'Status rumah',
   username: 'Nama pengguna',
-  email: 'Email',
   password: 'Kata sandi',
   passwordLama: 'Kata sandi lama',
   passwordBaru: 'Kata sandi baru',
@@ -63,12 +56,10 @@ const LABEL: Record<string, string> = {
 const label = (properti: string) => LABEL[properti] ?? properti;
 const angka = (pesan: string) => pesan.match(/(\d+)/)?.[1] ?? '';
 
-// Kunci constraint class-validator -> kalimat Indonesia
 const TEMPLATE: Record<string, (l: string, pesanAsli: string) => string> = {
   isNotEmpty: (l) => `${l} wajib diisi`,
   isDefined: (l) => `${l} wajib diisi`,
   isString: (l) => `${l} harus berupa teks`,
-  isEmail: (l) => `Format ${l.toLowerCase()} tidak valid`,
   isEnum: (l) => `${l} tidak valid`,
   isIn: (l) => `${l} tidak valid`,
   isInt: (l) => `${l} harus berupa bilangan bulat`,
@@ -85,7 +76,6 @@ const TEMPLATE: Record<string, (l: string, pesanAsli: string) => string> = {
   maxLength: (l, p) => `${l} maksimal ${angka(p)} karakter`,
 };
 
-// Pesan bawaan class-validator berbahasa Inggris; pesan buatan kita (Indonesia) dibiarkan.
 const POLA_INGGRIS = /\b(should|must|is not|has to|be a|be an|longer|shorter)\b/i;
 
 function ratakan(errors: ValidationError[], induk = ''): string[] {
@@ -100,11 +90,9 @@ function ratakan(errors: ValidationError[], induk = ''): string[] {
   });
 }
 
-/** Dipakai ValidationPipe: bentuk respons sama dengan bawaan Nest, isinya Indonesia. */
 export const validasiIndonesia = (errors: ValidationError[]) =>
   new BadRequestException(ratakan(errors));
 
-// Pesan umum NestJS/multer -> Indonesia
 const TERJEMAHAN: Array<[RegExp, string]> = [
   [/^unauthorized$/i, 'Anda belum masuk atau sesi sudah berakhir. Silakan masuk kembali.'],
   [/^forbidden( resource)?$/i, 'Anda tidak memiliki akses untuk aksi ini.'],
@@ -144,8 +132,6 @@ export class PesanIndonesiaFilter implements ExceptionFilter {
       });
     }
 
-    // Error 4xx dari middleware Express (mis. body-parser: payload terlalu besar -> 413,
-    // JSON rusak -> 400) membawa status sendiri; jangan dilaporkan sebagai 500.
     const statusMiddleware = (exception as { status?: unknown; statusCode?: unknown } | null)?.status
       ?? (exception as { statusCode?: unknown } | null)?.statusCode;
     if (typeof statusMiddleware === 'number' && statusMiddleware >= 400 && statusMiddleware < 500) {
@@ -157,7 +143,6 @@ export class PesanIndonesiaFilter implements ExceptionFilter {
       });
     }
 
-    // Parameter di luar jangkauan kolom DB (mis. id 99999999999999999999) = salah input, bukan error server.
     const namaError = (exception as { constructor?: { name?: string } } | null)?.constructor?.name;
     if (namaError === 'PrismaClientValidationError') {
       return res.status(HttpStatus.BAD_REQUEST).json({

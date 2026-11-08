@@ -1,6 +1,3 @@
-// Bunyi notifikasi dibuat langsung lewat Web Audio (dua nada singkat), jadi tidak perlu file audio.
-// Browser menolak bunyi sebelum pengguna pernah menyentuh halaman, makanya AudioContext
-// "dibangunkan" pada interaksi pertama; sebelum itu bunyi dilewati diam-diam.
 
 let ctx = null;
 let terakhir = 0;
@@ -13,7 +10,6 @@ function ambilCtx() {
   return ctx;
 }
 
-/** Pasang sekali: bangunkan AudioContext pada sentuhan/klik pertama. */
 export function aktifkanBunyiNotif() {
   if (typeof window === "undefined") return () => {};
   const bangun = () => {
@@ -31,7 +27,7 @@ export function aktifkanBunyiNotif() {
 
 export function bunyiNotif() {
   const now = Date.now();
-  if (now - terakhir < 1500) return; // push + polling bisa datang hampir bersamaan: satu bunyi saja
+  if (now - terakhir < 1500) return;
   terakhir = now;
 
   const c = ambilCtx();

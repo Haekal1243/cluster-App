@@ -1,10 +1,6 @@
-/* ==========================================
-   HALAMAN MASTER DATA (Pengumuman, dll)
-   ========================================== */
 
-/* Card judul halaman (bukan Dashboard) — tint teal lembut, sengaja beda
-   dari .welcome-banner (gradient gelap solid) biar nggak ketuker sama Dashboard,
-   tapi tetap ada aksen warna (bukan putih polos) */
+
+
 .page-toolbar,
 .ipl-page-header {
   padding: 18px 22px;
@@ -118,8 +114,7 @@
   overflow-x: auto;
 }
 
-/* Cegah teks di tabel/kartu data ke-select/ke-blok pas di-tap atau di-drag,
-   terutama di mobile (kartu-kartu ini sekarang banyak yang bisa diklik). */
+
 .data-table,
 .ipl-table,
 .pengaduan-card,

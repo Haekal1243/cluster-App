@@ -7,7 +7,6 @@ import { AccessContext } from '../auth/auth.types';
 import { visibilitasKelolaWhere, visibilitasWhere } from '../common/publikasi.helper';
 import { BeriFeedbackDto, SembunyikanFeedbackDto } from './dto/beri-feedback.dto';
 
-/** Masukan hanya bisa diberi/diubah sampai sekian hari setelah tanggal acara. */
 const BATAS_HARI = 7;
 
 const batasAwal = () => {
@@ -24,12 +23,10 @@ export class KegiatanFeedbackService {
     private audit: AuditService,
   ) {}
 
-  /** Kegiatan yang boleh dipantau masukannya oleh user ini (area sendiri, atau semua untuk RW). */
   private kegiatanKelola(ctx: AccessContext): Prisma.KegiatanWhereInput {
     return { AND: [{ isDelete: false }, visibilitasKelolaWhere(ctx)] };
   }
 
-  /** Kartu kegiatan yang sudah punya masukan, yang terbaru masuk di atas. */
   async rekap(ctx: AccessContext) {
     const grup = await this.prisma.kegiatanFeedback.groupBy({
       by: ['kegiatanId'],
@@ -56,7 +53,6 @@ export class KegiatanFeedbackService {
       .sort((a, b) => +new Date(b.terakhir!) - +new Date(a.terakhir!));
   }
 
-  /** Ringkasan (rata-rata, sebaran bintang) + daftar masukan satu kegiatan. Nama dibuang bila anonim. */
   async daftar(ctx: AccessContext, kegiatanId: number) {
     const kegiatan = await this.prisma.kegiatan.findFirst({
       where: { AND: [{ id: kegiatanId }, this.kegiatanKelola(ctx)] },
@@ -99,14 +95,12 @@ export class KegiatanFeedbackService {
         disembunyikan: r.disembunyikan,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
-        // anonim: nama & alamat tidak ikut dikirim sama sekali
         nama: r.anonim ? null : r.user.namaUser,
         rumah: r.anonim ? null : (r.user.rumah[0] ?? null),
       })),
     };
   }
 
-  /** Kegiatan yang baru selesai dan bisa diberi masukan oleh user ini, lengkap dengan masukan miliknya. */
   async bisaDiberi(ctx: AccessContext) {
     const rows = await this.prisma.kegiatan.findMany({
       where: {
@@ -132,7 +126,6 @@ export class KegiatanFeedbackService {
     return rows.map(({ feedback, ...k }) => ({ ...k, feedbackSaya: feedback[0] ?? null }));
   }
 
-  /** Beri atau ubah masukan milik sendiri (satu per kegiatan). */
   async beri(ctx: AccessContext, kegiatanId: number, dto: BeriFeedbackDto) {
     const kegiatan = await this.prisma.kegiatan.findFirst({
       where: { AND: [{ id: kegiatanId, isDelete: false }, visibilitasWhere(ctx)] },
@@ -149,8 +142,6 @@ export class KegiatanFeedbackService {
     const komentar = dto.komentar?.trim() || null;
     const kunci = { kegiatanId_userId: { kegiatanId, userId: ctx.user.sub } };
     const sudah = await this.prisma.kegiatanFeedback.findUnique({ where: kunci, select: { id: true, anonim: true } });
-    // Bila flag anonim tidak dikirim saat mengubah, pertahankan pilihan sebelumnya
-    // (jangan diam-diam membuka identitas warga yang tadinya memilih anonim).
     const anonim = dto.anonim ?? sudah?.anonim ?? false;
 
     await this.prisma.kegiatanFeedback.upsert({
@@ -159,7 +150,6 @@ export class KegiatanFeedbackService {
       update: { rating: dto.rating, komentar, anonim },
     });
 
-    // Pengurus cukup diberi tahu sekali per warga; mengubah masukan tidak mengirim notifikasi lagi.
     if (!sudah) {
       await this.notifikasiService.kirimKePermission(
         'kegiatan.feedback_lihat',
@@ -175,7 +165,6 @@ export class KegiatanFeedbackService {
     return { message: sudah ? 'Masukan diperbarui' : 'Terima kasih atas masukannya' };
   }
 
-  /** Sembunyikan / tampilkan masukan (moderasi komentar). Datanya tetap ada untuk pengurus. */
   async sembunyikan(ctx: AccessContext, id: number, dto: SembunyikanFeedbackDto) {
     const fb = await this.prisma.kegiatanFeedback.findUnique({
       where: { id },

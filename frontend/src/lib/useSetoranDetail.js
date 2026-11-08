@@ -27,18 +27,13 @@ function labelPeriode(tahun, bulan) {
   return `${SD_BULAN[Number(bulan) - 1] || bulan} ${tahun}`;
 }
 
-/**
- * State + logic modal Detail Setoran. Sengaja dipisah dari view agar state
- * (mode tolak, isi textarea) tidak hilang saat rotate/resize menukar
- * tampilan desktop <-> mobile.
- */
 export function useSetoranDetail(id, { onSuccess, onClose } = {}) {
   const [data, setData] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [modeTolak, setModeTolak] = useState(false);
   const [alasan, setAlasan] = useState("");
-  const [submitting, setSubmitting] = useState(null); // "TERIMA" | "TOLAK" | null
+  const [submitting, setSubmitting] = useState(null);
   const [actionError, setActionError] = useState(null);
 
   const reload = useCallback(async () => {
@@ -55,7 +50,6 @@ export function useSetoranDetail(id, { onSuccess, onClose } = {}) {
   }, [id]);
 
   useEffect(() => {
-    // Fetch awal; state berikutnya mengalir dari promise, bukan render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     reload();
   }, [reload]);

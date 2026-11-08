@@ -32,7 +32,6 @@ function StatusBadge({ status }) {
   return <span className={`ipl-badge ${s.cls}`}>{s.label}</span>;
 }
 
-// ── Modal: setor ke RW (upload bukti transfer) ────────────────────────────────
 function SetorModal({ siap, pilihRt, onClose, onSuccess }) {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -114,7 +113,6 @@ export default function SetoranPage() {
   const semuaRt = scopeOf(user, "setoran.read") === "ALL";
   const pilihRtSetor = scopeOf(user, "setoran.create") === "ALL";
 
-  // ── Filter: periode (bulan berjalan default) + status + wilayah — pola sama Keuangan/Tagihan ──
   const formatYmPanjang = formatYmPendek;
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
@@ -124,8 +122,6 @@ export default function SetoranPage() {
 
   const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
   const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
-  // Deep-link dari KPI Dashboard RW (?status=MENUNGGU_KONFIRMASI).
-  // Lazy initializer (bukan useEffect) agar lolos react-hooks/set-state-in-effect.
   const statusAwal = () => {
     if (typeof window === "undefined") return "SEMUA";
     const s = new URLSearchParams(window.location.search).get("status");
@@ -372,7 +368,7 @@ export default function SetoranPage() {
                   <th>Total IPL</th>
                   <th>Status</th>
                   <th>Diputuskan</th>
-                  <th>Aksi</th>
+                  <th className="th-aksi">Aksi</th>
                 </tr>
               </thead>
               <tbody>

@@ -12,10 +12,8 @@ export default function Kegiatan({ items = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
 
-  // Slider aktif jika item > 3
   const isSliderActive = items.length > 3;
 
-  // Clone 3 item pertama untuk infinite loop
   const extendedItems = isSliderActive ? [...items, ...items.slice(0, 3)] : items;
 
   const handleNext = () => {
@@ -59,7 +57,6 @@ export default function Kegiatan({ items = [] }) {
     <section id="kegiatan" className="lp-section" style={{ background: "white" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <SectionHead varian="c" label="Dokumentasi kegiatan" title="Kegiatan warga RW 21">
-          {/* Navigasi Kiri & Kanan */}
           {isSliderActive && (
             <div style={{ display: "flex", gap: 12 }}>
               <button 
@@ -89,7 +86,6 @@ export default function Kegiatan({ items = [] }) {
         ) : (
         <Reveal variant="zoom">
           <div style={{ position: "relative", overflow: "hidden" }}>
-            {/* Slider Track */}
             <div
               className="lp-kegiatan-track"
               onTransitionEnd={handleTransitionEnd}
@@ -120,7 +116,6 @@ export default function Kegiatan({ items = [] }) {
                         ) : (
                           <PhotoIcon />
                         )}
-                        {/* tanggal sebagai pil di atas foto, bukan teks abu-abu kecil di bawah */}
                         <span className="tz-pil-tanggal">{formatTanggalAcara(k.tanggalAcara)}</span>
                       </div>
                       <div style={{ padding: 20 }}>
@@ -135,7 +130,6 @@ export default function Kegiatan({ items = [] }) {
               })}
             </div>
 
-            {/* Stepper (Dots) */}
             {isSliderActive && (
               <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 32 }}>
                 {items.map((_, idx) => {

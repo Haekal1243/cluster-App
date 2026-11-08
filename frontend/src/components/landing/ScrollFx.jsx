@@ -5,13 +5,6 @@ import { useEffect, useRef, useState } from "react";
 const RING_R = 22;
 const RING_LEN = 2 * Math.PI * RING_R;
 
-/**
- * Efek scroll global landing page:
- * - garis progres tipis di paling atas layar
- * - lencana logo Topaz melayang di pojok kanan bawah (muncul setelah hero),
- *   cincinnya menunjukkan progres scroll, klik = kembali ke atas.
- * Progres ditulis langsung ke DOM lewat ref (bukan state) supaya tidak render ulang tiap frame.
- */
 export default function ScrollFx() {
   const ringRef = useRef(null);
   const [tampil, setTampil] = useState(false);
@@ -31,7 +24,6 @@ export default function ScrollFx() {
       if (!frame) frame = requestAnimationFrame(update);
     };
 
-    // Sorotan cahaya di kartu: posisi kursor ditulis ke --mx/--my kartu yang sedang di-hover.
     const onPointerMove = (e) => {
       const kartu = e.target instanceof Element ? e.target.closest(".lp-card, .lp-card-dark") : null;
       if (!kartu) return;

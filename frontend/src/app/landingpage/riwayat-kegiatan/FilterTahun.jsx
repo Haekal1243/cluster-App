@@ -6,7 +6,6 @@ import { ChevronDown, ListFilter } from "lucide-react";
 
 const BASE = "/landingpage/riwayat-kegiatan";
 
-/** Tombol Filter: dropdown pilihan tahun (hanya tahun yang punya data), tinggi dibatasi dan bisa digulir. */
 export default function FilterTahun({ tahunTersedia, tahunDipilih }) {
   const [buka, setBuka] = useState(false);
   const ref = useRef(null);

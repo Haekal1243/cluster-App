@@ -3,12 +3,11 @@ import type { Response } from 'express';
 import * as path from 'node:path';
 import { PrismaService } from '../../prisma/prisma.service';
 
-/** Tipe konten ditentukan dari ekstensi (whitelist), bukan dari header yang dikirim klien. */
 const MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',
-  '.svg': 'image/svg+xml', // hanya dari seed; tidak ada endpoint upload yang menerima SVG
+  '.svg': 'image/svg+xml',
   '.pdf': 'application/pdf',
   '.doc': 'application/msword',
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -22,7 +21,6 @@ export const mimeDariNama = (nama: string) =>
 export class FileService {
   constructor(private prisma: PrismaService) {}
 
-  /** Simpan file hasil multer (memoryStorage) ke database; mengembalikan id-nya. */
   async simpan(file: Express.Multer.File, opsi: { publik?: boolean } = {}) {
     const row = await this.prisma.file.create({
       data: {
@@ -37,13 +35,11 @@ export class FileService {
     return row.id;
   }
 
-  /** Hapus file; tidak error kalau id kosong atau barisnya sudah tidak ada. */
   async hapus(id?: string | null) {
     if (!id) return;
     await this.prisma.file.deleteMany({ where: { id } });
   }
 
-  /** Metadata beberapa file sekaligus (tanpa isi datanya) — dipakai untuk melampirkan info ke response lain. */
   async metadataBanyak(ids: string[]) {
     if (ids.length === 0) return [];
     return this.prisma.file.findMany({
@@ -52,7 +48,6 @@ export class FileService {
     });
   }
 
-  /** Kirim isi file ke klien. `publikSaja`: tolak file yang tidak bertanda publik. */
   async kirim(res: Response, id: string, opsi: { publikSaja?: boolean } = {}) {
     const file = await this.prisma.file.findUnique({ where: { id } });
     if (!file || (opsi.publikSaja && !file.publik)) {

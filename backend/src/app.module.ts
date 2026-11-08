@@ -27,9 +27,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // Job auto-teruskan pengaduan RT yang tidak ditanggapi 7 hari (PengaduanService).
     ScheduleModule.forRoot(),
-    // Dipasang per-endpoint via @Throttle di login & registrasi mandiri (rawan brute-force/spam).
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
     PrismaModule,
     FileModule,
@@ -51,7 +49,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
   controllers: [AppController],
   providers: [
     AppService,
-    // Urutan penting: login dulu (JwtAuthGuard), baru cek permission (PermissionGuard).
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionGuard },
   ],

@@ -1,15 +1,12 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { can } from "@/lib/session";
 import { NAV_ITEMS } from "@/lib/nav";
 import RiwayatAktivitas from "./RiwayatAktivitas";
 
-/**
- * Dashboard untuk akun yang hanya mengelola sistem (mis. Admin): tidak punya akses
- * tagihan/keuangan, jadi yang ditampilkan pintasan ke menu pengelolaan dan riwayat aktivitas.
- */
 export default function PanelSistem({ user }) {
   const pintasan = NAV_ITEMS.filter((i) => i.href !== "/dashboard" && i.allow(user));
 
@@ -23,6 +20,7 @@ export default function PanelSistem({ user }) {
             warga. Urusan tagihan, keuangan, dan kegiatan dikerjakan pengurus RW/RT sesuai jabatannya.
           </p>
         </div>
+        <PageHelp id="panel-sistem" />
       </div>
 
       <div className="content-card">

@@ -11,8 +11,6 @@ export class CreatePengaduanDto {
   @IsNotEmpty()
   kategori!: KategoriPengaduan;
 
-  /** Tujuan pengaduan: RW atau salah satu RT. Divalidasi ulang di service terhadap
-   * rumah/jabatan pelapor, bukan cuma format enum. */
   @IsEnum(Area)
   @IsNotEmpty()
   tujuan!: Area;

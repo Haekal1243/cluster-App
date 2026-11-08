@@ -43,8 +43,6 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Token tidak valid atau sudah kedaluwarsa.');
     }
 
-    // Role dan area dibaca dari DB tiap request, bukan dari token, supaya
-    // perubahan jabatan oleh admin langsung berlaku tanpa menunggu token habis.
     const user = await this.prisma.user.findUnique({
       where: { id: sub },
       select: {
@@ -60,7 +58,6 @@ export class JwtAuthGuard implements CanActivate {
     if (!user) {
       throw new UnauthorizedException('Akun tidak ditemukan.');
     }
-    // Token diterbitkan sebelum sandi terakhir diganti/di-reset (atau tanpa klaim pv) = dicabut.
     if (!pv || pv !== sidikJariSandi(user.password)) {
       throw new UnauthorizedException('Sesi sudah tidak berlaku. Silakan masuk kembali.');
     }

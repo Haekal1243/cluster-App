@@ -52,9 +52,6 @@ export class PushService {
     return { message: 'Notifikasi push dimatikan.' };
   }
 
-  /** Kirim push ke satu user (semua device/subscription miliknya). Tidak pernah throw —
-   * dipanggil fire-and-forget dari NotifikasiService supaya gagal kirim push tidak
-   * mengganggu alur utama (pembuatan notifikasi in-app). */
   async kirimKeUser(idUser: number, payload: PushPayload) {
     return this.kirimKeBanyak([idUser], payload);
   }
@@ -80,7 +77,6 @@ export class PushService {
             body,
           );
         } catch (err: any) {
-          // 404/410 = subscription sudah tidak valid (user uninstall/clear data/dll) — bersihkan.
           if (err?.statusCode === 404 || err?.statusCode === 410) {
             await this.prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => undefined);
           } else {

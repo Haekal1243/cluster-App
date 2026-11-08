@@ -8,13 +8,11 @@ import { areaLabel, clearSession, pakaiMenuBawah } from "@/lib/session";
 import { showConfirm } from "@/lib/message";
 import { useUser } from "@/lib/useUser";
 
-// Pengaturan akun di HP (menu bawah): warga dan akun sistem (Admin). Pengurus RT/RW memakai tombol di sidebar.
 export default function PengaturanPage() {
   const router = useRouter();
   const { user, ready } = useUser();
   const [gantiPassword, setGantiPassword] = useState(false);
 
-  // Halaman ini hanya untuk pemakai menu bawah di layar HP; selain itu kembali ke beranda.
   useEffect(() => {
     if (!ready || !user) return;
     if (!pakaiMenuBawah(user) || window.innerWidth >= 900) router.replace("/dashboard");

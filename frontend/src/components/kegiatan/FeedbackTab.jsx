@@ -16,7 +16,6 @@ const URUTAN = [
 
 const namaTampil = (f) => f.nama || "Anonim";
 
-/** Modal detail satu masukan; dipakai untuk tabel (desktop) dan kartu (HP). */
 function DetailFeedback({ item, bolehModerasi, onClose, onToggle, sibuk }) {
   if (!item) return null;
   const diedit = item.updatedAt && new Date(item.updatedAt) - new Date(item.createdAt) > 60_000;
@@ -37,7 +36,10 @@ function DetailFeedback({ item, bolehModerasi, onClose, onToggle, sibuk }) {
                   {item.rumah.blokRumah} · {areaLabel(item.rumah.rt)}
                 </div>
               )}
-              {item.anonim && <div className="fb-sub">Memilih untuk tidak menyebut nama</div>}
+              <div className="fb-sub">
+                Dikirim {formatTanggalLengkap(item.createdAt)}
+                {diedit && <> · diubah {formatTanggalLengkap(item.updatedAt)}</>}
+              </div>
             </div>
           </div>
 
@@ -53,11 +55,6 @@ function DetailFeedback({ item, bolehModerasi, onClose, onToggle, sibuk }) {
             ) : (
               <p className="fb-kosong">Tidak ada komentar, hanya bintang.</p>
             )}
-          </div>
-
-          <div className="fb-sub">
-            Dikirim {formatTanggalLengkap(item.createdAt)}
-            {diedit && <> · diubah {formatTanggalLengkap(item.updatedAt)}</>}
           </div>
 
           {item.disembunyikan && (
@@ -83,7 +80,6 @@ function DetailFeedback({ item, bolehModerasi, onClose, onToggle, sibuk }) {
   );
 }
 
-/** Ringkasan di atas tabel: rata-rata, jumlah penilai, sebaran bintang. */
 function Ringkasan({ kegiatan, ringkasan, onKembali }) {
   const maks = Math.max(1, ...Object.values(ringkasan.sebaran));
   return (
@@ -124,8 +120,8 @@ export default function FeedbackTab({ user }) {
 
   const [rekap, setRekap] = useState([]);
   const [loadingRekap, setLoadingRekap] = useState(true);
-  const [terpilih, setTerpilih] = useState(null); // id kegiatan yang dibuka
-  const [hasil, setHasil] = useState(null); // { kegiatan, ringkasan, data }
+  const [terpilih, setTerpilih] = useState(null);
+  const [hasil, setHasil] = useState(null);
   const [loadingDaftar, setLoadingDaftar] = useState(false);
   const [urut, setUrut] = useState("terbaru");
   const [filterRating, setFilterRating] = useState(0);
@@ -193,7 +189,6 @@ export default function FeedbackTab({ user }) {
     }
   };
 
-  // ── Tampilan 1: kartu kegiatan yang punya masukan ──
   if (!terpilih) {
     if (loadingRekap) return <div className="table-card"><div className="table-loading">Memuat data...</div></div>;
     if (!rekap.length) {
@@ -222,7 +217,6 @@ export default function FeedbackTab({ user }) {
     );
   }
 
-  // ── Tampilan 2: ringkasan + tabel satu kegiatan ──
   return (
     <div className="page-stack">
       {hasil ? (
@@ -246,14 +240,14 @@ export default function FeedbackTab({ user }) {
             </div>
           </div>
 
-          {/* Desktop: tabel */}
           <div className="table-wrapper fb-tabel-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Siapa</th>
                   <th>Rating</th>
-                  <th>Aksi</th>
+                  <th>Tanggal Kirim</th>
+                  <th className="th-aksi">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -265,7 +259,8 @@ export default function FeedbackTab({ user }) {
                       {f.disembunyikan && <span className="ipl-badge fb-badge-sembunyi">Disembunyikan</span>}
                     </td>
                     <td><BintangTampil nilai={f.rating} /></td>
-                    <td>
+                    <td className="fb-tgl-kirim">{formatTanggalPendek(f.createdAt)}</td>
+                    <td className="td-aksi">
                       <button type="button" className="btn-outline-neutral" onClick={() => setDetail(f)}>
                         <Eye size={15} /> Detail
                       </button>
@@ -276,7 +271,6 @@ export default function FeedbackTab({ user }) {
             </table>
           </div>
 
-          {/* HP: kartu 2 per baris */}
           <div className="fb-mini-grid">
             {baris.map((f) => (
               <button
@@ -287,6 +281,7 @@ export default function FeedbackTab({ user }) {
               >
                 <span className={`fb-mini-nama${f.nama ? "" : " fb-anonim"}`}>{namaTampil(f)}</span>
                 <BintangTampil nilai={f.rating} size={13} />
+                <span className="fb-sub fb-mini-tgl"><Calendar size={11} /> {formatTanggalPendek(f.createdAt)}</span>
                 {f.disembunyikan && <span className="fb-mini-tag">Disembunyikan</span>}
               </button>
             ))}

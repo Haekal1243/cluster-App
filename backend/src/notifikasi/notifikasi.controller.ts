@@ -4,7 +4,6 @@ import { NotifikasiService } from './notifikasi.service';
 
 interface JwtPayload {
   sub: number;
-  email: string;
   role: string;
 }
 

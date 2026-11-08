@@ -206,7 +206,6 @@ model User {
   id        Int      @id @default(autoincrement())
   namaUser  String   @map("nama_user")
   username  String   @unique // login pakai username (default diisi no HP)
-  email     String?  @unique // opsional, banyak warga tidak punya email
   password  String
   noTelp    String?  @map("no_telp")
   foto      String?  // id di tb_File; foto pengurus untuk landing page
@@ -219,7 +218,8 @@ model User {
   role      Role     @relation(fields: [roleId], references: [id])
 
   // Relasi
-  rumah      Rumah[]  // 1 User bisa memiliki/menghuni banyak rumah
+  rumah      Rumah[]  @relation("RumahPemilik") // 1 User bisa memiliki/menghuni banyak rumah
+  rumahSewa  Rumah[]  @relation("RumahPenyewa") // rumah yang sedang dikontrak akun ini
   pembayaran PembayaranIpl[]
   pengaduan  Pengaduan[]
   notifikasi Notifikasi[]
@@ -245,13 +245,20 @@ model Rumah {
 
   // Berdasarkan garis relasi dari tb_User ke tb_Rumah
   userId     Int?        @map("id_user")
-  penghuni   User?       @relation(fields: [userId], references: [id])
+  penghuni   User?       @relation("RumahPemilik", fields: [userId], references: [id])
+
+  // Penyewa (kontrak): akun kedua pada rumah yang sama. Selama terisi, tagihan baru dan notifikasi
+  // rumah ini mengarah ke penyewa, bukan ke pemilik (userId). Dikosongkan saat kontrak diakhiri.
+  penyewaId    Int?      @map("id_penyewa")
+  penyewa      User?     @relation("RumahPenyewa", fields: [penyewaId], references: [id], onDelete: SetNull)
+  kontrakMulai DateTime? @map("kontrak_mulai")
 
   // Relasi
   tagihanIpl  Ipl[]
   pendaftaran PendaftaranWarga[]
 
   @@unique([rt, blokRumah])
+  @@index([penyewaId])
   @@map("tb_Rumah")
 }
 
@@ -270,6 +277,7 @@ model Ipl {
   nominalKas       Int              @default(0) @map("nominal_kas")
   statusPembayaran StatusPembayaran @default(BELUM_LUNAS) @map("status_pembayaran")
   setoranId        Int?             @map("setoran_id") // null = porsi IPL belum disetor ke RW
+  idPenyewa        Int?             @map("id_penyewa") // penyewa saat tagihan terbit; null = tagihan atas nama pemilik
   jatuhTempo       DateTime?        @map("jatuh_tempo") @db.Date // batas bayar warga; null = tagihan lama, pengingat memakai tanggal bawaan
 
   // Relasi
@@ -278,6 +286,7 @@ model Ipl {
   pembayaran       PembayaranIpl[]
 
   @@index([setoranId])
+  @@index([idPenyewa])
   @@map("trx_IPL")
 }
 
@@ -447,7 +456,6 @@ model PendaftaranWarga {
   id           Int               @id @default(autoincrement())
   namaUser     String
   noTelp       String
-  email        String?
   password     String
   rt           RT
   rumahId      Int

@@ -1,6 +1,4 @@
-/* Gaya pendukung landing page Portal Topaz.
-   Import di src/app/globals.css:  @import "./landing.css";
-   Hanya berisi hal yang tidak bisa ditulis sebagai inline style (reset, keyframes, hover). */
+
 
 *,
 *::before,
@@ -47,8 +45,7 @@ html {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Blob gradient di background Hero — blur dihitung sekali (statis), yang di-animate cuma
-   transform (translate), sama seperti perbaikan logo glow: murah, tidak trigger repaint. */
+
 @keyframes lpBlobDriftA {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50%      { transform: translate(30px, -25px) scale(1.08); }
@@ -83,17 +80,14 @@ html {
 }
 
 
-/* Animasi Logo Topaz */
+
 @keyframes logoFloat {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
   25%       { transform: translateY(-12px) rotate(1deg); }
   75%       { transform: translateY(8px) rotate(-1deg); }
 }
 
-/* Dulu glow-nya pakai filter: drop-shadow() yang di-animate infinite — berat karena
-   browser ngitung ulang blur-nya tiap frame di atas gambar 420x420 + 2-3 layer shadow.
-   Sekarang glow-nya elemen radial-gradient terpisah di belakang logo; yang di-animate cuma
-   opacity + transform: scale() (murah, full GPU-composited, tidak trigger repaint/blur ulang). */
+
 @keyframes logoGlowPulse {
   0%, 100% { opacity: 0.55; transform: scale(0.92); }
   50%      { opacity: 1;    transform: scale(1.08); }
@@ -128,7 +122,7 @@ html {
   will-change: transform;
 }
 
-/* Navbar */
+
 .lp-nav-link {
   color: #94a3b8;
   text-decoration: none;
@@ -141,7 +135,7 @@ html {
   color: #fff;
 }
 
-/* Tombol */
+
 .lp-btn-primary {
   position: relative;
   overflow: hidden;
@@ -162,7 +156,7 @@ html {
 .lp-btn-primary:active {
   transform: scale(0.97);
 }
-/* Efek "shine" nyapu dari kiri ke kanan pas hover — cuma transform, murah buat GPU */
+
 .lp-btn-primary::before {
   content: "";
   position: absolute;
@@ -220,7 +214,7 @@ html {
   color: #2dd4bf;
 }
 
-/* Kartu & baris */
+
 .lp-card {
   transition: background 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
   position: relative;
@@ -232,8 +226,7 @@ html {
   transition: background 0.15s, transform 0.2s ease;
 }
 
-/* Varian .lp-card buat kartu bertema gelap (Panduan) — background hover-nya beda,
-   bukan putih terang. */
+
 .lp-card-dark {
   transition: background 0.2s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 }
@@ -241,8 +234,7 @@ html {
   transform: scale(0.98);
 }
 
-/* Hover diaktifkan cuma buat perangkat yang beneran punya mouse — supaya di HP/tablet
-   (sentuh) gak ada efek "nempel" setelah tap. */
+
 @media (hover: hover) and (pointer: fine) {
   .lp-card:hover {
     background: #f8fafc !important;
@@ -262,7 +254,7 @@ html {
   }
 }
 
-/* FAQ */
+
 .lp-faq-btn {
   width: 100%;
   padding: 22px 24px;
@@ -281,14 +273,14 @@ html {
   background: #fff;
 }
 
-/* Responsif */
+
 @media (max-width: 1024px) {
   .lp-nav-link {
     display: none;
   }
 }
 
-/* Tombol buka sidebar (mobile/tablet, pengganti .lp-nav-link yang disembunyikan) */
+
 .lp-drawer-toggle {
   display: none;
   width: 40px;
@@ -318,7 +310,7 @@ html {
   animation: lpFabSpin 0.5s ease;
 }
 
-/* Overlay gelap di belakang drawer */
+
 .lp-drawer-overlay {
   display: none;
   position: fixed;
@@ -336,7 +328,7 @@ html {
   pointer-events: auto;
 }
 
-/* Panel drawer, slide-in dari kanan */
+
 .lp-drawer {
   display: none;
   position: fixed;
@@ -464,15 +456,13 @@ html {
     display: flex;
   }
 
-  /* Tombol "Masuk" di navbar disembunyikan di mobile/tablet — sudah ada versinya
-     ("Masuk ke Portal") di footer drawer, dua-duanya sekaligus bikin baris navbar
-     sempit kepotong di layar HP kecil. */
+
   .lp-navbar-cta {
     display: none !important;
   }
 }
 
-/* ── Mobile Utility Classes (breakpoint 768px) ─────────────── */
+
 .lp-section {
   padding: 80px 48px;
 }
@@ -516,7 +506,7 @@ html {
   align-items: flex-end;
 }
 
-/* Pengumuman row */
+
 .lp-pengumuman-row {
   padding: 22px 28px;
   display: grid;
@@ -526,27 +516,26 @@ html {
 }
 
 @media (max-width: 768px) {
-  /* Sections padding */
+
   .lp-section {
     padding: 56px 20px;
   }
 
-  /* Hero grid → 1 kolom */
+
   .lp-hero-grid {
     grid-template-columns: 1fr;
     gap: 32px;
   }
 
-  /* Hero inner container → kurangi padding */
+
   .lp-hero-inner {
     padding: 48px 24px 40px !important;
   }
 
-  /* Hero di HP: urutannya eyebrow → logo → judul → uraian → tombol.
-     Kolom teks dibuka (display: contents) supaya anak-anaknya bisa diurutkan bersama logo di grid yang sama. */
+
   .lp-hero-grid { gap: 0; }
   .tz-hero-kiri { display: contents; animation: none !important; }
-  .tz-hero-kiri > * { position: relative; z-index: 1; order: 3; animation: lpFadeUp 0.6s ease both; } /* teks di atas logo yang jatuh */
+  .tz-hero-kiri > * { position: relative; z-index: 1; order: 3; animation: lpFadeUp 0.6s ease both; }
   .tz-hero-kiri > .tz-hero-eyebrow { order: 1; }
   .lp-hero-logo {
     order: 2;
@@ -559,12 +548,12 @@ html {
     height: 180px !important;
   }
 
-  /* Sembunyikan elemen yang memang harus hilang di mobile */
+
   .lp-hide-mobile {
     display: none !important;
   }
 
-  /* Grids */
+
   .lp-grid-3 {
     grid-template-columns: 1fr;
   }
@@ -573,14 +562,14 @@ html {
     grid-template-columns: 1fr;
   }
 
-  /* Kegiatan header (judul + nav) → stack */
+
   .lp-kegiatan-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
 
-  /* Kegiatan slider → 1 kartu full width, disable transform overflow */
+
   .lp-kegiatan-track {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -594,7 +583,7 @@ html {
     scroll-snap-align: start;
   }
 
-  /* Pengumuman row → hide tanggal */
+
   .lp-pengumuman-row {
     grid-template-columns: auto 1fr;
     gap: 12px;
@@ -605,17 +594,17 @@ html {
     display: none;
   }
 
-  /* Pengurus globe → hanya kurangi tinggi, jangan clip di sini */
+
   .lp-pengurus-globe {
     height: 320px !important;
   }
 
-  /* Clip di level section agar tidak ada horizontal scroll */
+
   .lp-pengurus-section {
     overflow: hidden;
   }
 
-  /* Footer */
+
   .lp-footer-grid {
     grid-template-columns: 1fr;
     gap: 32px;
@@ -628,15 +617,13 @@ html {
     text-align: center;
   }
 
-  /* Navbar: kurangi padding */
+
   .lp-navbar {
     padding: 0 16px !important;
   }
 }
 
-/* ── Riwayat Kegiatan ──────────────────────────────────────────
-   Arsip bergaya buku catatan: kepala gelap, lalu daftar baris per tahun
-   (tanggal | judul + uraian | foto). */
+
 .rk-wrap { max-width: 1100px; margin: 0 auto; }
 
 .rk-hero {
@@ -644,10 +631,10 @@ html {
   color: #e6f4f1;
   padding: 120px 24px 40px;
   position: relative;
-  overflow: visible; /* dropdown filter tahun meluber keluar hero; garis ::after sudah di dalam inset:0 */
+  overflow: visible;
 }
 .rk-hero::after {
-  /* garis-garis tipis seperti kertas catatan, memudar ke kanan */
+
   content: "";
   position: absolute;
   inset: 0;
@@ -749,7 +736,7 @@ html {
   .rk-thumb { height: 72px; }
 }
 
-/* ── Efek scroll global (ScrollFx) ─────────────────────────── */
+
 .lp-fab {
   position: fixed; right: 20px; bottom: 20px; z-index: 900;
   width: 52px; height: 52px; padding: 0; border: 0; border-radius: 50%;
@@ -769,9 +756,7 @@ html {
   .lp-fab { transition: opacity 0.2s ease; }
 }
 
-/* ── Peta Cluster (PetaRt) ───────────────────────────────────
-   Arah: "papan denah cluster". Satu kartu gelap berisi peta + daftar area, label area berupa pil
-   berwarna, ringkasan angka di samping judul. Mulai dari HP: daftar jadi chip geser di bawah peta. */
+
 .lp-peta-section {
   --pt-card: #0f1b33;
   --pt-line: rgba(148, 163, 184, 0.18);
@@ -797,7 +782,7 @@ html {
 .lp-peta-stats dd { margin: 0; font-family: var(--font-display), Georgia, serif; font-size: 40px; font-weight: 700; line-height: 1; color: #fff; }
 .lp-peta-stats dt { margin-top: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pt-mute); }
 
-/* Pilihan tampilan: Wilayah RT / Blok Rumah, dengan penanda yang bergeser */
+
 .lp-peta-tab {
   position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; padding: 4px; margin-bottom: 18px;
   background: rgba(255, 255, 255, 0.07); border: 1px solid var(--pt-line); border-radius: 999px;
@@ -816,7 +801,7 @@ html {
 .lp-peta-tab button[aria-selected="true"] { color: #062a26; }
 .lp-peta-tab button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 999px; }
 
-/* Kartu: peta di kiri, daftar area di kanan, satu bingkai */
+
 .lp-peta-card {
   display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 600px;
   background: var(--pt-card); border: 1px solid var(--pt-line); border-radius: 18px; overflow: hidden;
@@ -825,7 +810,7 @@ html {
 .lp-peta-wrap { position: relative; min-height: 0; }
 .lp-peta { position: absolute; inset: 0; z-index: 0; background: #1e293b; }
 
-/* Kontrol bawaan Leaflet dibuat serasi (selektor lebih spesifik: CSS Leaflet dimuat belakangan) */
+
 .lp-peta-wrap .leaflet-bar { border: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(2, 6, 23, 0.4); }
 .lp-peta-wrap .leaflet-bar a { width: 40px; height: 40px; line-height: 40px; font-size: 18px; color: #0f172a; background: #fff; border-bottom: 1px solid #e2e8f0; }
 .lp-peta-wrap .leaflet-bar a:hover { background: #f1f5f9; }
@@ -835,7 +820,7 @@ html {
 .lp-peta-wrap .leaflet-control-layers-expanded { padding: 8px 12px; font-size: 13px; font-weight: 600; color: #0f172a; }
 .lp-peta-wrap .leaflet-control-attribution { font-size: 10px; background: rgba(255, 255, 255, 0.82); }
 
-/* Kartu info di atas peta: area yang disorot/dipilih */
+
 .lp-peta-info {
   position: absolute; left: 14px; top: 14px; z-index: 500; display: flex; align-items: center; gap: 12px;
   max-width: calc(100% - 80px); padding: 10px 14px; border-radius: 14px; color: #fff;
@@ -854,10 +839,10 @@ html {
 }
 .lp-peta-info-tutup:hover { background: rgba(255, 255, 255, 0.24); }
 
-/* Daftar area */
+
 .lp-peta-panel { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--pt-line); background: var(--pt-card); }
 .lp-peta-panel-judul { padding: 20px 22px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--pt-mute); }
-/* Desktop: panel digulir sebagai satu kesatuan (RT/blok lalu fasilitas) */
+
 .lp-peta-gulir {
   flex: 1; min-height: 0; padding-bottom: 16px; overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
@@ -873,13 +858,13 @@ html {
 .lp-peta-item:focus-visible { outline: 2px solid var(--pt-acc); outline-offset: 1px; }
 .lp-peta-item-aktif { background: rgba(255, 255, 255, 0.1); }
 .lp-peta-swatch { flex: 0 0 5px; width: 5px; height: 28px; border-radius: 3px; }
-/* cincin tipis supaya warna gelap (mis. Pos Satpam) tetap terlihat di panel gelap */
+
 .lp-peta-swatch-fas { flex-basis: 12px; width: 12px; height: 12px; border-radius: 50%; margin: 0 -1px; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3); }
 .lp-peta-item-teks { min-width: 0; display: flex; flex-direction: column; }
 .lp-peta-item-teks strong { font-size: 14px; font-weight: 600; line-height: 1.3; color: #fff; }
 .lp-peta-item-teks small { margin-top: 1px; font-size: 12px; line-height: 1.35; color: var(--pt-mute); }
 
-/* Label di atas peta: berwarna sesuai areanya (--lab). .leaflet-tooltip. di depan karena CSS Leaflet dimuat belakangan. */
+
 .leaflet-tooltip.peta-rt-label {
   background: var(--lab, #0f172a); color: #fff; border: 2px solid #fff; border-radius: 999px;
   padding: 3px 11px; font-size: 12px; font-weight: 800; letter-spacing: 0.02em; box-shadow: 0 4px 12px rgba(2, 6, 23, 0.4);
@@ -895,10 +880,10 @@ html {
   padding: 2px 8px; font-size: 11px; font-weight: 700; box-shadow: 0 3px 10px rgba(2, 6, 23, 0.35);
 }
 .leaflet-tooltip-top.peta-fas-label::before { border-top-color: #fff; }
-/* Label fasilitas baru tampil kalau peta di-zoom dekat (kelas diatur PetaRt); kalau tidak, labelnya bertumpuk. */
+
 .lp-peta-zoom-fas .leaflet-tooltip.peta-fas-label { display: block; }
 
-/* ── HP & tablet: peta penuh lebar, daftar jadi chip yang digeser ─────────── */
+
 @media (max-width: 860px) {
   .lp-peta-head { flex-direction: column; align-items: flex-start; gap: 20px; margin-bottom: 20px; }
   .lp-peta-stats > div { padding: 0 22px; }
@@ -930,7 +915,7 @@ html {
   .lp-peta-item-teks small { margin: 0; font-size: 10px; }
   .lp-peta-list { gap: 6px; }
   .lp-peta-list-fas { gap: 6px; }
-  /* Fasilitas umum: baris tersendiri di bawah daftar RT/blok, dengan judul sendiri; chip dibungkus ke baris berikutnya */
+
   .lp-peta-gulir { overflow: visible; padding-bottom: 6px; }
   .lp-peta-judul-grup { padding: 6px 16px 4px; border-top: 1px solid var(--pt-line); margin-top: 4px; padding-top: 14px; }
   .lp-peta-list-fas {
@@ -943,16 +928,13 @@ html {
   .lp-peta-info { animation: none; }
 }
 
-/* ── Bahasa desain seragam landing page (tz- / sh-) ───────────────────────────
-   Navy + teal, judul Syne besar, nomor bagian "01 — ...", kartu radius 16–18, pil untuk tanggal dan label.
-   Ritme latar: Hero navy > Panduan terang > Layanan navy > Kegiatan putih > Pengumuman terang >
-   Pengurus putih > Peta navy > FAQ terang > Footer navy. */
+
 .tz-wrap { max-width: 1100px; margin: 0 auto; }
 .tz-wrap-sempit { max-width: 780px; }
 .tz-terang { background: #f8fafc; }
 .tz-gelap { background: #0f172a; }
 
-/* Judul bagian */
+
 .sh { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 44px; }
 .sh-kicker { display: flex; align-items: center; margin-bottom: 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #0d9488; }
 .sh-title {
@@ -964,7 +946,7 @@ html {
 .sh-dark .sh-title { color: #fff; }
 .sh-dark .sh-lead { color: #94a3b8; }
 
-/* Hero */
+
 .tz-hero-eyebrow { margin-bottom: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #2dd4bf; }
 .tz-hero-title {
   margin-bottom: 22px; font-family: var(--font-display), Georgia, serif; font-size: clamp(30px, 3.9vw, 50px);
@@ -983,7 +965,7 @@ html {
 .tz-btn-garis:hover { border-color: #5eead4; color: #fff; }
 .tz-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
-/* Tanggal sebagai pil (di atas foto kegiatan, dan di baris pengumuman) */
+
 .tz-pil-tanggal {
   position: absolute; left: 14px; bottom: 14px; padding: 5px 12px; border-radius: 999px;
   font-size: 12px; font-weight: 700; color: #fff; background: rgba(15, 23, 42, 0.82);
@@ -991,14 +973,14 @@ html {
 }
 .tz-pil-tanggal-terang { position: static; font-weight: 600; color: #475569; background: #f1f5f9; border: 1px solid #e2e8f0; -webkit-backdrop-filter: none; backdrop-filter: none; }
 
-/* Panduan: tiga langkah */
+
 .tz-steps { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .tz-step { height: 100%; padding: 30px 28px 34px; background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; }
 .tz-step-no { display: block; margin-bottom: 22px; font-family: var(--font-display), Georgia, serif; font-size: 56px; font-weight: 700; line-height: 1; color: #5eead4; }
 .tz-step h3 { margin-bottom: 10px; font-family: var(--font-jakarta), sans-serif; font-size: 18px; font-weight: 700; line-height: 1.35; color: #0f172a; }
 .tz-step p { font-size: 14px; line-height: 1.75; color: #475569; }
 
-/* Layanan: daftar bergaya buku besar */
+
 .tz-ledger { list-style: none; border-top: 2px solid #2dd4bf; }
 .tz-ledger li { border-bottom: 1px solid rgba(148, 163, 184, 0.2); }
 .tz-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1.5fr) 172px; gap: 24px; align-items: baseline; padding: 30px 0; }
@@ -1010,7 +992,7 @@ html {
 .tz-tag-login { color: #5eead4; border-color: rgba(94, 234, 212, 0.45); }
 .tz-tag-pengurus { color: #fcd34d; border-color: rgba(252, 211, 77, 0.45); }
 
-/* FAQ */
+
 .tz-faq { display: flex; flex-direction: column; gap: 12px; }
 .tz-faq-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; transition: border-color 0.2s, box-shadow 0.25s; }
 .tz-faq-item-buka { border-color: #0d9488; box-shadow: 0 12px 30px -16px rgba(13, 148, 136, 0.5); }
@@ -1030,7 +1012,7 @@ html {
 .tz-faq-isi[hidden] { display: none; }
 .tz-faq-isi p { font-size: 14px; line-height: 1.75; color: #475569; }
 
-/* Huruf judul: serif lembut (Fraunces). Bobot 600, jarak huruf rapat tipis, sumbu SOFT agar ujung huruf membulat. */
+
 .sh-title, .tz-hero-title, .lp-peta-title, .rk-title {
   font-weight: 600; letter-spacing: -0.015em; font-variation-settings: "SOFT" 60;
 }
@@ -1043,7 +1025,7 @@ html {
 .sh, .lp-peta-head { position: relative; }
 .sh-teks { position: relative; z-index: 1; }
 
-/* Footer: kontras diperbaiki (sebelumnya #334155 di atas navy, sekitar 1,9:1) */
+
 .tz-footer { padding-top: 64px; padding-bottom: 32px; background: #0f172a; border-top: 1px solid #1e293b; }
 .tz-footer-teks { font-size: 13px; line-height: 1.8; color: #94a3b8; }
 .tz-footer-kecil { font-size: 12px; color: #94a3b8; }
@@ -1064,7 +1046,7 @@ html {
   .tz-faq-isi { padding: 0 18px 20px 18px; }
 }
 
-/* Sorotan cahaya mengikuti kursor di kartu (posisi --mx/--my diisi ScrollFx). */
+
 .lp-card, .lp-card-dark { position: relative; }
 .lp-card::after, .lp-card-dark::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
@@ -1079,7 +1061,7 @@ html {
 }
 
 
-/* Logo Hero: goyang pelan (miring kiri-kanan + naik-turun), tanpa terbang antar bagian */
+
 .tz-goyang-wrap { position: relative; width: 420px; height: 420px; max-width: 100%; }
 .tz-goyang { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; animation: tzGoyang 3.6s ease-in-out infinite; }
 .tz-goyang-glow {
@@ -1095,7 +1077,7 @@ html {
 @media (max-width: 860px) { .tz-goyang-wrap { width: 180px; height: 180px; } }
 @media (prefers-reduced-motion: reduce) { .tz-goyang, .tz-goyang-glow { animation: none; } }
 
-/* Logo kecil di tiap judul bagian: muncul dari buram ke jelas, lalu melayang pelan */
+
 .tz-muncul {
   position: absolute; z-index: 0; top: 0; left: 0; width: 104px; height: 104px; pointer-events: none;
   opacity: 0; filter: blur(14px); transform: scale(0.9);
@@ -1110,7 +1092,7 @@ html {
 @media (max-width: 860px) { .tz-muncul { width: 52px; height: 52px; top: 2px; } .sh-kiri .sh { padding-left: 64px; } .sh-kanan .sh { padding-right: 64px; } }
 @media (prefers-reduced-motion: reduce) { .tz-muncul, .tz-muncul-on img { transition: none; animation: none; } }
 
-/* Pop up detail riwayat kegiatan */
+
 .rk-item-klik { cursor: pointer; }
 .rk-judul-btn { all: unset; cursor: pointer; }
 .rk-judul-btn:focus-visible { outline: 2px solid #0d9488; outline-offset: 2px; }
@@ -1132,7 +1114,7 @@ html {
 .rk-modal-isi h3 { margin: 0; font-size: 20px; line-height: 1.35; font-weight: 700; color: #0f172a; }
 .rk-modal-desk { margin: 10px 0 0; font-size: 14.5px; line-height: 1.7; color: #475569; white-space: pre-line; }
 
-/* Masukan warga di pop up riwayat */
+
 .rk-fb { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
 .rk-fb-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .rk-fb-head h4 { margin: 0; font-size: 14px; font-weight: 700; color: #0f172a; }
@@ -1145,7 +1127,7 @@ html {
 .rk-fb-list p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: #334155; white-space: pre-line; }
 .rk-fb-kosong { margin: 10px 0 0; font-size: 13px; color: #64748b; }
 
-/* Dropdown filter tahun */
+
 .rk-filter { position: relative; width: fit-content; }
 .rk-filter-btn {
   display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; cursor: pointer;
@@ -1166,7 +1148,7 @@ html {
 .rk-filter-opsi:hover { background: #f1f5f9; }
 .rk-filter-opsi-aktif { background: #ccfbf1; color: #0f766e; }
 
-/* Dropdown filter tahun: sudut lebih bulat + scrollbar tipis membulat, tidak menempel ke sudut */
+
 .rk-filter-menu { border-radius: 16px; padding: 8px 4px 8px 8px; }
 .rk-filter-opsi { border-radius: 12px; }
 .rk-filter-menu::-webkit-scrollbar { width: 10px; }

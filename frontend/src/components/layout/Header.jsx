@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Bell, CheckCheck, Inbox, Download } from "lucide-react";
 import { notifikasiApi } from "@/lib/api";
+import { EVENT_NOTIF_BERUBAH, formatRelativeTime, kabarkanNotifBerubah } from "@/lib/notifikasi";
 import { areaLabel } from "@/lib/session";
 import { pageTitle } from "@/lib/nav";
 import { useUser } from "@/lib/useUser";
@@ -11,33 +12,21 @@ import { aktifkanBunyiNotif, bunyiNotif } from "@/lib/notifSound";
 
 const POLL_INTERVAL_MS = 45 * 1000;
 
-function formatRelativeTime(dateStr) {
-  const date = new Date(dateStr);
-  const diffMs = Date.now() - date.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "Baru saja";
-  if (diffMin < 60) return `${diffMin} menit lalu`;
-  const diffHour = Math.floor(diffMin / 60);
-  if (diffHour < 24) return `${diffHour} jam lalu`;
-  const diffDay = Math.floor(diffHour / 24);
-  if (diffDay < 7) return `${diffDay} hari lalu`;
-  return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
-}
+const JUMLAH_DI_PANEL = 3;
 
 export default function Header({ onMenuClick }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user: currentUser } = useUser();
   const [notifications, setNotifications] = useState([]);
+  const [belumDibaca, setBelumDibaca] = useState(0);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const panelRef = useRef(null);
   const [installPrompt, setInstallPrompt] = useState(null);
 
-  // Chrome (Android/desktop) nembak event ini kalau app-nya kedetect installable.
-  // Simpan event-nya, dipicu belakangan lewat tombol sendiri (bukan prompt otomatis browser).
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.matchMedia?.("(display-mode: standalone)").matches) return; // sudah terinstall
+    if (window.matchMedia?.("(display-mode: standalone)").matches) return;
 
     const handleBeforeInstall = (e) => {
       e.preventDefault();
@@ -57,41 +46,43 @@ export default function Header({ onMenuClick }) {
     if (!installPrompt) return;
     installPrompt.prompt();
     await installPrompt.userChoice;
-    setInstallPrompt(null); // event cuma bisa dipakai sekali
+    setInstallPrompt(null);
   };
 
   useEffect(() => {
     let cancelled = false;
-    let sudahMuat = false; // muatan pertama tidak dibunyikan, hanya notifikasi baru sesudahnya
+    let sudahMuat = false;
     const dilihat = new Set();
     const load = () => {
-      if (document.hidden) return; // tab tidak dilihat: lewati, hemat request ke server
+      if (document.hidden) return;
       notifikasiApi.getAll()
         .then((data) => {
           if (cancelled) return;
-          const list = data || [];
+          const list = data?.items || [];
           const baru = list.some((n) => !n.isRead && !dilihat.has(n.id));
           list.forEach((n) => dilihat.add(n.id));
           if (sudahMuat && baru) bunyiNotif();
           sudahMuat = true;
           setNotifications(list);
+          setBelumDibaca(data?.belumDibaca ?? list.length);
         })
         .catch(() => {});
     };
     load();
     const interval = setInterval(load, POLL_INTERVAL_MS);
-    // Push masuk saat aplikasi terbuka: service worker mengabari halaman, lalu halaman membunyikan nada.
     const onPesanSw = (e) => {
       if (e.data?.type === "push-masuk") {
         bunyiNotif();
         load();
       }
     };
-    const onTampil = () => { if (!document.hidden) load(); }; // kembali ke tab: langsung segarkan
+    const onTampil = () => { if (!document.hidden) load(); };
     document.addEventListener("visibilitychange", onTampil);
     navigator.serviceWorker?.addEventListener("message", onPesanSw);
     const lepasBunyi = aktifkanBunyiNotif();
+    window.addEventListener(EVENT_NOTIF_BERUBAH, load);
     return () => {
+      window.removeEventListener(EVENT_NOTIF_BERUBAH, load);
       cancelled = true;
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onTampil);
@@ -111,31 +102,34 @@ export default function Header({ onMenuClick }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isPanelOpen]);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = belumDibaca;
+  const terbaru = notifications.slice(0, JUMLAH_DI_PANEL);
 
-  const handleNotifClick = async (notif) => {
+  const handleNotifClick = (notif) => {
     setIsPanelOpen(false);
-    if (!notif.isRead) {
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
-      );
-      notifikasiApi.markRead(notif.id).catch(() => {});
-    }
+    setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+    setBelumDibaca((c) => Math.max(0, c - 1));
+    notifikasiApi.markRead(notif.id).then(kabarkanNotifBerubah).catch(() => {});
     if (notif.link) router.push(notif.link);
   };
 
   const handleMarkAllRead = async (e) => {
     e.stopPropagation();
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setNotifications([]);
+    setBelumDibaca(0);
     try {
       await notifikasiApi.markAllRead();
     } catch {
-      // ignore
     }
+    kabarkanNotifBerubah();
+  };
+
+  const lihatSemua = () => {
+    setIsPanelOpen(false);
+    router.push("/dashboard/notifikasi");
   };
 
   const displayName = currentUser?.nama || currentUser?.name || "Pengguna";
-  // Nama jabatan dari tabel role, ditambah wilayahnya (mis. "Ketua RT · RT 02")
   const displayRole = currentUser?.roleNama
     ? `${currentUser.roleNama}${currentUser.area ? ` · ${areaLabel(currentUser.area)}` : ""}`
     : "Pengguna";
@@ -199,10 +193,10 @@ export default function Header({ onMenuClick }) {
                 </div>
               ) : (
                 <div className="notif-list">
-                  {notifications.map((n) => (
+                  {terbaru.map((n) => (
                     <div
                       key={n.id}
-                      className={`notif-item ${!n.isRead ? "unread" : ""}`}
+                      className="notif-item unread"
                       role="button"
                       tabIndex={0}
                       onClick={() => handleNotifClick(n)}
@@ -218,6 +212,10 @@ export default function Header({ onMenuClick }) {
                   ))}
                 </div>
               )}
+
+              <button type="button" className="notif-lihat-semua" onClick={lihatSemua}>
+                Lihat semua notifikasi
+              </button>
             </div>
           )}
         </div>

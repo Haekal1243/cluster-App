@@ -1,5 +1,6 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { History, Lock, Plus, RotateCcw, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { rbacApi } from "@/lib/api";
@@ -9,7 +10,6 @@ import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
 import Select from "@/components/ui/Select";
 
-// Jangkauan data yang boleh diakses sebuah permission
 const SCOPE_OPTIONS = [
   { val: "", label: "Tidak ada akses" },
   { val: "OWN", label: "Milik sendiri" },
@@ -30,7 +30,6 @@ const MENU_LABEL = {
   pengurus: "Admin: Pengurus",
 };
 
-// Kode aksi di tb_AuditLog -> kalimat Indonesia untuk tabel riwayat
 const AUDIT_LABEL = {
   "password.ganti": "Ganti kata sandi",
   "warga.reset_password": "Atur ulang kata sandi warga",
@@ -115,7 +114,7 @@ export default function RolePermissionPage() {
   const { user } = useUser();
   const [matrix, setMatrix] = useState(null);
   const [roleId, setRoleId] = useState(null);
-  const [draft, setDraft] = useState({}); // kode -> scope ("" = tidak ada)
+  const [draft, setDraft] = useState({});
   const [namaDraft, setNamaDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [showTambah, setShowTambah] = useState(false);
@@ -137,14 +136,13 @@ export default function RolePermissionPage() {
 
   const role = useMemo(() => matrix?.roles.find((r) => r.id === roleId) ?? null, [matrix, roleId]);
 
-  // Salin hak akses role terpilih ke draft setiap ganti role / setelah simpan
   useEffect(() => {
     if (!matrix || !role) return;
     setDraft({ ...(matrix.grants[role.id] ?? {}) });
     setNamaDraft(role.nama);
   }, [matrix, role]);
 
-  const terkunci = role?.level === 0; // hak akses Admin tidak boleh diubah (mencegah terkunci dari sistem)
+  const terkunci = role?.level === 0;
 
   const grouped = useMemo(() => {
     const map = new Map();
@@ -171,13 +169,11 @@ export default function RolePermissionPage() {
       return next;
     });
 
-  // Setelah admin mengubah matriks, muat ulang profil sendiri supaya menunya ikut menyesuaikan.
   const segarkanProfil = async () => {
     try {
       const fresh = await authApi.me();
       if (getUser()) saveUser(fresh);
     } catch {
-      /* diabaikan */
     }
   };
 
@@ -244,10 +240,10 @@ export default function RolePermissionPage() {
           <h2>Peran &amp; Hak Akses</h2>
           <p>Atur akses tiap peran ke menu dan aksinya. Seluruhnya tersimpan di basis data dan berlaku langsung, tanpa perlu memasang ulang aplikasi.</p>
         </div>
+        <PageHelp id="admin-role" />
       </div>
 
       <div className="rbac-layout">
-        {/* ── Daftar role ── */}
         <aside className="content-card rbac-roles">
           <div className="db-section-header">
             <ShieldCheck size={17} />
@@ -270,7 +266,6 @@ export default function RolePermissionPage() {
           </button>
         </aside>
 
-        {/* ── Editor hak akses ── */}
         <section className="rbac-editor">
           {role && (
             <>
@@ -362,7 +357,6 @@ export default function RolePermissionPage() {
         </section>
       </div>
 
-      {/* ── Riwayat perubahan ── */}
       <div className="content-card">
         <div className="db-section-header">
           <History size={17} />

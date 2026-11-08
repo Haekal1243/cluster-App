@@ -2,10 +2,6 @@ import { BadRequestException } from '@nestjs/common';
 import { memoryStorage } from 'multer';
 import * as path from 'node:path';
 
-/**
- * Opsi multer bersama: file ditahan di memori (file.buffer) lalu disimpan ke database
- * lewat FileService, bukan ditulis ke folder uploads/.
- */
 export function buatMulterOptions(ekstensi: RegExp, pesanTipe: string, maksMb: number) {
   return {
     storage: memoryStorage(),

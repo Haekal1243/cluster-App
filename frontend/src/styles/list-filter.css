@@ -1,7 +1,4 @@
-/* ==========================================
-   List toolbar: search + filter (generic, dipakai di halaman
-   master data / list manapun — Pengumuman, Pengaduan, dll)
-   ========================================== */
+
 .list-toolbar-row {
   display: flex;
   align-items: center;
@@ -9,11 +6,7 @@
   flex-wrap: wrap;
 }
 
-/* ==========================================
-   Filter Popover — tombol "Filter" + dropdown panel,
-   dipakai di samping search bar (Data Warga, Pengaduan,
-   Kegiatan, Pengumuman, dll)
-   ========================================== */
+
 .filter-popover {
   position: relative;
   flex-shrink: 0;
@@ -51,7 +44,7 @@
   transform: rotate(180deg);
 }
 
-/* Badge jumlah filter aktif di tombol Filter ("Filter · 1"). */
+
 .filter-popover-count {
   display: inline-flex;
   align-items: center;
@@ -67,7 +60,7 @@
   line-height: 1;
 }
 
-/* ── Export split-button (Riwayat Kas): tombol aksi + menu pilihan format ── */
+
 .export-split {
   position: relative;
   display: inline-flex;
@@ -75,7 +68,7 @@
   flex-shrink: 0;
 }
 
-/* Outline teal: beda dari .btn-ipl-secondary abu-abu generik, tapi lebih ringan dari tombol primary solid */
+
 .btn-ipl-teal {
   display: inline-flex;
   align-items: center;
@@ -181,8 +174,7 @@
   -webkit-user-select: none;
 }
 
-/* Field-field filter di-scroll sendiri kalau kepanjangan, biar halaman di belakangnya
-   nggak ikut turun — tombol Terapkan/Reset tetap nempel kelihatan di bawah. */
+
 .filter-popover-fields {
   display: flex;
   flex-direction: column;
@@ -197,13 +189,13 @@
   flex-direction: column;  gap: 6px;
 }
 
-/* Combobox: input teks bebas + dropdown suggestion (mis. Blok Rumah di Tambah Warga) */
+
 .combobox {
   position: relative;
   min-width: 0;
 }
 
-/* Trigger custom Select selalu full-width di dalam field popover. */
+
 .filter-popover-field .combobox,
 .filter-popover-field .ui-select-trigger {
   width: 100%;
@@ -269,10 +261,9 @@
   color: var(--db-primary);
 }
 
-/* Menu hasil portal: fixed mengikuti trigger, di atas popover/modal.
-   right:auto + width:max-content: lebar selebar konten (min. selebar trigger
-   dari min-width inline, maks. selebar viewport) — tidak melar ke tepi layar. */
+
 .combobox-list-portal {
+  position: fixed;
   top: auto;
   right: auto;
   width: max-content;
@@ -310,7 +301,7 @@
 .ui-select-trigger .is-placeholder {
   color: #94a3b8;
 }
-/* Panah sisa .ipl-select (background-image) tidak dipakai: Select custom menggambar ChevronDown sendiri. */
+
 .ui-select-trigger.ui-select-trigger {
   background-image: none;
 }
@@ -318,13 +309,12 @@
   flex: none;
   color: var(--db-slate-400);
 }
-/* Trigger custom sudah punya ikon chevron sendiri: matikan background
-   chevron sisa era native <select> (class .warga-filter-select). */
+
 .ui-select-trigger.warga-filter-select {
   background-image: none;
 }
 
-/* Radio list untuk mode mobile (tanpa dropdown-dalam-dropdown). */
+
 .combobox-radio-list {
   display: flex;
   flex-direction: column;
@@ -377,11 +367,7 @@
   font-size: 0.85rem;
 }
 
-/* Placeholder "Semua Periode" pakai generated content (::before), bukan
-   <span> biasa, karena teks di ::before nggak pernah bisa di-select/di-blok
-   user sama sekali — beda sama <span> yang masih bisa ke-select meski
-   pointer-events:none & user-select:none (drag seleksi dari input di
-   belakangnya masih bisa "nembus"). */
+
 .ipl-month-input-wrap[data-placeholder]::before {
   content: attr(data-placeholder);
   position: absolute;
@@ -394,11 +380,7 @@
   user-select: none;
 }
 
-/* Input mm/yyyy bawaan browser di dalam .ipl-month-input-wrap disembunyiin
-   HANYA saat kosong (has-empty) — dulu pakai selector tanpa .has-empty jadi
-   permanen transparent bahkan saat ada value (bug: nilai 2026-03 tidak terlihat).
-   Opsi B: placeholder "Semua Periode" via ::before tetap tampil saat kosong,
-   tapi saat ada value class has-empty dilepas jadi field terlihat normal. */
+
 .ipl-month-input-wrap.has-empty input[type="month"]::-webkit-datetime-edit-month-field,
 .ipl-month-input-wrap.has-empty input[type="month"]::-webkit-datetime-edit-year-field,
 .ipl-month-input-wrap.has-empty input[type="month"]::-webkit-datetime-edit-text {
@@ -462,7 +444,7 @@
   cursor: not-allowed;
 }
 
-/* Mobile: popover filter jadi bottom sheet full-width (margin 16px). */
+
 @media (max-width: 767px) {
   .filter-popover-panel {
     position: fixed;
@@ -556,7 +538,7 @@
   background: #e2e8f0;
 }
 
-/* Grid kartu Pengumuman — dipakai gantinya tabel di layar mobile (lihat @media max-width:600px) */
+
 .pengumuman-grid { display: none; }
 
 .pengumuman-grid-card {
@@ -595,14 +577,14 @@
   border-top: 1px solid var(--db-border);
 }
 
-/* Badge visibilitas di baris sendiri di atas garis, di bawah tanggal. */
+
 .pengumuman-grid-badge {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
-/* Aksi kiri + status kanan di bawah garis; aksi kiri + status kanan di bawahnya. */
+
 .pengumuman-grid-footer-row {
   display: flex;
   align-items: center;
@@ -648,7 +630,7 @@
   padding: 4px 10px;
 }
 
-/* Grid kartu Kegiatan (admin) — dipakai gantinya tabel di layar mobile */
+
 .kegiatan-grid { display: none; }
 
 .kegiatan-grid-card {
@@ -716,8 +698,7 @@
   transform: translateX(14px);
 }
 
-/* Riwayat Tagihan (Warga) — grid kartu 2 kolom di mobile, seragam sama
-   desain Kegiatan & Pengumuman (judul + meta + footer aksi-kiri/status-kanan) */
+
 .iuran-grid { display: none; }
 
 .iuran-grid-card {
@@ -770,8 +751,7 @@
   font-size: 0.6rem;
 }
 
-/* Data Warga & Rumah (admin) — grid kartu 2 kolom di mobile, seragam sama
-   Kegiatan/Pengumuman/Pengaduan (judul + meta + footer aksi-kiri/status-kanan) */
+
 .warga-grid { display: none; }
 
 .warga-grid-card {
@@ -849,7 +829,7 @@
 
   .page-toolbar-row { gap: 8px; }
 
-  /* Tabel Pengumuman: diganti grid kartu 2 kolom, tanpa scroll horizontal */
+
   .pengumuman-table-wrapper { display: none; }
 
   .pengumuman-grid {
@@ -867,7 +847,7 @@
   }
   .list-pagination-actions { justify-content: center; }
 
-  /* Tabel Kegiatan: diganti grid kartu 2 kolom, tanpa scroll horizontal */
+
   .kegiatan-table-wrapper { display: none; }
 
   .kegiatan-grid {
@@ -877,8 +857,7 @@
     padding: 14px;
   }
 
-  /* Semua pop up Tambah/Ubah (modal-box): dikecilin biar gak penuh layar di HP.
-     Berlaku untuk semua modal form di seluruh app, bukan cuma yang dikasih class khusus. */
+
   .modal-box {
     max-width: 92vw;
   }
@@ -890,7 +869,9 @@
   }
   .modal-box .modal-body {
     padding: 14px 16px;
-    max-height: 70vh;
+  }
+  .modal-box .modal-body > .form-group:last-child {
+    margin-bottom: 0;
   }
   .modal-box .form-group {
     margin-bottom: 12px;
@@ -928,7 +909,7 @@
     font-size: 0.82rem;
   }
 
-  /* Riwayat Tagihan (Warga): tabel diganti grid kartu 2 kolom, tanpa scroll horizontal */
+
   .iuran-table-wrapper { display: none; }
   .iuran-grid {
     display: grid;
@@ -936,7 +917,7 @@
     gap: 10px;
   }
 
-  /* Data Warga & Rumah: tabel diganti grid kartu 2 kolom, tanpa scroll horizontal */
+
   .warga-table-wrapper { display: none; }
   .warga-grid {
     display: grid;
@@ -1158,7 +1139,7 @@
     top: 0;
     left: 0;
     bottom: 0;
-    height: auto; /* top:0 + bottom:0 = pas setinggi layar yang kelihatan (bukan 100vh) */
+    height: auto;
     z-index: 40;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
@@ -1266,9 +1247,7 @@
     width: 100%;
   }
 
-  /* Card login/daftar kegedean di HP — judul, spacing, dan input dikecilin semua.
-     Semua di-scope ke dalam .auth-right doang, biar gak ikut ngecilin .form-control
-     dkk di modal-modal lain yang kebetulan pakai class yang sama. */
+
   .auth-header h2 {
     font-size: 1.4rem;
     margin-bottom: 4px;
@@ -1352,8 +1331,7 @@
     align-items: stretch;
   }
 
-  /* RT & Blok Rumah tetap 1 baris di mobile, cuma gap-nya dikecilin dan
-     min-width dilepas biar kedua kotak muat berdampingan di layar sempit. */
+
   .address-row {
     gap: 16px;
     margin-bottom: 10px;
@@ -1376,3 +1354,41 @@
   }
 }
 
+
+.combobox-cari {
+  position: sticky;
+  top: -4px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px -4px 4px;
+  padding: 10px 12px;
+  background: var(--db-surface);
+  border-bottom: 1px solid var(--db-border);
+  color: var(--db-slate-400);
+}
+.combobox-cari input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--db-slate-700);
+}
+.combobox-cari input::placeholder {
+  color: var(--db-slate-400);
+}
+.combobox-isi {
+  list-style: none;
+}
+.combobox-kosong {
+  padding: 14px 10px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--db-slate-500);
+  list-style: none;
+}

@@ -1,5 +1,7 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
+import KerangkaDetail from "@/components/ui/DetailModal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, FileText, List, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { catatanRapatApi } from "@/lib/api";
@@ -12,12 +14,8 @@ import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import { getCurrentYm, formatTanggalPanjang as tanggal, formatTanggalPendek } from "@/lib/format";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
-// Judul biasanya ditulis "Rapat <Area> - <Topik>" (lihat seed), yang bikin redundan sama
-// badge area yang udah ditampilin terpisah. Potong prefix itu kalau memang ada, selain itu
-// (judul custom yang gak ikut pola) dibiarkan apa adanya.
 const stripRapatPrefix = (judul) => (judul || "").replace(/^Rapat\s+.+?\s[--]\s*/i, "").trim() || judul;
 
-/** Boleh mengubah/menghapus? Scope ALL = semua; AREA = hanya notulen wilayahnya. */
 function bolehTulis(user, kode, item) {
   const scope = scopeOf(user, kode);
   if (scope === "ALL") return true;
@@ -25,7 +23,6 @@ function bolehTulis(user, kode, item) {
   return false;
 }
 
-// Jenis input notulen yang sudah tersimpan: tidak ada file → isi notulen; file bertipe image → gambar; sisanya → file.
 function jenisDariItem(item) {
   if (!item?.fileNotulen) return "isi";
   return item.fileNotulenMime?.startsWith("image/") ? "gambar" : "file";
@@ -54,7 +51,6 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
 
   if (!open) return null;
 
-  // Edit tanpa ganti file & jenis tidak berubah → file lama masih dianggap terlampir.
   const adaFileLama = mode === "edit" && jenisInput !== "isi" && jenisInput === jenisAwal && !!initialData?.fileNotulen;
   const isiWajib = jenisInput === "isi";
   const fileWajib = jenisInput !== "isi" && !file && !adaFileLama;
@@ -64,8 +60,6 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
     setFile(null);
   };
 
-  // Sisipkan "• " di awal baris kursor berada, atau di awal baris baru — biar user gampang bikin poin
-  // tanpa harus ngetik bullet manual satu-satu.
   const tambahPoin = () => {
     const el = isiRef.current;
     if (!el) return;
@@ -97,7 +91,6 @@ function CatatanFormModal({ open, mode, initialData, areaOtomatis, pilihArea, on
       );
       return;
     }
-    // Pindah dari gambar/file ke isi notulen saat edit → lepas file lama di server.
     const lepasFileLama = mode === "edit" && jenisInput === "isi" && jenisAwal !== "isi" && !!initialData?.fileNotulen;
     setIsSaving(true);
     try {
@@ -300,7 +293,6 @@ function DetailModal({ item, onClose }) {
     try {
       const namaDasar = `Notulen - ${stripRapatPrefix(item.judul)} - ${tanggal(item.createDate)}`;
 
-      // Dokumen Word tidak bisa disisipkan ke PDF dari browser — unduh file aslinya apa adanya.
       if (jenis === "file" && item.fileNotulenMime !== "application/pdf") {
         const blob = await catatanRapatApi.getFileBlob(item.id);
         const ext = (item.fileNotulenNama || "").split(".").pop();
@@ -337,7 +329,6 @@ function DetailModal({ item, onClose }) {
         return;
       }
 
-      // jenis === "file" & mime PDF → gabungkan cover dengan halaman PDF aslinya.
       const { PDFDocument } = await import("pdf-lib");
       const headerBytes = doc.output("arraybuffer");
       const merged = await PDFDocument.create();
@@ -360,40 +351,32 @@ function DetailModal({ item, onClose }) {
   const labelUnduh = jenis === "file" && item.fileNotulenMime !== "application/pdf" ? "Download File" : "Download PDF";
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box catatan-detail-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{stripRapatPrefix(item.judul)}</h3>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup"><X size={18} /></button>
-        </div>
-        <div className="modal-body">
-          <div className="catatan-meta">
-            <span className="rt-badge">{areaLabel(item.area)}</span>
-            <span>{tanggal(item.createDate)}</span>
-          </div>
-          {item.isiNotulen?.trim() ? (
-            <div className="review-desc-card">
-              <span className="review-info-label">Isi Notulen</span>
-              <p className="review-desc-text">{item.isiNotulen}</p>
-            </div>
-          ) : (
-            <p className="field-hint">
-              {jenis === "gambar" ? "Notulen berupa gambar, lihat lampiran di bawah." : "Tidak ada isi notulen, lihat file terlampir di bawah."}
-            </p>
-          )}
-          <div className="catatan-detail-actions">
-            {item.fileNotulen && (
-              <button type="button" className="btn-ipl-view" onClick={bukaFile}>
-                <FileText size={14} /> Buka {jenis === "gambar" ? "gambar" : "file"} notulen
-              </button>
-            )}
-            <button type="button" className="btn-outline-neutral" onClick={unduhPdf} disabled={isDownloading}>
-              <Download size={14} /> {isDownloading ? "Memproses..." : labelUnduh}
+    <KerangkaDetail
+      title="Detail Catatan Rapat"
+      onClose={onClose}
+      judul={stripRapatPrefix(item.judul)}
+      info={[
+        { label: "Wilayah", value: areaLabel(item.area) },
+        { label: "Tanggal", value: tanggal(item.createDate) },
+      ]}
+      deskripsiLabel="Isi Notulen"
+      deskripsi={item.isiNotulen?.trim() ? item.isiNotulen : null}
+      deskripsiKosong={
+        jenis === "gambar" ? "Notulen berupa gambar, lihat lampiran di bawah." : "Tidak ada isi notulen, lihat file terlampir di bawah."
+      }
+      aksi={
+        <>
+          {item.fileNotulen && (
+            <button type="button" className="btn-ipl-view" onClick={bukaFile}>
+              <FileText size={14} /> Buka {jenis === "gambar" ? "gambar" : "file"} notulen
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
+          )}
+          <button type="button" className="btn-outline-neutral" onClick={unduhPdf} disabled={isDownloading}>
+            <Download size={14} /> {isDownloading ? "Memproses..." : labelUnduh}
+          </button>
+        </>
+      }
+    />
   );
 }
 
@@ -407,8 +390,6 @@ export default function CatatanRapatPage() {
   const [modal, setModal] = useState({ open: false, mode: "create", item: null });
   const [detail, setDetail] = useState(null);
 
-  // Filter periode rapat per bulan (opsional, kosong = semua periode) — pola draft +
-  // Terapkan sama kayak filter periode di Keuangan/Tagihan/dll, tapi cuma 1 kriteria.
   const [filterDari, setFilterDari] = useState("");
   const [filterSampai, setFilterSampai] = useState("");
   const [draftDari, setDraftDari] = useState("");
@@ -503,6 +484,7 @@ export default function CatatanRapatPage() {
             terpisah dan tidak saling terlihat.
           </p>
         </div>
+        <PageHelp id="catatan-rapat" />
       </div>
 
       <div className="page-toolbar-row toolbar-row-reverse-mobile">

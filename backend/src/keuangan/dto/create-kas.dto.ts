@@ -36,7 +36,6 @@ export class CreateKasDto {
   @MaxLength(2000)
   keterangan?: string;
 
-  /** Hanya untuk user ber-scope ALL (mis. admin). Selain itu area otomatis dari jabatan. */
   @IsOptional()
   @IsEnum(Area)
   area?: Area;

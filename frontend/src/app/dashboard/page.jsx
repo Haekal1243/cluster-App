@@ -6,9 +6,6 @@ import { can, isWargaView, isPengurusRt } from "@/lib/session";
 import PanelSistem from "@/components/dashboard/PanelSistem";
 import { useUser } from "@/lib/useUser";
 
-// Dispatcher /dashboard: arahkan ke home per audiens.
-// - Warga -> /dashboard/warga; pengurus RT -> /dashboard/rt; pengurus RW -> /dashboard/rw.
-// - Akun tanpa ipl.read (mis. role Admin) tetap melihat PanelSistem di sini.
 export default function DashboardDispatcher() {
   const { user, ready } = useUser();
   const router = useRouter();

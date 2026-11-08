@@ -29,7 +29,6 @@ function StatusBadge({ status }) {
   );
 }
 
-// ── Warga: dashboard pribadi (tagihan + kegiatan + pengumuman) ────────────────
 export function WargaDashboardView({ user }) {
   const [rumahList, setRumahList] = useState([]);
   const [tagihanAllList, setTagihanAllList] = useState([]);
@@ -38,16 +37,12 @@ export function WargaDashboardView({ user }) {
   const [loading, setLoading] = useState(true);
   const [selectedKegiatan, setSelectedKegiatan] = useState(null);
   const [selectedPengumuman, setSelectedPengumuman] = useState(null);
-  // Expand/collapse per grup bulan — state digabung satu objek agar reset + default
-  // bisa dihitung saat render (pola "adjust state during render"), tanpa setState
-  // sinkron di dalam effect (lolos aturan react-hooks/set-state-in-effect).
   const [expandState, setExpandState] = useState({ key: null, keys: new Set() });
 
   const now = new Date();
   const bulanIni = String(now.getMonth() + 1).padStart(2, "0");
   const tahunIni = String(now.getFullYear());
 
-  // Fetch semua tagihan lintas periode (tanpa filter bulan) — Task 1
   useEffect(() => {
     async function fetchData() {
       try {
@@ -79,8 +74,6 @@ export function WargaDashboardView({ user }) {
     fetchData();
   }, [user.id]);
 
-  // Warga hanya melihat yang aktif: kegiatan yang belum lewat tanggalnya dan pengumuman
-  // berstatus aktif. Yang sudah lewat/dinonaktifkan tidak ditampilkan (tanpa tab arsip).
   useEffect(() => {
     let cancelled = false;
     async function loadKegiatan() {
@@ -90,12 +83,11 @@ export function WargaDashboardView({ user }) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const batasSelesai = new Date(today);
-      batasSelesai.setDate(batasSelesai.getDate() - 7); // sama dengan lama kegiatan dianggap aktif
+      batasSelesai.setDate(batasSelesai.getDate() - 7);
       const akanDatang = (data || []).filter((k) => {
         const t = new Date(k.tanggalAcara);
         return Number.isNaN(t.getTime()) || t >= batasSelesai;
       });
-      // yang akan datang paling dekat di depan; yang baru selesai (masih bisa dinilai) di belakang
       const hariIni = (k) => new Date(k.tanggalAcara) >= today;
       akanDatang.sort((a, b) => {
         if (hariIni(a) !== hariIni(b)) return hariIni(a) ? -1 : 1;
@@ -119,7 +111,6 @@ export function WargaDashboardView({ user }) {
     return () => { cancelled = true; };
   }, []);
 
-  // ── Derived untuk hero & breakdown — sebelum early return agar hooks tidak berubah urutan
   const isBulanIni = (t) => t.bulanPeriode === bulanIni && t.tahunPeriode === tahunIni;
   const tunggakanList = tagihanAllList.filter(
     (t) => t.statusPembayaran === "BELUM_LUNAS" || t.statusPembayaran === "MENUNGGU_KONFIRMASI"
@@ -129,7 +120,6 @@ export function WargaDashboardView({ user }) {
   const isLunasSemua = !adaTunggakan && tagihanAllList.length > 0;
   const totalTunggakanNominal = tunggakanList.reduce((s, t) => s + (t.nominal || 0), 0);
 
-  // Breakdown per periode — grouped by BULAN, tiap grup simpan list tagihan (untuk nested unit rows)
   const breakdownMap = {};
   for (const t of tunggakanList) {
     const key = `${t.bulanPeriode}-${t.tahunPeriode}`;
@@ -146,7 +136,6 @@ export function WargaDashboardView({ user }) {
     }
     breakdownMap[key].nominal += t.nominal || 0;
     breakdownMap[key].count += 1;
-    // simpan tagihan lengkap dengan rumah untuk nested row
     const rid = t.rumah?.id ?? t.idRumah;
     const rumah = rumahList.find((r) => r.id === rid) || t.rumah || { id: rid, blokRumah: `Rumah #${rid}`, rt: "" };
     breakdownMap[key].tagihans.push({ ...t, _rumah: rumah });
@@ -154,13 +143,9 @@ export function WargaDashboardView({ user }) {
   const breakdownList = Object.values(breakdownMap).sort((a, b) => {
     const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
     const vb = parseInt(b.tahunPeriode, 10) * 12 + parseInt(b.bulanPeriode, 10);
-    return va - vb; // tertua dulu
+    return va - vb;
   });
 
-  // Default expanded jika ≤3 periode; reset ke default hanya saat jumlah tunggakan
-  // berubah (mis. user ganti akun / ada pembayaran baru) — komposisi periode yang
-  // berubah tanpa mengubah jumlah tidak me-reset toggle manual user.
-  // Dihitung saat render dengan guard kunci — perilaku identik dengan dua effect sebelumnya.
   const tunggakanKey = tunggakanList.length;
   if (expandState.key !== tunggakanKey) {
     setExpandState({
@@ -181,11 +166,9 @@ export function WargaDashboardView({ user }) {
   };
 
   const firstName = (user?.nama || user?.name || "Warga").split(" ")[0];
-  // Forward-looking info untuk state lunas
   const pembayaranTerakhir = [...tagihanLunasList]
     .filter((t) => t.pembayaran?.[0]?.tanggalBayar)
     .sort((a, b) => new Date(b.pembayaran[0].tanggalBayar) - new Date(a.pembayaran[0].tanggalBayar))[0] || null;
-  // fallback jika tidak ada pembayaran record tapi ada tagihan lunas
   const lastPaidFallback = !pembayaranTerakhir && tagihanLunasList.length > 0
     ? [...tagihanLunasList].sort((a, b) => {
         const va = parseInt(a.tahunPeriode, 10) * 12 + parseInt(a.bulanPeriode, 10);
@@ -209,7 +192,6 @@ export function WargaDashboardView({ user }) {
 
   return (
     <div className="page-stack warga-dashboard">
-      {/* Hero — Task 1 & 2 */}
       <section className={`portal-hero ${isLunasSemua ? "is-success" : ""}`}>
         <div className="portal-hero-accent" aria-hidden />
         <div className="portal-hero-main">
@@ -266,7 +248,6 @@ export function WargaDashboardView({ user }) {
         <div className="portal-hero-orb orb-b" aria-hidden />
       </section>
 
-      {/* Rincian Tunggakan — grouped by BULAN, nested unit rows, single CTA */}
       {adaTunggakan ? (
         <section className="content-card warga-detail-card">
           <div className="warga-tunggakan-header">
@@ -409,7 +390,6 @@ export function WargaDashboardView({ user }) {
         </section>
       )}
 
-      {/* Kegiatan Cluster */}
       <section className="content-card">
         <div className="db-section-header">
           <CalendarDays size={17} />
@@ -457,7 +437,6 @@ export function WargaDashboardView({ user }) {
         )}
       </section>
 
-      {/* Pengumuman */}
       <section className="content-card">
         <div className="db-section-header">
           <Megaphone size={17} />

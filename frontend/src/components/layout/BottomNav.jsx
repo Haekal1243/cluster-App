@@ -5,11 +5,6 @@ import { usePathname } from "next/navigation";
 import { Settings } from "lucide-react";
 import { NAV_ITEMS, navItemFor, resolveLabel } from "@/lib/nav";
 
-/**
- * Menu bawah ala aplikasi mobile; hanya dirender untuk tampilan warga/akun sistem dan hanya terlihat di layar sempit (CSS).
- * Dock melayang; yang aktif ditandai pil teal di belakang ikon. `labelBawah` (opsional di NAV_ITEMS)
- * dipakai bila label menu terlalu panjang untuk satu tombol.
- */
 export default function BottomNav({ user }) {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((i) => i.allow(user));

@@ -26,7 +26,6 @@ export class CreateRoleDto {
   @MaxLength(100)
   nama!: string;
 
-  /** 1 = level RW, 2 = level RT, 3 = level warga. Level 0 khusus admin bawaan. */
   @Type(() => Number)
   @IsInt()
   @IsIn([1, 2, 3], { message: 'Tingkat harus 1 (RW), 2 (RT), atau 3 (warga)' })
@@ -57,7 +56,6 @@ export class GrantDto {
 }
 
 export class SetRolePermissionsDto {
-  /** Daftar lengkap permission yang dimiliki role; yang tidak tercantum dicabut. */
   @IsArray()
   @ArrayMaxSize(500)
   @ValidateNested({ each: true })
@@ -87,7 +85,6 @@ export class VacatePengurusDto {
   area!: Area;
 }
 
-/** Nomor WhatsApp khusus pengurus untuk landing page. Kosong/null = hapus (tidak ditampilkan). */
 export class SetKontakPengurusDto {
   @IsOptional()
   @Transform(({ value }) => {

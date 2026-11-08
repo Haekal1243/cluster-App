@@ -16,7 +16,6 @@ const STATUS_LABELS = {
 
 const EMPTY_FORM = { blokRumah: "", rt: "RT_01", userId: "", status: "" };
 
-// `allowedRts`: RT yang boleh dipilih (pengurus RT hanya RT-nya sendiri).
 export default function RumahFormModal({ open, mode, initialData, onClose, onSubmit, allowedRts = ALL_RT }) {
   const RT_OPTIONS = allowedRts;
   const [form, setForm] = useState(EMPTY_FORM);
@@ -43,7 +42,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
     };
   }, [pemilikOpen]);
 
-  // Load dropdown users once
   useEffect(() => {
     if (!open) return;
     setIsLoadingUsers(true);
@@ -54,7 +52,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
       .finally(() => setIsLoadingUsers(false));
   }, [open]);
 
-  // Populate form when editing
   useEffect(() => {
     if (mode === "edit" && initialData) {
       setForm({
@@ -88,7 +85,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
   );
 
   const pilihPemilik = (u) => {
-    // Tanpa pemilik, status "Dihuni" tidak sah: otomatis jadi Kosong supaya simpan tidak gagal.
     setForm((prev) => ({
       ...prev,
       userId: u ? u.id : "",
@@ -104,13 +100,11 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
     setIsSubmitting(true);
     try {
       const userId = form.userId ? Number(form.userId) : null;
-      // Pemilik dikosongkan lewat ketikan (bukan klik opsi "Kosong") tetap tidak boleh berstatus Dihuni.
       const status = !userId && form.status.startsWith("DIHUNI") ? "KOSONG" : form.status;
       await onSubmit({
         blokRumah: form.blokRumah.trim(),
         rt: form.rt,
         userId,
-        // Kosong = ikut penghuni (ada penghuni -> tetap, tanpa penghuni -> kosong)
         ...(status ? { status } : {}),
       });
     } finally {
@@ -121,7 +115,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="modal-header">
           <h3>{mode === "edit" ? "Ubah Data Rumah" : "Tambah Rumah Baru"}</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">
@@ -129,10 +122,8 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {/* Blok Rumah */}
             <div className="form-group">
               <label className="form-label" htmlFor="blokRumah">
                 Blok Rumah <span style={{ color: "var(--db-danger)" }}>*</span>
@@ -154,8 +145,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
               )}
             </div>
 
-            {/* RT cuma ditampilkan kalau pengurus boleh pilih lebih dari satu RT (RW).
-                Pengurus RT cuma punya satu RT, jadi otomatis dipakai tanpa perlu dropdown. */}
             {RT_OPTIONS.length > 1 && (
               <div className="form-group">
                 <label className="form-label" htmlFor="rt">
@@ -170,7 +159,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
               </div>
             )}
 
-            {/* Pemilik */}
             <div className="form-group">
               <label className="form-label" htmlFor="userId">
                 Pemilik / Penanggung Jawab
@@ -209,7 +197,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
               </div>
             </div>
 
-            {/* Status rumah */}
             <div className="form-group">
               <label className="form-label" htmlFor="status">Status Rumah</label>
               <Select
@@ -224,7 +211,6 @@ export default function RumahFormModal({ open, mode, initialData, onClose, onSub
             </div>
           </div>
 
-          {/* Footer */}
           <div className="modal-footer">
             <button
               type="button"

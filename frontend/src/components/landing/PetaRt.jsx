@@ -3,15 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Reveal from "./Reveal";
 
-/* Warna cadangan kalau sebuah area RT di file GeoJSON belum diberi `warna`. */
 const PALET = ["#0D9488", "#1D4ED8", "#B45309", "#7C3AED", "#BE123C", "#4D7C0F", "#0369A1", "#A21CAF"];
-/* Warna tiap blok rumah (satu nama blok = satu warna, walau areanya terpisah). */
 const PALET_BLOK = [
-  "#2563EB", "#F59E0B", "#DC2626", "#92400E", "#0891B2", "#65A30D", // jangan pakai warna yang mirip warna fasilitas (lihat WARNA_FAS_KATA)
+  "#2563EB", "#F59E0B", "#DC2626", "#92400E", "#0891B2", "#65A30D",
   "#DB2777", "#EA580C", "#4F46E5", "#0D9488", "#CA8A04", "#475569",
 ];
-/* Warna fasilitas umum: tiap nama beda, dan sengaja dijauhkan dari palet blok & warna RT di atas
-   (jarak warna dicek) supaya tidak ada yang kembar. Urutan cek: properti `warna` > kata kunci nama > palet otomatis. */
 const WARNA_FAS_KATA = [
   [/masjid|musholla|mushola/i, "#C4B5FD"],
   [/taman|lapangan/i, "#4ADE80"],
@@ -26,11 +22,11 @@ const warnaFasilitas = (nama, props, urutan) =>
   props.fill ||
   (WARNA_FAS_KATA.find(([re]) => re.test(nama)) ?? [])[1] ||
   PALET_FAS[urutan % PALET_FAS.length];
-const ZOOM_LABEL_FAS = 18; // label fasilitas baru tampil dari zoom ini ke atas
+const ZOOM_LABEL_FAS = 18;
 
 const SUMBER = "/peta-rt.geojson";
-const SUMBER_BLOK = "/peta-blok.geojson"; // opsional: batas tiap blok rumah (properti `blok`, mis. "E3")
-const SUMBER_FAS = "/peta-fasilitas.geojson"; // opsional: masjid, bank sampah, posyandu, dll. (properti `fasilitas`)
+const SUMBER_BLOK = "/peta-blok.geojson";
+const SUMBER_FAS = "/peta-fasilitas.geojson";
 
 const ambil = (url) =>
   fetch(url, { cache: "no-store" })
@@ -38,32 +34,28 @@ const ambil = (url) =>
     .then((data) => (data?.features ?? []).filter((x) => x?.geometry))
     .catch(() => []);
 
-/* Hover hanya berlaku di perangkat dengan mouse. Di layar sentuh, mouseover tidak pernah dilepas dan
-   sorotan lama akan menempel serta menimpa pilihan. */
 const bisaHover = () => typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
-/* "E2" < "E10": urut dengan angka, bukan huruf. */
 const urutAlami = (a, b) => a.localeCompare(b, "id", { numeric: true });
 
 export default function PetaRt() {
   const wadahRef = useRef(null);
   const petaRef = useRef(null);
-  const grupRef = useRef({}); // { rt, blok, fas } = featureGroup Leaflet
-  const rtRef = useRef({}); // id -> { layer, warna }
-  const blokRef = useRef({}); // nama -> { layers: [], warna }
-  const fasRef = useRef({}); // nama -> [layer]
+  const grupRef = useRef({});
+  const rtRef = useRef({});
+  const blokRef = useRef({});
+  const fasRef = useRef({});
   const penundaRef = useRef(null);
 
   const [data, setData] = useState({ rt: [], blok: [], fas: [] });
   const [dimuat, setDimuat] = useState(false);
-  const [tampilan, setTampilan] = useState("rt"); // "rt" | "blok"
-  const [daftarRt, setDaftarRt] = useState([]); // [{ id, nama, warna, keterangan }]
-  const [daftarBlok, setDaftarBlok] = useState([]); // [{ id, nama, warna }]
-  const [daftarFas, setDaftarFas] = useState([]); // [{ id, nama, warna }]
-  const [aktif, setAktif] = useState(null); // sorotan sementara (hover): { jenis: "rt" | "blok" | "fas", id }
-  const [dipilih, setDipilih] = useState(null); // pilihan tetap (klik/ketuk): { jenis, id }
+  const [tampilan, setTampilan] = useState("rt");
+  const [daftarRt, setDaftarRt] = useState([]);
+  const [daftarBlok, setDaftarBlok] = useState([]);
+  const [daftarFas, setDaftarFas] = useState([]);
+  const [aktif, setAktif] = useState(null);
+  const [dipilih, setDipilih] = useState(null);
 
-  /* Tahap 1: ambil data. Tanpa data RT, bagian ini tidak ditampilkan sama sekali. */
   useEffect(() => {
     let batal = false;
     Promise.all([ambil(SUMBER), ambil(SUMBER_BLOK), ambil(SUMBER_FAS)]).then(([rt, blok, fas]) => {
@@ -76,7 +68,6 @@ export default function PetaRt() {
     };
   }, []);
 
-  /* Tahap 2: setelah wadah peta tampil di halaman, bangun petanya (sekali). */
   useEffect(() => {
     if (!dimuat || data.rt.length === 0) return;
     let batal = false;
@@ -86,7 +77,6 @@ export default function PetaRt() {
       await import("leaflet/dist/leaflet.css");
       if (batal || !wadahRef.current) return;
 
-      // zoomSnap kecil: fitBounds bisa pas ke area cluster, tidak dibulatkan ke zoom bulat yang terlalu jauh.
       const peta = L.map(wadahRef.current, { scrollWheelZoom: false, zoomSnap: 0.25, zoomControl: false });
       petaRef.current = peta;
 
@@ -98,24 +88,19 @@ export default function PetaRt() {
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         { maxZoom: 19, attribution: "Tiles &copy; Esri" }
       );
-      // Peta jalan jadi tampilan awal: bentuk tiap bangunan lebih jelas. Satelit tinggal pilih.
       jalan.addTo(peta);
       L.control.layers({ Jalan: jalan, Satelit: satelit }, null, { position: "topright" }).addTo(peta);
-      // bottomleft: pojok kanan bawah layar sering tertutup lencana "kembali ke atas" (ScrollFx)
       L.control.zoom({ position: "bottomleft", zoomInTitle: "Perbesar", zoomOutTitle: "Perkecil" }).addTo(peta);
 
       const grup = { rt: L.featureGroup(), blok: L.featureGroup(), fas: L.featureGroup() };
       grupRef.current = grup;
 
-      /* Label di peta mengikuti warna areanya (dibaca CSS lewat --lab). */
       const warnai = (layer, warna) =>
         layer.on("tooltipopen", (e) => e.tooltip.getElement()?.style.setProperty("--lab", warna));
 
-      /* --- Wilayah RT --- */
       const rtBaru = [];
       data.rt.forEach((f, i) => {
         const p = f.properties ?? {};
-        // `fill`/`stroke` = kunci bawaan tab Styles di geojson.io; `warna` = kunci kita sendiri.
         const warna = p.warna || p.fill || p.stroke || PALET[i % PALET.length];
         const nama = p.rt ?? p.RT ?? p.nama ?? p.name ?? `Area ${i + 1}`;
         const id = String(p.id ?? nama ?? i);
@@ -136,7 +121,6 @@ export default function PetaRt() {
         });
       });
 
-      /* --- Blok rumah: satu nama blok = satu warna --- */
       const namaDari = (p, i) => String(p.blok ?? p.Blok ?? p.nama ?? p.name ?? `Blok ${i + 1}`).replace(/^blok\s*/i, "");
       const namaBlok = [];
       data.blok.forEach((f, i) => {
@@ -170,7 +154,6 @@ export default function PetaRt() {
         blokRef.current[nama].layers.push(layer);
       });
 
-      /* --- Fasilitas umum: tampil di kedua tampilan, tiap nama beda warna --- */
       const fasBaru = [];
       data.fas.forEach((f, i) => {
         const p = f.properties ?? {};
@@ -197,13 +180,12 @@ export default function PetaRt() {
           ls.slice(1).forEach((l) => batas.extend(l.getBounds()));
           peta.fitBounds(batas, { padding: [60, 60], maxZoom: 19 });
         });
-        fasRef.current[nama].push(layer); // nama sama (mis. beberapa taman) digabung jadi satu entri legenda
+        fasRef.current[nama].push(layer);
       });
 
       grup.rt.addTo(peta);
       grup.fas.addTo(peta);
 
-      // Label fasilitas baru tampil kalau peta sudah di-zoom dekat; kalau tidak, labelnya bertumpuk.
       const aturLabel = () =>
         wadahRef.current?.classList.toggle("lp-peta-zoom-fas", peta.getZoom() >= ZOOM_LABEL_FAS);
       peta.on("zoomend", aturLabel);
@@ -214,9 +196,7 @@ export default function PetaRt() {
         peta.fitBounds(grup.rt.getBounds(), { padding: [30, 30], maxZoom: 19 });
       };
       pasKan();
-      // Wadah peta sedang dianimasikan (Reveal) saat dibuat, ukurannya belum final: hitung ulang sesudahnya.
       penundaRef.current = setTimeout(pasKan, 900);
-      // Zoom dengan roda mouse baru aktif setelah peta diklik, supaya tidak membajak scroll halaman.
       peta.on("click", () => peta.scrollWheelZoom.enable());
       peta.on("mouseout", () => peta.scrollWheelZoom.disable());
 
@@ -239,7 +219,6 @@ export default function PetaRt() {
     };
   }, [dimuat, data]);
 
-  /* Ganti tampilan: RT atau blok (fasilitas selalu ada). */
   useEffect(() => {
     const peta = petaRef.current;
     const { rt, blok } = grupRef.current;
@@ -251,7 +230,6 @@ export default function PetaRt() {
     if (batas.isValid()) peta.fitBounds(batas, { padding: [30, 30], maxZoom: 19 });
   }, [tampilan, daftarRt.length]);
 
-  /* Sorot area yang sedang di-hover atau dipilih (dari peta atau dari daftar). */
   useEffect(() => {
     const sorot = aktif ?? dipilih;
     Object.entries(rtRef.current).forEach(([id, { layer, warna }]) => {
@@ -274,7 +252,6 @@ export default function PetaRt() {
     return batas;
   };
 
-  /* Klik/ketuk item di daftar: pilih + zoom ke areanya. */
   const pilih = (jenis, id) => {
     setAktif(null);
     setDipilih({ jenis, id });
@@ -286,7 +263,6 @@ export default function PetaRt() {
     if (ada.length) peta.fitBounds(gabungBatas(ada), jenis === "rt" ? { padding: [40, 40] } : { padding: [60, 60], maxZoom: 19 });
   };
 
-  /* Tutup kartu info: lepas pilihan dan kembali melihat seluruh cluster. */
   const lepasPilihan = () => {
     setDipilih(null);
     const peta = petaRef.current;
@@ -297,7 +273,7 @@ export default function PetaRt() {
   const ganti = (t) => {
     setTampilan(t);
     setDipilih(null);
-    setAktif(null); // area yang dilepas dari peta tidak sempat mengirim "mouse keluar"
+    setAktif(null);
   };
 
   if (!dimuat || data.rt.length === 0) return null;
@@ -305,7 +281,6 @@ export default function PetaRt() {
   const adaBlok = data.blok.length > 0;
   const tampilanAktif = adaBlok ? tampilan : "rt";
 
-  /* Keterangan untuk kartu info di atas peta. */
   const infoDari = (s) => {
     if (!s) return null;
     if (s.jenis === "rt") {
@@ -438,7 +413,6 @@ export default function PetaRt() {
 
               </ul>
 
-              {/* Fasilitas umum: grup tersendiri (di HP jadi baris di bawah daftar RT/blok, bukan menyambung) */}
               {daftarFas.length > 0 && <p className="lp-peta-judul-grup">Fasilitas umum</p>}
               <ul className="lp-peta-list lp-peta-list-fas">
                 {daftarFas.map((d) => (

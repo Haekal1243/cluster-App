@@ -20,7 +20,6 @@ function waktuRelatif(iso) {
   });
 }
 
-/** Daftar hal yang perlu ditindaklanjuti bendahara RW. */
 export default function PerluTindakanList({ data, onTinjau }) {
   const menunggu = data?.menunggu ?? [];
   const ditolak = data?.ditolak ?? [];

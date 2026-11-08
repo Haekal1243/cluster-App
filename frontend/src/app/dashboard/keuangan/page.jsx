@@ -5,9 +5,6 @@ import { useRouter } from "next/navigation";
 import { can, isPengurusRt, isWargaView } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
 
-// Dispatcher /dashboard/keuangan: arahkan ke kas per wilayah.
-// - Pengurus RT -> /keuangan/rt; pengurus RW / admin -> /keuangan/rw.
-// - Warga tidak punya akses (DashboardShell mengarahkan ke /dashboard).
 export default function KeuanganDispatcher() {
   const { user, ready } = useUser();
   const router = useRouter();

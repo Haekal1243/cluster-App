@@ -2,15 +2,40 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { KeyRound, X } from "lucide-react";
+import { Eye, EyeOff, KeyRound, X } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { getUser, replaceToken, saveUser } from "@/lib/session";
 import { showMessage } from "@/lib/message";
 
-/**
- * Ganti password. Mode `wajib`: muncul otomatis saat login pertama dengan password
- * sementara dari pengurus RT dan tidak bisa ditutup sebelum berhasil.
- */
+function KolomSandi({ id, name, value, onChange, autoComplete, minLength }) {
+  const [tampil, setTampil] = useState(false);
+  return (
+    <div className="input-wrapper">
+      <input
+        id={id}
+        name={name}
+        type={tampil ? "text" : "password"}
+        className="form-control with-toggle"
+        value={value}
+        onChange={onChange}
+        autoComplete={autoComplete}
+        minLength={minLength}
+        required
+      />
+      <button
+        type="button"
+        className="password-toggle"
+        onClick={() => setTampil((v) => !v)}
+        aria-label={tampil ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+        aria-pressed={tampil}
+        title={tampil ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+      >
+        {tampil ? <EyeOff /> : <Eye />}
+      </button>
+    </div>
+  );
+}
+
 export default function GantiPasswordModal({ wajib = false, onClose, onSuccess }) {
   const [form, setForm] = useState({ passwordLama: "", passwordBaru: "", konfirmasi: "" });
   const [isSaving, setIsSaving] = useState(false);
@@ -43,8 +68,6 @@ export default function GantiPasswordModal({ wajib = false, onClose, onSuccess }
     }
   };
 
-  // Dirender lewat portal ke <body>: dipanggil dari dalam header yang memakai backdrop-filter,
-  // dan itu membuat position:fixed relatif ke header (bukan layar) sehingga modal terpotong.
   if (typeof document === "undefined") return null;
 
   return createPortal(
@@ -75,47 +98,19 @@ export default function GantiPasswordModal({ wajib = false, onClose, onSuccess }
               <label htmlFor="passwordLama">
                 {wajib ? "Kata sandi sementara" : "Kata sandi lama"} <span className="required-star">*</span>
               </label>
-              <input
-                id="passwordLama"
-                name="passwordLama"
-                type="password"
-                className="form-control"
-                value={form.passwordLama}
-                onChange={handleChange}
-                autoComplete="current-password"
-                required
-              />
+              <KolomSandi id="passwordLama" name="passwordLama" value={form.passwordLama} onChange={handleChange} autoComplete="current-password" />
             </div>
             <div className="form-group">
               <label htmlFor="passwordBaru">
                 Kata sandi baru <span className="required-star">*</span>
               </label>
-              <input
-                id="passwordBaru"
-                name="passwordBaru"
-                type="password"
-                className="form-control"
-                value={form.passwordBaru}
-                onChange={handleChange}
-                autoComplete="new-password"
-                minLength={6}
-                required
-              />
+              <KolomSandi id="passwordBaru" name="passwordBaru" value={form.passwordBaru} onChange={handleChange} autoComplete="new-password" minLength={6} />
             </div>
             <div className="form-group">
               <label htmlFor="konfirmasi">
                 Ulangi kata sandi baru <span className="required-star">*</span>
               </label>
-              <input
-                id="konfirmasi"
-                name="konfirmasi"
-                type="password"
-                className="form-control"
-                value={form.konfirmasi}
-                onChange={handleChange}
-                autoComplete="new-password"
-                required
-              />
+              <KolomSandi id="konfirmasi" name="konfirmasi" value={form.konfirmasi} onChange={handleChange} autoComplete="new-password" />
             </div>
           </div>
 

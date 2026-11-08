@@ -3,7 +3,6 @@ import { DashboardRwService } from './dashboard.service';
 import { Access, RequirePermission } from '../auth/permission.decorators';
 import type { AccessContext } from '../auth/auth.types';
 
-/** Agregat dashboard khusus Bendahara RW. Scope ALL dipaksa di service. */
 @Controller('dashboard')
 export class DashboardRwController {
   constructor(private readonly dashboardRw: DashboardRwService) {}

@@ -1,6 +1,5 @@
 "use client";
 
-// Komponen bersama Keuangan RT/RW: badge, chart, modal kas.
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
@@ -36,7 +35,6 @@ import {
   formatYmPanjang as formatYmLengkap,
 } from "@/lib/format";
 
-// ── Helpers & opsi ────────────────────────────────────────────────────────────
 export const KATEGORI_MASUK = ["Dana Sosial", "Sewa Fasilitas", "Donasi", "Lainnya"];
 export const KATEGORI_KELUAR = ["Operasional", "Perawatan & Perbaikan", "Acara & Kegiatan", "Lainnya"];
 
@@ -59,14 +57,11 @@ export function KasTipeBadge({ tipe }) {
   );
 }
 
-// Hanya transaksi kas manual (sumber "MANUAL") yang punya file bukti sendiri —
-// baris agregat IPL_KAS/SETORAN adalah gabungan banyak pembayaran, tidak punya satu file.
 export function getBuktiPath(t) {
   if (!t?.buktiFile) return null;
   return keuanganApi.buktiPath(t.id);
 }
 
-// ── Grafik batang grup: pemasukan vs pengeluaran per bulan ────────────────────
 export function ArusKasChart({ data }) {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data.flatMap((d) => [d.pemasukan, d.pengeluaran]), 1);
@@ -99,7 +94,6 @@ export function ArusKasChart({ data }) {
   );
 }
 
-// ── Modal: Catat / Ubah Transaksi ─────────────────────────────────────────────
 export function KasFormModal({ initial, pilihArea = false, onClose, onSuccess }) {
   const isEdit = !!initial;
   const [form, setForm] = useState({
@@ -141,7 +135,6 @@ export function KasFormModal({ initial, pilihArea = false, onClose, onSuccess })
         nominal: Number(form.nominal),
         tanggal: new Date(form.tanggal).toISOString(),
         keterangan: form.keterangan || undefined,
-        // Pengurus otomatis menulis ke kas wilayahnya sendiri; hanya scope ALL (admin) boleh memilih.
         ...(pilihArea ? { area: form.area } : {}),
       };
       if (bukti) payload.bukti = bukti;

@@ -1,3 +1,4 @@
+import { iplMilikAkun, penerimaTagihan } from '../common/akses-rumah';
 import {
   BadRequestException,
   ConflictException,
@@ -29,17 +30,13 @@ export class IplService {
     private audit: AuditService,
   ) {}
 
-  /** Batasan data tagihan sesuai scope: OWN = rumah sendiri, AREA = RT sendiri, ALL = semua. */
   private scopeWhere(ctx: AccessContext, rt?: string): Prisma.IplWhereInput {
-    if (ctx.scope === 'OWN') return { rumah: { userId: ctx.user.sub } };
+    if (ctx.scope === 'OWN') return iplMilikAkun(ctx.user.sub);
     const area = areaFilter(ctx);
     if (area === null) return rt ? { rumah: { rt: rt as RT } } : {};
     return { rumah: rtFilter(area) };
   }
 
-  // ================================================================
-  // GENERATE TAGIHAN MASSAL — dikerjakan bendahara RT untuk RT-nya
-  // ================================================================
 
   async generateTagihan(ctx: AccessContext, dto: GenerateIplDto) {
     const { bulanPeriode, tahunPeriode, nominalIpl, nominalKas } = dto;
@@ -56,21 +53,14 @@ export class IplService {
       rt = area;
     }
 
-    // Rumah tertagih = punya pemilik/penanggung jawab (termasuk rumah KOSONG
-    // yang pemiliknya sudah terdaftar akun). Rumah yang pemiliknya belum daftar
-    // akun belum bisa ditagih; penagihan pertamanya mengikuti periode saat akun
-    // dibuat, tanpa tunggakan mundur.
     const rumahAktif = await this.prisma.rumah.findMany({
-      where: { rt, isDelete: false, userId: { not: null } },
-      select: { id: true, userId: true },
+      where: { rt, isDelete: false, OR: [{ userId: { not: null } }, { penyewaId: { not: null } }] },
+      select: { id: true, userId: true, penyewaId: true },
     });
     if (rumahAktif.length === 0) {
       throw new BadRequestException(`Tidak ada rumah tertagih di ${rt.replace('_', ' ')}.`);
     }
 
-    // Idempotent: rumah yang sudah punya tagihan periode ini dilewati, sehingga
-    // pemilik yang baru terdaftar di tengah bulan bisa disusulkan dengan
-    // generate ulang periode berjalan tanpa error duplikat.
     const sudahAda = await this.prisma.ipl.findMany({
       where: { bulanPeriode, tahunPeriode, idRumah: { in: rumahAktif.map((r) => r.id) } },
       select: { idRumah: true },
@@ -86,6 +76,7 @@ export class IplService {
     await this.prisma.ipl.createMany({
       data: rumahBaru.map((r) => ({
         idRumah: r.id,
+        idPenyewa: r.penyewaId,
         bulanPeriode,
         tahunPeriode,
         nominalIpl,
@@ -96,7 +87,7 @@ export class IplService {
 
     const total = nominalIpl + nominalKas;
     await this.notifikasiService.kirimBanyak(
-      rumahBaru.map((r) => r.userId).filter((id): id is number => id !== null),
+      rumahBaru.map((r) => penerimaTagihan(r)).filter((id): id is number => id !== null),
       'TAGIHAN_BARU',
       'Tagihan IPL Baru',
       `Tagihan IPL periode ${bulanPeriode}/${tahunPeriode} sebesar Rp ${total.toLocaleString('id-ID')} telah diterbitkan. Jatuh tempo ${jatuhTempo.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}.`,
@@ -124,9 +115,6 @@ export class IplService {
     };
   }
 
-  // ================================================================
-  // GET ALL TAGIHAN (dengan filter)
-  // ================================================================
 
   async findAll(
     ctx: AccessContext,
@@ -145,7 +133,6 @@ export class IplService {
     const and: Prisma.IplWhereInput[] = [this.scopeWhere(ctx, rt)];
     const range = resolvePeriode(dari, sampai);
     if (range) {
-      // Range diutamakan bila diberikan
       and.push({ OR: range.periodeOr });
     } else {
       if (bulan) and.push({ bulanPeriode: bulan });
@@ -170,15 +157,12 @@ export class IplService {
               select: {
                 id: true,
                 namaUser: true,
-                email: true,
                 noTelp: true,
                 role: { select: { level: true } },
               },
             },
           },
         },
-        // NOTE: rumah.status ikut terbawa via include di atas (kolom scalar
-        // selalu disertakan) dan dipakai untuk memisahkan porsi rumah kosong.
         setoran: { select: { id: true, status: true } },
         pembayaran: {
           orderBy: { tanggalBayar: 'desc' },
@@ -217,8 +201,6 @@ export class IplService {
         tagihan.filter((t) => t.statusPembayaran !== 'LUNAS'),
         (t) => t.nominal,
       ),
-      // Pecahan dari yang sudah terkumpul: porsi RW vs kas RT.
-      // Rumah KOSONG: porsi IPL dialihkan ke kas RT (tidak disetor ke RW).
       terkumpulIpl: sum(
         lunas.filter((t) => t.rumah.status !== 'KOSONG'),
         (t) => t.nominalIpl,
@@ -232,9 +214,6 @@ export class IplService {
     return { tagihan, summary };
   }
 
-  // ================================================================
-  // REKAP PER RT — tampilan RW: berapa yang terkumpul & sudah disetor tiap RT
-  // ================================================================
 
   async rekapPerRt(
     ctx: AccessContext,
@@ -273,7 +252,6 @@ export class IplService {
       if ((SEMUA_RT as string[]).includes(requested)) daftarRt = daftarRt.filter((r) => r === requested);
     }
 
-    // Rumah KOSONG: porsi IPL dialihkan ke kas RT (tidak disetor ke RW).
     const kosong = (r: (typeof rows)[number]) => r.rumah.status === 'KOSONG';
     const kasRt = (r: (typeof rows)[number]) => r.nominalKas + (kosong(r) ? r.nominalIpl : 0);
     const perRt = daftarRt.map((rt) => {
@@ -294,7 +272,6 @@ export class IplService {
         nominalTagihan: sum(list, totalTagihan),
         terkumpulIpl: sum(lunasDihuni, (r) => r.nominalIpl),
         terkumpulKas: sum(lunas, (r) => kasRt(r)),
-        // Penjelas selisih: tagihan rumah kosong yang dikecualikan dari setoran.
         terkumpulRumahKosong: {
           jumlahTagihan: lunasKosong.length,
           nominal: sum(lunasKosong, (r) => totalTagihan(r)),
@@ -343,9 +320,6 @@ export class IplService {
     };
   }
 
-  // ================================================================
-  // UBAH / HAPUS SATU TAGIHAN (koreksi oleh bendahara RT)
-  // ================================================================
 
   private async findTagihanScoped(ctx: AccessContext, id: number) {
     const ipl = await this.prisma.ipl.findUnique({
@@ -383,7 +357,6 @@ export class IplService {
         targetId: id,
         keterangan: `${ipl.rumah.rt.replace('_', ' ')} periode ${ipl.bulanPeriode}/${ipl.tahunPeriode}: ${before} -> ${after}. Alasan: ${dto.alasan!.trim()}`,
       });
-      // Koreksi nominal memengaruhi porsi setoran RW — selalu beri tahu pimpinan RW.
       await this.notifikasiService.kirimKePermissionAreaPersis(
         'setoran.read',
         'RW',
@@ -408,10 +381,6 @@ export class IplService {
     return { message: 'Tagihan berhasil dihapus.' };
   }
 
-  // ================================================================
-  // DASHBOARD STATS — ringkasan per rentang periode (maks 12 bulan)
-  // Query: ?dari=YYYY-MM&sampai=YYYY-MM. Tanpa param = bulan berjalan.
-  // ================================================================
 
   async getDashboardStats(ctx: AccessContext, params?: { dari?: string; sampai?: string; rt?: string }) {
     const now = new Date();
@@ -446,7 +415,6 @@ export class IplService {
       this.prisma.ipl.count({
         where: { AND: [scope, { statusPembayaran: 'MENUNGGU_KONFIRMASI' }, { OR: periodeOr }] },
       }),
-      // 5 pembayaran terbaru yang tagihannya masuk rentang periode
       this.prisma.pembayaranIpl.findMany({
         where: { ipl: { AND: [scope, { OR: periodeOr }] } },
         orderBy: { tanggalBayar: 'desc' },
@@ -475,7 +443,6 @@ export class IplService {
     const belumLunasBulanIni = tagihanPeriode.length - lunasBulanIni;
     const totalKasMasukBulanIni = lunasRows.reduce((s, t) => s + totalTagihan(t), 0);
 
-    // Tren kas masuk mengikuti rentang periode yang dipilih
     const trenData = await Promise.all(
       periodeList.map(async ({ bulan, tahun, label }) => {
         const rows = await this.prisma.ipl.findMany({
@@ -516,10 +483,6 @@ export class IplService {
     };
   }
 
-  /**
-   * Id file bukti transfer; dicek scope dulu (OWN = punya sendiri, AREA/ALL = wilayah
-   * sesuai RT rumah), karena file ini tidak boleh diambil lewat GET /files/:id publik.
-   */
   async fileIdBukti(ctx: AccessContext, pembayaranId: number) {
     const pembayaran = await this.prisma.pembayaranIpl.findUnique({
       where: { idPembayaran: pembayaranId },
@@ -539,9 +502,6 @@ export class IplService {
     return pembayaran.buktiTransaksi;
   }
 
-  // ================================================================
-  // KONFIRMASI / TOLAK PEMBAYARAN
-  // ================================================================
 
   private sudahDiputuskan() {
     return new ConflictException('Pembayaran ini baru saja diputuskan oleh pengguna lain. Muat ulang halaman.');
@@ -570,9 +530,6 @@ export class IplService {
       throw new ForbiddenException('Anda tidak bisa mengonfirmasi pembayaran milik sendiri.');
     }
 
-    // Pemegang `ipl.konfirmasi` (konfirmasi warga & pengurus) diutamakan; kalau tidak
-    // punya itu, cek `ipl.konfirmasi_pengurus` (mis. Ketua RT) yang hanya boleh
-    // dipakai untuk pembayaran pengurus (role.level < LEVEL_WARGA), bukan warga biasa.
     const [scopeUmum, scopePengurus] = await Promise.all([
       this.permissions.scopeOf(user.roleId, 'ipl.konfirmasi'),
       this.permissions.scopeOf(user.roleId, 'ipl.konfirmasi_pengurus'),
@@ -603,8 +560,6 @@ export class IplService {
 
     if (dto.action === 'TERIMA') {
       await this.prisma.$transaction(async (tx) => {
-        // Klaim atomik pada status MENUNGGU_KONFIRMASI: pengecekan di atas di luar transaksi,
-        // jadi TERIMA dan TOLAK (atau dua klik) yang datang bersamaan sama-sama lolos.
         const klaim = await tx.ipl.updateMany({
           where: { id: pembayaran.idIpl, statusPembayaran: 'MENUNGGU_KONFIRMASI' },
           data: { statusPembayaran: 'LUNAS' },
@@ -633,7 +588,6 @@ export class IplService {
       return { message: 'Pembayaran berhasil dikonfirmasi. Status menjadi LUNAS.' };
     }
 
-    // TOLAK: kembalikan status ke BELUM_LUNAS + simpan catatan
     await this.prisma.$transaction(async (tx) => {
       const klaim = await tx.ipl.updateMany({
         where: { id: pembayaran.idIpl, statusPembayaran: 'MENUNGGU_KONFIRMASI' },

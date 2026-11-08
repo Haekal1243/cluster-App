@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { PhoneCall, Check, X as XIcon } from "lucide-react";
-import Swal from "sweetalert2";
 import { wargaApi } from "@/lib/api";
 import { areaLabel, can } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
-import { showMessage } from "@/lib/message";
+import { showMessage, showPilihan, showPrompt } from "@/lib/message";
 import Pagination from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { waLink } from "@/lib/format";
@@ -36,20 +35,17 @@ export default function PendaftaranPage() {
   }, [bolehApprove]);
 
   const handleSetujuiPendaftaran = async (item) => {
-    const { value: statusHunian } = await Swal.fire({
+    const statusHunian = await showPilihan({
       title: `Setujui pendaftaran ${item.namaUser}?`,
-      html: `Akun warga akan dibuat untuk blok ${item.rumah?.blokRumah}.`,
-      input: "radio",
-      inputLabel: "Status hunian rumah",
-      inputOptions: {
-        KOSONG: "Kosong - tidak dihuni (tetap bayar IPL, masuk kas RT)",
-        DIHUNI_TETAP: "Dihuni tetap",
-        DIHUNI_KONTRAK: "Dihuni kontrak",
-      },
-      inputValue: "KOSONG",
-      showCancelButton: true,
-      confirmButtonText: "Ya, setujui",
-      cancelButtonText: "Batal",
+      text: `Akun warga akan dibuat untuk blok ${item.rumah?.blokRumah}.`,
+      label: "Status hunian rumah",
+      options: [
+        { value: "KOSONG", label: "Kosong - tidak dihuni (tetap bayar IPL, masuk kas RT)" },
+        { value: "DIHUNI_TETAP", label: "Dihuni tetap" },
+        { value: "DIHUNI_KONTRAK", label: "Dihuni kontrak" },
+      ],
+      value: "KOSONG",
+      confirmText: "Ya, setujui",
     });
     if (!statusHunian) return;
     try {
@@ -62,15 +58,12 @@ export default function PendaftaranPage() {
   };
 
   const handleTolakPendaftaran = async (item) => {
-    const { value: alasan } = await Swal.fire({
+    const alasan = await showPrompt({
       title: `Tolak pendaftaran ${item.namaUser}?`,
-      input: "textarea",
-      inputLabel: "Alasan penolakan",
-      inputPlaceholder: "Contoh: data tidak sesuai, atau rumah sudah dihuni warga lain",
-      showCancelButton: true,
-      confirmButtonText: "Tolak Pendaftaran",
-      cancelButtonText: "Batal",
-      inputValidator: (v) => (!v?.trim() ? "Alasan wajib diisi" : undefined),
+      label: "Alasan penolakan",
+      placeholder: "Contoh: data tidak sesuai, atau rumah sudah dihuni warga lain",
+      confirmText: "Tolak Pendaftaran",
+      pesanWajib: "Alasan wajib diisi",
     });
     if (!alasan) return;
     try {
@@ -109,7 +102,7 @@ export default function PendaftaranPage() {
               <th>No. HP</th>
               <th>Rumah</th>
               <th>Tanggal Daftar</th>
-              <th>Aksi</th>
+              <th className="th-aksi">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -122,7 +115,6 @@ export default function PendaftaranPage() {
                       <span className="penghuni-avatar">{p.namaUser.charAt(0).toUpperCase()}</span>
                       <div>
                         <span className="penghuni-name">{p.namaUser}</span>
-                        <span className="penghuni-email">{p.email || "-"}</span>
                       </div>
                     </div>
                   </td>

@@ -3,7 +3,6 @@ import type { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
 import { FileService } from './file.service';
 
-/** Ambil file publik (foto pengurus, gambar kegiatan, lampiran pengumuman, foto pengaduan). */
 @Controller('files')
 export class FileController {
   constructor(private readonly files: FileService) {}

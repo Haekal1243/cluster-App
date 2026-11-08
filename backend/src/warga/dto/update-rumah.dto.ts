@@ -17,7 +17,6 @@ export class UpdateRumahDto {
   @IsEnum(StatusRumah)
   status?: StatusRumah;
 
-  /** null = kosongkan rumah. */
   @IsOptional()
   @IsInt()
   @Type(() => Number)

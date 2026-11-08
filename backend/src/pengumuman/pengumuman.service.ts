@@ -45,9 +45,6 @@ export class PengumumanService {
     return (await this.permissions.scopeOf(ctx.user.roleId, 'pengumuman.approve')) !== null;
   }
 
-  // ================================================================
-  // CRUD
-  // ================================================================
 
   async create(ctx: AccessContext, dto: CreatePengumumanDto, file?: Express.Multer.File) {
     const area: Area = areaFilter(ctx) ?? dto.area ?? ctx.user.area ?? 'RW';
@@ -81,7 +78,6 @@ export class PengumumanService {
     return { message: 'Pengumuman berhasil dibuat', data };
   }
 
-  /** Alasan penolakan RW adalah catatan internal pengurus: warga biasa tidak ikut menerimanya. */
   private async sembunyikanAlasan<T extends { alasanTolak?: string | null }>(ctx: AccessContext, rows: T[]): Promise<T[]> {
     if ((await this.permissions.scopeOf(ctx.user.roleId, 'pengumuman.update')) !== null) return rows;
     return rows.map((r) => ({ ...r, alasanTolak: null }));
@@ -98,7 +94,6 @@ export class PengumumanService {
     return this.sembunyikanAlasan(ctx, rows);
   }
 
-  /** Umpan dashboard warga: yang boleh dilihatnya, aktif, dan belum lewat batas tampil. */
   async feed(ctx: AccessContext) {
     const rows = await this.prisma.pengumuman.findMany({
       where: {
@@ -114,11 +109,9 @@ export class PengumumanService {
     return this.sembunyikanAlasan(ctx, rows);
   }
 
-  /** Publik (landing): hanya konten level RW / yang sudah di-ACC RW. */
   private readonly cacheActive = new TtlCache<unknown[]>(15_000);
 
   findActive(scope?: 'aktif' | 'arsip') {
-    // Endpoint landing page: dibaca tiap pengunjung, jadi hasilnya dipakai ulang beberapa detik.
     return this.cacheActive.get(scope ?? 'aktif', () => this.queryActive(scope));
   }
 
@@ -131,7 +124,6 @@ export class PengumumanService {
         select: RINGKAS,
       });
     }
-    // aktif: masih aktif (status active, tidak deleted) — berbasis status, tidak terfilter tanggal upload
     return this.prisma.pengumuman.findMany({
       where: { isDelete: false, status: 'active', ...tampilKeSemua },
       orderBy: { createDate: 'desc' },
@@ -176,7 +168,6 @@ export class PengumumanService {
         updateBy: ctx.user.nama,
         updateDate: new Date(),
         ...(approver && { tampilSampai: tampilSampaiDari(dto.durasiHari) }),
-        // Isi diubah setelah diajukan/disetujui: harus diajukan ulang.
         ...(!approver &&
           (existing.statusPengajuan === 'DIAJUKAN' || existing.statusPengajuan === 'DISETUJUI') && {
             statusPengajuan: 'TIDAK' as const,
@@ -212,9 +203,6 @@ export class PengumumanService {
     return { message: 'Pengumuman berhasil dihapus' };
   }
 
-  // ================================================================
-  // PENGAJUAN TAMPIL KE SELURUH RW
-  // ================================================================
 
   async ajukan(ctx: AccessContext, id: number) {
     const pengumuman = await this.findForWrite(ctx, id);

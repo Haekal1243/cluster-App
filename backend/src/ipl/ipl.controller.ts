@@ -26,14 +26,12 @@ export class IplController {
     private readonly files: FileService,
   ) {}
 
-  /** POST /ipl/generate — Generate tagihan massal untuk rumah aktif di RT pembuat */
   @Post('generate')
   @RequirePermission('ipl', 'generate')
   generateTagihan(@Access() ctx: AccessContext, @Body() dto: GenerateIplDto) {
     return this.iplService.generateTagihan(ctx, dto);
   }
 
-  /** GET /ipl/dashboard-stats — Statistik ringkasan untuk widget dashboard */
   @Get('dashboard-stats')
   @RequirePermission('ipl', 'read')
   getDashboardStats(
@@ -45,7 +43,6 @@ export class IplController {
     return this.iplService.getDashboardStats(ctx, { dari, sampai, rt });
   }
 
-  /** GET /ipl/rekap-rt — Rekap terkumpul & disetor per RT (tampilan RW, ikut filter aktif) */
   @Get('rekap-rt')
   @RequirePermission('ipl', 'read')
   rekapPerRt(
@@ -58,7 +55,6 @@ export class IplController {
     return this.iplService.rekapPerRt(ctx, { dari, sampai, status, rt });
   }
 
-  /** GET /ipl — Daftar tagihan IPL dengan filter opsional */
   @Get()
   @RequirePermission('ipl', 'read')
   findAll(
@@ -74,7 +70,6 @@ export class IplController {
     return this.iplService.findAll(ctx, { bulan, tahun, dari, sampai, status, search, rt });
   }
 
-  /** GET /ipl/pembayaran/:id/bukti — Unduh bukti transfer (butuh login + scope sesuai). */
   @Get('pembayaran/:id/bukti')
   @RequirePermission('ipl', 'read')
   async bukti(
@@ -85,12 +80,6 @@ export class IplController {
     await this.files.kirim(res, await this.iplService.fileIdBukti(ctx, id));
   }
 
-  /**
-   * PATCH /ipl/konfirmasi/:pembayaranId — Konfirmasi atau tolak bukti pembayaran.
-   * Sengaja tanpa @RequirePermission: pemegang `ipl.konfirmasi` ATAU
-   * `ipl.konfirmasi_pengurus` boleh masuk (mis. Ketua RT cuma boleh konfirmasi
-   * pembayaran pengurus), jadi pengecekannya dilakukan di service.
-   */
   @Patch('konfirmasi/:pembayaranId')
   konfirmasiPembayaran(
     @CurrentUser() user: AuthUser,
@@ -100,7 +89,6 @@ export class IplController {
     return this.iplService.konfirmasiPembayaran(user, pembayaranId, dto);
   }
 
-  /** PATCH /ipl/:id — Koreksi nominal satu tagihan (hanya yang belum lunas) */
   @Patch(':id')
   @RequirePermission('ipl', 'update')
   update(
@@ -111,7 +99,6 @@ export class IplController {
     return this.iplService.update(ctx, id, dto);
   }
 
-  /** DELETE /ipl/:id — Hapus satu tagihan yang belum ada pembayarannya */
   @Delete(':id')
   @RequirePermission('ipl', 'delete')
   remove(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {

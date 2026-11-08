@@ -14,7 +14,6 @@ import { AssignPengurusDto, VacatePengurusDto } from './rbac.dto';
 const AREA_RT: Area[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 const label = (a: Area) => a.replace('_', ' ');
 
-/** Area yang valid untuk sebuah role: level 1 = RW, level 2 = tiap RT. */
 function areaUntukLevel(level: number): Area[] {
   if (level === 1) return ['RW'];
   if (level === 2) return AREA_RT;
@@ -37,11 +36,7 @@ export class PengurusService {
     return role;
   }
 
-  // ================================================================
-  // DATA PUBLIK — susunan pengurus untuk landing page (tanpa login)
-  // ================================================================
 
-  /** Ketua/Sekretaris/Bendahara RW + Ketua RT 01-04. Dipakai landing page, jadi tidak membawa kontak pribadi. */
   async publik() {
     const kodeRW = ['KETUA_RW', 'SEKRE_RW', 'BENDAHARA_RW'];
     const roles = await this.prisma.role.findMany({
@@ -77,9 +72,6 @@ export class PengurusService {
     });
   }
 
-  // ================================================================
-  // DAFTAR JABATAN — tiap role RW/RT x area, beserta pemegangnya
-  // ================================================================
 
   async slots() {
     const roles = await this.prisma.role.findMany({
@@ -100,7 +92,6 @@ export class PengurusService {
     );
   }
 
-  /** Calon pemegang jabatan: warga biasa. Untuk jabatan RT, hanya warga RT itu. */
   kandidat(area?: Area) {
     return this.prisma.user.findMany({
       where: {
@@ -118,11 +109,7 @@ export class PengurusService {
     });
   }
 
-  // ================================================================
-  // FOTO PENGURUS
-  // ================================================================
 
-  /** Pemegang jabatan RW/RT; warga biasa & admin tidak punya foto pengurus. */
   private async pemegangJabatan(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -139,7 +126,6 @@ export class PengurusService {
     if (!file) throw new BadRequestException('File foto wajib diunggah.');
     const user = await this.pemegangJabatan(userId);
 
-    // Foto pengurus tampil di landing page, jadi bertanda publik (GET /files/:id).
     const fotoId = await this.files.simpan(file, { publik: true });
     await this.prisma.user.update({ where: { id: user.id }, data: { foto: fotoId } });
     await this.files.hapus(user.foto);
@@ -152,7 +138,6 @@ export class PengurusService {
     return { message: `Foto ${user.namaUser} berhasil disimpan.`, foto: fotoId };
   }
 
-  /** Normalisasi ke format 62xxxxxxxxxx (dipakai langsung oleh tautan wa.me). */
   private normalisasiNomor(nomor: string) {
     return nomor.replace(/^\+?62/, '62').replace(/^0/, '62');
   }
@@ -193,11 +178,7 @@ export class PengurusService {
     return { message: `Foto ${user.namaUser} dihapus.` };
   }
 
-  // ================================================================
-  // TETAPKAN / KOSONGKAN JABATAN
-  // ================================================================
 
-  /** Kembalikan pemegang lama jadi warga di RT tempat rumahnya berada. */
   private async kembalikanJadiWarga(
     tx: Pick<PrismaService, 'user' | 'rumah'>,
     userId: number,
@@ -211,7 +192,6 @@ export class PengurusService {
     });
     await tx.user.update({
       where: { id: userId },
-      // kontakPublik dikosongkan: publikasi nomor itu izin untuk jabatan ini, bukan untuk selamanya.
       data: { roleId: warga.id, area: rumah?.rt ?? areaCadangan, kontakPublik: null },
     });
   }
@@ -238,7 +218,6 @@ export class PengurusService {
         `${user.namaUser} sudah menjabat sebagai ${user.role.nama}. Kosongkan jabatannya dulu.`,
       );
     }
-    // Pengurus RT harus warga RT itu sendiri.
     if (role.level === 2 && user.area !== dto.area) {
       throw new BadRequestException(`${user.namaUser} bukan warga ${label(dto.area)}.`);
     }
@@ -250,7 +229,6 @@ export class PengurusService {
     });
 
     await this.prisma.$transaction(async (tx) => {
-      // Satu jabatan satu orang per area: pemegang lama otomatis kembali jadi warga.
       if (lama) await this.kembalikanJadiWarga(tx, lama.id, warga, dto.area);
       await tx.user.update({
         where: { id: user.id },

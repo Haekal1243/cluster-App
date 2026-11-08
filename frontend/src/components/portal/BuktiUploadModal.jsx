@@ -13,8 +13,6 @@ export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess 
   const panelRef = useRef(null);
   const triggerRef = useRef(null);
 
-  // A11y: fokus masuk modal, Esc menutup, scroll body dikunci,
-  // fokus dikembalikan ke pemicu saat modal ditutup.
   useEffect(() => {
     triggerRef.current = document.activeElement;
     panelRef.current?.focus();
@@ -69,7 +67,6 @@ export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
-        {/* Header */}
         <div className="modal-header">
           <h3 id="bukti-upload-title">Unggah Bukti Pembayaran</h3>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Tutup">
@@ -79,7 +76,6 @@ export default function BuktiUploadModal({ ipl, user, rumah, onClose, onSuccess 
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {/* Info Tagihan */}
             <div className="bukti-info-card">
               <div className="bukti-info-row">
                 <span className="bukti-info-label">Periode</span>

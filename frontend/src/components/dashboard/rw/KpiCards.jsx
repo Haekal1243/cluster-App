@@ -4,7 +4,6 @@ import { Clock, FileX, Landmark, Wallet } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import { formatRupiah } from "@/lib/format";
 
-/** 1. Setoran IPL diterima. */
 export function KpiDiterima({ data = {} }) {
   const { nominal = 0 } = data;
   return (
@@ -18,7 +17,6 @@ export function KpiDiterima({ data = {} }) {
   );
 }
 
-/** 2. Menunggu konfirmasi — amber bila ada antrean, abu bila kosong. */
 export function KpiMenunggu({ data = {} }) {
   const { nominal = 0, count = 0 } = data;
   return (
@@ -32,7 +30,6 @@ export function KpiMenunggu({ data = {} }) {
   );
 }
 
-/** 3. Belum disetor RT — ikon FileX sama seperti card "Belum Lunas". */
 export function KpiBelumDisetor({ data = {} }) {
   const { total = 0 } = data;
   return (
@@ -46,7 +43,6 @@ export function KpiBelumDisetor({ data = {} }) {
   );
 }
 
-/** 4. Saldo kas RW = setoran IPL DIKONFIRMASI + manual RW (tanpa kas RT). */
 export function KpiKasRw({ data = {} }) {
   const { saldo = 0 } = data;
   return (

@@ -20,9 +20,6 @@ export class RbacService {
     private audit: AuditService,
   ) {}
 
-  // ================================================================
-  // ROLE
-  // ================================================================
 
   listRoles() {
     return this.prisma.role.findMany({
@@ -88,15 +85,11 @@ export class RbacService {
     return role;
   }
 
-  // ================================================================
-  // PERMISSION & MATRIKS
-  // ================================================================
 
   listPermissions() {
     return this.prisma.permission.findMany({ orderBy: [{ menu: 'asc' }, { id: 'asc' }] });
   }
 
-  /** Semua yang dibutuhkan menu matriks dalam satu panggilan: role x permission + scope. */
   async matrix() {
     const [roles, permissions, grants] = await Promise.all([
       this.listRoles(),
@@ -122,11 +115,9 @@ export class RbacService {
     return rows.map((r) => ({ ...r.permission, scope: r.scope }));
   }
 
-  /** Ganti seluruh permission sebuah role sekaligus (yang tidak dikirim dicabut). */
   async setRolePermissions(actor: AuthUser, roleId: number, dto: SetRolePermissionsDto) {
     const role = await this.findRole(roleId);
     if (role.level === LEVEL_ADMIN) {
-      // Kalau admin bisa mencabut aksesnya sendiri, tidak ada lagi yang bisa memperbaiki matriks.
       throw new ForbiddenException('Hak akses Admin tidak dapat diubah.');
     }
 
@@ -138,7 +129,6 @@ export class RbacService {
       throw new BadRequestException(`Hak akses tidak dikenal: ${tidakDikenal.join(', ')}`);
     }
 
-    // Kalau kode dikirim ganda, yang terakhir menang.
     const scopeByKode = new Map(dto.grants.map((g) => [g.kode, g.scope]));
 
     const sebelum = await this.prisma.rolePermission.count({ where: { roleId } });
@@ -165,9 +155,6 @@ export class RbacService {
     };
   }
 
-  // ================================================================
-  // AUDIT
-  // ================================================================
 
   async auditLog(limit = 100) {
     const rows = await this.prisma.auditLog.findMany({

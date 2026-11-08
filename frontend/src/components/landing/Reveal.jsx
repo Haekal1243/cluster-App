@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* Keadaan awal (sebelum terlihat) tiap gaya masuk. Keadaan akhir selalu netral. */
 const AWAL = {
   up:    "translate3d(0, 28px, 0)",
   left:  "translate3d(-48px, 0, 0)",
@@ -11,11 +10,6 @@ const AWAL = {
   blur:  "translate3d(0, 20px, 0)",
 };
 
-/**
- * Membungkus konten agar muncul dengan animasi saat masuk viewport.
- * variant: "up" (default) | "left" | "right" | "zoom" | "blur"
- * delay: jeda dalam ms (untuk efek berurutan); transitionDelay di `style` tetap didukung.
- */
 export default function Reveal({ children, style, variant = "up", delay = 0 }) {
   const ref = useRef(null);
   const [shown, setShown] = useState(false);
@@ -39,9 +33,6 @@ export default function Reveal({ children, style, variant = "up", delay = 0 }) {
           }
         });
       },
-      // rootMargin bawah positif: animasi mulai ~140px SEBELUM elemen kelihatan di layar,
-      // supaya selesai duluan dan tidak pernah "ketangkap" nanggung di tengah transisi
-      // pas discroll/di-screenshot (ini penyebab kartu kelihatan "ada shadow aneh").
       { threshold: 0.01, rootMargin: "0px 0px 140px 0px" }
     );
     io.observe(el);

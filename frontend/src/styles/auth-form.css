@@ -1,6 +1,6 @@
-/* ========================================= */
-/* BAGIAN AUTH WRAPPER (LOGIN & REGISTER)    */
-/* ========================================= */
+
+
+
 
 .auth-container {
   display: flex;
@@ -42,8 +42,7 @@
 .auth-logo {
   max-width: 85%;
   height: auto;
-  /* Goyang pelan seperti bandul yang bergoyang tertiup angin: miring kiri-kanan sambil naik-turun sedikit.
-     Titik putarnya di bawah-tengah, jadi bagian atas logo yang paling banyak bergerak. */
+
   transform-origin: 50% 85%;
   animation: authGoyang 5.5s ease-in-out infinite;
 }
@@ -60,11 +59,11 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  /* Untuk halaman login tetap di tengah */
+
   padding: 40px 50px;
   background-color: #ffffff;
   overflow-y: auto;
-  /* Memastikan sisi kanan bisa di-scroll jika kepanjangan */
+
 }
 
 .auth-header h2 {
@@ -80,9 +79,9 @@
   font-size: 0.95rem;
 }
 
-/* ========================================= */
-/* KOMPONEN FORM GLOBAL                      */
-/* ========================================= */
+
+
+
 
 .form-group {
   margin-bottom: 18px;
@@ -126,7 +125,7 @@
   padding-left: 46px;
 }
 
-/* Tombol mata untuk melihat/menyembunyikan kata sandi */
+
 .form-control.with-toggle {
   padding-right: 46px;
 }
@@ -225,9 +224,9 @@
   text-decoration: underline;
 }
 
-/* ========================================= */
-/* LAYOUT HALAMAN REGISTER (STEPPER & BOX)   */
-/* ========================================= */
+
+
+
 
 .register-content-split {
   display: flex;

@@ -4,11 +4,6 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { PROTECTED_FILE_EVENT } from "@/lib/api";
 
-/**
- * Pop up pratinjau file terlindungi (bukti transfer, dll). Dipicu `openProtectedFile()` lewat
- * event, jadi cukup dipasang sekali di layout dashboard — semua tombol "lihat bukti" ikut
- * membuka pop up ini, bukan tab baru. Gambar ditampilkan langsung, PDF lewat iframe.
- */
 export default function ProtectedFileViewer() {
   const [file, setFile] = useState(null);
 

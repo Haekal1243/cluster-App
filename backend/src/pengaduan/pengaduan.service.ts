@@ -25,10 +25,9 @@ const STATUS_LABELS: Record<string, string> = {
 
 const SEMUA_RT: RT[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
-/** Pengaduan RT yang belum ditanggapi (masih MENUNGGU) setelah sekian hari diteruskan ke RW. */
 const HARI_BATAS_TANGGAPAN = 7;
 
-const PELAPOR_SELECT = { id: true, namaUser: true, email: true, username: true, area: true };
+const PELAPOR_SELECT = { id: true, namaUser: true, username: true, area: true };
 
 @Injectable()
 export class PengaduanService implements OnApplicationBootstrap {
@@ -41,21 +40,12 @@ export class PengaduanService implements OnApplicationBootstrap {
     private files: FileService,
   ) {}
 
-  /** Job jalan sekali juga saat start, supaya keterlambatan (backend sempat mati) terkejar. */
   onApplicationBootstrap() {
     this.teruskanOtomatis().catch((err) =>
       this.logger.error('Gagal menjalankan auto-teruskan pengaduan saat start', err),
     );
   }
 
-  /**
-   * Visibilitas pengaduan sesuai scope:
-   *   OWN  : pengaduan milik sendiri.
-   *   AREA (RW)   : tujuan RW, atau yang sudah diteruskan ke RW, atau milik sendiri.
-   *   AREA (RT_x) : tujuan RT itu, atau milik sendiri.
-   *   ALL  : tanpa batasan (role bikinan admin).
-   * Pelapor selalu bisa melihat pengaduannya sendiri lewat klausa `idUser`, apa pun tujuannya.
-   */
   private scopeWhere(ctx: AccessContext): Prisma.PengaduanWhereInput {
     if (ctx.scope === 'OWN') return { idUser: ctx.user.sub };
     const area = areaFilter(ctx);
@@ -68,10 +58,6 @@ export class PengaduanService implements OnApplicationBootstrap {
     return { OR: [{ tujuan: area }, { idUser: ctx.user.sub }] };
   }
 
-  /**
-   * Daftar tujuan yang boleh dipilih pelapor ini, dipakai sama-sama oleh `create()` (validasi)
-   * dan `GET /pengaduan/tujuan` (isi form) supaya keduanya tidak pernah berbeda aturan.
-   */
   async getTujuanPilihan(user: AuthUser): Promise<{ value: Area; label: string }[]> {
     const [scopeRw, scopeRt, roleInfo, rumahList] = await Promise.all([
       this.permissions.scopeOf(user.roleId, 'pengaduan.create_rw'),
@@ -86,9 +72,7 @@ export class PengaduanService implements OnApplicationBootstrap {
 
     const isPengurus = (roleInfo?.level ?? LEVEL_WARGA) < LEVEL_WARGA;
     const rtDipunya = new Set(rumahList.map((r) => r.rt));
-    // Tidak punya rumah tercatat? Jatuh ke area akun (kalau areanya RT).
     if (rtDipunya.size === 0 && isRtArea(user.area)) rtDipunya.add(user.area);
-    // Pengurus tidak boleh mengadu ke RT tempat dia menjabat (jatuh ke dirinya sendiri).
     if (isPengurus && isRtArea(user.area)) rtDipunya.delete(user.area);
 
     const pilihan: { value: Area; label: string }[] = [];
@@ -101,9 +85,6 @@ export class PengaduanService implements OnApplicationBootstrap {
     return pilihan;
   }
 
-  // Sengaja tanpa AccessContext (butuh @RequirePermission tunggal): pemegang
-  // `pengaduan.create_rw` ATAU `pengaduan.create_rt` boleh masuk, jadi izinnya dicek di
-  // sini lewat getTujuanPilihan (kosong = tidak punya keduanya = tujuan apa pun ditolak).
   async create(user: AuthUser, dto: CreatePengaduanDto, file?: Express.Multer.File) {
     const pilihan = await this.getTujuanPilihan(user);
     if (!pilihan.some((p) => p.value === dto.tujuan)) {
@@ -112,7 +93,6 @@ export class PengaduanService implements OnApplicationBootstrap {
       );
     }
 
-    // Tampil lewat <img>, yang tidak bisa mengirim token; sama seperti sebelumnya (folder statis).
     const fotoUrl = file ? await this.files.simpan(file, { publik: true }) : undefined;
     const data = await this.prisma.pengaduan.create({
       data: {
@@ -125,9 +105,6 @@ export class PengaduanService implements OnApplicationBootstrap {
       },
     });
 
-    // Yang berhak menanggapi persis di tujuan itu (+ pemegang scope ALL, mis. admin).
-    // Pakai varian area-persis (bukan kirimKePermission biasa) supaya tujuan RW tidak
-    // ikut mengirim ke pengurus RT — lihat catatan di NotifikasiService.
     await this.notifikasiService.kirimKePermissionAreaPersis(
       'pengaduan.respon',
       dto.tujuan,
@@ -149,8 +126,6 @@ export class PengaduanService implements OnApplicationBootstrap {
     });
   }
 
-  /** Pengaduan milik satu warga (dipakai warga melihat pengaduannya sendiri) — tanpa
-   * batasan tujuan, karena pelapor selalu boleh melihat semua miliknya sendiri. */
   async findByUser(ctx: AccessContext, userId: number) {
     if (ctx.scope === 'OWN') {
       if (userId !== ctx.user.sub) {
@@ -214,11 +189,6 @@ export class PengaduanService implements OnApplicationBootstrap {
     return { message: 'Tanggapan berhasil disimpan', data };
   }
 
-  // ================================================================
-  // AUTO-TERUSKAN — pengaduan RT yang tidak ditanggapi 7 hari diteruskan ke RW.
-  // Idempotent: hanya memproses baris `diteruskanAt IS NULL`, jadi aman dipanggil
-  // ulang (dijadwalkan harian + sekali saat start, lihat onApplicationBootstrap).
-  // ================================================================
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async teruskanOtomatis() {
     const batas = new Date();
@@ -243,7 +213,6 @@ export class PengaduanService implements OnApplicationBootstrap {
     });
 
     for (const p of jatuhTempo) {
-      // Info ke pengurus RW (yang sekarang juga berhak menanggapi) dan pengurus RT tujuan asli.
       await this.notifikasiService.kirimKePermissionAreaPersis(
         'pengaduan.respon',
         'RW',

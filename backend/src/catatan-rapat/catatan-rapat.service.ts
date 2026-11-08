@@ -13,7 +13,6 @@ export class CatatanRapatService {
     private files: FileService,
   ) {}
 
-  /** Isi notulen wajib diisi KECUALI ada file notulen (lama atau baru) yang menyertainya. */
   private validasiIsiAtauFile(isiNotulen: string | null | undefined, adaFile: boolean) {
     if (!adaFile && !isiNotulen?.trim()) {
       throw new BadRequestException('Isi notulen wajib diisi kalau tidak mengunggah file.');
@@ -37,8 +36,6 @@ export class CatatanRapatService {
     return { message: 'Catatan rapat berhasil disimpan', data };
   }
 
-  /** Tempel metadata file notulen (mimeType, namaAsli) ke tiap baris, tanpa isi datanya —
-   * dipakai frontend untuk membedakan lampiran gambar vs dokumen pas generate PDF. */
   private async tempelMetaFile<T extends { fileNotulen: string | null }>(rows: T[]) {
     const ids = [...new Set(rows.map((r) => r.fileNotulen).filter((id): id is string => !!id))];
     const metaList = await this.files.metadataBanyak(ids);
@@ -50,7 +47,6 @@ export class CatatanRapatService {
     }));
   }
 
-  /** Notulen RW hanya terlihat pengurus RW, notulen RT hanya di RT itu (lewat scope AREA). */
   async findAll(ctx: AccessContext, params: { search?: string; area?: string } = {}) {
     const area = areaFilter(ctx);
     const and: Prisma.CatatanRapatWhereInput[] = [{ isDelete: false }];
@@ -69,7 +65,6 @@ export class CatatanRapatService {
 
   async findOne(ctx: AccessContext, id: number) {
     const catatan = await this.prisma.catatanRapat.findFirst({ where: { id, isDelete: false } });
-    // 404 (bukan 403) untuk data di luar wilayah, supaya keberadaan notulen tidak bocor.
     const area = areaFilter(ctx);
     if (!catatan || (area && catatan.area !== area)) {
       throw new NotFoundException(`Catatan rapat dengan ID ${id} tidak ditemukan`);
@@ -78,7 +73,6 @@ export class CatatanRapatService {
     return withMeta;
   }
 
-  /** Id file notulen; dicek scope dulu, karena file ini tidak boleh diambil lewat GET /files/:id publik. */
   async fileId(ctx: AccessContext, id: number) {
     const catatan = await this.findOne(ctx, id);
     if (!catatan.fileNotulen) throw new NotFoundException('Catatan rapat ini tidak memiliki file.');
@@ -113,7 +107,6 @@ export class CatatanRapatService {
         judul: dto.judul,
         isiNotulen: dto.isiNotulen !== undefined ? dto.isiNotulen.trim() || null : undefined,
         fileNotulen: fileBaru !== undefined ? fileBaru : lepasFileLama ? null : undefined,
-        // Area hanya bisa dipindah oleh scope ALL; pengurus tidak bisa memindah notulen ke area lain.
         ...(scopeArea === null && dto.area && { area: dto.area }),
         updateBy: ctx.user.nama,
         updateDate: new Date(),

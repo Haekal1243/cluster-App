@@ -1,6 +1,4 @@
-/* ==========================================
-   DATA WARGA & RUMAH
-   ========================================== */
+
 
 .warga-add-row,
 .page-add-row {
@@ -8,8 +6,7 @@
   justify-content: flex-end;
 }
 
-/* Toolbar gabungan: tombol Tambah di kiri, search+filter di kanan (desktop).
-   Di mobile, tombol Tambah pindah ke barisnya sendiri (lihat @media). */
+
 .page-toolbar-row {
   display: flex;
   align-items: center;
@@ -24,11 +21,7 @@
 }
 
 @media (max-width: 640px) {
-  /* Tombol Tambah/Catat/Generate tampil di atas search+filter di mobile,
-     walau di desktop dia ada di kanan (setelah search+filter) sejajar Filter.
-     align-items di-stretch supaya field search (dan tombolnya) tetap selebar
-     penuh — tanpa ini, .page-toolbar-row { align-items:center } bikin semua
-     anaknya ke-center dan menyusut ke lebar kontennya pas arahnya jadi kolom. */
+
   .warga-toolbar-row,
   .toolbar-row-reverse-mobile {
     flex-direction: column-reverse;
@@ -36,7 +29,7 @@
   }
 }
 
-/* Stats row */
+
 .warga-stat-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -85,7 +78,7 @@
   color: #f59e0b;
 }
 
-/* Aksen border kiri berwarna, sama kayak metric card di Dashboard */
+
 .warga-stat-card.tone-info    { border-left: 4px solid #0ea5e9; }
 .warga-stat-card.tone-success { border-left: 4px solid var(--db-primary); }
 .warga-stat-card.tone-warning { border-left: 4px solid #f59e0b; }
@@ -105,7 +98,7 @@
   margin-top: 4px;
 }
 
-/* Filter bar */
+
 .warga-filter-bar {
   display: flex;
   align-items: center;
@@ -164,7 +157,7 @@
   gap: 12px;
 }
 
-/* Penghuni cell */
+
 .penghuni-cell {
   display: flex;
   align-items: center;
@@ -210,7 +203,7 @@
   font-size: 0.88rem;
 }
 
-/* Multi-house badge */
+
 .penghuni-multi-badge {
   display: inline-flex;
   align-items: center;
@@ -224,7 +217,7 @@
   vertical-align: middle;
 }
 
-/* RT badge */
+
 .rt-badge {
   display: inline-flex;
   align-items: center;
@@ -236,7 +229,7 @@
   font-weight: 700;
 }
 
-/* WhatsApp link */
+
 .wa-link {
   display: inline-flex;
   align-items: center;
@@ -253,14 +246,14 @@
   text-decoration: underline;
 }
 
-/* Form hint text */
+
 .form-hint {
   margin-top: 4px;
   font-size: 0.78rem;
   color: var(--db-slate-500);
 }
 
-/* Responsive warga stats */
+
 @media (max-width: 640px) {
   .warga-add-row .btn-primary,
   .page-toolbar-row .btn-primary {

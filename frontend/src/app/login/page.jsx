@@ -23,14 +23,11 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Login pakai username (default no HP) dan password; akun dibuatkan pengurus RT.
       const data = await authApi.login({ username: username.trim(), password, remember });
 
-      // Simpan data user (termasuk hak akses) dan token sesuai "Ingat saya"
       saveUser(data.user, remember);
       setToken(data.token, remember);
 
-      // Semua role masuk ke /dashboard — menu dan tampilan menyesuaikan hak akses
       router.push("/dashboard");
     } catch (error) {
       setErrorMsg(error.message || "Nama pengguna atau kata sandi salah");

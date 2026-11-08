@@ -7,20 +7,14 @@ import { CurrentUser } from './permission.decorators';
 import type { AuthUser } from './auth.types';
 
 class LoginDto {
-  // `email` diterima sebagai alias supaya klien lama tidak langsung rusak.
   @IsOptional()
   @IsString()
   username?: string;
-
-  @IsOptional()
-  @IsString()
-  email?: string;
 
   @IsString()
   @IsNotEmpty()
   password!: string;
 
-  /** Centang "Ingat saya": token berlaku lebih lama (lihat REMEMBER_EXPIRES_IN di AuthService). */
   @IsOptional()
   @IsBoolean()
   remember?: boolean;
@@ -44,10 +38,9 @@ export class AuthController {
   @UseGuards(ThrottlerGuard)
   @Post('login')
   login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.username ?? dto.email ?? '', dto.password, dto.remember === true);
+    return this.authService.login(dto.username ?? '', dto.password, dto.remember === true);
   }
 
-  /** Profil + permission user yang sedang login. */
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.authService.profile(user.sub);

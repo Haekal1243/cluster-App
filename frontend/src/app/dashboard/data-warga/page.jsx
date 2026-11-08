@@ -12,11 +12,10 @@ import {
   KeyRound,
   UserCheck,
 } from "lucide-react";
-import Swal from "sweetalert2";
 import { wargaApi } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
-import { showConfirm, showCredentials, showMessage } from "@/lib/message";
+import { showConfirm, showCredentials, showMessage, showPrompt } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import { waLink } from "@/lib/format";
 import Pagination from "@/components/ui/Pagination";
@@ -32,7 +31,6 @@ const STATUS_RUMAH = {
   DIHUNI_KONTRAK: { label: "Kontrak", cls: "kontrak" },
 };
 
-/** Pengurus RT yang hak tulisnya berjangkauan AREA hanya boleh memilih RT-nya sendiri. */
 function rtYangBoleh(user, kode) {
   if (scopeOf(user, kode) === "AREA" && user?.area && user.area !== "RW") return [user.area];
   return ALL_RT;
@@ -52,22 +50,17 @@ export default function WargaPage() {
 
   const [wargaModal, setWargaModal] = useState({ open: false, mode: "create", data: null });
   const [rumahModal, setRumahModal] = useState({ open: false, mode: "create", data: null });
-  // Error per sumber agar satu API 403 tidak menghanguskan data lain yang sukses.
   const [gagalWarga, setGagalWarga] = useState(null);
   const [gagalRumah, setGagalRumah] = useState(null);
 
   const bolehTambah = can(user, "warga.create");
   const bolehUbah = can(user, "warga.update");
   const bolehHapusLangsung = can(user, "warga.delete");
-  // Tanpa hak hapus langsung (mis. sekre RT), tombol Hapus mengajukan ke RW dan baru terhapus setelah disetujui.
   const bolehAjukanHapus = !bolehHapusLangsung && can(user, "warga.ajukan_hapus");
   const bolehHapus = bolehHapusLangsung || bolehAjukanHapus;
   const bolehReset = can(user, "warga.reset_password");
   const bolehApprove = can(user, "warga.approve_registrasi");
-  // Kolom/footer Aksi cuma ditampilin kalau role ini punya salah satu hak tulis;
-  // Bendahara dkk yang cuma "read" gak perlu lihat kolom kosong.
   const bisaAksiWarga = bolehUbah || bolehReset || bolehHapus;
-  // Admin (level 0) mengelola semua akun; selain itu hanya warga biasa (level 3) yang boleh diubah.
   const bisaKelola = (w) => user?.roleLevel === 0 || w.role?.level === 3;
   const rtTulis = useMemo(() => rtYangBoleh(user, "warga.create"), [user]);
 
@@ -75,11 +68,13 @@ export default function WargaPage() {
     setIsLoading(true);
     setGagalWarga(null);
     setGagalRumah(null);
-    // Load independen: kegagalan satu sumber (mis. 403 di salah satunya) tidak
-    // boleh menghanguskan data sumber lain yang sebenarnya sukses.
     const [wRes, rRes] = await Promise.allSettled([wargaApi.getAll(), wargaApi.getAllRumah()]);
     if (wRes.status === "fulfilled") {
-      setWarga(Array.isArray(wRes.value) ? wRes.value : []);
+      setWarga(
+        Array.isArray(wRes.value)
+          ? wRes.value.map((w) => ({ ...w, rumah: [...(w.rumah || []), ...(w.rumahSewa || [])] }))
+          : [],
+      );
     } else {
       setGagalWarga(wRes.reason?.message || "Gagal memuat data warga.");
     }
@@ -150,7 +145,6 @@ export default function WargaPage() {
     [rumah, q, filterRT, filterStatus],
   );
 
-  // ── Warga ──────────────────────────────────────────────────────────
   const handleSubmitWarga = async (payload) => {
     try {
       if (wargaModal.mode === "edit" && wargaModal.data) {
@@ -201,16 +195,13 @@ export default function WargaPage() {
   };
 
   const handleAjukanHapus = async (w) => {
-    const { value: alasan } = await Swal.fire({
+    const alasan = await showPrompt({
       title: `Ajukan hapus akun ${w.namaUser}?`,
       text: "Pengajuan dikirim ke RW. Akun baru terhapus setelah RW menyetujui, dan rumahnya menjadi kosong.",
-      input: "textarea",
-      inputLabel: "Alasan",
-      inputPlaceholder: "Contoh: sudah pindah dan mengontrak di luar cluster",
-      showCancelButton: true,
-      confirmButtonText: "Kirim pengajuan",
-      cancelButtonText: "Batal",
-      inputValidator: (v) => (!v?.trim() ? "Alasan wajib diisi" : undefined),
+      label: "Alasan",
+      placeholder: "Contoh: sudah pindah dan mengontrak di luar cluster",
+      confirmText: "Kirim pengajuan",
+      pesanWajib: "Alasan wajib diisi",
     });
     if (!alasan) return;
     try {
@@ -240,7 +231,6 @@ export default function WargaPage() {
     }
   };
 
-  // ── Rumah ──────────────────────────────────────────────────────────
   const handleSubmitRumah = async (payload) => {
     try {
       if (rumahModal.mode === "edit" && rumahModal.data) {
@@ -376,7 +366,6 @@ export default function WargaPage() {
         )}
       </div>
 
-      {/* ── Data Warga ─────────────────────────────────────────── */}
       <div className="table-card">
         <div className="ipl-table-header">
             <span className="ipl-table-title">Daftar Warga</span>
@@ -390,13 +379,12 @@ export default function WargaPage() {
                   <th>Nama</th>
                   <th>Blok Rumah</th>
                   <th>Kontak</th>
-                  {bisaAksiWarga && <th>Aksi</th>}
+                  {bisaAksiWarga && <th className="th-aksi">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
                 {!isLoading &&
                   wargaPage.map((w, index) => {
-                    // Warga biasa boleh diubah; pengurus yang kebetulan tinggal di RT ini hanya bisa dilihat.
                     const bisaDiubah = bisaKelola(w);
                     return (
                       <tr key={w.id}>
@@ -408,7 +396,6 @@ export default function WargaPage() {
                                 <span className="penghuni-name">{w.namaUser}</span>
                                 {!bisaDiubah && <span className="penghuni-multi-badge">{w.role?.nama}</span>}
                               </div>
-                              {w.email && <span className="penghuni-email">{w.email}</span>}
                             </div>
                           </div>
                         </td>

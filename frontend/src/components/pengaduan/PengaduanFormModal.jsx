@@ -24,8 +24,6 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
   const [tujuanPilihan, setTujuanPilihan] = useState([]);
   const [loadingTujuan, setLoadingTujuan] = useState(true);
 
-  // Pilihan tujuan (RW / RT) mengikuti rumah & jabatan pelapor — dihitung backend supaya
-  // form dan validasi submit selalu pakai aturan yang sama (lihat PengaduanService.getTujuanPilihan).
   useEffect(() => {
     let cancelled = false;
     pengaduanApi.getTujuanPilihan()
@@ -104,6 +102,7 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
               </div>
             </div>
 
+            <div className="form-row-2 form-row-tetap">
             <div className="form-group">
               <label>
                 Tujuan <span className="required-star">*</span>
@@ -133,6 +132,7 @@ export default function PengaduanFormModal({ onClose, onSuccess }) {
                 onChange={(v) => setForm((prev) => ({ ...prev, kategori: v }))}
                 options={KATEGORI_OPTIONS}
               />
+            </div>
             </div>
 
             <div className="form-group">

@@ -21,7 +21,6 @@ import {
 } from "@/lib/format";
 import FitText from "@/components/ui/FitText";
 
-// ── Mini Bar Chart (SVG) ──────────────────────────────────────────────────────
 function TrenChart({ data }) {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data.map((d) => d.kasMasuk), 1);
@@ -49,7 +48,6 @@ function TrenChart({ data }) {
   );
 }
 
-// ── Status badge kecil ────────────────────────────────────────────────────────
 function StatusDot({ status }) {
   const map = {
     LUNAS: { cls: "dot-lunas", label: "Lunas" },
@@ -61,7 +59,6 @@ function StatusDot({ status }) {
 }
 
 
-// ── Admin/Pengurus: ringkasan seluruh cluster ─────────────────────────────────
 export function PengurusDashboardView({ user }) {
   const formatYm = formatYmPendek;
   const monthDiffInclusive = (dari, sampai) => {
@@ -82,7 +79,6 @@ export function PengurusDashboardView({ user }) {
   const [selectedKegiatan, setSelectedKegiatan] = useState(null);
   const [selectedPengumuman, setSelectedPengumuman] = useState(null);
 
-  // Normalisasi + validasi turunan (tanpa setState di dalam effect)
   const [dari, sampai] = periodeDari > periodeSampai
     ? [periodeSampai, periodeDari]
     : [periodeDari, periodeSampai];
@@ -90,7 +86,6 @@ export function PengurusDashboardView({ user }) {
     ? "Rentang periode maksimal 12 bulan."
     : "";
 
-  // Validasi draft di dalam popover (sebelum diterapkan)
   const [draftDariN, draftSampaiN] = draftDari > draftSampai
     ? [draftSampai, draftDari]
     : [draftDari, draftSampai];
@@ -98,8 +93,6 @@ export function PengurusDashboardView({ user }) {
     ? "Rentang periode maksimal 12 bulan."
     : "";
 
-  // Status loading diturunkan saat render dari kunci filter vs kunci data terakhir,
-  // jadi effect di bawah bebas setState sinkron (lolos aturan react-hooks/set-state-in-effect).
   const filterKey = rangeError ? null : `${dari}|${sampai}`;
   const loadingStats = filterKey !== null && filterKey !== loadedKey;
 
@@ -113,14 +106,11 @@ export function PengurusDashboardView({ user }) {
         setLoadedKey(filterKey);
       })
       .catch(() => {
-        // Gagal muat: hentikan loading, data lama tetap tampil.
         if (!cancelled) setLoadedKey(filterKey);
       });
     return () => { cancelled = true; };
   }, [dari, sampai, rangeError, filterKey]);
 
-  // Sama kayak dashboard warga: kegiatan yang belum lewat tanggalnya + pengumuman aktif,
-  // biar pengurus juga bisa lihat sekilas apa yang tampil ke warga tanpa pindah menu.
   useEffect(() => {
     let cancelled = false;
     async function loadKegiatan() {
@@ -130,12 +120,11 @@ export function PengurusDashboardView({ user }) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const batasSelesai = new Date(today);
-      batasSelesai.setDate(batasSelesai.getDate() - 7); // sama dengan lama kegiatan dianggap aktif
+      batasSelesai.setDate(batasSelesai.getDate() - 7);
       const akanDatang = (data || []).filter((k) => {
         const t = new Date(k.tanggalAcara);
         return Number.isNaN(t.getTime()) || t >= batasSelesai;
       });
-      // yang akan datang paling dekat di depan; yang baru selesai (masih bisa dinilai) di belakang
       const hariIni = (k) => new Date(k.tanggalAcara) >= today;
       akanDatang.sort((a, b) => {
         if (hariIni(a) !== hariIni(b)) return hariIni(a) ? -1 : 1;
@@ -193,7 +182,6 @@ export function PengurusDashboardView({ user }) {
   return (
     <div className="page-stack">
 
-      {/* ── Welcome + Filter Periode (satu field) ── */}
       <section className="welcome-banner">
         <h2 className="welcome-banner-title">Selamat datang kembali, {userName}</h2>
         <p className="welcome-banner-sub">Ini ringkasan aktivitas cluster Topaz periode {periodeLabel}.</p>
@@ -234,7 +222,6 @@ export function PengurusDashboardView({ user }) {
         </FilterPopover>
       </section>
 
-      {/* ── Alert: menunggu konfirmasi ── */}
       {stats?.menungguKonfirmasi > 0 && (
         <Link href="/dashboard/kelola-ipl/tagihan-warga" className="ipl-dashboard-alert">
           <AlertTriangle size={18} />
@@ -245,10 +232,8 @@ export function PengurusDashboardView({ user }) {
         </Link>
       )}
 
-      {/* ── Metric Cards — Beranda (tint redesign, selaras Keuangan/Iuran) ── */}
       <section className="ipl-summary-grid keu-summary-grid">
 
-        {/* Kas Masuk */}
         <Link href="/dashboard/kelola-ipl/tagihan-warga" className="ipl-summary-card keu-card keu-teal">
           <div className="keu-icon-circle"><Wallet size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
@@ -259,7 +244,6 @@ export function PengurusDashboardView({ user }) {
           </div>
         </Link>
 
-        {/* Lunas */}
         <Link href="/dashboard/kelola-ipl/tagihan-warga" className="ipl-summary-card keu-card keu-green">
           <div className="keu-icon-circle"><CheckCircle size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
@@ -270,7 +254,6 @@ export function PengurusDashboardView({ user }) {
           </div>
         </Link>
 
-        {/* Menunggu Konfirmasi */}
         <Link href="/dashboard/kelola-ipl/tagihan-warga" className="ipl-summary-card keu-card keu-amber">
           <div className="keu-icon-circle"><Clock size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
@@ -281,7 +264,6 @@ export function PengurusDashboardView({ user }) {
           </div>
         </Link>
 
-        {/* Total Warga */}
         <Link href="/dashboard/data-warga" className="ipl-summary-card keu-card keu-purple">
           <div className="keu-icon-circle"><Users size={22} strokeWidth={2} /></div>
           <div className="keu-card-text">
@@ -294,10 +276,8 @@ export function PengurusDashboardView({ user }) {
 
       </section>
 
-      {/* ── Chart + Tabel row ── */}
       <div className="db-bottom-row">
 
-        {/* Mini Chart: Tren 6 bulan */}
         <div className="content-card db-chart-card">
           <div className="db-section-header">
             <TrendingUp size={17} />
@@ -309,7 +289,6 @@ export function PengurusDashboardView({ user }) {
           ) : (
             <>
               <TrenChart data={stats.trenPemasukan} />
-              {/* Legend angka bulan terakhir */}
               <div className="db-chart-legend">
                 {stats.trenPemasukan.map((d, i) => (
                   <div key={i} className="db-legend-item">
@@ -322,7 +301,6 @@ export function PengurusDashboardView({ user }) {
           )}
         </div>
 
-        {/* Tabel: 5 pembayaran terbaru */}
         <div className="content-card db-recent-card">
           <div className="db-section-header">
             <Clock size={17} />
@@ -364,7 +342,6 @@ export function PengurusDashboardView({ user }) {
 
       </div>
 
-      {/* Kegiatan Cluster */}
       <section className="content-card">
         <div className="db-section-header">
           <CalendarDays size={17} />
@@ -418,7 +395,6 @@ export function PengurusDashboardView({ user }) {
         )}
       </section>
 
-      {/* Pengumuman */}
       <section className="content-card">
         <div className="db-section-header">
           <Megaphone size={17} />

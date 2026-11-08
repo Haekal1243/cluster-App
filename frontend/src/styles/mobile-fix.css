@@ -1,11 +1,5 @@
-/*
- * Perbaikan tampilan HP (dimuat paling akhir supaya menang atas aturan lama).
- * Hasil cek di lebar 360px: elemen kepotong, keluar dari kartu, atau kepepet sampai teksnya
- * pecah jadi banyak baris. Setiap blok di bawah menyebut masalah yang diperbaikinya.
- */
 
-/* 1. Tombol aksi (ubah/kunci/hapus) di kartu grid 2 kolom: 3 tombol x 38px lebih lebar
-      daripada isi kartu (~111px), jadi tombol terakhir keluar dari kartu. */
+
 @media (max-width: 768px) {
   .warga-grid-footer .table-actions,
   .pengumuman-grid-footer .table-actions,
@@ -23,9 +17,6 @@
   }
 }
 
-/* 2. Kartu kegiatan di beranda: label "Selesai · beri masukan" lebih lebar daripada kartu
-      2 kolom sehingga terpotong dan teksnya jadi kolom sempit. Label sekarang turun ke baris
-      sendiri, dan kartu tunggal memakai lebar penuh supaya tidak separuh kosong. */
 @media (max-width: 640px) {
   .portal-kegiatan-meta {
     flex-wrap: wrap;
@@ -58,8 +49,6 @@
   }
 }
 
-/* 3. Rincian tunggakan (beranda warga): "1 unit belum lunas" terjepit jadi 3 baris di samping
-      nominal + label + panah. Teks kiri dijaga satu baris; sisi kanan boleh turun baris. */
 @media (max-width: 480px) {
   .warga-tunggakan-group-header {
     align-items: flex-start;
@@ -84,8 +73,6 @@
   }
 }
 
-/* 4. Banner sambutan (judul + tombol Filter periode): di layar sempit subjudul terjepit
-      jadi 4 baris di kiri tombol. Di bawah 480px tombol turun ke baris sendiri, lebar penuh. */
 @media (max-width: 480px) {
   .welcome-banner {
     grid-template-columns: 1fr;
@@ -104,9 +91,6 @@
   }
 }
 
-/* 7. Catatan rapat: kartu 2 kolom di HP terlalu sempit. Badge RT keluar dari kartu, tanggal
-      pecah jadi 3 baris, tombol ubah/hapus terjepit, dan muncul scroll horizontal. Di bawah
-      560px jadi 1 kolom. */
 @media (max-width: 560px) {
   .catatan-list {
     grid-template-columns: minmax(0, 1fr);
@@ -122,15 +106,12 @@
   }
 }
 
-/* 6. Tombol logo melayang (kembali ke atas) menutupi baris paling bawah footer landing. */
 @media (max-width: 640px) {
   .tz-footer {
     padding-bottom: 88px;
   }
 }
 
-/* 5. Header halaman dengan tombol Export (Keuangan): judul terjepit sampai pecah jadi
-      "Keuangan RT / 01". Di layar sempit tombol turun ke bawah judul. */
 @media (max-width: 420px) {
   .ipl-page-header {
     flex-wrap: wrap;
@@ -150,8 +131,6 @@
   }
 }
 
-/* 8. Banner beranda warga: di HP label status (Belum Lunas / Menunggu) sejajar di kanan nominal.
-      Di desktop pembungkusnya "menghilang" (display: contents) sehingga tata letak tetap seperti semula. */
 .portal-hero-nominal-row {
   display: contents;
 }
@@ -165,8 +144,6 @@
   }
 }
 
-/* 9. Rincian Tunggakan: ringkasan "periode · tagihan · unit rumah" jadi label kecil berikon,
-      bukan satu baris teks abu-abu. Berlaku di desktop dan HP; di HP boleh turun baris. */
 .warga-tunggakan-chips {
   display: flex;
   flex-wrap: wrap;
@@ -194,8 +171,6 @@
   flex-shrink: 0;
 }
 
-/* 10. Desktop: label ringkasan sejajar satu baris di samping judul "Rincian Tunggakan".
-       HP tetap di bawah judul (bagian 9). */
 @media (min-width: 641px) {
   .warga-tunggakan-header {
     align-items: center;
@@ -213,9 +188,6 @@
   }
 }
 
-/* 11. Rincian Tunggakan: tiap periode jadi kartu sendiri. Label status di samping nama bulan,
-       nominal + panah di kanan, daftar unit di panel abu-abu di bawahnya. Dulu barisnya polos,
-       kosong di tengah, dan nominalnya terlihat dobel. */
 .warga-tunggakan-groups {
   gap: 10px;
 }
@@ -292,7 +264,6 @@
   }
 }
 
-/* Nominal periode tidak boleh pecah ("Rp / 140.000"); sisi kiri (bulan + label) yang mengalah. */
 .warga-tunggakan-group-right strong {
   white-space: nowrap;
 }
@@ -308,8 +279,6 @@
   }
 }
 
-/* 12. Form masukan kegiatan: komentar lebih kecil, keterangan anonim sebaris di samping
-       "Kirim sebagai anonim" dalam tanda kurung. */
 .fb-panel textarea.form-control {
   font-size: 0.85rem;
 }
@@ -330,7 +299,6 @@
   display: inline;
 }
 
-/* 13. Header Rincian Tunggakan: kata "Total" di depan nominal. */
 .warga-tunggakan-total-label {
   margin-right: 4px;
   font-size: 0.8rem;
@@ -339,9 +307,6 @@
   letter-spacing: 0;
 }
 
-/* 14. HP: "Total Rp ..." sejajar di kanan judul "Rincian Tunggakan", label ringkasan di bawahnya.
-       Pembungkus kiri dilepas (display: contents) supaya judul, label, dan total bisa disusun
-       dalam satu grid. */
 @media (max-width: 640px) {
   .warga-tunggakan-header {
     display: grid;
@@ -380,7 +345,6 @@
   }
 }
 
-/* 15. HP: tombol "Bayar Sekarang" selebar kartu. */
 @media (max-width: 640px) {
   .warga-detail-cta-wrap {
     display: block;
@@ -393,9 +357,6 @@
   }
 }
 
-/* 16. Modal detail kegiatan/pengumuman: isi modal berupa kolom flex yang bisa di-scroll, sehingga
-       gambar dan judul ikut "diperas" (gambar jadi pendek, judul tertutup). Anak-anaknya tidak
-       boleh menyusut; kalau kepanjangan, yang scroll adalah isi modalnya. */
 .ipl-modal-body > * {
   flex-shrink: 0;
 }
@@ -406,7 +367,6 @@
   border-radius: 10px;
 }
 
-/* 17. Form masukan (bintang + komentar) terlalu besar: font dan bintang dikecilkan. */
 .fb-panel h4 {
   font-size: 0.88rem;
 }
@@ -453,7 +413,6 @@
   line-height: 1.55;
 }
 
-/* Judul di dalam modal ikut aturan kartu grid HP (kecil + dipotong 2 baris); di modal harus normal. */
 .ipl-modal .portal-kegiatan-title {
   font-size: 1rem;
   display: block;
@@ -462,7 +421,6 @@
   margin-bottom: 6px;
 }
 
-/* 18. HP: header modal terlalu tinggi (padding + tombol tutup 44px). Dipadatkan. */
 @media (max-width: 768px) {
   .ipl-modal-header {
     padding: 6px 12px 6px 16px;
@@ -475,7 +433,6 @@
   }
 }
 
-/* 19. Tombol "Kirim Masukan" selebar form. */
 .fb-panel .btn-primary {
   align-self: stretch;
   width: 100%;
@@ -483,8 +440,6 @@
   text-align: center;
 }
 
-/* 20. Modal Riwayat Transaksi (warga): nama data dan isinya satu baris, dipisah titik dua dengan
-       lebar label sama supaya ":" sejajar. Di desktop tetap susunan lama (titik dua disembunyikan). */
 .riwayat-info-grid .review-info-sep {
   display: none;
 }
@@ -508,14 +463,11 @@
   }
 }
 
-/* Modal Riwayat Transaksi: nominal tagihan memakai warna dan ketebalan sama dengan data lain. */
 .riwayat-info-grid .review-nominal {
   color: inherit;
   font-weight: inherit;
 }
 
-/* 21. Pop up Filter di HP kegedean (hampir 80% layar; tiap pilihan status setinggi 48px).
-       Dipadatkan: panel lebih pendek, jarak antar kolom dan font dikecilkan, pilihan lebih rapat. */
 @media (max-width: 767px) {
   .filter-popover-panel {
     left: 0;
@@ -571,15 +523,10 @@
   }
 }
 
-/* Bug: daftar pilihan (radio) di filter ikut kelas .ipl-select sehingga muncul ikon panah dropdown
-   nyasar di tengah kanan. Daftar ini bukan dropdown, jadi panahnya dibuang. */
 .combobox-radio-list.ipl-select {
   background-image: none;
 }
 
-/* 22. Pop up Filter di HP, putaran kedua: di tengah layar (bukan menempel di bawah), lebih kecil,
-       latar belakang digelapkan, dan halaman di belakangnya terkunci (tidak bisa di-scroll) selama
-       pop up terbuka. */
 @media (max-width: 767px) {
   body:has(.filter-popover-panel),
   body:has(.filter-popover-panel) .dashboard-main {
@@ -637,9 +584,6 @@
   }
 }
 
-/* 23. Menu bawah (dock) warga di HP menutupi tombol pop up/form. Dock-nya berada di lapisan
-       tumpukan berbeda dari isi halaman, jadi overlay pop up (z-index 1000) tidak menutupinya
-       dan tombol "Batal/Kirim" di dasar form tertimpa. Selama ada pop up terbuka, dock diturunkan ke belakang overlay, di-blur dan diredupkan (tetap kelihatan). */
 @media (max-width: 899px) {
   body:has(.modal-overlay, .ipl-modal-overlay, .sd-overlay, .sd-sheet-overlay, .filter-popover-panel, .protected-lightbox-overlay) .bottom-nav {
     z-index: 0;
@@ -649,7 +593,6 @@
   }
 }
 
-/* Penghitung karakter (mis. 0/50) di dalam kolom isian, bukan di bawahnya. */
 .input-dengan-hitung {
   position: relative;
 }
@@ -669,13 +612,298 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 24. Header modal form (Ajukan Pengaduan dll): jarak atas-bawah dirapatkan di HP */
 @media (max-width: 768px) {
   .modal-box .modal-header {
     padding: 7px 10px 7px 16px;
   }
-  .modal-box .modal-header .modal-close {
-    width: 32px;
-    height: 32px;
+
+  .modal-box .modal-header .modal-close,
+  .ipl-modal-header .ipl-modal-close {
+    min-width: 34px;
+    min-height: 34px;
+    width: 34px;
+    height: 34px;
+  }
+  .modal-box .modal-footer {
+    padding: 10px 16px;
   }
 }
+
+.ui-select-trigger.custom-select {
+  padding-right: 14px;
+}
+
+.tabel-blok-rumah {
+  table-layout: fixed;
+  width: 100%;
+}
+.tabel-blok-rumah th:nth-child(1),
+.tabel-blok-rumah td:nth-child(1) {
+  width: 72px;
+}
+.tabel-blok-rumah th:nth-child(2),
+.tabel-blok-rumah td:nth-child(2) {
+  width: 20%;
+}
+
+th.th-aksi {
+  text-align: center;
+}
+
+table td .table-actions {
+  justify-content: center;
+}
+td.td-aksi {
+  text-align: center;
+}
+
+.warga-grid-footer .table-actions.warga-grid-actions {
+  width: 100%;
+}
+.warga-grid-footer .table-actions.warga-grid-actions .btn-icon {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+.modal-box .form-row-2.form-row-tetap {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 899px) {
+  .dashboard-shell:not(.is-warga) .dashboard-header { padding: 7px 14px; gap: 10px; }
+  .dashboard-shell:not(.is-warga) .header-left h1 { font-size: 1rem; }
+  .dashboard-shell:not(.is-warga) .header-actions { gap: 8px; }
+  .dashboard-shell:not(.is-warga) .header-icon-btn { box-sizing: border-box; flex: 0 0 34px; width: 34px; min-width: 34px; height: 34px; min-height: 34px; }
+  .dashboard-shell:not(.is-warga) .header-icon-btn svg { width: 16px; height: 16px; }
+  .dashboard-shell:not(.is-warga) .header-install-btn { box-sizing: border-box; flex: 0 0 34px; width: 34px; min-width: 34px; height: 34px; min-height: 34px; padding: 0; gap: 0; align-self: center; justify-content: center; border-radius: 50%; }
+  .dashboard-shell:not(.is-warga) .header-install-btn svg { width: 14px; height: 14px; }
+  .dashboard-shell:not(.is-warga) .notif-panel { top: 52px; }
+}
+
+.notif-lihat-semua { display: block; width: 100%; padding: 10px 14px; border: 0; border-top: 1px solid #e2e8f0; background: #f8fafc; color: #0f766e; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-align: center; }
+.notif-lihat-semua:hover { background: #f0fdfa; }
+.notif-page-card { padding: 0; overflow: hidden; }
+.notif-page-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #e2e8f0; }
+.notif-page-head h2 { margin: 0; font-size: 1.05rem; }
+.notif-page-head p { margin: 2px 0 0; color: #64748b; font-size: 0.82rem; }
+.notif-page-list .notif-item { padding: 14px 18px; }
+@media (max-width: 640px) {
+  .notif-page-head { flex-wrap: wrap; }
+}
+
+.notif-back-btn { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-width: 36px; min-height: 36px; border: 1px solid #dbe3ec; border-radius: 50%; background: #fff; color: #334155; cursor: pointer; }
+.notif-back-btn:hover { background: #f1f5f9; }
+.notif-page-judul { flex: 1 1 0; min-width: 0; }
+
+.notif-page-head .btn-secondary { flex: 0 0 auto; width: auto; min-height: 34px; padding: 6px 12px; font-size: 0.8rem; gap: 6px; white-space: nowrap; }
+@media (max-width: 640px) {
+  .notif-page-head { flex-wrap: nowrap; padding: 12px 14px; gap: 10px; }
+  .notif-page-head p { display: none; }
+  .notif-page-head .btn-secondary { padding: 6px 10px; font-size: 0.76rem; }
+}
+
+.notif-page-list .notif-item.terbuka { background: #f0fdfa; }
+.notif-item-aksi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.notif-aksi-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 6px 12px; border: 1px solid #dbe3ec; border-radius: 999px; background: #fff; color: #334155; font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+.notif-aksi-btn.utama { border-color: #0d9488; background: #0d9488; color: #fff; }
+
+.warga-grid-title .status-badge { padding: 2px 7px; font-size: 0.6rem; }
+
+.detail-modal { max-width: 540px; }
+.detail-foto { border-radius: 12px; overflow: hidden; background: #f1f5f9; }
+.detail-foto img { display: block; width: 100%; max-height: 240px; object-fit: cover; }
+.detail-judul-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.detail-judul { margin: 0; flex: 1; min-width: 0; font-size: 1.05rem; font-weight: 700; line-height: 1.35; color: var(--db-text); overflow-wrap: anywhere; }
+.detail-judul-row > :not(.detail-judul) { flex: none; }
+.detail-modal .review-info-grid { background: transparent; border: none; padding: 0; gap: 8px; }
+.detail-modal .review-info-item { background: #f8fafc; border: 1px solid var(--db-border); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.detail-modal .review-info-item.penuh { grid-column: 1 / -1; }
+.detail-modal .review-info-value { overflow-wrap: anywhere; }
+.detail-aksi { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 640px) {
+  .detail-judul { font-size: 0.98rem; }
+}
+
+/* Detail popup: kotak info sejajar tepi dengan blok lain (menimpa padding 12px aturan modal review), 3 kolom untuk Pengaduan. */
+.ipl-modal-review.detail-modal .review-info-grid { padding: 0; gap: 8px; background: transparent; border: none; }
+.ipl-modal-review.detail-modal .review-info-grid.kolom-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.detail-modal .review-info-grid.kolom-3 .review-info-item { padding: 8px 10px; }
+.detail-modal .review-info-grid.kolom-3 .review-info-label { font-size: 0.64rem; }
+.detail-modal .review-info-grid.kolom-3 .review-info-value { font-size: 0.78rem; line-height: 1.35; }
+.detail-modal .ipl-summary-card { padding: 12px 14px; gap: 10px; }
+.detail-modal .ipl-summary-label { font-size: 0.7rem; }
+.detail-modal .ipl-summary-icon { width: 36px; height: 36px; flex: none; }
+.detail-modal .ipl-summary-icon svg { width: 16px; height: 16px; }
+
+/* Kotak info 3 kolom di HP: font lebih kecil, kata tidak dipotong di tengah. */
+.detail-modal .review-info-grid.kolom-3 .review-info-label { white-space: nowrap; }
+.detail-modal .review-info-grid.kolom-3 .review-info-value { overflow-wrap: normal; word-break: normal; }
+@media (max-width: 640px) {
+  .ipl-modal-review.detail-modal .review-info-grid.kolom-3 { gap: 6px; }
+  .detail-modal .review-info-grid.kolom-3 .review-info-item { padding: 7px 8px; gap: 1px; }
+  .detail-modal .review-info-grid.kolom-3 .review-info-label { font-size: 0.56rem; letter-spacing: 0; }
+  .detail-modal .review-info-grid.kolom-3 .review-info-value { font-size: 0.68rem; }
+}
+
+/* Detail popup di HP: deskripsi dan kartu "Diteruskan ke RW" / "Tanggapan" ikut diperkecil. */
+@media (max-width: 640px) {
+  .detail-modal .review-desc-card { padding: 10px 12px; }
+  .detail-modal .review-desc-card .review-info-label { font-size: 0.6rem; }
+  .detail-modal .review-desc-text { font-size: 0.74rem; line-height: 1.5; }
+  .detail-modal .ipl-summary-card { padding: 10px 12px; gap: 8px; }
+  .detail-modal .ipl-summary-icon { width: 30px; height: 30px; }
+  .detail-modal .ipl-summary-icon svg { width: 14px; height: 14px; }
+  .detail-modal .ipl-summary-label { font-size: 0.6rem; }
+  .detail-modal .ipl-summary-body > span:not(.ipl-summary-label) { font-size: 0.7rem !important; line-height: 1.45 !important; }
+}
+
+/* Kartu "Diteruskan ke RW" / "Tanggapan" di popup detail: ikon di kiri, teks di sampingnya (bukan ditumpuk) walau di HP. */
+.detail-modal .ipl-summary-card:not(.keu-card) { flex-direction: row; align-items: flex-start; gap: 10px; }
+.detail-modal .ipl-summary-body { flex: 1 1 0; min-width: 0; }
+
+/* Popup form di HP: batas tinggi dilonggarkan (85vh -> 92dvh) supaya form yang hampir pas tidak jadi bisa di-scroll. */
+@media (max-width: 768px) {
+  .modal-overlay { padding: 12px; }
+  .modal-box { max-height: 92dvh; }
+  .modal-box .modal-body { overscroll-behavior: contain; }
+}
+
+/* Header pengurus di HP: nama + jabatan disembunyikan (sudah ada di menu) supaya judul halaman tidak terpotong, seperti header warga. */
+@media (max-width: 640px) {
+  .dashboard-shell:not(.is-warga) .header-user { display: none; }
+  .dashboard-shell:not(.is-warga) .header-left { gap: 10px; }
+  .dashboard-shell:not(.is-warga) .header-left h1 { font-size: 0.95rem; }
+}
+
+/* Ikon di tombol tab (db-toggle-btn): sejajar dengan teks. */
+.db-toggle-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.db-toggle-btn svg { flex: none; }
+@media (max-width: 640px) {
+  .db-toggle-btn { gap: 5px; }
+  .db-toggle-btn svg { width: 13px; height: 13px; }
+}
+
+/* Judul kartu tabel (mis. "Pendaftaran Menunggu Persetujuan") di HP: satu baris, jumlah data tetap di kanan. */
+@media (max-width: 640px) {
+  .ipl-table-header { gap: 8px; flex-wrap: nowrap; }
+  .ipl-table-title { flex: 1 1 0; min-width: 0; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ipl-table-count { flex: none; white-space: nowrap; }
+}
+
+/* Tab Feedback kegiatan (HP): judul di atas, dua filter sejajar selebar baris di bawahnya. */
+@media (max-width: 768px) {
+  .fb-tabel-header { flex-direction: column; align-items: stretch; gap: 10px; }
+  .fb-tabel-header .ipl-table-title { flex: none; white-space: normal; overflow: visible; }
+  .fb-tabel-kontrol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
+  .fb-tabel-kontrol select { width: 100%; min-width: 0; }
+}
+
+/* Ringkasan feedback satu kegiatan (HP): semua teks dan ukuran diperkecil. */
+@media (max-width: 768px) {
+  .fb-ringkasan { padding: 12px; gap: 10px; }
+  .fb-ringkasan .fb-kembali { min-height: 34px; padding: 6px 12px; font-size: 0.78rem; gap: 6px; }
+  .fb-ringkasan .fb-kembali svg { width: 14px; height: 14px; }
+  .fb-ringkasan-judul h3 { font-size: 0.9rem; }
+  .fb-ringkasan-judul .meta-item { font-size: 0.74rem; }
+  .fb-ringkasan-judul .meta-item svg { width: 12px; height: 12px; }
+  .fb-ringkasan .fb-skor-angka { font-size: 1.6rem; }
+  .fb-ringkasan .fb-bintang svg { width: 14px; height: 14px; }
+  .fb-ringkasan .fb-sub { font-size: 0.7rem; }
+  .fb-sebaran { gap: 2px; font-size: 0.7rem; }
+  .fb-sebaran-baris { grid-template-columns: 22px 1fr 18px; font-size: 0.7rem; }
+  .fb-sebaran-track { height: 5px; }
+}
+
+/* Detail Masukan: teks komentar lebih kecil. */
+.fb-modal .fb-komentar { font-size: 0.82rem; line-height: 1.5; }
+@media (max-width: 640px) {
+  .fb-modal .fb-komentar { font-size: 0.76rem; }
+}
+
+/* 33. Tombol bantuan "?" di pojok kanan atas banner + popup bantuan. */
+.page-toolbar, .ipl-page-header { position: relative; }
+/* Hanya judul (h2) yang diberi ruang untuk tombol "?"; keterangan dan tombol lain (mis. Export) tetap selebar banner. */
+.page-toolbar:has(> .page-help-btn) > div:first-child > h2, .ipl-page-header:has(> .page-help-btn) > div:first-child > h2 { padding-right: 40px; }
+.page-help-btn { position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; min-width: 34px; min-height: 34px; padding: 0; border: 1px solid rgba(13, 148, 136, 0.35); border-radius: 50%; background: rgba(255, 255, 255, 0.85); color: var(--db-primary, #0d9488); cursor: pointer; }
+.page-help-btn:hover { background: #fff; box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25); }
+.page-help-faq { display: flex; flex-direction: column; gap: 8px; }
+.page-help-item { background: #f8fafc; border: 1px solid var(--db-border); border-radius: 10px; padding: 0 12px; }
+.page-help-item summary { cursor: pointer; padding: 10px 0; font-size: 0.85rem; font-weight: 600; color: var(--db-slate-700); }
+.page-help-item[open] summary { border-bottom: 1px solid var(--db-border); margin-bottom: 8px; }
+.page-help-item p { margin: 0 0 10px; font-size: 0.82rem; line-height: 1.55; color: var(--db-slate-600); }
+@media (max-width: 640px) {
+  .page-help-item summary { font-size: 0.78rem; }
+  .page-help-item p { font-size: 0.74rem; }
+  .page-help-btn { top: 8px; right: 8px; width: 30px; height: 30px; min-width: 30px; min-height: 30px; }
+  .page-toolbar:has(> .page-help-btn) > div:first-child > h2, .ipl-page-header:has(> .page-help-btn) > div:first-child > h2 { padding-right: 34px; }
+}
+
+/* 34. Tab di HP didesain ulang: deretan ubin (bukan pil dalam wadah abu-abu).
+   Tab aktif = ubin teal penuh dengan teks putih (status terbaca sekali lihat);
+   tab lain = ubin putih tenang dengan ikon pudar. Tetap 2 per baris, tanpa scroll. */
+@media (max-width: 640px) {
+  .db-section-toggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .db-toggle-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 46px;
+    padding: 8px 10px;
+    border: 1px solid var(--db-border);
+    border-radius: 14px;
+    background: #fff;
+    color: var(--db-slate-600);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+  }
+  .db-toggle-btn svg { width: 15px; height: 15px; color: var(--db-slate-400); transition: color 0.18s ease; }
+  .db-toggle-btn:active { transform: scale(0.97); }
+  .db-toggle-btn.is-active {
+    border-color: transparent;
+    background: linear-gradient(135deg, var(--db-primary) 0%, var(--db-primary-hover) 100%);
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(13, 148, 136, 0.3);
+  }
+  .db-toggle-btn.is-active svg { color: #fff; }
+  .db-toggle-btn:hover:not(.is-active) { color: var(--db-slate-700); }
+  .db-toggle-btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* Kartu tagihan warga (HP): blok + nama bertumpuk di kiri, badge di kanan, tanggal berikon, nominal dipisah dari rinciannya. */
+.pengaduan-card-title.tag-who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.tag-who .tag-blok { font-size: 0.9rem; font-weight: 700; color: var(--db-text); }
+.tag-who .tag-nama { font-size: 0.78rem; font-weight: 500; color: var(--db-slate-500); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 0; }
+.pengaduan-card .pengaduan-meta-item svg { color: var(--db-slate-400); }
+.tag-nominal { display: flex; flex-direction: column; gap: 2px; padding-top: 8px; border-top: 1px dashed var(--db-border); }
+.tag-nominal strong { font-size: 0.95rem; font-weight: 700; color: var(--db-slate-700); }
+.tag-nominal span { font-size: 0.72rem; color: var(--db-slate-400); }
+
+/* Chip jumlah data ("18 data") di header kartu tabel: lebih kecil di HP supaya judul punya ruang. */
+@media (max-width: 640px) {
+  .ipl-table-header { padding: 12px 14px; }
+  .ipl-table-count { font-size: 0.66rem; padding: 2px 8px; }
+  .ipl-table-title { font-size: 0.78rem; }
+}
+
+/* Kolom kata sandi dengan tombol mata di dalam popup (Ganti Kata Sandi). */
+.modal-box .input-wrapper { width: 100%; }
+.modal-box .input-wrapper .form-control { width: 100%; }
+.modal-box .password-toggle { width: 34px; height: 34px; min-width: 34px; min-height: 34px; right: 6px; }
+.modal-box .password-toggle svg { width: 18px; height: 18px; }

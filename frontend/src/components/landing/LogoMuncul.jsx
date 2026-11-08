@@ -2,10 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/**
- * Logo Topaz kecil di pojok kanan judul bagian: muncul dari buram ke jelas saat bagiannya masuk layar,
- * lalu melayang naik-turun pelan. Posisinya selalu sama dan tegak (tidak miring).
- */
 export default function LogoMuncul({ sisi = "kiri" }) {
   const ref = useRef(null);
   const [tampak, setTampak] = useState(false);

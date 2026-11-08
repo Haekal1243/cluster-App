@@ -1,5 +1,6 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Plus, Search, Wallet, TrendingUp, TrendingDown, Calendar, Scale, PiggyBank, Eye, Pencil, Trash2, Download, ChevronDown } from "lucide-react";
 import { keuanganApi, openProtectedFile } from "@/lib/api";
@@ -14,14 +15,10 @@ import { formatRupiah, formatTanggalPendek as formatTanggal, getCurrentYm, forma
 import { KATEGORI_MASUK, KATEGORI_KELUAR, TIPE_FILTER_OPTIONS, KasTipeBadge, getBuktiPath, ArusKasChart, KasFormModal } from "../shared/KeuanganShared";
 import FitText from "@/components/ui/FitText";
 
-// ── Keuangan per wilayah (area terkunci dari route) ─────────────────────────────
-// areaTetap: RW / RT_0x = kunci ke kas itu (pengurus). null = bebas pilih (akun area-null scope ALL).
 export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
   const bolehTambah = can(user, "keuangan.create");
   const bolehUbah = can(user, "keuangan.update");
   const bolehHapus = can(user, "keuangan.delete");
-  // Batas tegas: RT hanya kas RT-nya, RW hanya kas RW. Area dikunci dari route,
-  // pilihan wilayah dari klien diabaikan. Hanya akun area-null scope ALL yang bebas.
   const terkunci = !!areaTetap;
   const semuaArea = !terkunci && scopeOf(user, "keuangan.read") === "ALL" && !user.area;
   const pilihAreaTulis = !user.area && scopeOf(user, "keuangan.create") === "ALL";
@@ -38,7 +35,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
   const [riwayat, setRiwayat] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter periode (sama seperti Tagihan IPL)
   const [periodeDari, setPeriodeDari] = useState(getCurrentYm);
   const [periodeSampai, setPeriodeSampai] = useState(getCurrentYm);
   const [filterTipe, setFilterTipe] = useState("SEMUA");
@@ -50,9 +46,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
   const [draftPeriodeSampai, setDraftPeriodeSampai] = useState(getCurrentYm);
   const [draftFilterTipe, setDraftFilterTipe] = useState("SEMUA");
   const [draftFilterKategori, setDraftFilterKategori] = useState("SEMUA");
-  // Deep-link dari Dashboard RW ("Lihat di Keuangan" → ?area=RW) agar
-  // filter langsung menampilkan kas RW-murni yang angkanya 1:1 dengan KPI.
-  // Lazy initializer (bukan useEffect) agar lolos react-hooks/set-state-in-effect.
   const areaAwal = () => {
     if (typeof window === "undefined") return "SEMUA";
     const area = new URLSearchParams(window.location.search).get("area");
@@ -64,11 +57,9 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
   const [draftFilterArea, setDraftFilterArea] = useState(areaTetap ?? areaAwal());
   const areaEfektif = terkunci ? areaTetap : filterArea;
 
-  // Modal state
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
 
-  // Export CSV/XLSX
   const [exportOpen, setExportOpen] = useState(false);
   const [exporting, setExporting] = useState(null);
   const exportRef = useRef(null);
@@ -162,7 +153,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
     if (!terkunci) { setFilterArea("SEMUA"); setDraftFilterArea("SEMUA"); }
   };
 
-  // Tutup menu export saat klik di luar / tekan Escape
   useEffect(() => {
     if (!exportOpen) return;
     const onDown = (e) => {
@@ -183,8 +173,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
     setExportOpen(false);
     setExporting(format);
     try {
-      // Nama cadangan bila header server tak terbaca browser — dirakit dari
-      // filter yang tampil di layar sehingga periode selalu ikut.
       const rtSuffix =
         areaEfektif && areaEfektif !== "SEMUA" && areaEfektif !== "RW" ? `${areaEfektif.replace("_", "")}-` : "";
       const filename = await keuanganApi.exportFile({
@@ -224,7 +212,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
 
   return (
     <div className="page-stack">
-      {/* ── Header ── */}
       <div className="ipl-page-header">
         <div>
           <h2 className="ipl-page-title">{judul}</h2>
@@ -234,6 +221,7 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
               : `Laporan kas periode ${periodeLabel}`}
           </p>
         </div>
+        <PageHelp id="keuangan" />
 
         <div className="export-split" ref={exportRef}>
           <button
@@ -283,7 +271,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
         </div>
       </div>
 
-      {/* ── Summary Cards — Keuangan Cluster (scoped redesign) ── */}
       {ringkasan && (
         <div className="ipl-summary-grid keu-summary-grid">
           <div className="ipl-summary-card keu-card keu-teal">
@@ -317,7 +304,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
         </div>
       )}
 
-      {/* ── Tambah + Search + Filter ── */}
       <div className="page-toolbar-row toolbar-row-reverse-mobile">
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
@@ -411,7 +397,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
         )}
       </div>
 
-      {/* ── Rincian pemasukan otomatis & per wilayah ── */}
       {ringkasan && (
         <div className="content-card keu-rincian">
           <div className="db-section-header">
@@ -470,7 +455,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
         </div>
       )}
 
-      {/* ── Grafik Arus Kas ── */}
       {ringkasan && (
         <div className="content-card">
           <div className="db-section-header">
@@ -496,7 +480,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
         </div>
       )}
 
-      {/* ── Tabel Riwayat ── */}
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
           <span className="ipl-table-title">
@@ -529,7 +512,7 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
                   <th>Tipe</th>
                   <th>Nominal</th>
                   <th>Bukti</th>
-                  {(bolehUbah || bolehHapus) && <th>Aksi</th>}
+                  {(bolehUbah || bolehHapus) && <th className="th-aksi">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
@@ -667,7 +650,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
         )}
       </div>
 
-      {/* ── Modal ── */}
       {showForm && (
         <KasFormModal
           initial={editItem}

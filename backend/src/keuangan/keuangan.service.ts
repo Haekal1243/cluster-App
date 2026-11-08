@@ -26,24 +26,16 @@ const sum = (rows: { nominal: number }[]) =>
 const labelRt = (rt: string) => rt.replace('_', ' ');
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-/** Tanggal export: DD-MM-YYYY (setiap transaksi tetap satu baris sendiri). */
 function formatTanggalExport(t: Date | string): string {
   const d = new Date(t);
   return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
 }
 
-/**
- * CSV injection: Excel/Sheets menjalankan sel yang diawali = + - @ (juga tab/CR) sebagai formula.
- * Teks isian pengguna diberi awalan ' agar dibaca sebagai teks biasa. Angka tidak disentuh.
- */
 export function netralkanSelCsv<T>(nilai: T): T | string {
   if (typeof nilai !== 'string') return nilai;
   return /^[=+\-@\t\r]/.test(nilai) ? `'${nilai}` : nilai;
 }
 
-// ================================================================
-// EXPORT RIWAYAT KAS (CSV / XLSX) — pure function agar bisa di-test
-// ================================================================
 
 export interface KasExportRow {
   tanggal: string;
@@ -63,12 +55,6 @@ export interface KasExportInput {
   nominal: number;
 }
 
-/**
- * Urutkan ASCENDING by tanggal (oldest → newest) lalu hitung saldo berjalan:
- * saldo = saldoSebelumnya + masuk - keluar, mulai dari saldoAwal (default 0).
- * Tanggal yang SAMA dengan baris sebelumnya di-suppress (string kosong) agar
- * tabel lebih ringkas; kolom lain tetap diisi normal.
- */
 export function hitungSaldoBerjalan(rows: KasExportInput[], saldoAwal = 0) {
   const sorted = [...rows].sort((a, b) => {
     const diff = new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime();
@@ -115,16 +101,11 @@ const NAMA_BULAN_ID = [
   'Desember',
 ];
 
-/** "2026-09" -> "September 2026" (asumsi format YYYY-MM sudah divalidasi DTO). */
 function labelBulanYm(ym: string): string {
   const [tahun, bulan] = ym.split('-');
   return `${NAMA_BULAN_ID[Number(bulan) - 1] ?? bulan} ${tahun}`;
 }
 
-/**
- * Label periode untuk title & filename: satu bulan -> "September 2026",
- * multi-bulan -> "Januari 2026 - Maret 2026", tanpa filter -> "Semua Periode".
- */
 export function labelPeriodeExport(dari?: string, sampai?: string): string {
   if (dari && sampai) {
     if (dari === sampai) return labelBulanYm(dari);
@@ -143,12 +124,6 @@ export class KeuanganService {
     private files: FileService,
   ) {}
 
-  /**
-   * Area yang datanya ikut dihitung/ditampilkan oleh user ini.
-   * Isolasi kas per wilayah: pengurus (RT maupun RW) hanya melihat kas areanya
-   * sendiri; parameter pilih dari klien diabaikan. Hanya admin (area null)
-   * yang boleh melihat semua wilayah / memfilter wilayah.
-   */
   private areasFor(ctx: AccessContext, pilih?: string): Area[] {
     if (ctx.user.area) return [ctx.user.area];
     const area = areaFilter(ctx);
@@ -158,16 +133,12 @@ export class KeuanganService {
     return SEMUA_AREA;
   }
 
-  // ================================================================
-  // CRUD TRANSAKSI KAS MANUAL
-  // ================================================================
 
   async create(
     ctx: AccessContext,
     dto: CreateKasDto,
     file?: Express.Multer.File,
   ) {
-    // Pengurus menulis ke kas area-nya sendiri; hanya admin yang boleh memilih area.
     const area = ctx.user.area ?? dto.area ?? 'RW';
 
     const buktiFile = file ? await this.files.simpan(file) : null;
@@ -214,7 +185,6 @@ export class KeuanganService {
       and.push({ tanggal: { gte, lt } });
     }
     if (tipe && tipe !== 'SEMUA') and.push({ tipe: tipe as any });
-    // kategori filter hanya untuk manual (sesuai klarifikasi: otomatis cukup filter pemasukan)
     if (kategori && kategori !== 'SEMUA') and.push({ kategori });
     if (search) {
       and.push({
@@ -230,12 +200,10 @@ export class KeuanganService {
       orderBy: [{ tanggal: 'desc' }, { id: 'desc' }],
     });
 
-    // Pemasukan otomatis agregat per bulan (bukan per transaksi) — 1 baris/bulan
     const autoRows: any[] = [];
     const isPemasukanFilter = !tipe || tipe === 'SEMUA' || tipe === 'PEMASUKAN';
     const kategoriIsSetorIpl = kategori === 'Setor IPL';
     const kategoriIsKasRt = kategori === 'Kas RT (dari IPL warga)';
-    // Hormati filter kategori untuk auto-row: Kas RT hanya muncul jika kategori SEMUA/Kas RT, Setor IPL hanya jika SEMUA/Setor IPL
     if (
       isPemasukanFilter &&
       rtDipilih.length > 0 &&
@@ -263,8 +231,6 @@ export class KeuanganService {
         },
       });
 
-      // group by RT + period (YYYY-MM) -> 1 baris/bulan/RT.
-      // Rumah KOSONG: porsi IPL dialihkan ke kas RT, kontribusinya = IPL + Kas.
       const BULAN_LABEL: Record<string, string> = {
         '01': 'Jan',
         '02': 'Feb',
@@ -317,7 +283,6 @@ export class KeuanganService {
             .toLowerCase()
             .includes(search.toLowerCase());
         if (!searchOk) continue;
-        // tanggal = latest konfirmasi dalam bulan itu, fallback ke tgl 15 bulan tersebut
         const tanggal =
           g.latest ?? new Date(Number(g.tahun), Number(g.bulan) - 1, 15);
         autoRows.push({
@@ -335,12 +300,6 @@ export class KeuanganService {
       }
     }
 
-    // Setor IPL: per RT per periode tagihan (wilayah hanya RT), 1 row per RT+bulan.
-    // Setoran adalah pemasukan RW — baris ini hanya dibangun bila scope mencakup RW,
-    // sehingga user RT tidak melihatnya di riwayat (porsi yang belum dikonfirmasi
-    // tetap terpantau lewat titipanIpl di ringkasan + menu Setoran).
-    // Jika 1 setoran berisi multi-periode, akan jadi multi-row (per periode).
-    // Jika 2 setoran same RT same periode, nominal dijumlah (update).
     const needSetor =
       isPemasukanFilter &&
       (!kategori || kategori === 'SEMUA' || kategoriIsSetorIpl);
@@ -357,7 +316,6 @@ export class KeuanganService {
       } else {
         setorRtList = ['RT_01', 'RT_02', 'RT_03', 'RT_04'] as RT[];
       }
-      // filter by user's scope: if user is RT, rtDipilih already limited
       if (
         areaFilter(ctx) &&
         areaFilter(ctx) !== 'RW' &&
@@ -368,8 +326,6 @@ export class KeuanganService {
       }
     }
     if (needSetor && setorRtList.length > 0) {
-      // Porsi IPL rumah KOSONG tidak disetor ke RW (masuk kas RT), jadi
-      // dikecualikan dari baris Setor IPL.
       const whereIplSetor: Prisma.IplWhereInput = {
         setoran: { status: 'DIKONFIRMASI' },
         rumah: { rt: { in: setorRtList }, status: { not: 'KOSONG' } },
@@ -407,7 +363,6 @@ export class KeuanganService {
         '12': 'Des',
       };
 
-      // 1 baris per SETORAN per RT per periode tagihan (tidak lagi digabung antar setoran)
       const sGroups = new Map<
         string,
         {
@@ -431,13 +386,12 @@ export class KeuanganService {
           setoranId: s.id as number,
           total: 0,
           buktiFile: s.buktiTransaksi ?? null,
-          tanggal: new Date(s.tanggalKonfirmasi ?? s.createDate), // tanggal TETAP milik setoran ini
+          tanggal: new Date(s.tanggalKonfirmasi ?? s.createDate),
         };
         g.total += r.nominalIpl;
         sGroups.set(key, g);
       }
 
-      // Tandai "susulan" bila bukan setoran pertama untuk RT + periode yang sama
       const urutPerPeriode = new Map<string, number[]>();
       for (const g of [...sGroups.values()].sort(
         (a, b) =>
@@ -460,7 +414,7 @@ export class KeuanganService {
         if (search && !searchHay.includes(search.toLowerCase())) continue;
 
         autoRows.push({
-          id: `setoran-${g.rt}-${g.tahun}-${g.bulan}-${g.setoranId}`, // <- id unik per setoran
+          id: `setoran-${g.rt}-${g.tahun}-${g.bulan}-${g.setoranId}`,
           tipe: 'PEMASUKAN',
           area: g.rt as unknown as Area,
           kategori: 'Setor IPL',
@@ -491,10 +445,6 @@ export class KeuanganService {
     return { riwayat };
   }
 
-  /**
-   * GET /keuangan/export — data sama persis seperti tabel Riwayat Kas
-   * (manual + baris virtual otomatis), diurut ASCENDING untuk saldo berjalan.
-   */
   async exportRiwayat(ctx: AccessContext, dto: ExportKasDto) {
     const { riwayat } = await this.findAll(ctx, {
       dari: dto.dari,
@@ -510,7 +460,6 @@ export class KeuanganService {
     );
     const periodeLabel = labelPeriodeExport(dto.dari, dto.sampai);
     const title = `Laporan Kas ${periodeLabel}`;
-    // Suffix wilayah hanya bila filter RT spesifik: RT_01 -> RT01
     const rtDipilih =
       dto.area &&
       dto.area !== 'SEMUA' &&
@@ -521,7 +470,6 @@ export class KeuanganService {
     const baseName = `Laporan Kas-${rtDipilih ? `${rtDipilih}-` : ''}${periodeLabel}`;
 
     if (dto.format === 'csv') {
-      // BOM agar file terbuka rapi di Excel Indonesia; baris 1 = title, baris 2 = header
       const csv =
         String.fromCharCode(0xfeff) +
         `${title}\n` +
@@ -563,7 +511,6 @@ export class KeuanganService {
 
     const workbook = new ExcelJS.Workbook();
     const ws = workbook.addWorksheet('Riwayat Kas');
-    // Tanpa `header` di columns agar baris header tidak otomatis dibuat di row 1
     ws.columns = [
       { key: 'tanggal', width: 14 },
       { key: 'wilayah', width: 12 },
@@ -572,13 +519,11 @@ export class KeuanganService {
       { key: 'keluar', width: 16 },
       { key: 'saldo', width: 16 },
     ];
-    // Row 1 = title (merge A-F, center, bold 14pt)
     ws.mergeCells('A1:F1');
     const titleCell = ws.getCell('A1');
     titleCell.value = title;
     titleCell.font = { bold: true, size: 14 };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    // Row 2 = header
     ws.addRow(['Tanggal', 'Wilayah', 'Deskripsi', 'Masuk', 'Keluar', 'Saldo']);
     for (const b of baris) {
       ws.addRow([
@@ -594,7 +539,6 @@ export class KeuanganService {
     ws.getRow(2).font = { bold: true };
     const lastRow = ws.lastRow;
     if (lastRow) lastRow.font = { bold: true };
-    // Kolom angka sebagai number agar bisa di-SUM di Excel (data mulai row 3)
     for (let i = 3; i <= ws.rowCount; i++) {
       for (const col of ['D', 'E', 'F'])
         ws.getCell(`${col}${i}`).numFmt = '#,##0';
@@ -611,7 +555,6 @@ export class KeuanganService {
   async findOne(ctx: AccessContext, id: string | number) {
     const sid = String(id);
     if (sid.startsWith('ipl-') || sid.startsWith('setoran-')) {
-      // Virtual row — kembalikan representasi untuk modal read
       return { id: sid, virtual: true } as any;
     }
     const nid = Number(id);
@@ -629,20 +572,15 @@ export class KeuanganService {
     return data;
   }
 
-  /** Id file bukti transaksi kas; dicek scope dulu, file ini tidak boleh diambil lewat GET /files/:id publik. */
   async fileIdBukti(ctx: AccessContext, id: string | number) {
     const sid = String(id);
     if (sid.startsWith('setoran-')) {
-      // Baris virtual agregat setoran: id = setoran-{RT}-{tahun}-{bulan} (periode tagihan).
-      // Ambil bukti setoran terbaru yang mencakup periode itu (cermin logika grup riwayat).
       const parts = sid.slice('setoran-'.length).split('-');
       const rt = parts[0] as RT;
       const tahun = parts[1];
       const bulan = parts[2];
       if (!rt || !tahun || !bulan)
         throw new NotFoundException('ID setoran tidak valid.');
-      // Baris setoran tampil di riwayat RW (semua RT) dan RT pemiliknya; pengurus RW (area 'RW')
-      // memang boleh melihat bukti setoran semua RT, jadi hanya RT lain yang ditolak.
       const batas = areaFilter(ctx);
       if (batas !== null && batas !== 'RW' && batas !== rt) {
         throw new ForbiddenException('Data ini di luar wilayah Anda.');
@@ -669,7 +607,6 @@ export class KeuanganService {
     return data.buktiFile;
   }
 
-  /** Untuk ubah/hapus, hak tulis dicek terhadap scope permission update/delete. */
   private async findForWrite(ctx: AccessContext, id: string | number) {
     const sid = String(id);
     if (sid.startsWith('ipl-') || sid.startsWith('setoran-'))
@@ -683,7 +620,6 @@ export class KeuanganService {
         `Transaksi kas dengan ID ${id} tidak ditemukan.`,
       );
     }
-    // Isolasi kas per wilayah: pengurus hanya boleh mengubah kas areanya sendiri.
     if (ctx.user.area && data.area !== ctx.user.area) {
       throw new ForbiddenException('Transaksi ini di luar wilayah Anda.');
     }
@@ -698,10 +634,8 @@ export class KeuanganService {
     file?: Express.Multer.File,
   ) {
     const sid = String(id);
-    // Handle virtual IPL Kas RT agregat bulanan: id = ipl-RT_01-2024-01
     if (sid.startsWith('ipl-')) {
-      const parts = sid.slice(4).split('-'); // RT_01,2024,01
-      // rt mengandung underscore, jadi join ulang
+      const parts = sid.slice(4).split('-');
       const rt = parts[0] as RT;
       const tahun = parts[1];
       const bulan = parts[2];
@@ -732,9 +666,6 @@ export class KeuanganService {
           const add = sisa > 0 ? 1 : 0;
           if (add) sisa--;
           const perTagihan = nominalPerTagihan + add;
-          // Rumah kosong: porsinya sudah menyatu sebagai kas RT sehingga
-          // split IPL/Kas tidak bermakna — normalisasi ke Kas semua agar
-          // totalnya tetap pas.
           if (r.rumah.status === 'KOSONG') {
             await this.prisma.ipl.update({
               where: { id: r.id },
@@ -758,7 +689,6 @@ export class KeuanganService {
       );
     }
     const existing = await this.findForWrite(ctx, sid);
-    // Isolasi kas per wilayah: area tujuan harus area sendiri (kecuali admin).
     const areaTujuan = dto.area ?? existing.area;
     if (ctx.user.area && areaTujuan !== ctx.user.area) {
       throw new ForbiddenException('Transaksi ini di luar wilayah Anda.');
@@ -793,9 +723,6 @@ export class KeuanganService {
       if (!rt || !tahun || !bulan)
         throw new NotFoundException('ID IPL tidak valid.');
       assertInArea(ctx, rt as Area);
-      // Hapus pemasukan Kas RT bulan tersebut = nol-kan kontribusi kas tiap
-      // tagihan LUNAS periode terkait (rumah kosong: IPL-nya pun ikut di-nol-kan
-      // karena sudah menyatu sebagai kas RT).
       const base = {
         statusPembayaran: 'LUNAS',
         bulanPeriode: bulan,
@@ -824,14 +751,6 @@ export class KeuanganService {
     return { message: 'Transaksi kas berhasil dihapus.' };
   }
 
-  // ================================================================
-  // RINGKASAN
-  //   Pemasukan otomatis (tidak disimpan di trx_kas):
-  //     RT -> nominalKas dari tagihan LUNAS di RT itu
-  //     RW -> totalIpl dari setoran RT yang sudah DIKONFIRMASI
-  //   + kas manual per area. Porsi IPL yang sudah lunas tapi belum
-  //   dikonfirmasi RW dilaporkan terpisah sebagai `titipanIpl`.
-  // ================================================================
 
   async getRingkasan(
     ctx: AccessContext,
@@ -850,16 +769,9 @@ export class KeuanganService {
     };
     const { gte, lt } = ymRangeToDates(resolved.dariYm, resolved.sampaiYm);
 
-    // Query selalu dijalankan; filter kosong (`in: []`) otomatis menghasilkan 0 baris,
-    // jadi tidak perlu cabang khusus ketika area RT atau RW tidak dipilih.
     const tanpaRw = { id: { in: [] as number[] } };
     const rtSaja = { rumah: { rt: { in: rtDipilih } } };
 
-    // Untuk Setor IPL wilayah hanya RT: tentukan RT yang visible untuk setor.
-    // Setoran adalah pemasukan RW, bukan RT — hanya dihitung bila scope mencakup RW.
-    // Scope RT murni (areas = [RT_x]) mendapat setorRtList kosong: ringkasannya
-    // hanya kas RT + manual, dan porsi IPL yang belum dikonfirmasi tetap
-    // dilaporkan terpisah sebagai titipanIpl.
     let setorRtList: RT[] = [];
     const filterAreaIsRt =
       params?.area &&
@@ -872,7 +784,6 @@ export class KeuanganService {
     } else if (rwDipilih) {
       setorRtList = ['RT_01', 'RT_02', 'RT_03', 'RT_04'] as RT[];
     }
-    // batasi sesuai scope user RT
     const userRt = areaFilter(ctx) as RT | null;
     if (
       userRt &&
@@ -897,8 +808,6 @@ export class KeuanganService {
         }
       : tanpaRw;
 
-    // Kontribusi kas RT per tagihan: rumah KOSONG menyumbang IPL + Kas
-    // (porsi IPL-nya dialihkan ke kas RT, tidak disetor ke RW).
     const kasRt = (r: {
       nominalIpl: number;
       nominalKas: number;
@@ -914,7 +823,6 @@ export class KeuanganService {
       kasSemua,
       titipan,
     ] = await Promise.all([
-      // Kas RT yang terkumpul pada periode tagihan
       this.prisma.ipl.findMany({
         where: { OR: resolved.periodeOr, statusPembayaran: 'LUNAS', ...rtSaja },
         select: {
@@ -933,7 +841,6 @@ export class KeuanganService {
           rumah: { select: { status: true } },
         },
       }),
-      // Setoran RT yang dikonfirmasi RW menjadi pemasukan kas RW — filter by periode tagihan (bukan tanggalKonfirmasi), per RT
       this.prisma.ipl.findMany({
         where: {
           OR: resolved.periodeOr,
@@ -960,8 +867,6 @@ export class KeuanganService {
         where: { area: { in: areas } },
         select: { tipe: true, nominal: true },
       }),
-      // Porsi IPL yang dipegang RT: lunas tapi setorannya belum dikonfirmasi RW.
-      // Rumah KOSONG dikecualikan (porsinya memang hak kas RT, bukan titipan).
       this.prisma.ipl.findMany({
         where: {
           statusPembayaran: 'LUNAS',
@@ -990,7 +895,6 @@ export class KeuanganService {
       kasPeriode.filter((t) => t.tipe === 'PENGELUARAN'),
     );
 
-    // Breakdown per kategori dalam periode
     const perKategori: Record<string, Record<string, number>> = {
       PEMASUKAN: {},
       PENGELUARAN: {},
@@ -1003,14 +907,12 @@ export class KeuanganService {
       bucket[t.kategori] = (bucket[t.kategori] ?? 0) + t.nominal;
     }
 
-    // Saldo kas saat ini (kumulatif sepanjang waktu)
     const saldoKas =
       kasRtSemua.reduce((s, r) => s + kasRt(r as any), 0) +
       setoranSemua.reduce((s, r) => s + (r as any).nominalIpl, 0) +
       sum(kasSemua.filter((t) => t.tipe === 'PEMASUKAN')) -
       sum(kasSemua.filter((t) => t.tipe === 'PENGELUARAN'));
 
-    // Tren arus kas per bulan dalam rentang
     const ymKey = (tanggal: Date) =>
       `${tanggal.getFullYear()}-${String(tanggal.getMonth() + 1).padStart(2, '0')}`;
     const tren = resolved.periodeList.map(({ bulan, tahun, label }) => {
@@ -1038,8 +940,6 @@ export class KeuanganService {
       };
     });
 
-    // Rincian per area supaya ketua RW bisa membandingkan RW dan tiap RT.
-    // Rumah kosong tidak punya area sendiri: kontribusinya ikut kas RT-nya.
     const perArea = areas.map((area) => {
       const manual = kasPeriode.filter((t) => t.area === area);
       const otomatis =
@@ -1064,7 +964,6 @@ export class KeuanganService {
       pemasukanOtomatis: {
         total: pemasukanOtomatis,
         kasRt: kasRtTotal,
-        // Bagian kas RT yang berasal dari pengalihan porsi IPL rumah kosong.
         kasRtDariRumahKosong: kasRtPeriode
           .filter((r) => (r as any).rumah.status === 'KOSONG')
           .reduce(

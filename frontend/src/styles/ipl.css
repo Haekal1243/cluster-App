@@ -1,8 +1,5 @@
-/* ============================================================
-   TAGIHAN IPL — Admin/Pengurus
-   ============================================================ */
 
-/* Page Header */
+
 .ipl-page-header {
   display: flex;
   align-items: center;
@@ -21,7 +18,6 @@
   margin-top: 2px;
 }
 
-/* Buttons */
 .btn-ipl-primary {
   display: inline-flex;
   align-items: center;
@@ -146,7 +142,6 @@
 }
 .btn-ipl-icon:hover { background: #e2e8f0; }
 
-/* Filter Bar */
 .ipl-filter-bar {
   display: flex;
   align-items: flex-end;
@@ -183,7 +178,6 @@
   pointer-events: none;
 }
 
-/* Inputs & Selects */
 .ipl-input {
   padding: 8px 12px;
   border: 1px solid var(--db-border);
@@ -233,7 +227,6 @@
 }
 .ipl-textarea:focus { border-color: var(--db-primary); }
 
-/* Summary Cards */
 .ipl-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -268,7 +261,6 @@
 .ipl-summary-card.tone-danger .ipl-summary-icon  { background: #fef2f2; color: var(--db-danger); }
 .ipl-summary-card.tone-muted .ipl-summary-icon   { background: #f8fafc; color: var(--db-slate-400); }
 
-/* Aksen border kiri berwarna, sama kayak metric card di Dashboard */
 .ipl-summary-card.tone-info    { border-left: 4px solid var(--db-info); }
 .ipl-summary-card.tone-success { border-left: 4px solid #16a34a; }
 .ipl-summary-card.tone-warning { border-left: 4px solid var(--db-warning); }
@@ -301,7 +293,6 @@
   color: var(--db-slate-400);
 }
 
-/* ——— Keuangan Cluster: soft-tint redesign (scoped, tidak memengaruhi Iuran/Setoran) ——— */
 .keu-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -327,7 +318,7 @@
 .keu-card.keu-amber { --keu-tint: #fde68a; --keu-border: #f59e0b; --keu-icon: #d97706; }
 .keu-card.keu-purple { --keu-tint: #ddd6fe; --keu-border: #a78bfa; --keu-icon: #7c3aed; }
 .keu-card.keu-muted { --keu-tint: #e2e8f0; --keu-border: #94a3b8; --keu-icon: #475569; }
-/* override flat white + border-left lama hanya untuk keu-card */
+
 .keu-card.ipl-summary-card {
   border-left: 0;
   background: linear-gradient(135deg, var(--keu-tint) 0%, var(--keu-tint) 42%, #ffffff 88%);
@@ -389,7 +380,6 @@
   }
 }
 
-/* Table */
 .ipl-table-header {
   display: flex;
   align-items: center;
@@ -440,7 +430,6 @@
 .ipl-table tr:last-child td { border-bottom: none; }
 .ipl-table tr:hover td { background: #f8fafc; }
 
-/* Pengaduan: tabel di desktop, kartu di HP (lihat @media max-width:600px). */
 .pengaduan-cards { display: none; }
 
 .pengaduan-table th:first-child,
@@ -480,7 +469,6 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
-/* Card HP yang bisa diklik untuk buka detail (gantinya tombol "Lihat"). */
 .card-clickable { cursor: pointer; transition: box-shadow 0.15s ease, border-color 0.15s ease; }
 .card-clickable:hover,
 .card-clickable:focus-visible {
@@ -488,7 +476,6 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
-/* Judul di kiri, status di kanan (status tidak boleh terlempar sendirian ke baris lain). */
 .pengaduan-card-top {
   display: flex;
   align-items: flex-start;
@@ -499,7 +486,7 @@
 .pengaduan-card-title {
   flex: 1;
   min-width: 0;
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.35;
   color: var(--db-text);
@@ -508,8 +495,6 @@
 
 .pengaduan-card-top .ipl-status-badge { flex: none; }
 
-/* Kartu Riwayat Kas (mobile): judul kategori + tanggal (ikon kalender) ditumpuk di kiri,
-   badge tipe di kanan. */
 .kas-card-top-left {
   flex: 1;
   min-width: 0;
@@ -532,8 +517,6 @@
   flex-shrink: 0;
 }
 
-/* Meta mengalir sebagai teks + ikon kecil, dipisah titik — lebih elegan daripada
-   deretan chip kotak, dan tetap rapi saat wrap ke baris baru. */
 .pengaduan-card-meta {
   display: flex;
   flex-wrap: wrap;
@@ -561,13 +544,8 @@
   margin-top: 2px;
 }
 
-.pengaduan-meta-item + .pengaduan-meta-item::before {
-  content: "";
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--db-slate-400);
-  margin: 0 7px;
+.pengaduan-meta-item + .pengaduan-meta-item {
+  margin-left: 12px;
 }
 
 .pengaduan-chip {
@@ -644,7 +622,6 @@
 }
 .text-muted { color: var(--db-slate-400); font-size: 0.85rem; }
 
-/* Status Badges */
 .ipl-badge {
   display: inline-flex;
   align-items: center;
@@ -658,7 +635,6 @@
 .badge-belum   { background: #fef2f2; color: var(--db-danger); }
 .badge-menunggu { background: #fffbeb; color: var(--db-warning); }
 
-/* Loading & Empty */
 .ipl-loading {
   display: flex;
   flex-direction: column;
@@ -691,7 +667,6 @@
 }
 .ipl-empty p { font-size: 0.9rem; }
 
-/* Modal Base */
 .ipl-modal-overlay {
   position: fixed;
   inset: 0;
@@ -715,7 +690,7 @@
   animation: slideUp 0.25s ease;
 }
 .ipl-modal-review { max-width: 520px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
-/* Modal pengaduan (Tanggapi/Detail) tetap memakai ukuran lama. */
+
 .pengaduan-modal.ipl-modal-review { max-width: 580px; display: block; max-height: none; overflow: visible; }
 .ipl-modal-review:not(.pengaduan-modal) .ipl-modal-body {
   overflow-y: auto;
@@ -723,12 +698,12 @@
   padding: 20px 22px;
   gap: 14px;
 }
-/* Wrapper thumbnail bukti di modal review IPL: full-width agar img width:100% benar-benar menekan modal. */
+
 .ipl-modal-review:not(.pengaduan-modal) .review-bukti-section .protected-thumb-btn {
   display: block;
   width: 100%;
 }
-/* Bukti transfer di modal review IPL: dibatasi agar modal tidak over-frame. Klik tetap membuka lightbox full. */
+
 .ipl-modal-review:not(.pengaduan-modal) .review-bukti-img { max-height: 180px; display: block; }
 .ipl-modal-review:not(.pengaduan-modal) .review-info-grid { gap: 8px; padding: 12px; }
 
@@ -793,7 +768,6 @@
   gap: 12px;
 }
 
-/* Review Modal */
 .review-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -817,8 +791,6 @@
 }
 .review-nominal { color: var(--db-primary); font-weight: 700; }
 
-/* Modal Pengaduan (Tanggapi/Detail): 4 info item ditampilkan sebagai kartu masing-masing,
-   bukan menyatu jadi satu kartu besar yang full bleed kiri-kanan. */
 .pengaduan-modal .review-info-grid {
   background: transparent;
   border: none;
@@ -842,7 +814,6 @@
   padding: 12px 14px;
 }
 
-/* Isi deskripsi: ukuran dan warna disamakan dengan .review-info-value supaya tidak lebih besar/gelap dari kotak lain. */
 .review-desc-text {
   margin: 0;
   width: 100%;
@@ -879,7 +850,6 @@
   font-size: 0.875rem;
 }
 
-/* Lightbox bukti transfer: tampil di tab yang sama, di atas modal review. */
 .protected-thumb-btn {
   background: none;
   border: none;
@@ -921,7 +891,6 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-/* Viewer full-screen untuk mobile: gambar bisa pinch-zoom. */
 .protected-lightbox-overlay.is-fullscreen { padding: 0; }
 .protected-lightbox-overlay.is-fullscreen .protected-lightbox-box {
   width: 100dvw;
@@ -962,9 +931,6 @@
   padding-top: 4px;
 }
 
-/* ── Detail Setoran RT (redesign): dialog 2 kolom di desktop,
-   full-screen sheet di mobile. Token: teks #1e293b, muted #64748b,
-   border #e5e9f0, surface #f5f7fa, teal #0f766e. ─────────────── */
 .sd-overlay {
   position: fixed;
   inset: 0;
@@ -1043,7 +1009,6 @@
 .sd-section-head h4 { margin: 0; font-size: 0.95rem; font-weight: 700; color: #1e293b; }
 .sd-section-sub { font-size: 0.8rem; color: #64748b; }
 
-/* Tabel rincian: tanpa nested scroll, yang scroll body modal. */
 .sd-table { width: 100%; border-collapse: collapse; }
 .sd-table th {
   padding: 10px 12px;
@@ -1110,7 +1075,6 @@
   color: #b91c1c;
 }
 
-/* Ringkasan kanan + bukti. */
 .sd-summary {
   background: #f5f7fa;
   border: 1px solid #e5e9f0;
@@ -1154,14 +1118,12 @@
 }
 .sd-bukti-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: #64748b; font-size: 0.85rem; }
 
-/* Konteks collapsed. */
 .sd-konteks { border: 1px solid #e5e9f0; border-radius: 10px; background: #f5f7fa; }
 .sd-konteks summary { cursor: pointer; padding: 10px 14px; font-size: 0.82rem; font-weight: 600; color: #64748b; min-height: 44px; display: flex; align-items: center; }
 .sd-konteks-body { display: flex; flex-direction: column; gap: 8px; padding: 0 14px 12px; }
 .sd-konteks-label { margin: 0; font-size: 0.78rem; font-weight: 600; color: #64748b; }
 .sd-konteks-list { margin: 0; padding-left: 18px; font-size: 0.82rem; color: #1e293b; display: flex; flex-direction: column; gap: 4px; }
 
-/* Footer desktop + tombol. */
 .sd-footer {
   flex-shrink: 0;
   display: flex;
@@ -1199,7 +1161,6 @@
 .sd-btn-tolak-kirim:hover:not(:disabled) { background: #991b1b; }
 .sd-btn-block { width: 100%; }
 
-/* Panel penolakan desktop. */
 .sd-footer.sd-reject {
   flex-direction: column;
   align-items: stretch;
@@ -1244,7 +1205,6 @@
 .sd-load-error { display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 32px 16px; color: #64748b; }
 .sd-load-error p { margin: 0; }
 
-/* ── Mobile (<768px): full-screen sheet ── */
 .sd-topbar, .sd-actionbar, .sd-summary-m, .sd-bukti-m, .sd-cards, .sd-sheet-overlay { display: none; }
 
 @media (max-width: 767px) {
@@ -1413,7 +1373,6 @@
   .sd-sheet .sd-btn { min-height: 50px; }
 }
 
-/* Dashboard Alert Banner */
 .ipl-dashboard-alert {
   display: flex;
   align-items: center;
@@ -1443,7 +1402,6 @@
   .ipl-dashboard-alert svg { flex-shrink: 0; }
 }
 
-/* Responsive */
 @media (max-width: 900px) {
   .ipl-summary-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -1480,7 +1438,7 @@
   .ipl-filter-search { min-width: unset; }
   .ipl-page-title { font-size: 1.1rem; }
   .ipl-page-subtitle { font-size: 0.78rem; }
-  /* Tombol aksi (mis. Export) tetap di samping kanan judul, bukan ketimpa ke bawah */
+
   .ipl-page-header { flex-wrap: nowrap; }
   .ipl-page-header > div:first-child { min-width: 0; flex: 1 1 auto; }
   .page-toolbar h2 { font-size: 1.1rem; margin-bottom: 2px; }
@@ -1493,8 +1451,6 @@
   .ipl-form-row { grid-template-columns: 1fr; }
   .review-action-row { flex-direction: column; }
 
-  /* Semua pop up .ipl-modal (Catat Transaksi, Generate/Ubah Tagihan, Setor, dll):
-     disamain ukurannya kayak .modal-box biar gak ada yang kegedean sendiri di HP. */
   .ipl-modal {
     max-width: 92vw;
   }
@@ -1537,7 +1493,6 @@
     font-size: 0.82rem;
   }
 
-  /* Modal Pengaduan (Tanggapi/Detail) di mobile: dikecilin biar gak penuh layar */
   .pengaduan-modal.ipl-modal-review { max-width: 92vw; }
 
   .pengaduan-modal .ipl-modal-header {
@@ -1583,8 +1538,6 @@
     font-size: 0.78rem;
   }
 
-  /* Filter Pengaduan: card abu-abu, 2 kolom (Bulan/Tahun, Kategori/Status) sesuai desain,
-     dipadatkan biar gak makan banyak tempat di layar mobile */
   .pengaduan-filter-bar {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1600,7 +1553,6 @@
     font-size: 0.74rem;
   }
 
-  /* Tabel Pengaduan: diganti kartu satu kolom, tanpa scroll horizontal */
   .pengaduan-table-wrapper { display: none; }
 
   .pengaduan-cards {
@@ -1611,8 +1563,6 @@
   }
 }
 
-
-/* Pop up pratinjau file terlindungi (ProtectedFileViewer): kartu dengan gambar/PDF di dalamnya. */
 .pfv-modal { max-width: 720px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
 .pfv-body { padding: 16px; overflow: auto; display: flex; justify-content: center; background: var(--db-bg); }
 .pfv-img { max-width: 100%; max-height: 72vh; object-fit: contain; border-radius: 10px; }

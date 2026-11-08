@@ -144,6 +144,8 @@ export default function DataDiriPage() {
                     id="rumahId"
                     value={formData.rumahId}
                     onChange={(v) => setFormData((prev) => ({ ...prev, rumahId: v }))}
+                    searchable
+                    searchPlaceholder="Ketik Blok"
                     disabled={!formData.rt || loadingRumah}
                     placeholder={!formData.rt ? "Pilih RT dulu" : loadingRumah ? "Memuat…" : "Pilih Blok"}
                     options={rumahKosong.map((r) => ({ value: String(r.id), label: r.blokRumah }))}

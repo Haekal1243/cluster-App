@@ -167,7 +167,6 @@ async function seedDummy(roleId: Map<string, number>) {
     data: {
       namaUser: 'Administrator',
       username: 'admin',
-      email: 'admin@gmail.com',
       password: await hash(PASSWORD_ADMIN),
       roleId: roleId.get('ADMIN')!,
       area: null,
@@ -185,13 +184,11 @@ async function seedDummy(roleId: Map<string, number>) {
     area: Area;
     telp: string;
     password: string;
-    email?: string;
   }) => {
     const u = await prisma.user.create({
       data: {
         namaUser: data.nama,
         username: data.username,
-        email: data.email ?? null,
         noTelp: data.telp,
         password: data.password,
         roleId: roleId.get(data.role)!,

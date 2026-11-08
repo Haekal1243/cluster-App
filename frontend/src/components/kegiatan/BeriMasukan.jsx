@@ -9,24 +9,19 @@ import { BintangInput } from "./Bintang";
 
 const MAKS_KOMENTAR = 500;
 
-/**
- * Panel masukan di dalam detail kegiatan: bintang + komentar + anonim.
- * Hanya tampil kalau kegiatannya sudah berlangsung dan user punya izin memberi masukan.
- */
 export default function BeriMasukan({ kegiatan }) {
   const { user } = useUser();
   const sudahLewat = new Date(kegiatan.tanggalAcara) <= new Date();
   const bolehBeri = !!user && can(user, "kegiatan.feedback_beri");
   const boleh = bolehBeri && sudahLewat;
 
-  const [status, setStatus] = useState("memuat"); // memuat | bisa | tutup
+  const [status, setStatus] = useState("memuat");
   const [pernah, setPernah] = useState(false);
   const [rating, setRating] = useState(0);
   const [komentar, setKomentar] = useState("");
   const [anonim, setAnonim] = useState(false);
   const [menyimpan, setMenyimpan] = useState(false);
 
-  // Masukan milik sendiri ikut dimuat supaya form berisi nilai sebelumnya (bisa diubah).
   useEffect(() => {
     if (!boleh) return;
     let batal = false;
@@ -35,7 +30,7 @@ export default function BeriMasukan({ kegiatan }) {
       .then((daftar) => {
         if (batal) return;
         const ini = daftar.find((k) => k.id === kegiatan.id);
-        if (!ini) return setStatus("tutup"); // lewat batas waktu memberi masukan
+        if (!ini) return setStatus("tutup");
         if (ini.feedbackSaya) {
           setPernah(true);
           setRating(ini.feedbackSaya.rating);
@@ -48,7 +43,6 @@ export default function BeriMasukan({ kegiatan }) {
     return () => { batal = true; };
   }, [boleh, kegiatan.id]);
 
-  // Belum berlangsung: kasih tahu kapan formnya muncul, supaya tidak dikira hilang.
   if (bolehBeri && !sudahLewat) {
     return <p className="fb-sub fb-panel-info">Penilaian dan komentar bisa diberikan di sini setelah kegiatan selesai.</p>;
   }

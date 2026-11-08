@@ -43,7 +43,6 @@ export class KegiatanController {
     return this.kegiatanService.create(ctx, dto, file);
   }
 
-  /** Halaman kelola. ?pengajuan=DIAJUKAN untuk antrean ACC RW. */
   @Get()
   @RequirePermission('kegiatan', 'read')
   findAll(
@@ -54,7 +53,6 @@ export class KegiatanController {
     return this.kegiatanService.findAll(ctx, { pengajuan, area });
   }
 
-  /** Umpan dashboard warga (sudah menghormati batas tampil). */
   @Get('feed')
   @RequirePermission('kegiatan', 'read')
   feed(@Access() ctx: AccessContext) {
@@ -67,7 +65,6 @@ export class KegiatanController {
     return this.kegiatanService.findActive(scope as 'aktif' | 'arsip' | undefined);
   }
 
-  /** Portofolio (semua tahun) untuk landing page, per tahun. */
   @Public()
   @Get('portofolio')
   portofolio(@Query('tahun') tahun?: string) {
@@ -75,16 +72,13 @@ export class KegiatanController {
     return this.kegiatanService.portofolio(Number.isInteger(th) ? th : undefined);
   }
 
-  // --- Masukan warga (rute statis harus di atas :id) ---
 
-  /** Kartu kegiatan yang sudah punya masukan (pengurus). */
   @Get('feedback/rekap')
   @RequirePermission('kegiatan', 'feedback_lihat')
   feedbackRekap(@Access() ctx: AccessContext) {
     return this.feedbackService.rekap(ctx);
   }
 
-  /** Kegiatan yang baru selesai dan bisa diberi masukan oleh user ini. */
   @Get('feedback/bisa-diberi')
   @RequirePermission('kegiatan', 'feedback_beri')
   feedbackBisaDiberi(@Access() ctx: AccessContext) {
@@ -123,14 +117,12 @@ export class KegiatanController {
     return this.kegiatanService.findOne(ctx, id);
   }
 
-  /** Sekre RT mengajukan kegiatan RT-nya agar tampil ke seluruh RW. */
   @Post(':id/ajukan')
   @RequirePermission('kegiatan', 'ajukan')
   ajukan(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
     return this.kegiatanService.ajukan(ctx, id);
   }
 
-  /** Ketua/sekre RW menyetujui atau menolak pengajuan. */
   @Patch(':id/pengajuan')
   @RequirePermission('kegiatan', 'approve')
   putuskanPengajuan(

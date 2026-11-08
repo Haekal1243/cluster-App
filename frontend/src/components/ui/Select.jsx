@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 
 const MOBILE_QUERY = "(max-width: 767px)";
 const MENU_MAX_HEIGHT = 280;
@@ -20,17 +20,6 @@ function useIsMobile() {
   return mobile;
 }
 
-/**
- * Dropdown custom pengganti <select> native.
- *
- * - Desktop: listbox di-render lewat portal ke <body> (position: fixed mengikuti
- *   trigger + auto flip ke atas kalau mentok bawah layar), jadi tidak kepotong
- *   container ber-overflow (popover filter, modal, dll).
- * - Mobile + prop expandOnMobile: opsi di-render inline sebagai radio list
- *   (tanpa dropdown-dalam-dropdown), cocok untuk bottom sheet.
- *
- * options: [{ value, label }]
- */
 export default function Select({
   id,
   name,
@@ -41,33 +30,60 @@ export default function Select({
   disabled = false,
   className = "",
   expandOnMobile = false,
+  searchable = false,
+  searchPlaceholder = "Ketik untuk mencari…",
 }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState(null); // { top, left, width } dalam viewport
+  const [pos, setPos] = useState(null);
   const [focusIdx, setFocusIdx] = useState(-1);
+  const [query, setQuery] = useState("");
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
+  const cariRef = useRef(null);
   const listId = useId();
   const isMobile = useIsMobile();
   const inlineList = expandOnMobile && isMobile;
 
   const selectedIndex = options.findIndex((o) => String(o.value) === String(value));
   const selected = selectedIndex >= 0 ? options[selectedIndex] : null;
+  const kata = query.trim().toLowerCase();
+  const tampil = searchable && kata ? options.filter((o) => String(o.label).toLowerCase().includes(kata)) : options;
+
+  const atasRef = useRef(false);
 
   const computePos = useCallback(() => {
     const el = triggerRef.current;
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    return { top: r.bottom + MENU_GAP, left: r.left, width: r.width };
+    const atas = atasRef.current;
+    const ruang = atas ? r.top - MENU_GAP - 8 : window.innerHeight - r.bottom - MENU_GAP - 8;
+    const left = Math.min(Math.max(8, r.left), Math.max(8, window.innerWidth - r.width - 8));
+    return {
+      atas,
+      top: r.bottom + MENU_GAP,
+      bottom: window.innerHeight - r.top + MENU_GAP,
+      left,
+      width: r.width,
+      maxH: Math.max(120, Math.min(MENU_MAX_HEIGHT, ruang)),
+    };
   }, []);
 
   const buka = useCallback(() => {
     if (disabled) return;
+    const el = triggerRef.current;
+    if (el) {
+      const rc = el.getBoundingClientRect();
+      const perkiraan = Math.min(MENU_MAX_HEIGHT, options.length * 40 + 8 + (searchable ? 49 : 0));
+      const bawah = window.innerHeight - rc.bottom - MENU_GAP - 8;
+      const atas = rc.top - MENU_GAP - 8;
+      atasRef.current = bawah < perkiraan && atas > bawah;
+    }
     setPos(computePos());
+    setQuery("");
     setFocusIdx(selectedIndex >= 0 ? selectedIndex : 0);
     setOpen(true);
-  }, [computePos, disabled, selectedIndex]);
+  }, [computePos, disabled, selectedIndex, options.length, searchable]);
 
   const tutup = useCallback((refocus = false) => {
     setOpen(false);
@@ -84,30 +100,6 @@ export default function Select({
     [onChange, tutup],
   );
 
-  // Flip ke atas + clamp horizontal setelah menu terukur.
-  useEffect(() => {
-    if (!open || inlineList || !menuRef.current || !pos) return;
-    const h = Math.min(menuRef.current.scrollHeight, MENU_MAX_HEIGHT);
-    let { top, left, width } = pos;
-    if (top + h > window.innerHeight - 8) {
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (rect) {
-        const atas = rect.top - h - MENU_GAP;
-        // Pakai sisi yang ruangnya lebih besar.
-        if (atas >= 8 || atas > window.innerHeight - rect.bottom) {
-          top = Math.max(8, atas);
-        } else {
-          top = Math.max(8, window.innerHeight - 8 - h);
-        }
-      }
-    }
-    left = Math.min(Math.max(8, left), Math.max(8, window.innerWidth - width - 8));
-    if (top !== pos.top || left !== pos.left) setPos({ top, left, width });
-  }, [open, inlineList, pos]);
-
-  // Tutup saat klik di luar; reposisi saat scroll/resize (menu fixed).
-  // Esc ditangani di fase capture + stopPropagation supaya popover/modal
-  // induk tidak ikut tertutup (menu dulu, popover kemudian).
   useEffect(() => {
     if (!open || inlineList) return;
     const onPointerDown = (e) => {
@@ -137,14 +129,14 @@ export default function Select({
     };
   }, [open, inlineList, computePos, tutup]);
 
-  // Fokus ke opsi terpilih saat menu dibuka (navigasi keyboard).
   useEffect(() => {
     if (!open || inlineList) return;
     const t = setTimeout(() => {
-      menuRef.current?.querySelector('[role="option"]')?.focus();
+      if (searchable) cariRef.current?.focus();
+      else menuRef.current?.querySelector('[role="option"]')?.focus();
     }, 0);
     return () => clearTimeout(t);
-  }, [open, inlineList]);
+  }, [open, inlineList, searchable]);
 
   const onTriggerKeyDown = (e) => {
     if (disabled) return;
@@ -155,8 +147,8 @@ export default function Select({
   };
 
   const gerakFokus = (delta) => {
-    if (!options.length) return;
-    const next = (focusIdx + delta + options.length) % options.length;
+    if (!tampil.length) return;
+    const next = (focusIdx + delta + tampil.length) % tampil.length;
     setFocusIdx(next);
     menuRef.current
       ?.querySelector(`[data-idx="${next}"]`)
@@ -164,6 +156,17 @@ export default function Select({
   };
 
   const onMenuKeyDown = (e) => {
+    if (e.target === cariRef.current) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusIdx(0);
+        menuRef.current?.querySelector('[data-idx="0"]')?.focus();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (tampil.length === 1) pilih(tampil[0]);
+      }
+      return;
+    }
     if (e.key === "ArrowDown") {
       e.preventDefault();
       gerakFokus(1);
@@ -176,13 +179,12 @@ export default function Select({
       menuRef.current?.querySelector('[data-idx="0"]')?.focus();
     } else if (e.key === "End") {
       e.preventDefault();
-      const last = options.length - 1;
+      const last = tampil.length - 1;
       setFocusIdx(last);
       menuRef.current?.querySelector(`[data-idx="${last}"]`)?.focus();
     }
   };
 
-  // Mode mobile: radio list inline, tanpa dropdown.
   if (inlineList) {
     return (
       <div
@@ -236,43 +238,67 @@ export default function Select({
       {open &&
         pos &&
         createPortal(
-          <ul
-            id={listId}
+          <div
             ref={menuRef}
-            role="listbox"
-            aria-label={placeholder ?? "Pilihan"}
             data-select-menu
             className="combobox-list combobox-list-portal"
-            style={{ top: pos.top, left: pos.left, minWidth: pos.width }}
+            style={{
+              ...(pos.atas ? { top: "auto", bottom: pos.bottom } : { top: pos.top }),
+              left: pos.left,
+              minWidth: pos.width,
+              maxHeight: pos.maxH,
+              ...(searchable ? { width: pos.width } : null),
+            }}
             onKeyDown={onMenuKeyDown}
           >
-            {options.map((opt, i) => {
-              const aktif = String(opt.value) === String(value);
-              return (
-                <li
-                  key={`${opt.value}-${i}`}
-                  data-idx={i}
-                  role="option"
-                  aria-selected={aktif}
-                  tabIndex={-1}
-                  className={`combobox-option ${aktif ? "is-selected" : ""}`}
-                  onClick={() => pilih(opt)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      pilih(opt);
-                    }
+            {searchable && (
+              <div className="combobox-cari">
+                <Search size={15} aria-hidden="true" />
+                <input
+                  ref={cariRef}
+                  type="text"
+                  inputMode="search"
+                  autoComplete="off"
+                  value={query}
+                  placeholder={searchPlaceholder}
+                  aria-label={searchPlaceholder}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setFocusIdx(0);
                   }}
-                  onMouseEnter={() => setFocusIdx(i)}
-                >
-                  <span className="combobox-option-label">{opt.label}</span>
-                  <span className="combobox-check" aria-hidden="true">
-                    {aktif && <Check size={16} />}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>,
+                />
+              </div>
+            )}
+            <ul id={listId} role="listbox" aria-label={placeholder ?? "Pilihan"} className="combobox-isi">
+              {tampil.map((opt, i) => {
+                const aktif = String(opt.value) === String(value);
+                return (
+                  <li
+                    key={`${opt.value}-${i}`}
+                    data-idx={i}
+                    role="option"
+                    aria-selected={aktif}
+                    tabIndex={-1}
+                    className={`combobox-option ${aktif ? "is-selected" : ""}`}
+                    onClick={() => pilih(opt)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        pilih(opt);
+                      }
+                    }}
+                    onMouseEnter={() => setFocusIdx(i)}
+                  >
+                    <span className="combobox-option-label">{opt.label}</span>
+                    <span className="combobox-check" aria-hidden="true">
+                      {aktif && <Check size={16} />}
+                    </span>
+                  </li>
+                );
+              })}
+              {tampil.length === 0 && <li className="combobox-kosong">Tidak ditemukan</li>}
+            </ul>
+          </div>,
           document.body,
         )}
     </div>

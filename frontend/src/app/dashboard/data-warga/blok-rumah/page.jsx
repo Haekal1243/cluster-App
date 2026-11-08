@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Home, Users, Search } from "lucide-react";
+import { Home, Users, Search } from "lucide-react";
 import { wargaApi } from "@/lib/api";
-import { areaLabel, can, scopeOf } from "@/lib/session";
+import { areaLabel, scopeOf } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
-import { showConfirm, showMessage } from "@/lib/message";
+import { showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
-import RumahFormModal from "@/components/warga/RumahFormModal";
 
 const ALL_RT = ["RT_01", "RT_02", "RT_03", "RT_04"];
 const STATUS_RUMAH = {
@@ -18,11 +17,6 @@ const STATUS_RUMAH = {
   DIHUNI_TETAP: { label: "Tetap", cls: "active" },
   DIHUNI_KONTRAK: { label: "Kontrak", cls: "kontrak" },
 };
-
-function rtYangBoleh(user, kode) {
-  if (scopeOf(user, kode) === "AREA" && user?.area && user.area !== "RW") return [user.area];
-  return ALL_RT;
-}
 
 export default function BlokRumahPage() {
   const { user } = useUser();
@@ -36,25 +30,15 @@ export default function BlokRumahPage() {
   const [draftRT, setDraftRT] = useState("SEMUA");
   const [draftStatus, setDraftStatus] = useState("SEMUA");
 
-  const [rumahModal, setRumahModal] = useState({ open: false, mode: "create", data: null });
-  // Error per sumber agar satu API 403 tidak menghanguskan data lain yang sukses.
   const [gagalWarga, setGagalWarga] = useState(null);
   const [gagalRumah, setGagalRumah] = useState(null);
 
-  const bolehTambah = can(user, "rumah.create");
-  const bolehUbah = can(user, "rumah.update");
-  const bolehHapus = can(user, "rumah.delete");
-  const rtTulis = useMemo(() => rtYangBoleh(user, "rumah.update"), [user]);
-  // Kolom RT cuma relevan buat pengurus RW (lihat lintas-RT); pengurus RT sudah pasti
-  // cuma lihat RT-nya sendiri jadi kolomnya cuma bikin sempit tanpa nambah info.
   const tampilkanRT = !(scopeOf(user, "rumah.read") === "AREA" && user?.area && user.area !== "RW");
 
   const loadData = async () => {
     setIsLoading(true);
     setGagalWarga(null);
     setGagalRumah(null);
-    // Load independen: kegagalan satu sumber (mis. 403 di salah satunya) tidak
-    // boleh menghanguskan data sumber lain yang sebenarnya sukses.
     const [wRes, rRes] = await Promise.allSettled([wargaApi.getAll(), wargaApi.getAllRumah()]);
     if (wRes.status === "fulfilled") {
       setWarga(Array.isArray(wRes.value) ? wRes.value : []);
@@ -119,40 +103,6 @@ export default function BlokRumahPage() {
     rumahFiltered,
     [q, filterRT, filterStatus],
   );
-
-  const handleSubmitRumah = async (payload) => {
-    try {
-      if (rumahModal.mode === "edit" && rumahModal.data) {
-        await wargaApi.updateRumah(rumahModal.data.id, payload);
-        showMessage("Berhasil", "Data rumah berhasil diperbarui.", "success");
-      } else {
-        await wargaApi.createRumah(payload);
-        showMessage("Berhasil", "Rumah baru berhasil ditambahkan.", "success");
-      }
-      setRumahModal({ open: false, mode: "create", data: null });
-      loadData();
-    } catch (error) {
-      showMessage("Gagal Menyimpan", error.message, "error");
-    }
-  };
-
-  const handleDeleteRumah = async (item) => {
-    const ok = await showConfirm(
-      "Hapus data rumah?",
-      `Rumah ${item.blokRumah} akan dihapus.`,
-      "warning",
-      "Ya, hapus",
-      "Batal",
-    );
-    if (!ok) return;
-    try {
-      await wargaApi.deleteRumah(item.id);
-      showMessage("Berhasil", "Data rumah berhasil dihapus.", "success");
-      loadData();
-    } catch (error) {
-      showMessage("Gagal Menghapus", error.message, "error");
-    }
-  };
 
   return (
     <div className="page-stack">
@@ -256,11 +206,6 @@ export default function BlokRumahPage() {
           </FilterPopover>
         </div>
 
-        {bolehTambah && (
-          <button type="button" className="btn-primary" onClick={() => setRumahModal({ open: true, mode: "create", data: null })}>
-            <Plus size={16} /> Tambah
-          </button>
-        )}
       </div>
 
       <div className="table-card">
@@ -269,7 +214,7 @@ export default function BlokRumahPage() {
           <span className="ipl-table-count">{rumahFiltered.length} data</span>
         </div>
         <div className="table-wrapper warga-table-wrapper">
-          <table className="data-table">
+          <table className="data-table tabel-blok-rumah">
             <thead>
               <tr>
                 <th>No</th>
@@ -277,7 +222,7 @@ export default function BlokRumahPage() {
                 {tampilkanRT && <th>RT</th>}
                 <th>Penghuni</th>
                 <th>Status</th>
-                {(bolehUbah || bolehHapus) && <th>Aksi</th>}
+                
               </tr>
             </thead>
             <tbody>
@@ -290,29 +235,13 @@ export default function BlokRumahPage() {
                       <td className="col-judul">{item.blokRumah}</td>
                       {tampilkanRT && <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>}
                       <td>
-                        {item.penghuni ? (
-                          <span className="penghuni-name">{item.penghuni.namaUser}</span>
+                        {(item.penyewa ?? item.penghuni) ? (
+                          <span className="penghuni-name">{(item.penyewa ?? item.penghuni).namaUser}</span>
                         ) : (
                           <span className="penghuni-empty">-</span>
                         )}
                       </td>
                       <td><span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span></td>
-                      {(bolehUbah || bolehHapus) && (
-                        <td>
-                          <div className="table-actions">
-                            {bolehUbah && (
-                              <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
-                                <Pencil size={15} />
-                              </button>
-                            )}
-                            {bolehHapus && (
-                              <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
-                                <Trash2 size={15} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      )}
                     </tr>
                   );
                 })}
@@ -329,25 +258,11 @@ export default function BlokRumahPage() {
                   <h3 className="warga-grid-title">
                     {item.blokRumah}
                     {tampilkanRT && <span className="rt-badge">{areaLabel(item.rt)}</span>}
+                    <span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span>
                   </h3>
                   <span className="meta-item warga-grid-penghuni">
-                    {item.penghuni ? item.penghuni.namaUser : "-"}
+                    {(item.penyewa ?? item.penghuni)?.namaUser ?? "-"}
                   </span>
-                  <div className="warga-grid-footer">
-                    <div className="table-actions">
-                      {bolehUbah && (
-                        <button type="button" className="btn-icon" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
-                          <Pencil size={14} />
-                        </button>
-                      )}
-                      {bolehHapus && (
-                        <button type="button" className="btn-icon danger" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                    <span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span>
-                  </div>
                 </div>
               );
             })}
@@ -363,15 +278,6 @@ export default function BlokRumahPage() {
           <Pagination page={page} totalPages={totalPages} total={rumahFiltered.length} onPrev={prev} onNext={next} />
         )}
       </div>
-
-      <RumahFormModal
-        open={rumahModal.open}
-        mode={rumahModal.mode}
-        initialData={rumahModal.data}
-        allowedRts={rtTulis}
-        onClose={() => setRumahModal({ open: false, mode: "create", data: null })}
-        onSubmit={handleSubmitRumah}
-      />
     </div>
   );
 }

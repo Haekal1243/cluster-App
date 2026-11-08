@@ -1,6 +1,8 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
 import Link from "next/link";
+import { Home, Settings2, UserMinus, UserPlus, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { can } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
@@ -9,8 +11,6 @@ export default function WargaLayout({ children }) {
   const pathname = usePathname();
   const { user } = useUser();
   const bolehApprove = can(user, "warga.approve_registrasi");
-  // Yang punya rumah.create (CRUD penuh, admin) memakai tab "Kelola Rumah"; pengurus RT/RW
-  // yang cuma boleh lihat & ubah memakai tab "Blok Rumah".
   const bolehKelolaRumah = can(user, "rumah.create");
   const bolehLihatTabRumah = can(user, "rumah.read") && !bolehKelolaRumah;
 
@@ -21,13 +21,24 @@ export default function WargaLayout({ children }) {
   const isDataWarga = !isRumah && !isKelolaRumah && !isPendaftaran && !isPengajuanHapus;
   const bolehLihatPengajuanHapus = can(user, "warga.approve_hapus") || can(user, "warga.ajukan_hapus");
 
+  const banner = isRumah
+    ? { id: "blok-rumah", judul: "Blok Rumah", ket: "Daftar unit rumah beserta penghuni dan statusnya di cluster Topaz." }
+    : isKelolaRumah
+    ? { id: "kelola-rumah", judul: "Kelola Rumah", ket: "Tambah, ubah, atau hapus data rumah dan atur kontrak penyewa." }
+    : isPendaftaran
+    ? { id: "pendaftaran", judul: "Pendaftaran Masuk", ket: "Tinjau pendaftaran akun warga baru, lalu setujui atau tolak." }
+    : isPengajuanHapus
+    ? { id: "pengajuan-hapus", judul: "Pengajuan Hapus Akun", ket: "Pengajuan penghapusan akun warga yang menunggu keputusan RW." }
+    : { id: "data-warga", judul: "Data Warga", ket: "Kelola akun dan data warga cluster Topaz." };
+
   return (
     <div className="page-stack">
       <div className="page-toolbar">
         <div>
-          <h2>Data Warga &amp; Rumah</h2>
-          <p>Kelola warga dan unit rumah cluster Topaz.</p>
+          <h2>{banner.judul}</h2>
+          <p>{banner.ket}</p>
         </div>
+        <PageHelp id={banner.id} />
       </div>
 
       <div className="db-section-toggle" role="tablist" aria-label="Data warga atau blok rumah">
@@ -37,7 +48,7 @@ export default function WargaLayout({ children }) {
           aria-selected={isDataWarga}
           className={`db-toggle-btn ${isDataWarga ? "is-active" : ""}`}
         >
-          Data Warga
+          <Users size={14} /> Data Warga
         </Link>
         {bolehLihatTabRumah && (
           <Link
@@ -46,7 +57,7 @@ export default function WargaLayout({ children }) {
             aria-selected={isRumah}
             className={`db-toggle-btn ${isRumah ? "is-active" : ""}`}
           >
-            Blok Rumah
+            <Home size={14} /> Blok Rumah
           </Link>
         )}
         {bolehKelolaRumah && (
@@ -56,7 +67,7 @@ export default function WargaLayout({ children }) {
             aria-selected={isKelolaRumah}
             className={`db-toggle-btn ${isKelolaRumah ? "is-active" : ""}`}
           >
-            Kelola Rumah
+            <Settings2 size={14} /> Kelola Rumah
           </Link>
         )}
         {bolehApprove && (
@@ -66,7 +77,7 @@ export default function WargaLayout({ children }) {
             aria-selected={isPendaftaran}
             className={`db-toggle-btn ${isPendaftaran ? "is-active" : ""}`}
           >
-            Pendaftaran Masuk
+            <UserPlus size={14} /> Pendaftaran Masuk
           </Link>
         )}
         {bolehLihatPengajuanHapus && (
@@ -76,7 +87,7 @@ export default function WargaLayout({ children }) {
             aria-selected={isPengajuanHapus}
             className={`db-toggle-btn ${isPengajuanHapus ? "is-active" : ""}`}
           >
-            Pengajuan Hapus
+            <UserMinus size={14} /> Pengajuan Hapus
           </Link>
         )}
       </div>

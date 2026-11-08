@@ -1,8 +1,6 @@
-/* ============================================================
-   DASHBOARD ADMIN — Metric Cards, Chart, Recent Payments
-   ============================================================ */
 
-/* Metric Grid */
+
+
 .db-metric-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -37,14 +35,14 @@
   flex-shrink: 0;
 }
 
-/* Card tones */
+
 .db-card-primary .db-metric-icon { background: #e0f2fe; color: #0369a1; }
 .db-card-success .db-metric-icon { background: #dcfce7; color: #16a34a; }
 .db-card-warning .db-metric-icon { background: #fffbeb; color: #b45309; }
 .db-card-muted   .db-metric-icon { background: #f1f5f9; color: var(--db-slate-400); }
 .db-card-info    .db-metric-icon { background: #eff6ff; color: #1d4ed8; }
 
-/* Accent left border per tone */
+
 .db-card-primary { border-left: 4px solid #0369a1; }
 .db-card-success { border-left: 4px solid #16a34a; }
 .db-card-warning { border-left: 4px solid #b45309; }
@@ -76,7 +74,7 @@
   color: var(--db-slate-400);
 }
 
-/* Bottom row: chart + recent */
+
 .db-bottom-row {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
@@ -88,7 +86,7 @@
   min-height: 280px;
 }
 
-/* Section header inside card */
+
 .db-section-header {
   display: flex;
   align-items: center;
@@ -126,8 +124,7 @@
 }
 .db-section-link:hover { color: var(--db-primary-hover); }
 
-/* Grup "periode + Lihat semua" — dibungkus 1 unit biar kalau wrap, turun bareng
-   (nggak kepisah dari h3-nya, yang bikin "Lihat semua" nyasar sendirian). */
+
 .db-chart-card .db-section-header,
 .db-recent-card .db-section-header {
   flex-wrap: wrap;
@@ -164,7 +161,7 @@
   }
 }
 
-/* Bar Chart */
+
 .db-chart-wrap {
   flex: 1;
 }
@@ -219,7 +216,7 @@
   font-size: 0.85rem;
 }
 
-/* Chart legend */
+
 .db-chart-legend {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -244,7 +241,7 @@
   color: var(--db-slate-700);
 }
 
-/* Recent Payments List */
+
 .db-recent-list {
   display: flex;
   flex-direction: column;
@@ -304,7 +301,7 @@
   color: var(--db-slate-700);
 }
 
-/* Status dots */
+
 .db-status-dot {
   display: inline-flex;
   align-items: center;
@@ -324,7 +321,7 @@
   font-size: 0.85rem;
 }
 
-/* Responsive */
+
 @media (max-width: 1100px) {
   .db-metric-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -333,7 +330,7 @@
   .db-chart-legend { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
-  /* Dashboard Admin — mobile compact: tetap grid 2x2, bukan collapse 1 kolom */
+
   .welcome-banner {
     padding: 16px 18px;
   }
@@ -344,10 +341,7 @@
   .welcome-banner-sub {
     font-size: 0.72rem;
   }
-  /* Desain Figma mobile: judul selalu 1 baris penuh di atas, tombol Filter
-     turun sejajar subjudul (bukan sejajar judul kayak di desktop). Ini juga
-     yang bikin tombolnya gak pernah kepotong — dia selalu di kolom kanan,
-     gak pernah numpuk jadi baris sendiri yang nempel ke kiri. */
+
   .welcome-banner {
     grid-template-areas: "title title" "sub filter";
     align-items: start;

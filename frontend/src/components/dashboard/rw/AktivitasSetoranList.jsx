@@ -5,7 +5,6 @@ import { ArrowRight } from "lucide-react";
 import { areaLabel } from "@/lib/session";
 import { formatSingkat } from "./format";
 
-/** Log setoran terbaru (maks 5), derive dari tabel setoran. */
 export default function AktivitasSetoranList({ items }) {
   const rows = (items ?? []).slice(0, 5);
   return (

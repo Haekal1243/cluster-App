@@ -14,7 +14,6 @@ import { isPathAllowed } from "@/lib/nav";
 import { useUser } from "@/lib/useUser";
 import { showMessage } from "@/lib/message";
 
-// Otomatis logout kalau tidak ada aktivitas sama sekali selama 15 menit.
 const IDLE_LIMIT_MS = 15 * 60 * 1000;
 const IDLE_EVENTS = ["mousemove", "keydown", "click", "scroll", "touchstart"];
 
@@ -26,8 +25,6 @@ export default function DashboardShell({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
-  // Sekali per pemuatan: ambil hak akses terbaru dari server. Kalau admin baru saja
-  // mengubah jabatan/matriks, menu dan tombol ikut berubah tanpa harus login ulang.
   useEffect(() => {
     if (!getToken() || !getUser()) {
       clearSession();
@@ -41,7 +38,6 @@ export default function DashboardShell({ children }) {
         if (!cancelled) saveUser(fresh);
       })
       .catch(() => {
-        // 401 sudah membersihkan sesi di request(); arahkan ke login.
         if (!cancelled && !getToken()) router.replace("/login");
       });
     return () => {
@@ -49,7 +45,6 @@ export default function DashboardShell({ children }) {
     };
   }, [router]);
 
-  // Guard halaman: berdasarkan permission, bukan nama role.
   useEffect(() => {
     if (!user) return;
     if (!isPathAllowed(user, pathname)) {
@@ -60,7 +55,6 @@ export default function DashboardShell({ children }) {
     setIsAuthorized(true);
   }, [user, pathname, router]);
 
-  // Auto-logout kalau tidak ada aktivitas (mouse/keyboard/klik/scroll) selama 15 menit.
   const idleTimerRef = useRef(null);
 
   const handleIdleTimeout = useCallback(async () => {
@@ -94,15 +88,10 @@ export default function DashboardShell({ children }) {
     };
   }, [isAuthorized, resetIdleTimer]);
 
-  // Hindari rendering tampilan dashboard sebelum otorisasi terkonfirmasi
   if (!isAuthorized) {
     return null;
   }
 
-  // Di layar sempit (mobile), tombol hamburger buka/tutup sidebar overlay.
-  // Di layar lebar (desktop), tombol yang sama menciutkan/melebarkan sidebar.
-  // Menu bawah ala warga di HP juga dipakai akun sistem (Admin) yang menunya sedikit;
-  // nama kelas "is-warga" dipertahankan karena CSS tampilan HP bergantung padanya.
   const isWarga = pakaiMenuBawah(user);
 
   const handleMenuClick = () => {
@@ -127,7 +116,6 @@ export default function DashboardShell({ children }) {
         <Footer />
       </div>
 
-      {/* Login pertama dengan password sementara dari pengurus RT: wajib ganti dulu */}
       {user?.wajibGantiPassword && <GantiPasswordModal wajib />}
 
       {isWarga && <BottomNav user={user} />}

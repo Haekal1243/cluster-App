@@ -31,13 +31,11 @@ import { CurrentUser, RequirePermission } from '../auth/permission.decorators';
 import { Public } from '../auth/public.decorator';
 import type { AuthUser } from '../auth/auth.types';
 
-/** Menu admin "Role & Permission": matriks hak akses seluruhnya disimpan di database. */
 @Controller('rbac')
 @RequirePermission('role', 'manage')
 export class RbacController {
   constructor(private readonly rbacService: RbacService) {}
 
-  /** Role x permission x scope dalam satu panggilan, untuk menggambar matriks. */
   @Get('matrix')
   matrix() {
     return this.rbacService.matrix();
@@ -77,7 +75,6 @@ export class RbacController {
     return this.rbacService.getRolePermissions(id);
   }
 
-  /** Ganti seluruh permission sebuah role (dipakai tombol "Simpan" di matriks). */
   @Put('roles/:id/permissions')
   setRolePermissions(
     @CurrentUser() user: AuthUser,
@@ -93,16 +90,11 @@ export class RbacController {
   }
 }
 
-/** Menu admin "Pengurus": tetapkan siapa yang jadi ketua/bendahara/sekre di RW dan tiap RT. */
 @Controller('pengurus')
 @RequirePermission('pengurus', 'manage')
 export class PengurusController {
   constructor(private readonly pengurusService: PengurusService) {}
 
-  /**
-   * Susunan pengurus untuk landing page publik, tanpa login. Dibatasi 30 permintaan/menit per IP:
-   * cukup untuk pengunjung biasa (satu kali muat per halaman) tapi menyulitkan scraping massal.
-   */
   @Public()
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
@@ -131,7 +123,6 @@ export class PengurusController {
     return this.pengurusService.vacate(user, dto);
   }
 
-  /** Unggah / ganti foto pemegang jabatan (multipart, field `foto`). */
   @Post(':userId/foto')
   @UseInterceptors(FileInterceptor('foto', pengurusMulterOptions))
   setFoto(
@@ -142,7 +133,6 @@ export class PengurusController {
     return this.pengurusService.setFoto(user, userId, foto);
   }
 
-  /** Atur nomor WhatsApp publik pemegang jabatan; kirim kosong untuk menyembunyikannya. */
   @Patch(':userId/kontak')
   setKontak(
     @CurrentUser() user: AuthUser,

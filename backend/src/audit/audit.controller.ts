@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RequirePermission } from '../auth/permission.decorators';
 import { ymRangeToDates } from '../common/periode.helper';
 
-/** Aksi yang dicatat sistem, untuk filter dropdown di halaman Riwayat Aktivitas. */
 export const AKSI_AUDIT = [
   'rumah.ubah_status',
   'ipl.generate',
@@ -17,11 +16,6 @@ export const AKSI_AUDIT = [
   'warga.reset_password',
 ] as const;
 
-/**
- * GET /audit — riwayat aktivitas sensitif (append-only, hanya-baca).
- * Dipakai pimpinan RW memeriksa siapa mengubah apa: flip status rumah,
- * koreksi nominal, generate, konfirmasi, dan setoran.
- */
 @Controller('audit')
 export class AuditController {
   constructor(private prisma: PrismaService) {}

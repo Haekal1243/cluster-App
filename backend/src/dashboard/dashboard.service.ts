@@ -8,7 +8,6 @@ import {
   ymRangeToDates,
 } from '../common/periode.helper';
 
-// RT di RW ini tetap 4 (enum Area/RT) — penyebut "a dari b RT" selalu 4.
 const RT_LIST: RT[] = ['RT_01', 'RT_02', 'RT_03', 'RT_04'];
 
 @Injectable()
@@ -52,8 +51,6 @@ export class DashboardRwService {
         _sum: { nominalIpl: true },
         where: { OR: resolved.periodeOr, rumah: { status: { not: 'KOSONG' } } },
       }),
-      // Diterima = total setoran utuh (semantik sama dengan summary menu
-      // Setoran: setoran dihitung penuh di tiap periode yang disentuhnya).
       this.prisma.setoranIpl.findMany({
         where: {
           status: 'DIKONFIRMASI',
@@ -115,9 +112,6 @@ export class DashboardRwService {
         where: { area: 'RW' },
         select: { tipe: true, nominal: true },
       }),
-      // Setoran IPL periode ini dihitung per tagihan (sum nominalIpl) agar
-      // 1:1 dengan keuangan.service getRingkasan area=RW (bukan totalIpl
-      // utuh per setoran yang bisa double-count lintas bulan).
       this.prisma.ipl.findMany({
         where: { OR: resolved.periodeOr, setoran: { status: 'DIKONFIRMASI' } },
         select: {
@@ -128,7 +122,6 @@ export class DashboardRwService {
         },
       }),
 
-      //saldo kas RW - All time no period
       this.prisma.ipl.findMany({
         where: { setoran: { status: 'DIKONFIRMASI' } },
         select: { nominalIpl: true },
@@ -150,7 +143,6 @@ export class DashboardRwService {
       }),
     ]);
 
-    // ── KPI 1: diterima vs tertagih (per tagihan, sesuai periode masing-masing) ──
     const iplTertagih = tertagihAgg._sum.nominalIpl ?? 0;
     const diterima = setoranPeriodeIpl.reduce((s, r) => s + r.nominalIpl, 0);
     const rtSudahSetor = new Set(
@@ -161,11 +153,9 @@ export class DashboardRwService {
         ? Math.min(100, Math.round((diterima / iplTertagih) * 100))
         : null;
 
-    // ── KPI 2: menunggu ──
     const tungguNominal = setoranTunggu.reduce((s, r) => s + r.totalIpl, 0);
     const tungguRt = new Set(setoranTunggu.map((r) => r.area));
 
-    // ── Agregat per RT untuk KPI 3 ──
     const terkumpul: Record<string, number> = {};
     const rtAdaTagihan = new Set<string>();
     for (const r of tagihanRtRows) rtAdaTagihan.add(r.rumah.rt);
@@ -182,7 +172,6 @@ export class DashboardRwService {
     for (const r of setoranTunggu) {
       tungguPerRt[r.area] = (tungguPerRt[r.area] ?? 0) + r.totalIpl;
     }
-    // Setoran terakhir per RT di periode ini (untuk status mini-list).
     const terakhirPerRt: Record<string, { status: string; tgl: Date }> = {};
     const catatTerakhir = (area: string, status: string, tgl: Date | null, fallback: Date) => {
       const t = tgl ?? fallback;
@@ -209,9 +198,6 @@ export class DashboardRwService {
       .sort((a, b) => b.nominal - a.nominal);
     const belumTotal = belumItems.reduce((s, r) => s + r.nominal, 0);
 
-    // ── KPI 4: kas RW (Opsi A — mirror keuangan.service area=RW) ──
-    // Saldo = setoran IPL DIKONFIRMASI + manual RW (tanpa kas RT yang
-    // masih dipegang RT). Masuk periode = setoran periode + manual masuk.
     const sumRows = (rows: { nominal: number }[]) =>
       rows.reduce((s, r) => s + r.nominal, 0);
     const setoranMasuk = diterima;
@@ -232,9 +218,6 @@ export class DashboardRwService {
       sumRows(kasSemua.filter((t) => t.tipe === 'PEMASUKAN')) -
       sumRows(kasSemua.filter((t) => t.tipe === 'PENGELUARAN'));
 
-    // ── Tren mengikuti range terpilih (default 1 bar bulan berjalan).
-    // Bar per bulan = total utuh setoran DIKONFIRMASI yang menyentuh bulan itu
-    // (semantik `some`, sama dengan menu Setoran & KPI).
     const trenDiterima = new Map<string, number>();
     for (const r of setoranPeriodeIpl) {
       const key = `${r.tahunPeriode}-${r.bulanPeriode}`;
@@ -252,7 +235,6 @@ export class DashboardRwService {
       };
     });
 
-    // ── Perlu tindakan ──
     const rtAdaSusulan = new Set([
       ...setoranDikonf.map((r) => r.area),
       ...setoranTunggu.map((r) => r.area),
@@ -296,7 +278,6 @@ export class DashboardRwService {
           keluar,
           keluarCount,
           net: masuk - keluar,
-          // Breakdown agar frontend bisa menampilkan "termasuk Setor IPL".
           setoranMasuk,
           setoranCount: setoranDikonf.length,
           manualMasuk,

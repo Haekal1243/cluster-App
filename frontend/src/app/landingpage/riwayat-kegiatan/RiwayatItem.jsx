@@ -5,7 +5,6 @@ import { Star, X } from "lucide-react";
 
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
-/** Satu baris riwayat; kalau diklik membuka pop up berisi foto, tanggal, judul, dan deskripsi lengkap. */
 export default function RiwayatItem({ kegiatan: k, img, akanDatang }) {
   const [buka, setBuka] = useState(false);
   const masukan = k.masukan;

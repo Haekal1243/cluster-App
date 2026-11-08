@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, Home, Users, Search } from "lucide-react";
 import { wargaApi } from "@/lib/api";
-import { areaLabel } from "@/lib/session";
+import { areaLabel, can, scopeOf } from "@/lib/session";
+import { useUser } from "@/lib/useUser";
 import { showConfirm, showMessage } from "@/lib/message";
 import FilterPopover, { FilterField } from "@/components/ui/FilterPopover";
 import Pagination from "@/components/ui/Pagination";
 import Select from "@/components/ui/Select";
 import { usePagination } from "@/lib/usePagination";
 import RumahFormModal from "@/components/warga/RumahFormModal";
+import KontrakRumahModal from "@/components/warga/KontrakRumahModal";
 
 const ALL_RT = ["RT_01", "RT_02", "RT_03", "RT_04"];
 const STATUS_RUMAH = {
@@ -30,6 +32,13 @@ export default function KelolaRumahPage() {
   const [draftStatus, setDraftStatus] = useState("SEMUA");
 
   const [rumahModal, setRumahModal] = useState({ open: false, mode: "create", data: null });
+  const [kontrakRumah, setKontrakRumah] = useState(null);
+  const { user } = useUser();
+  const bolehKontrak = !!user && can(user, "rumah.kontrak");
+  const bolehTambah = !!user && can(user, "rumah.create");
+  const bolehUbah = !!user && can(user, "rumah.update");
+  const bolehHapus = !!user && can(user, "rumah.delete");
+  const rtBoleh = user && scopeOf(user, "rumah.update") === "AREA" && user.area && user.area !== "RW" ? [user.area] : ALL_RT;
 
   const loadData = async () => {
     setIsLoading(true);
@@ -208,9 +217,11 @@ export default function KelolaRumahPage() {
           </FilterPopover>
         </div>
 
-        <button type="button" className="btn-primary" onClick={() => setRumahModal({ open: true, mode: "create", data: null })}>
-          <Plus size={16} /> Tambah
-        </button>
+        {bolehTambah && (
+          <button type="button" className="btn-primary" onClick={() => setRumahModal({ open: true, mode: "create", data: null })}>
+            <Plus size={16} /> Tambah
+          </button>
+        )}
       </div>
 
       <div className="table-card">
@@ -227,7 +238,7 @@ export default function KelolaRumahPage() {
                 <th>RT</th>
                 <th>Penghuni</th>
                 <th>Status</th>
-                <th>Aksi</th>
+                <th className="th-aksi">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -240,8 +251,8 @@ export default function KelolaRumahPage() {
                       <td className="col-judul">{item.blokRumah}</td>
                       <td><span className="rt-badge">{areaLabel(item.rt)}</span></td>
                       <td>
-                        {item.penghuni ? (
-                          <span className="penghuni-name">{item.penghuni.namaUser}</span>
+                        {(item.penyewa ?? item.penghuni) ? (
+                          <span className="penghuni-name">{(item.penyewa ?? item.penghuni).namaUser}</span>
                         ) : (
                           <span className="penghuni-empty">-</span>
                         )}
@@ -249,12 +260,21 @@ export default function KelolaRumahPage() {
                       <td><span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span></td>
                       <td>
                         <div className="table-actions">
-                          <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
-                            <Pencil size={15} />
-                          </button>
-                          <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
-                            <Trash2 size={15} />
-                          </button>
+                          {bolehUbah && (
+                            <button type="button" className="btn-icon" title="Ubah" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
+                              <Pencil size={15} />
+                            </button>
+                          )}
+                          {bolehKontrak && (
+                            <button type="button" className="btn-icon" title="Kontrak penyewa" aria-label="Kontrak penyewa" onClick={() => setKontrakRumah(item)}>
+                              <Users size={15} />
+                            </button>
+                          )}
+                          {bolehHapus && (
+                            <button type="button" className="btn-icon danger" title="Hapus" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
+                              <Trash2 size={15} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -275,16 +295,25 @@ export default function KelolaRumahPage() {
                     <span className="rt-badge">{areaLabel(item.rt)}</span>
                   </h3>
                   <span className="meta-item warga-grid-penghuni">
-                    {item.penghuni ? item.penghuni.namaUser : "-"}
+                    {(item.penyewa ?? item.penghuni)?.namaUser ?? "-"}
                   </span>
                   <div className="warga-grid-footer">
                     <div className="table-actions">
-                      <button type="button" className="btn-icon" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
-                        <Pencil size={14} />
-                      </button>
-                      <button type="button" className="btn-icon danger" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
-                        <Trash2 size={14} />
-                      </button>
+                      {bolehUbah && (
+                        <button type="button" className="btn-icon" aria-label="Ubah rumah" onClick={() => setRumahModal({ open: true, mode: "edit", data: item })}>
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                      {bolehKontrak && (
+                        <button type="button" className="btn-icon" aria-label="Kontrak penyewa" onClick={() => setKontrakRumah(item)}>
+                          <Users size={14} />
+                        </button>
+                      )}
+                      {bolehHapus && (
+                        <button type="button" className="btn-icon danger" aria-label="Hapus rumah" onClick={() => handleDeleteRumah(item)}>
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                     <span className={`status-badge ${st.cls}`}>{item.status === "KOSONG" ? (item.userId ? "Kosong · ada pemilik" : "Kosong · belum daftar") : st.label}</span>
                   </div>
@@ -304,11 +333,21 @@ export default function KelolaRumahPage() {
         )}
       </div>
 
+      <KontrakRumahModal
+        key={kontrakRumah?.id ?? "kontrak"}
+        rumah={kontrakRumah}
+        onClose={() => setKontrakRumah(null)}
+        onSelesai={() => {
+          setKontrakRumah(null);
+          loadData();
+        }}
+      />
+
       <RumahFormModal
         open={rumahModal.open}
         mode={rumahModal.mode}
         initialData={rumahModal.data}
-        allowedRts={ALL_RT}
+        allowedRts={rtBoleh}
         onClose={() => setRumahModal({ open: false, mode: "create", data: null })}
         onSubmit={handleSubmitRumah}
       />

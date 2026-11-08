@@ -1,6 +1,8 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
 import { useState } from "react";
+import { CalendarDays, MessageSquareText } from "lucide-react";
 import PublikasiManager from "@/components/publikasi/PublikasiManager";
 import KegiatanFormModal from "@/components/kegiatan/KegiatanFormModal";
 import KegiatanDetailModal from "@/components/kegiatan/KegiatanDetailModal";
@@ -16,19 +18,19 @@ export default function KegiatanPage() {
   const [tab, setTab] = useState("daftar");
   const bolehLihatFeedback = ready && can(user, "kegiatan.feedback_lihat");
 
+  const tabs = bolehLihatFeedback ? (
+    <div className="db-section-toggle" role="tablist" aria-label="Daftar kegiatan atau feedback">
+      <button type="button" role="tab" aria-selected={tab === "daftar"} className={`db-toggle-btn ${tab === "daftar" ? "is-active" : ""}`} onClick={() => setTab("daftar")}>
+        <CalendarDays size={14} /> Daftar Kegiatan
+      </button>
+      <button type="button" role="tab" aria-selected={tab === "feedback"} className={`db-toggle-btn ${tab === "feedback" ? "is-active" : ""}`} onClick={() => setTab("feedback")}>
+        <MessageSquareText size={14} /> Feedback
+      </button>
+    </div>
+  ) : null;
+
   return (
     <div className="page-stack">
-      {bolehLihatFeedback && (
-        <div className="db-section-toggle" role="tablist" aria-label="Daftar kegiatan atau feedback">
-          <button type="button" role="tab" aria-selected={tab === "daftar"} className={`db-toggle-btn ${tab === "daftar" ? "is-active" : ""}`} onClick={() => setTab("daftar")}>
-            Daftar Kegiatan
-          </button>
-          <button type="button" role="tab" aria-selected={tab === "feedback"} className={`db-toggle-btn ${tab === "feedback" ? "is-active" : ""}`} onClick={() => setTab("feedback")}>
-            Feedback
-          </button>
-        </div>
-      )}
-
       {tab === "feedback" && bolehLihatFeedback ? (
         <>
           <div className="page-toolbar">
@@ -36,7 +38,9 @@ export default function KegiatanPage() {
               <h2>Feedback Kegiatan</h2>
               <p>Penilaian dan komentar warga setelah kegiatan. Warga yang memilih anonim tidak tampil namanya.</p>
             </div>
+            <PageHelp id="kegiatan-feedback" />
           </div>
+          {tabs}
           <FeedbackTab user={user} />
         </>
       ) : (
@@ -52,6 +56,7 @@ export default function KegiatanPage() {
           dateField="tanggalAcara"
           dateLabel="Acara"
           searchFields={SEARCH_FIELDS}
+          tabs={tabs}
         />
       )}
     </div>

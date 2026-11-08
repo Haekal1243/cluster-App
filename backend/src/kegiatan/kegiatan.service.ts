@@ -21,7 +21,6 @@ import {
   visibilitasWhere,
 } from '../common/publikasi.helper';
 
-/** Kegiatan dianggap non-aktif mulai 7 hari setelah tanggal acara; ini batas tanggal acara terlamanya. */
 const batasAktif = () => {
   const d = new Date();
   d.setDate(d.getDate() - 7);
@@ -47,14 +46,10 @@ export class KegiatanService {
     private files: FileService,
   ) {}
 
-  /** Apakah user ini berhak menyetujui pengajuan (menentukan boleh atur portofolio & durasi tampil). */
   private async bolehApprove(ctx: AccessContext) {
     return (await this.permissions.scopeOf(ctx.user.roleId, 'kegiatan.approve')) !== null;
   }
 
-  // ================================================================
-  // CRUD
-  // ================================================================
 
   async create(ctx: AccessContext, dto: CreateKegiatanDto, file?: Express.Multer.File) {
     if (!file) {
@@ -96,8 +91,6 @@ export class KegiatanService {
     return { message: 'Kegiatan berhasil dibuat', data };
   }
 
-  /** Daftar untuk halaman kelola. Filter opsional: ?pengajuan=DIAJUKAN, ?area=RT_01 (scope ALL). */
-  /** Alasan penolakan RW adalah catatan internal pengurus: warga biasa tidak ikut menerimanya. */
   private async sembunyikanAlasan<T extends { alasanTolak?: string | null }>(ctx: AccessContext, rows: T[]): Promise<T[]> {
     if ((await this.permissions.scopeOf(ctx.user.roleId, 'kegiatan.update')) !== null) return rows;
     return rows.map((r) => ({ ...r, alasanTolak: null }));
@@ -111,13 +104,11 @@ export class KegiatanService {
       where: { AND: and },
       orderBy: { tanggalAcara: 'desc' },
     });
-    // Kegiatan otomatis non-aktif seminggu setelah tanggal acara (tanpa menulis ke DB).
     const batas = batasAktif();
     const hasil = rows.map((k) => (k.tanggalAcara < batas ? { ...k, status: 'unactived' as const } : k));
     return this.sembunyikanAlasan(ctx, hasil);
   }
 
-  /** Umpan dashboard warga: yang boleh dilihatnya, aktif, dan belum lewat batas tampil. */
   async feed(ctx: AccessContext) {
     const rows = await this.prisma.kegiatan.findMany({
       where: {
@@ -133,11 +124,9 @@ export class KegiatanService {
     return this.sembunyikanAlasan(ctx, rows);
   }
 
-  /** Publik (landing): hanya konten level RW / yang sudah di-ACC RW. */
   private readonly cacheActive = new TtlCache<unknown[]>(15_000);
 
   findActive(scope?: 'aktif' | 'arsip') {
-    // Endpoint landing page: dibaca tiap pengunjung, jadi hasilnya dipakai ulang beberapa detik.
     return this.cacheActive.get(scope ?? 'aktif', () => this.queryActive(scope));
   }
 
@@ -152,7 +141,6 @@ export class KegiatanService {
         select: RINGKAS,
       });
     }
-    // default aktif: akan datang/berlangsung (tanggalAcara >= hari ini) + status active
     return this.prisma.kegiatan.findMany({
       where: { isDelete: false, status: 'active', ...tampilKeSemua, tanggalAcara: { gte: today } },
       orderBy: { tanggalAcara: 'asc' },
@@ -161,12 +149,6 @@ export class KegiatanService {
     });
   }
 
-  /**
-   * Publik (landing): riwayat kegiatan yang diaktifkan tampil, dikelompokkan per tahun.
-   * `tahunTersedia` hanya berisi tahun yang benar-benar punya data (untuk filter); `tahun` opsional
-   * mempersempit hasil ke satu tahun tsb. Masukan warga ikut dikirim TANPA identitas (anonim maupun tidak),
-   * dan yang disembunyikan pengurus tidak ikut.
-   */
   async portofolio(tahunDipilih?: number) {
     const dasar: Prisma.KegiatanWhereInput = {
       isDelete: false,
@@ -228,7 +210,6 @@ export class KegiatanService {
     return (await this.sembunyikanAlasan(ctx, [kegiatan]))[0];
   }
 
-  /** Ambil untuk diubah/dihapus: harus di dalam wilayah tulis user. */
   private async findForWrite(ctx: AccessContext, id: number) {
     const kegiatan = await this.prisma.kegiatan.findFirst({ where: { id, isDelete: false } });
     if (!kegiatan) {
@@ -259,7 +240,6 @@ export class KegiatanService {
           tampilDiLanding: dto.tampilDiLanding,
           tampilSampai: tampilSampaiDari(dto.durasiHari),
         }),
-        // Isi diubah setelah diajukan/disetujui: harus diajukan ulang supaya tidak lolos ACC dengan konten lain.
         ...(!approver &&
           (existing.statusPengajuan === 'DIAJUKAN' || existing.statusPengajuan === 'DISETUJUI') && {
             statusPengajuan: 'TIDAK' as const,
@@ -295,9 +275,6 @@ export class KegiatanService {
     return { message: 'Kegiatan berhasil dihapus' };
   }
 
-  // ================================================================
-  // PENGAJUAN TAMPIL KE SELURUH RW — sekre RT mengajukan, ketua/sekre RW memutuskan
-  // ================================================================
 
   async ajukan(ctx: AccessContext, id: number) {
     const kegiatan = await this.findForWrite(ctx, id);

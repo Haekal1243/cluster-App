@@ -1,25 +1,14 @@
 const TOKEN_KEY = "accessToken";
 const USER_KEY = "user";
 
-// App terinstall (PWA "Add to Home Screen"/"Install") dijalankan di jendela standalone
-// tanpa chrome browser. sessionStorage di situ ikut mati tiap Android membunuh proses
-// app di background — pengguna jadi otomatis ter-logout tiap buka app lagi, padahal
-// app yang sudah diinstall di HP pribadi itu wajar selalu "diingat" (sama kayak app
-// native lain). Jadi sesi WAJIB localStorage di mode ini, apapun pilihan "Ingat saya".
 function isStandalonePwa() {
   if (typeof window === "undefined") return false;
   return (
     window.matchMedia?.("(display-mode: standalone)")?.matches === true ||
-    window.navigator.standalone === true // properti lama khusus Safari/iOS
+    window.navigator.standalone === true
   );
 }
 
-// Sesi yang kesimpen di sessionStorage SEBELUM fix standalone-PWA di atas ada (atau sempat
-// gagal kedetek standalone pas login) tidak otomatis pindah ke localStorage — baru pindah
-// kalau ada pemicu lain (mis. authApi.me() refresh). Kalau di antara login dan pemicu itu
-// Android keburu bunuh proses app (biasa kejadian pas user mondar-mandir pencet back),
-// sessionStorage-nya ilang duluan dan user ke-logout padahal sudah "seharusnya" localStorage.
-// Jadi tiap baca sesi di mode standalone, langsung pindahkan paksa — jangan nunggu dipicu apa pun.
 function migrasiKeLocalStorageJikaStandalone() {
   if (!isStandalonePwa()) return;
   const token = sessionStorage.getItem(TOKEN_KEY);
@@ -51,8 +40,6 @@ export function setToken(token, remember) {
   }
 }
 
-// Ganti kata sandi membatalkan semua token lama (termasuk token sesi ini); backend mengirim token
-// baru dan kita tulis ke penyimpanan yang sama dengan token lama supaya mode "Ingat saya" tidak berubah.
 export function replaceToken(token) {
   if (typeof window === "undefined" || !token) return;
   if (localStorage.getItem(TOKEN_KEY)) localStorage.setItem(TOKEN_KEY, token);
@@ -67,13 +54,7 @@ export function clearSession() {
   sessionStorage.removeItem(TOKEN_KEY);
 }
 
-// ── User + hak akses ─────────────────────────────────────────────────────
-// Backend adalah sumber kebenaran hak akses (tabel tb_Role_permission). Yang
-// disimpan di sini hanya salinan untuk menyusun menu dan tombol; setiap aksi
-// tetap divalidasi ulang oleh backend.
 
-// Data user mengikuti token: "Ingat saya" -> localStorage (bertahan), tidak -> sessionStorage
-// (hilang saat tab ditutup), supaya profil orang sebelumnya tidak tertinggal di komputer bersama.
 export function getUser() {
   if (typeof window === "undefined") return null;
   migrasiKeLocalStorageJikaStandalone();
@@ -85,14 +66,8 @@ export function getUser() {
   }
 }
 
-/**
- * `remember` diisi saat login. Saat menyegarkan data (tanpa argumen) user tetap disimpan
- * di storage tempat ia berada sekarang.
- */
 export function saveUser(user, remember) {
   if (typeof window === "undefined") return;
-  // Di mode standalone, paksa localStorage walau sebelumnya (pra-fix) sempat kesimpen di
-  // sessionStorage — jadi otomatis "sembuh" sendiri begitu sesi di-refresh (lihat DashboardShell).
   const pakaiSession = isStandalonePwa()
     ? false
     : remember === undefined
@@ -101,50 +76,39 @@ export function saveUser(user, remember) {
   const [tujuan, lain] = pakaiSession ? [sessionStorage, localStorage] : [localStorage, sessionStorage];
   lain.removeItem(USER_KEY);
   tujuan.setItem(USER_KEY, JSON.stringify(user));
-  // Kabari komponen lain (sidebar, header) di tab ini bahwa user berubah.
   window.dispatchEvent(new Event("user-updated"));
 }
 
-/** Scope permission ("ALL" | "AREA" | "OWN") atau null bila tidak punya. */
 export function scopeOf(user, kode) {
   return user?.permissions?.[kode] ?? null;
 }
 
-/** Apakah user punya permission `kode` (mis. "ipl.generate")? */
 export function can(user, kode) {
   return scopeOf(user, kode) !== null;
 }
 
-/** Punya salah satu dari beberapa permission? */
 export function canAny(user, kodeList) {
   return kodeList.some((k) => can(user, k));
 }
 
-/** Level warga (level 3): melihat tampilan portal warga, bukan tampilan pengurus. */
 export function isWargaView(user) {
   return user?.roleLevel === 3;
 }
 
-/** Tampilan HP dengan menu bawah: warga, dan akun sistem tanpa ipl.read (mis. Admin). Pengurus RT/RW tetap pakai sidebar. */
 export function pakaiMenuBawah(user) {
   return !!user && (isWargaView(user) || !can(user, "ipl.read"));
 }
 
-/** Pengurus RT: bukan warga, area-nya RT_xx (scope AREA). Jabatan (ketua/sekre/bendahara)
-// dibedakan lewat permission, bukan lewat sini. */
 export function isPengurusRt(user) {
   if (!user || isWargaView(user)) return false;
   return !!user.area && user.area !== "RW";
 }
 
-/** Pengurus RW: bukan warga dan bukan pengurus RT (area RW / scope ALL / admin). */
 export function isPengurusRw(user) {
   if (!user || isWargaView(user)) return false;
   return !isPengurusRt(user);
 }
 
-/** Audiens tampilan: "warga" | "rt" | "rw" (null bila user belum ada).
- * Satu-satunya tempat logika RT-vs-RW; file view/route hanya panggil helper ini. */
 export function audienceOf(user) {
   if (!user) return null;
   if (isWargaView(user)) return "warga";

@@ -12,7 +12,6 @@ import { sidikJariSandi } from './token-fingerprint';
 
 export const SALT_ROUNDS = 10;
 
-/** Masa berlaku token bila "Ingat saya" dicentang; selain itu pakai JWT_EXPIRES_IN (default 1d). */
 const REMEMBER_EXPIRES_IN = '30d';
 
 const INVALID_CREDENTIALS_MSG = 'Nama pengguna atau kata sandi salah.';
@@ -30,9 +29,8 @@ export class AuthService {
     const id = identifier?.trim();
     if (!id || !password) throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
 
-    // Login utama pakai username (default no HP); email tetap diterima bila ada.
     const user = await this.prisma.user.findFirst({
-      where: { OR: [{ username: id }, { email: id }] },
+      where: { username: id },
     });
     if (!user) throw new UnauthorizedException(INVALID_CREDENTIALS_MSG);
 
@@ -51,7 +49,6 @@ export class AuthService {
     };
   }
 
-  /** Profil user + seluruh permission role-nya (dipakai frontend untuk menyusun menu). */
   async profile(userId: number) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
@@ -62,7 +59,6 @@ export class AuthService {
       nama: user.namaUser,
       name: user.namaUser,
       username: user.username,
-      email: user.email,
       noTelp: user.noTelp,
       role: user.role.kode,
       roleNama: user.role.nama,
@@ -89,7 +85,6 @@ export class AuthService {
     });
     await this.audit.catat(userId, 'password.ganti', { target: 'User', targetId: userId });
 
-    // Semua token lama kini tidak berlaku (lihat JwtAuthGuard); beri token baru untuk sesi yang sedang berjalan.
     const token = await this.jwtService.signAsync({
       sub: user.id,
       username: user.username,

@@ -6,7 +6,6 @@ import { AuditController } from './audit.controller';
 export class AuditService {
   constructor(private prisma: PrismaService) {}
 
-  /** Catat aksi sensitif. Kegagalan mencatat tidak boleh menggagalkan aksinya. */
   async catat(
     idUser: number | null,
     aksi: string,

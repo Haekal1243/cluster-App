@@ -73,7 +73,6 @@ function periodeLabelMenunggu(p) {
   return `${SD_BULAN[Number(ipl.bulanPeriode) - 1] || ipl.bulanPeriode} ${ipl.tahunPeriode}`;
 }
 
-/** Blok konteks collapsed (info tambahan, bukan konten utama). */
 export function SetoranKonteks({ konteks }) {
   if (!konteks) return null;
   const kosong = konteks.kosongDikecualikan ?? [];

@@ -34,7 +34,6 @@ async function request(path, options = {}) {
 
 export const PROTECTED_FILE_EVENT = "protected-file:open";
 
-/** Unduh file yang dilindungi (butuh login), lalu tampilkan di pop up (ProtectedFileViewer). */
 export async function openProtectedFile(path) {
   const token = getToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -49,11 +48,8 @@ export async function openProtectedFile(path) {
   window.dispatchEvent(new CustomEvent(PROTECTED_FILE_EVENT, { detail: { url, type: blob.type } }));
 }
 
-/** URL file publik (foto/gambar/lampiran); isinya disimpan di database, bukan folder statis. */
 export const fileUrl = (id) => (id ? `${API_BASE_URL}/files/${id}` : null);
 
-/** Ambil isi file yang dilindungi (butuh login) sebagai Blob — dipakai untuk menyisipkan
- * gambar/PDF lampiran ke dalam PDF yang di-generate di klien (jsPDF/pdf-lib). */
 export async function fetchProtectedFileBlob(path) {
   const token = getToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -93,7 +89,6 @@ function qs(params = {}) {
   return s ? `?${s}` : "";
 }
 
-// ── Auth ────────────────────────────────────────────────────────────────
 export const authApi = {
   login: ({ username, password, remember }) =>
     request("/auth/login", json("POST", { username, password, remember: remember === true })),
@@ -102,7 +97,6 @@ export const authApi = {
     request("/auth/ganti-password", json("POST", { passwordLama, passwordBaru })),
 };
 
-// ── Pengumuman & Kegiatan (per area, dengan alur pengajuan ke RW) ───────
 export const pengumumanApi = {
   getAll: (params) => request(`/pengumuman${qs(params)}`),
   getFeed: () => request("/pengumuman/feed"),
@@ -137,7 +131,6 @@ export const kegiatanApi = {
   ajukan: (id) => request(`/kegiatan/${id}/ajukan`, { method: "POST" }),
   putuskanPengajuan: (id, payload) => request(`/kegiatan/${id}/pengajuan`, json("PATCH", payload)),
 
-  // Masukan warga
   feedbackRekap: () => request("/kegiatan/feedback/rekap"),
   feedbackDaftar: (id) => request(`/kegiatan/${id}/feedback`),
   feedbackBisaDiberi: () => request("/kegiatan/feedback/bisa-diberi"),
@@ -148,28 +141,28 @@ export const kegiatanApi = {
   imageUrl: fileUrl,
 };
 
-// ── Warga & rumah ───────────────────────────────────────────────────────
 export const wargaApi = {
   getAll: ({ search, rt } = {}) => request(`/warga${qs({ search, rt })}`),
   getAllUsers: () => request("/warga/users"),
+  saranUsername: ({ nama, noHp, abaikanId }) => request(`/warga/username/saran${qs({ nama, noHp, abaikanId })}`),
+  cekUsername: ({ username, abaikanId }) => request(`/warga/username/cek${qs({ username, abaikanId })}`),
   create: (payload) => request("/warga", json("POST", payload)),
   update: (id, payload) => request(`/warga/${id}`, json("PATCH", payload)),
   remove: (id) => request(`/warga/${id}`, { method: "DELETE" }),
   resetPassword: (id) => request(`/warga/${id}/reset-password`, { method: "POST" }),
 
-  // Pengajuan hapus akun: diajukan sekre RT, diputuskan RW.
   ajukanHapus: (id, alasan) => request(`/warga/${id}/ajukan-hapus`, json("POST", { alasan })),
   getPengajuanHapus: (status) => request(`/warga/pengajuan-hapus${qs({ status })}`),
   setujuiHapus: (id) => request(`/warga/pengajuan-hapus/${id}/setuju`, { method: "PATCH" }),
   tolakHapus: (id, alasan) => request(`/warga/pengajuan-hapus/${id}/tolak`, json("PATCH", { alasan })),
 
-  // Rumah / blok
   getAllRumah: () => request("/warga/rumah/list"),
   createRumah: (payload) => request("/warga/rumah", json("POST", payload)),
   updateRumah: (id, payload) => request(`/warga/rumah/${id}`, json("PATCH", payload)),
   deleteRumah: (id) => request(`/warga/rumah/${id}`, { method: "DELETE" }),
+  mulaiKontrak: (id, penyewaId) => request(`/warga/rumah/${id}/kontrak`, json("POST", { penyewaId })),
+  akhiriKontrak: (id, statusSetelah) => request(`/warga/rumah/${id}/kontrak`, json("DELETE", { statusSetelah })),
 
-  // Registrasi mandiri (Bagian 3) — dua yang pertama publik, tanpa token.
   getRumahKosong: (rt) => request(`/warga/rumah-kosong${qs({ rt })}`),
   daftarMandiri: (payload) => request("/warga/daftar", json("POST", payload)),
   getPendaftaran: (status) => request(`/warga/pendaftaran${qs({ status })}`),
@@ -180,42 +173,32 @@ export const wargaApi = {
 };
 
 export const portalApi = {
-  // Portal Warga endpoints
   getRumahByUser: (userId) => request(`/warga/portal/rumah/${userId}`),
   getTagihanByRumah: (rumahId) => request(`/warga/portal/tagihan/${rumahId}`),
   getTagihanByUser: (userId, { bulan, tahun, dari, sampai, status, search } = {}) => {
-    // Range diutamakan bila diberikan (mirror filter keuangan/tagihan admin)
     const params = dari || sampai ? { dari, sampai } : { bulan, tahun };
     return request(`/warga/portal/tagihan/user/${userId}${qs({ ...params, status, search })}`);
   },
 
-  // Selalu atas nama user yang login; idUser dari klien diabaikan backend.
   uploadBuktiPembayaran: (payload) =>
     request("/warga/portal/bayar", { method: "POST", body: buildFormData(payload) }),
 
-  // Path endpoint terautentikasi (bukan URL statis) — dipakai lewat <ProtectedImage>.
   buktiPath: (pembayaranId) => (pembayaranId ? `/ipl/pembayaran/${pembayaranId}/bukti` : null),
 };
 
-// ── Tagihan IPL: warga membayar total (IPL + kas RT) ────────────────────
 export const iplApi = {
-  // Generate tagihan massal untuk RT pembuat: { bulanPeriode, tahunPeriode, nominalIpl, nominalKas, rt? }
   generate: (payload) => request("/ipl/generate", json("POST", payload)),
 
-  // Filter: bulan+tahun tunggal atau range dari/sampai (YYYY-MM); rt hanya berlaku untuk scope ALL
   getAll: ({ bulan, tahun, dari, sampai, status, search, rt } = {}) => {
     const periode = dari || sampai ? { dari, sampai } : { bulan, tahun };
     return request(`/ipl${qs({ ...periode, status, search, rt })}`);
   },
 
-  // Statistik ringkasan untuk dashboard (filter rentang periode YYYY-MM, maks 12 bulan)
   getDashboardStats: ({ dari, sampai, rt } = {}) =>
     request(`/ipl/dashboard-stats${qs({ dari, sampai, rt })}`),
 
-  // Rekap terkumpul & disetor per RT (tampilan RW, ikut filter aktif periode/status/rt)
   getRekapRt: ({ dari, sampai, status, rt } = {}) => request(`/ipl/rekap-rt${qs({ dari, sampai, status, rt })}`),
 
-  // Konfirmasi atau tolak pembayaran
   konfirmasi: (pembayaranId, payload) =>
     request(`/ipl/konfirmasi/${pembayaranId}`, json("PATCH", payload)),
 
@@ -223,7 +206,6 @@ export const iplApi = {
   remove: (id) => request(`/ipl/${id}`, { method: "DELETE" }),
 };
 
-// ── Setoran IPL: RT menyetor porsi IPL ke bendahara RW ──────────────────
 export const setoranApi = {
   getSiapSetor: ({ rt } = {}) => request(`/setoran/siap-setor${qs({ rt })}`),
   create: ({ bukti, rt }) =>
@@ -235,29 +217,23 @@ export const setoranApi = {
 };
 
 export const auditApi = {
-  // Riwayat aktivitas sensitif (filter: aksi, search, periode YYYY-MM)
   getAll: ({ aksi, search, dari, sampai, limit } = {}) =>
     request(`/audit${qs({ aksi, search, dari, sampai, limit })}`),
 };
 
-// ── Dashboard Bendahara RW: agregat setoran IPL + kas RW (filter rentang YYYY-MM) ──
 export const dashboardRwApi = {
   get: ({ dari, sampai } = {}) =>
     request(`/dashboard/rw${qs({ dari, sampai })}`),
 };
 
 export const keuanganApi = {
-  // Riwayat transaksi kas manual dengan filter opsional
   getAll: ({ dari, sampai, tipe, kategori, search, area } = {}) =>
     request(`/keuangan${qs({ dari, sampai, tipe, kategori, search, area })}`),
 
-  // Ringkasan pemasukan otomatis (kas RT / setoran IPL) + kas manual, per area
   getRingkasan: ({ dari, sampai, area } = {}) =>
     request(`/keuangan/ringkasan${qs({ dari, sampai, area })}`),
 
   getById: (id) => request(`/keuangan/${id}`),
-  // Unduh Riwayat Kas (CSV/XLSX + saldo berjalan) sesuai filter aktif tabel.
-  // fallbackFilename dipakai hanya bila header Content-Disposition tak terbaca browser.
   exportFile: async ({ format, dari, sampai, tipe, kategori, search, area, fallbackFilename } = {}) => {
     const token = getToken();
     const response = await fetch(
@@ -309,14 +285,12 @@ export const notifikasiApi = {
   markAllRead: () => request("/notifikasi/read-all", { method: "PATCH" }),
 };
 
-// ── Push notification (Web Push) ────────────────────────────────────────
 export const pushApi = {
   getVapidKey: () => request("/push/vapid-public-key"),
   subscribe: (subscription) => request("/push/subscribe", json("POST", subscription)),
   unsubscribe: (endpoint) => request("/push/subscribe", json("DELETE", { endpoint })),
 };
 
-// ── Catatan rapat: notulen per wilayah (RW / tiap RT) ───────────────────
 export const catatanRapatApi = {
   getAll: ({ search, area } = {}) => request(`/catatan-rapat${qs({ search, area })}`),
   getById: (id) => request(`/catatan-rapat/${id}`),
@@ -324,12 +298,10 @@ export const catatanRapatApi = {
   update: (id, payload) =>
     request(`/catatan-rapat/${id}`, { method: "PATCH", body: buildFormData(payload) }),
   remove: (id) => request(`/catatan-rapat/${id}`, { method: "DELETE" }),
-  // File notulen tidak disajikan publik; dibuka lewat endpoint yang mengecek login & wilayah.
   openFile: (id) => openProtectedFile(`/catatan-rapat/${id}/file`),
   getFileBlob: (id) => fetchProtectedFileBlob(`/catatan-rapat/${id}/file`),
 };
 
-// ── Admin: role, permission, pengurus ───────────────────────────────────
 export const rbacApi = {
   getMatrix: () => request("/rbac/matrix"),
   createRole: (payload) => request("/rbac/roles", json("POST", payload)),

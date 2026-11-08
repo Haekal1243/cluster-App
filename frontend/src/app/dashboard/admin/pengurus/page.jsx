@@ -1,5 +1,6 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, ImageOff, MessageCircle, UserCog, UserMinus, UserPlus, X } from "lucide-react";
 import { pengurusApi } from "@/lib/api";
@@ -11,14 +12,12 @@ import FileDropzone from "@/components/ui/FileDropzone";
 const URUTAN_AREA = ["RW", "RT_01", "RT_02", "RT_03", "RT_04"];
 const MAKS_FOTO = 5 * 1024 * 1024;
 
-/** Pesan error kalau foto tidak boleh diunggah, null kalau lolos (server tetap memvalidasi ulang). */
 function cekFoto(file) {
   if (!/\.(jpe?g|png)$/i.test(file.name)) return "Tipe file tidak didukung. Gunakan JPG atau PNG.";
   if (file.size > MAKS_FOTO) return "Ukuran foto maksimal 5 MB.";
   return null;
 }
 
-/** Format 62812... -> 0812... untuk ditampilkan/diedit admin. */
 const nomorLokal = (n) => (n ? n.replace(/^62/, "0") : "");
 
 function KontakModal({ pemegang, jabatan, onClose, onSubmit }) {
@@ -95,7 +94,6 @@ function TetapkanModal({ slot, onClose, onSubmit }) {
         showMessage("Gagal Memuat Warga", err.message, "error");
         onClose();
       });
-    // onClose berubah tiap render induk; cukup sekali per slot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slot.area]);
 
@@ -199,7 +197,6 @@ export default function PengurusPage() {
       try {
         await pengurusApi.uploadFoto(userId, foto);
       } catch (err) {
-        // Jabatan sudah tersimpan; foto bisa diunggah ulang lewat tombol kamera.
         showMessage("Jabatan Tersimpan, Foto Gagal", `${res.message} Namun foto gagal diunggah: ${err.message}`, "warning");
         load();
         return;
@@ -289,6 +286,7 @@ export default function PengurusPage() {
             orang per wilayah; pemegang lama otomatis kembali menjadi warga.
           </p>
         </div>
+        <PageHelp id="admin-pengurus" />
       </div>
 
       <div className="pengurus-grid">

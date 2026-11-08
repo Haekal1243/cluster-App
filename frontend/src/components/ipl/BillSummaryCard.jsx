@@ -4,7 +4,6 @@ import { Calendar, CircleCheck, Clock, Home, Info, Wallet } from "lucide-react";
 import { formatRupiah as rupiahPenuh } from "@/lib/format";
 import FitText from "@/components/ui/FitText";
 
-// Kelas Tailwind ditulis statis (object map) agar tidak kena purge.
 const TONE = {
   lunas: {
     tile: "bg-gradient-to-br from-emerald-500 to-teal-600",
@@ -22,10 +21,6 @@ const TONE = {
   },
 };
 
-/**
- * Card ringkasan tagihan warga. Murni presentational: kalkulasi outstanding
- * tetap milik pemanggil (useMemo ringkasan di halaman).
- */
 export function BillSummaryCard({
   unitLabel,
   periodLabel,
@@ -43,14 +38,12 @@ export function BillSummaryCard({
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white p-5 sm:p-7">
-      {/* Blob dekoratif */}
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-40 blur-3xl ${tone.blob}`}
       />
 
       <div className="relative">
-        {/* Chip row */}
         <div className="flex flex-wrap gap-x-1.5 gap-y-1.5 sm:gap-2">
           <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-[11px] text-slate-600 sm:gap-1.5 sm:px-3 sm:text-xs">
             <Home size={12} className="shrink-0" />
@@ -62,7 +55,6 @@ export function BillSummaryCard({
           </span>
         </div>
 
-        {/* Main row */}
         <div className="mt-4 flex items-center gap-4">
           <div
             className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white ${tone.tile}`}
@@ -85,7 +77,6 @@ export function BillSummaryCard({
           </div>
         </div>
 
-        {/* Progress section */}
         <div className="mt-5">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span>

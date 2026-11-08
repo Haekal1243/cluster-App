@@ -15,13 +15,8 @@ import {
 } from "lucide-react";
 import { can, canAny, isWargaView, isPengurusRt, isPengurusRw, scopeOf } from "./session";
 
-// Menu disusun dari permission user (dikirim backend lewat /auth/me), bukan dari
-// nama role, jadi role baru yang dibuat admin otomatis mendapat menu yang sesuai.
-// Halaman kelola (bukan portal warga) disembunyikan untuk tampilan warga.
 export const NAV_ITEMS = [
   {
-    // Akun sistem tanpa ipl.read (mis. role Admin) melihat PanelSistem di /dashboard.
-    // Warga/pengurus langsung diarahkan dispatcher ke home masing-masing.
     label: "Beranda",
     href: "/dashboard",
     icon: LayoutDashboard,
@@ -43,7 +38,6 @@ export const NAV_ITEMS = [
     label: "Beranda RW",
     href: "/dashboard/rw",
     icon: Landmark,
-    // Akun sistem tanpa ipl.read sudah punya "Beranda" (PanelSistem), jadi tidak perlu Beranda RW.
     allow: (u) => isPengurusRw(u) && can(u, "ipl.read"),
   },
   {
@@ -53,8 +47,6 @@ export const NAV_ITEMS = [
     allow: (u) => can(u, "warga.read") && !isWargaView(u),
   },
   { 
-    // Pengurus (bisa lihat tagihan RT/RW, bukan cuma OWN) melihat "Pengelolaan IPL";
-    // warga biasa tetap "Tagihan IPL" seperti sebelumnya.
     label: (u) => (can(u, "ipl.read") && scopeOf(u, "ipl.read") !== "OWN" ? "Pengelolaan IPL" : "Tagihan IPL"),
     href: "/dashboard/kelola-ipl",
     icon: Wallet,
@@ -101,7 +93,6 @@ export const NAV_ITEMS = [
     label: "Riwayat Aktivitas",
     href: "/dashboard/aktivitas",
     icon: History,
-    // Akun sistem (tanpa ipl.read) melihat riwayat langsung di Beranda (PanelSistem), jadi tidak perlu menu sendiri.
     allow: (u) => can(u, "audit.read") && can(u, "ipl.read"),
   },
   {
@@ -119,7 +110,6 @@ export const NAV_ITEMS = [
   },
 ];
 
-/** Item menu yang paling spesifik untuk sebuah path (mis. /dashboard/admin/role/x -> Role & Permission). */
 export function navItemFor(pathname) {
   return (
     [...NAV_ITEMS]
@@ -129,13 +119,11 @@ export function navItemFor(pathname) {
   );
 }
 
-/** Apakah user boleh membuka path ini? Path di luar daftar menu (mis. /dashboard) selalu boleh. */
 export function isPathAllowed(user, pathname) {
   const item = navItemFor(pathname);
   return item ? item.allow(user) : true;
 }
 
-/** `label`/`title` bisa string atau fungsi `(user) => string` (lihat item Kelola IPL). */
 export function resolveLabel(value, user) {
   return typeof value === "function" ? value(user) : value;
 }
@@ -143,6 +131,7 @@ export function resolveLabel(value, user) {
 export function pageTitle(pathname, user) {
   if (pathname === "/dashboard") return "Beranda";
   if (pathname === "/dashboard/pengaturan") return "Pengaturan";
+  if (pathname === "/dashboard/notifikasi") return "Notifikasi";
   const item = navItemFor(pathname);
   if (!item) return "Beranda";
   return resolveLabel(item.title, user) || resolveLabel(item.label, user);

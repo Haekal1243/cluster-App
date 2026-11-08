@@ -25,7 +25,6 @@ function inisialDari(jabatan) {
   return (huruf || jabatan[0] || "?").slice(0, 2).toUpperCase();
 }
 
-/** Ubah hasil GET /pengurus/publik jadi bentuk yang dipakai kartu. */
 function petakanDariDb(slots) {
   return slots.map((s) => ({
     id: `${s.kode}-${s.area}`,
@@ -42,7 +41,6 @@ export default function Pengurus({ items: itemsProp }) {
   const [items, setItems] = useState(itemsProp ?? pengurusFallback);
   const [activeIdx, setActiveIdx] = useState(0);
 
-  /* Tarik susunan pengurus dari database; kalau gagal, tetap tampilkan data statis. */
   useEffect(() => {
     if (itemsProp) return;
     let batal = false;
@@ -61,12 +59,10 @@ export default function Pengurus({ items: itemsProp }) {
 
   const total     = items.length;
   const angleStep = 360 / total;
-  /* Tinggi kartu/panggung ikut ada-tidaknya foto, supaya kartu tanpa foto tidak mengambang di ruang kosong. */
   const adaFoto   = items.some((o) => o.foto);
   const cardH     = adaFoto ? CARD_H : 168;
   const stageH    = adaFoto ? 380 : 270;
 
-  /* Auto-rotate tiap 2.8 detik */
   useEffect(() => {
     const id = setInterval(
       () => setActiveIdx(prev => (prev + 1) % total),
@@ -75,7 +71,6 @@ export default function Pengurus({ items: itemsProp }) {
     return () => clearInterval(id);
   }, [total]);
 
-  /* Hitung selisih sudut terpendek (circular) */
   const getDiff = (i) => {
     let d = i - activeIdx;
     if (d >  total / 2) d -= total;
@@ -92,7 +87,6 @@ export default function Pengurus({ items: itemsProp }) {
         <SectionHead varian="e" label="Susunan kepengurusan" title="Pengurus RW 21 & RT" />
 
         <Reveal variant="zoom">
-          {/* ── 3D Globe Scene ─────────────────────────────────── */}
           <div className="lp-pengurus-globe" style={{
             perspective      : "1000px",
             perspectiveOrigin: "50% 50%",
@@ -100,7 +94,6 @@ export default function Pengurus({ items: itemsProp }) {
             position         : "relative",
             marginTop        : 8,
           }}>
-            {/* Globe platform — preserve-3d, lurus ke depan */}
             <div style={{
               position       : "absolute",
               inset          : 0,
@@ -112,7 +105,6 @@ export default function Pengurus({ items: itemsProp }) {
                 const isActive = diff === 0;
                 const absD    = Math.abs(diff);
 
-                /* Kartu aktif maju ke depan (extra translateZ) */
                 const extra   = isActive ? 50 : 0;
                 const opacity = isActive ? 1 : absD === 1 ? 0.55 : 0.25;
 
@@ -135,7 +127,6 @@ export default function Pengurus({ items: itemsProp }) {
                       opacity,
                     }}
                   >
-                    {/* ── Card ─ desain identik dengan asli ── */}
                     <div style={{
                       background   : "white",
                       borderRadius : 10,
@@ -146,12 +137,10 @@ export default function Pengurus({ items: itemsProp }) {
                       flexDirection: "column",
                       justifyContent: "center",
                       textAlign    : "center",
-                      /* garis warna jabatan di sisi atas: inset shadow, supaya tidak bentrok dengan shorthand border */
                       boxShadow    : `inset 0 4px 0 ${o.warna}, ${isActive ? "0 12px 32px rgba(13,148,136,0.18)" : "0 2px 8px rgba(0,0,0,0.06)"}`,
                       transform    : isActive ? "scale(1.10)" : "scale(1)",
                       transition   : "transform 0.5s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.4s ease, border-color 0.4s ease",
                     }}>
-                      {/* Foto lingkaran — disembunyikan kalau belum ada foto */}
                       {o.foto && <div style={{
                         width          : 90,
                         height         : 90,
@@ -174,7 +163,6 @@ export default function Pengurus({ items: itemsProp }) {
                         />
                       </div>}
 
-                      {/* Jabatan */}
                       <div style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
                         {o.jabatan}
                       </div>
@@ -199,7 +187,6 @@ export default function Pengurus({ items: itemsProp }) {
             </div>
           </div>
 
-          {/* ── Navigasi ─────────────────────────────────────── */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 12 }}>
             <button
               onClick={() => goTo((activeIdx - 1 + total) % total)}

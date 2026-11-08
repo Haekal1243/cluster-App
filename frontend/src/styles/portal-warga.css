@@ -1,8 +1,5 @@
-/* ==========================================
-   PORTAL WARGA
-   ========================================== */
 
-/* Shell layout (mirip dashboard-shell tapi untuk warga) */
+
 .portal-shell {
   display: flex;
   min-height: 100vh;
@@ -35,7 +32,6 @@
   text-align: center;
 }
 
-/* ---- Portal Sidebar ---- */
 .portal-sidebar {
   position: fixed;
   top: 0;
@@ -76,7 +72,6 @@
   color: #fff;
 }
 
-/* User card inside sidebar */
 .portal-user-card {
   display: flex;
   align-items: center;
@@ -125,7 +120,6 @@
   margin-top: 1px;
 }
 
-/* ---- Portal Header ---- */
 .portal-header {
   height: var(--header-h);
   background: var(--db-surface);
@@ -155,7 +149,6 @@
   color: var(--db-text);
 }
 
-/* ---- Portal Loading ---- */
 .portal-loading {
   display: flex;
   flex-direction: column;
@@ -197,7 +190,6 @@
   to { transform: rotate(360deg); }
 }
 
-/* ---- Portal Welcome Banner ---- */
 .portal-welcome-banner {
   background: linear-gradient(135deg, var(--db-sidebar-bg) 0%, var(--db-primary-active) 100%);
   border-radius: 20px;
@@ -214,7 +206,6 @@
   background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
 }
 
-/* Base hero portal/warga: gradient gelap agar teks putih kontras (WCAG AA) */
 .portal-hero {
   position: relative;
   overflow: hidden;
@@ -413,7 +404,6 @@
   padding: 1px 6px;
 }
 
-/* Blok 2: Card terpisah Rincian Tunggakan / Riwayat Pembayaran — background terang */
 .warga-detail-card {
   background: #fff;
   border: 1px solid #e2e8f0;
@@ -505,7 +495,7 @@
   background: #0f766e;
   transform: translateY(-1px);
 }
-/* Badge di atas putih — override warna gelap */
+
 .warga-detail-card .portal-badge-mini.badge-bulan-ini {
   background: #fffbeb;
   border-color: #f59e0b;
@@ -525,7 +515,6 @@
   color: #16a34a;
 }
 
-/* === Redesign Rincian Tunggakan: grouped by bulan expand/collapse === */
 .warga-tunggakan-header {
   display: flex;
   justify-content: space-between;
@@ -685,7 +674,6 @@
   font-size: 0.95rem;
 }
 
-/* Lunas Semua — headline tunggal left-aligned, icon di kolom sendiri */
 .warga-lunas-headline {
   display: flex;
   align-items: flex-start;
@@ -739,7 +727,6 @@
   text-align: left;
 }
 
-/* Toggle Aktif/Arsip — Task 3: independen dari filter periode */
 .db-section-header {
   display: flex;
   align-items: center;
@@ -783,18 +770,37 @@
 }
 
 @media (max-width: 640px) {
+
   .db-section-toggle {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
     max-width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
+    padding: 6px;
+    border-radius: 18px;
   }
-  .db-section-toggle::-webkit-scrollbar { display: none; }
   .db-toggle-btn {
-    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 6px 10px;
+    border: 1px solid #dbe3ec;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.55);
+    font-size: 0.74rem;
+    text-align: center;
     white-space: nowrap;
-    padding: 6px 12px;
-    font-size: 0.72rem;
+  }
+  .db-toggle-btn.is-active {
+    border-color: var(--db-primary, #0d9488);
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.14);
+  }
+
+  .db-toggle-btn:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 
@@ -858,7 +864,6 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* ---- Portal Unit List (satu-satunya sumber info unit) ---- */
 .portal-unit-card {
   padding: 22px 24px;
 }
@@ -910,12 +915,10 @@
   flex-shrink: 0;
 }
 
-/* Legacy: welcome banner disembunyikan bertahap — pertahankan agar tidak merusak halaman lain */
 .portal-welcome-banner {
   display: none;
 }
 
-/* ---- Portal Stat Cards ---- */
 .portal-stat-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -992,7 +995,6 @@
   color: var(--db-muted) !important;
 }
 
-/* ---- Portal Empty Notice ---- */
 .portal-empty-notice {
   background: var(--db-surface);
   border: 1px dashed var(--db-border);
@@ -1013,7 +1015,6 @@
   text-align: center;
 }
 
-/* ---- Portal Action Banner ---- */
 .portal-action-banner {
   background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.05));
   border: 1px solid rgba(239,68,68,0.3);
@@ -1049,10 +1050,8 @@
 
 .portal-action-btn:hover { background: #dc2626; }
 
-/* ---- Warga Dashboard: kontras + hierarki (scope .warga-dashboard) ---- */
 .warga-dashboard .portal-hero { margin-bottom: 4px; }
 
-/* Stat cards: aksen lebih tegas + tint latar per status agar tidak kaku */
 .warga-dashboard .portal-stat-card {
   border-radius: 16px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
@@ -1062,7 +1061,6 @@
 .warga-dashboard .portal-stat-card.card-warning { border-left: 5px solid #d97706; background: #fffdf5; }
 .warga-dashboard .portal-stat-card.card-info    { border-left: 5px solid #1d4ed8; background: #f8fbff; }
 
-/* Label & angka: slate-600/900 agar lolos WCAG AA di atas putih */
 .warga-dashboard .portal-stat-label {
   color: #475569;
   font-weight: 600;
@@ -1071,13 +1069,11 @@
 .warga-dashboard .portal-stat-value { color: #0f172a; }
 .warga-dashboard .portal-stat-sub { color: #475569; }
 
-/* Ikon solid (putih di atas warna tua) pengganti pastel yang pudar */
 .warga-dashboard .card-success .portal-stat-icon { background: #16a34a; color: #fff; }
 .warga-dashboard .card-danger .portal-stat-icon  { background: #dc2626; color: #fff; }
 .warga-dashboard .card-warning .portal-stat-icon { background: #d97706; color: #fff; }
 .warga-dashboard .card-info .portal-stat-icon    { background: #1d4ed8; color: #fff; }
 
-/* Action banner: teks merah tua di atas pink solid */
 .warga-dashboard .portal-action-banner {
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -1087,7 +1083,6 @@
 .warga-dashboard .portal-action-btn { background: #dc2626; }
 .warga-dashboard .portal-action-btn:hover { background: #b91c1c; }
 
-/* Unit rumah: judul & nominal tegas, badge status kontras */
 .warga-dashboard .portal-peng-judul { color: #0f172a; }
 .warga-dashboard .portal-peng-desc { color: #475569; }
 .warga-dashboard .unit-nominal { color: #0f172a; font-weight: 700; }
@@ -1095,7 +1090,6 @@
 .warga-dashboard .ipl-status-badge.status-belum { background: #fee2e2; color: #b91c1c; }
 .warga-dashboard .ipl-status-badge.status-menunggu { background: #fef3c7; color: #b45309; }
 
-/* Section header: icon chip agar berirama, tidak kaku */
 .warga-dashboard .db-section-header > svg:first-child {
   background: #eff6ff;
   color: #1d4ed8;

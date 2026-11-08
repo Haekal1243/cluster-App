@@ -5,9 +5,6 @@ import { can, isPengurusRw, scopeOf } from "@/lib/session";
 import DashboardRW from "../_bendahara/DashboardRW";
 import { PengurusDashboardView } from "../_views/pengurus/PengurusDashboardView";
 
-// Beranda RW: /dashboard/rw.
-// Bendahara RW (konfirmasi setoran ALL) melihat ringkasan setoran;
-// pengurus RW lainnya melihat ringkasan cluster.
 export default function RwHomePage() {
   const { user, ready } = useUser();
 

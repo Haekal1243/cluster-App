@@ -2,7 +2,6 @@
 
 import { Star } from "lucide-react";
 
-/** Tampilan bintang read-only (mendukung nilai desimal untuk rata-rata, dibulatkan ke bintang terdekat). */
 export function BintangTampil({ nilai, size = 14 }) {
   const bulat = Math.round(nilai);
   return (
@@ -16,7 +15,6 @@ export function BintangTampil({ nilai, size = 14 }) {
 
 const LABEL = ["", "Kurang", "Cukup", "Baik", "Bagus", "Sangat bagus"];
 
-/** Input bintang 1–5 (klik / keyboard). */
 export function BintangInput({ value, onChange, size = 30, disabled = false }) {
   return (
     <div className="fb-bintang-input" role="radiogroup" aria-label="Penilaian">

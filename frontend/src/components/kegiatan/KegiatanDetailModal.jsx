@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar } from "lucide-react";
+import DetailModal from "@/components/ui/DetailModal";
 import { kegiatanApi } from "@/lib/api";
 import { formatTanggalLengkap as formatDate } from "@/lib/format";
 import BeriMasukan from "./BeriMasukan";
@@ -10,49 +10,26 @@ import { useUser } from "@/lib/useUser";
 export default function KegiatanDetailModal({ kegiatan, onClose, tampilMasukan = false }) {
   const { user } = useUser();
   if (!kegiatan) return null;
-  // Alasan penolakan RW hanya untuk pengurus (yang bisa mengelola kegiatan), bukan warga.
   const bolehLihatAlasan = !!user && can(user, "kegiatan.update");
 
   return (
-    <div className="ipl-modal-overlay" onClick={onClose}>
-      <div className="ipl-modal ipl-modal-review" onClick={(e) => e.stopPropagation()}>
-        <div className="ipl-modal-header">
-          <h3>Detail Kegiatan</h3>
-          <button className="ipl-modal-close" onClick={onClose}>✕</button>
+    <DetailModal
+      title="Detail Kegiatan"
+      onClose={onClose}
+      foto={kegiatan.gambarUrl ? kegiatanApi.imageUrl(kegiatan.gambarUrl) : null}
+      fotoAlt={kegiatan.judul}
+      judul={kegiatan.judul}
+      info={[{ label: "Tanggal Acara", value: formatDate(kegiatan.tanggalAcara), penuh: true }]}
+      deskripsi={kegiatan.deskripsi}
+    >
+      {bolehLihatAlasan && kegiatan.statusPengajuan === "DITOLAK" && kegiatan.alasanTolak && (
+        <div className="review-desc-card">
+          <span className="review-info-label">Alasan Ditolak</span>
+          <p className="review-desc-text">{kegiatan.alasanTolak}</p>
         </div>
-        <div className="ipl-modal-body">
-          {kegiatan.gambarUrl && (
-            <div className="portal-kegiatan-img-wrap">
-              <img
-                src={kegiatanApi.imageUrl(kegiatan.gambarUrl)}
-                alt={kegiatan.judul}
-                className="portal-kegiatan-img"
-                onError={(e) => { e.currentTarget.style.display = "none"; }}
-              />
-            </div>
-          )}
+      )}
 
-          <h3 className="portal-kegiatan-title">{kegiatan.judul}</h3>
-
-          <div className="portal-kegiatan-meta">
-            <span className="meta-item"><Calendar size={13} /> {formatDate(kegiatan.tanggalAcara)}</span>
-          </div>
-
-          {kegiatan.deskripsi && (
-            <p className="portal-kegiatan-desc" style={{ whiteSpace: "pre-wrap" }}>
-              {kegiatan.deskripsi}
-            </p>
-          )}
-
-          {bolehLihatAlasan && kegiatan.statusPengajuan === "DITOLAK" && kegiatan.alasanTolak && (
-            <p className="portal-kegiatan-desc" style={{ whiteSpace: "pre-wrap" }}>
-              <strong>Alasan ditolak:</strong> {kegiatan.alasanTolak}
-            </p>
-          )}
-
-          {tampilMasukan && <BeriMasukan kegiatan={kegiatan} />}
-        </div>
-      </div>
-    </div>
+      {tampilMasukan && <BeriMasukan kegiatan={kegiatan} />}
+    </DetailModal>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Eye, ClipboardCheck, Wallet, FileX, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, CheckCircle, XCircle, Clock, AlertTriangle, Eye, ClipboardCheck, Wallet, FileX, Pencil, Trash2, CalendarDays } from "lucide-react";
 import { iplApi, portalApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -16,7 +16,6 @@ import { formatRupiah, formatTanggalPendek as formatTanggal, BULAN_PANJANG as BU
 import { RekapRtPanel } from "./RekapRtPanel";
 import FitText from "@/components/ui/FitText";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const currentYear = new Date().getFullYear();
 const TAHUN_OPTIONS = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
 
@@ -36,10 +35,8 @@ export function PengurusStatusBadge({ status }) {
   const { label, cls } = map[status] || { label: status, cls: "" };
   return <span className={`ipl-badge ${cls}`}>{label}</span>;
 }
-/** Tanggal bawaan jatuh tempo: tanggal 10 di bulan periode (format YYYY-MM-DD untuk input date). */
 const jatuhTempoBawaan = (bulan, tahun) => `${tahun}-${bulan}-10`;
 
-// ── Modal: Generate Tagihan (2 input: IPL + kas RT) ───────────────────────────
 function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
   const now = new Date();
   const [form, setForm] = useState({
@@ -50,7 +47,6 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
     jatuhTempo: jatuhTempoBawaan(String(now.getMonth() + 1).padStart(2, "0"), String(now.getFullYear())),
     rt: "RT_01",
   });
-  // Selama belum diubah manual, jatuh tempo ikut bulan/tahun yang dipilih.
   const [jatuhTempoDiubah, setJatuhTempoDiubah] = useState(false);
   const ubahPeriode = (patch) => {
     const next = { ...form, ...patch };
@@ -191,7 +187,6 @@ function GenerateModal({ onClose, onSuccess, pilihRt = false }) {
     </div>
   );
 }
-// ── Modal: Koreksi nominal satu tagihan ───────────────────────────────────────
 function EditTagihanModal({ tagihan, onClose, onSuccess }) {
   const [form, setForm] = useState({
     nominalIpl: String(tagihan.nominalIpl),
@@ -269,7 +264,6 @@ function EditTagihanModal({ tagihan, onClose, onSuccess }) {
     </div>
   );
 }
-// ── Modal: Review Bukti Pembayaran ────────────────────────────────────────────
 function ReviewModal({ tagihan, onClose, onSuccess }) {
   const [catatan, setCatatan] = useState("");
   const [loading, setLoading] = useState(false);
@@ -315,7 +309,6 @@ function ReviewModal({ tagihan, onClose, onSuccess }) {
           <button className="ipl-modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="ipl-modal-body">
-          {/* Info tagihan */}
           <div className="review-info-grid">
             <div className="review-info-item">
               <span className="review-info-label">Penghuni</span>
@@ -343,13 +336,11 @@ function ReviewModal({ tagihan, onClose, onSuccess }) {
             </div>
           </div>
 
-          {/* Bukti transfer */}
           <div className="review-bukti-section">
             <p className="review-bukti-label">Bukti Transfer</p>
             <ProtectedImage path={buktiPath} alt="Bukti Transfer" className="review-bukti-img" />
           </div>
 
-          {/* Textarea catatan penolakan */}
           <div className="ipl-form-group">
             <label>Catatan Penolakan <span className="label-optional">(opsional, khusus jika ditolak)</span></label>
             <textarea
@@ -382,23 +373,18 @@ function ReviewModal({ tagihan, onClose, onSuccess }) {
     </div>
   );
 }
-// ── Pengurus: kelola tagihan semua warga ────────────────────────────────
 export function PengurusIuranView({ user }) {
   const bolehGenerate = can(user, "ipl.generate");
   const bolehKonfirmasi = can(user, "ipl.konfirmasi");
-  // Ketua RT (dan role lain tanpa ipl.konfirmasi) cuma boleh konfirmasi pembayaran
-  // pengurus (role.level < 3), bukan warga biasa — dicek juga di backend.
   const bolehKonfirmasiPengurus = can(user, "ipl.konfirmasi_pengurus");
   const bolehUbah = can(user, "ipl.update");
   const bolehHapus = can(user, "ipl.delete");
-  // Scope ALL (ketua/bendahara/sekre RW, admin) melihat semua RT; scope AREA hanya RT sendiri.
   const semuaRt = scopeOf(user, "ipl.read") === "ALL";
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [tagihan, setTagihan] = useState([]);
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Filter state — range periode, default bulan berjalan
   const monthDiffInclusive = (dari, sampai) => {
     const [y1, m1] = dari.split("-").map(Number);
     const [y2, m2] = sampai.split("-").map(Number);
@@ -418,7 +404,6 @@ export function PengurusIuranView({ user }) {
   const [draftFilterRt, setDraftFilterRt] = useState("SEMUA");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Normalisasi + validasi turunan
   const [dari, sampai] = periodeDari > periodeSampai
     ? [periodeSampai, periodeDari]
     : [periodeDari, periodeSampai];
@@ -467,7 +452,6 @@ export function PengurusIuranView({ user }) {
     setDraftFilterRt("SEMUA");
   };
 
-  // Modal state
   const [showGenerate, setShowGenerate] = useState(false);
   const [reviewItem, setReviewItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
@@ -499,7 +483,6 @@ export function PengurusIuranView({ user }) {
 
   const { page, totalPages, paginatedItems: tagihanPage, prev, next } = usePagination(tagihan, [tagihan]);
 
-  // Search debounce
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400);
     return () => clearTimeout(t);
@@ -524,7 +507,6 @@ export function PengurusIuranView({ user }) {
 
   return (
     <div className="page-stack">
-      {/* ── Summary Cards — Tagihan IPL (tint redesign, palet selaras Keuangan) ── */}
       {summary && (
         <div className="ipl-summary-grid keu-summary-grid">
           <div className="ipl-summary-card keu-card keu-teal">
@@ -558,7 +540,6 @@ export function PengurusIuranView({ user }) {
         </div>
       )}
 
-      {/* ── Tambah + Search + Filter ── */}
       <div className="page-toolbar-row toolbar-row-reverse-mobile">
         <div className="list-toolbar-row">
           <div className="list-search-wrap">
@@ -640,10 +621,8 @@ export function PengurusIuranView({ user }) {
         )}
       </div>
 
-      {/* Tampilan RW: rekap terkumpul & disetor per RT — ikut filter aktif (tanpa search) */}
       {semuaRt && !rangeError && <RekapRtPanel dari={dari} sampai={sampai} status={filterStatus} rt={filterRt} refreshKey={refreshKey} />}
 
-      {/* ── Table ── */}
       <div className="content-card" style={{ padding: 0, overflow: "hidden" }}>
         <div className="ipl-table-header">
           <span className="ipl-table-title">
@@ -674,7 +653,7 @@ export function PengurusIuranView({ user }) {
                   <th>Total</th>
                   <th>Status</th>
                   <th>Tanggal Bayar</th>
-                  <th>Aksi</th>
+                  <th className="th-aksi">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -771,9 +750,9 @@ export function PengurusIuranView({ user }) {
                   style={bukaCard ? undefined : { cursor: "default" }}
                 >
                   <div className="pengaduan-card-top">
-                    <h3 className="pengaduan-card-title" style={{ fontSize: "0.85rem" }}>
-                      {t.rumah?.blokRumah}
-                      <span className="ipl-penghuni">{t.rumah?.penghuni?.namaUser || <em className="text-muted">Kosong</em>}</span>
+                    <h3 className="pengaduan-card-title tag-who">
+                      <span className="tag-blok">{t.rumah?.blokRumah}</span>
+                      <span className="tag-nama">{t.rumah?.penghuni?.namaUser || <em className="text-muted">Kosong</em>}</span>
                     </h3>
                     <div className="pengaduan-card-badges">
                       {semuaRt && <span className="rt-badge">{t.rumah?.rt?.replace("_", " ")}</span>}
@@ -782,12 +761,13 @@ export function PengurusIuranView({ user }) {
                   </div>
                   {pembayaran?.tanggalBayar && (
                     <div className="pengaduan-card-meta">
-                      <span className="pengaduan-meta-item">Dibayar {formatTanggal(pembayaran.tanggalBayar)}</span>
+                      <span className="pengaduan-meta-item"><CalendarDays size={13} /> {formatTanggal(pembayaran.tanggalBayar)}</span>
                     </div>
                   )}
-                  <span className="warga-grid-penghuni">
-                    {formatRupiah(t.nominal)} <span className="text-muted" style={{ fontWeight: 400 }}>(IPL {formatRupiah(t.nominalIpl)} + kas {formatRupiah(t.nominalKas)})</span>
-                  </span>
+                  <div className="tag-nominal">
+                    <strong>{formatRupiah(t.nominal)}</strong>
+                    <span>IPL {formatRupiah(t.nominalIpl)} · Kas {formatRupiah(t.nominalKas)}</span>
+                  </div>
                   {t.statusPembayaran === "BELUM_LUNAS" && (bolehUbah || (bolehHapus && !pembayaran)) && (
                     <div className="pengaduan-card-actions" onClick={(e) => e.stopPropagation()}>
                       <div className="table-actions">
@@ -814,7 +794,6 @@ export function PengurusIuranView({ user }) {
         )}
       </div>
 
-      {/* ── Modals ── */}
       {showGenerate && (
         <GenerateModal
           pilihRt={semuaRt}

@@ -1,3 +1,6 @@
+import { PermissionsService } from '../auth/permissions.service';
+import { iplMilikAkun, rumahMilikAkun } from '../common/akses-rumah';
+import { AkhiriKontrakDto, MulaiKontrakDto } from './dto/kontrak-rumah.dto';
 import {
   BadRequestException,
   ConflictException,
@@ -62,12 +65,10 @@ const RUMAH_SELECT = {
   userId: true,
 } satisfies Prisma.RumahSelect;
 
-// Password tidak pernah ikut keluar dari service ini.
 const WARGA_SELECT = {
   id: true,
   namaUser: true,
   username: true,
-  email: true,
   noTelp: true,
   area: true,
   wajibGantiPassword: true,
@@ -78,13 +79,17 @@ const WARGA_SELECT = {
     orderBy: [{ rt: 'asc' }, { blokRumah: 'asc' }],
     select: RUMAH_SELECT,
   },
+  rumahSewa: {
+    where: { isDelete: false },
+    orderBy: [{ rt: 'asc' }, { blokRumah: 'asc' }],
+    select: RUMAH_SELECT,
+  },
 } satisfies Prisma.UserSelect;
 
 const PENGHUNI_SELECT = {
   id: true,
   namaUser: true,
   username: true,
-  email: true,
   noTelp: true,
   area: true,
   _count: { select: { rumah: { where: { isDelete: false } } } },
@@ -97,18 +102,10 @@ export class WargaService {
     private notifikasiService: NotifikasiService,
     private audit: AuditService,
     private files: FileService,
+    private permissions: PermissionsService,
   ) {}
 
-  // ================================================================
-  // PORTAL WARGA — tagihan & pembayaran milik sendiri
-  // ================================================================
 
-  /**
-   * OWN: hanya diri sendiri. AREA: warga di area-nya. ALL: siapa pun.
-   * Data milik sendiri selalu lolos apa pun scope-nya, supaya pengurus yang areanya
-   * beda dari rumahnya sendiri (mis. Bendahara RT 1 yang juga punya rumah di RT 3)
-   * tetap bisa melihat datanya sendiri.
-   */
   private async assertBolehLihatUser(ctx: AccessContext, targetUserId: number) {
     if (targetUserId === ctx.user.sub) return;
     if (ctx.scope === 'ALL') return;
@@ -126,21 +123,19 @@ export class WargaService {
   async getRumahByUser(ctx: AccessContext, userId: number) {
     await this.assertBolehLihatUser(ctx, userId);
     return this.prisma.rumah.findMany({
-      where: { userId, isDelete: false },
+      where: rumahMilikAkun(userId),
       orderBy: [{ rt: 'asc' }, { blokRumah: 'asc' }],
     });
   }
 
-  /** Semua tagihan IPL untuk 1 rumah, diurutkan terbaru di atas */
   async getTagihanByRumah(ctx: AccessContext, rumahId: number) {
     const rumah = await this.prisma.rumah.findFirst({
       where: { id: rumahId, isDelete: false },
     });
     if (!rumah) throw new NotFoundException(`Rumah dengan ID ${rumahId} tidak ditemukan`);
 
-    // Rumah milik sendiri selalu boleh dilihat, apa pun scope-nya (lihat catatan di
-    // assertBolehLihatUser) — baru cek area kalau bukan rumah sendiri.
-    if (rumah.userId !== ctx.user.sub) {
+    const terkait = rumah.userId === ctx.user.sub || rumah.penyewaId === ctx.user.sub;
+    if (!terkait) {
       if (ctx.scope === 'OWN') {
         throw new ForbiddenException('Rumah ini bukan milik Anda.');
       }
@@ -148,7 +143,7 @@ export class WargaService {
     }
 
     const tagihan = await this.prisma.ipl.findMany({
-      where: { idRumah: rumahId },
+      where: terkait ? { AND: [{ idRumah: rumahId }, iplMilikAkun(ctx.user.sub)] } : { idRumah: rumahId },
       include: {
         pembayaran: {
           orderBy: { tanggalBayar: 'desc' },
@@ -162,9 +157,6 @@ export class WargaService {
     return { rumah, tagihan: tagihan.map(withTotal) };
   }
 
-  /** Tagihan IPL gabungan semua rumah milik user.
-   * Filter: bulan+tahun tunggal (legacy) atau range dari/sampai YYYY-MM (maks 12 bln),
-   * plus status & search — mirror pola IplService.findAll. */
   async getTagihanByUser(
     ctx: AccessContext,
     userId: number,
@@ -181,7 +173,7 @@ export class WargaService {
     const { bulan, tahun: th, dari, sampai, status, search } = opts;
 
     const rumah = await this.prisma.rumah.findMany({
-      where: { userId, isDelete: false },
+      where: rumahMilikAkun(userId),
       orderBy: [{ rt: 'asc' }, { blokRumah: 'asc' }],
     });
 
@@ -190,7 +182,7 @@ export class WargaService {
     }
 
     const where: Prisma.IplWhereInput = { idRumah: { in: rumah.map((r) => r.id) } };
-    const and: Prisma.IplWhereInput[] = [];
+    const and: Prisma.IplWhereInput[] = [iplMilikAkun(userId)];
     const range = resolvePeriode(dari, sampai);
     if (range) {
       and.push({ OR: range.periodeOr });
@@ -277,7 +269,6 @@ export class WargaService {
     return { rumah, tagihan, summaryByPeriode, totalSummary };
   }
 
-  /** Warga mengirim bukti pembayaran untuk tagihan rumahnya sendiri. */
   async uploadBuktiPembayaran(
     ctx: AccessContext,
     data: { idIpl: number; bukti?: Express.Multer.File },
@@ -291,7 +282,8 @@ export class WargaService {
     if (!ipl) throw new NotFoundException('Tagihan tidak ditemukan');
 
     if (ctx.scope === 'OWN') {
-      if (ipl.rumah.userId !== ctx.user.sub) {
+      const boleh = await this.prisma.ipl.count({ where: { AND: [{ id: ipl.id }, iplMilikAkun(ctx.user.sub)] } });
+      if (boleh === 0) {
         throw new ForbiddenException('Tagihan ini bukan milik Anda.');
       }
     } else {
@@ -307,9 +299,6 @@ export class WargaService {
     const buktiId = await this.files.simpan(data.bukti);
     const pembayaran = await this.prisma
       .$transaction(async (tx) => {
-        // Klaim tagihan secara atomik (BELUM_LUNAS -> MENUNGGU_KONFIRMASI). Pengecekan status di atas
-        // dilakukan di luar transaksi, jadi klik ganda/dua tab bisa lolos bersamaan; hanya satu
-        // request yang boleh memenangkan klaim ini, sisanya ditolak.
         const klaim = await tx.ipl.updateMany({
           where: { id: data.idIpl, statusPembayaran: 'BELUM_LUNAS' },
           data: { statusPembayaran: 'MENUNGGU_KONFIRMASI' },
@@ -317,7 +306,6 @@ export class WargaService {
         if (klaim.count !== 1) {
           throw new ConflictException('Tagihan ini sudah dibayar atau bukti pembayarannya sedang diproses.');
         }
-        // Nominal selalu dihitung server dari tagihan, bukan dari isian klien.
         return tx.pembayaranIpl.create({
           data: {
             idUser: ctx.user.sub,
@@ -328,15 +316,10 @@ export class WargaService {
         });
       })
       .catch(async (err) => {
-        // Pembayaran gagal dicatat: jangan tinggalkan bukti yatim di database.
         await this.files.hapus(buktiId);
         throw err;
       });
 
-    // Kalau yang bayar pengurus, notifikasi ke pemegang ipl.konfirmasi_pengurus (mis.
-    // Ketua RT untuk pembayaran Bendahara RT), bukan ke pemegang ipl.konfirmasi biasa —
-    // supaya pemegang ipl.konfirmasi (Bendahara RT) tidak dapat notifikasi bukti bayarnya
-    // sendiri saat dia yang membayar.
     const pembayarRole = await this.prisma.role.findUnique({
       where: { id: ctx.user.roleId },
       select: { level: true },
@@ -357,18 +340,9 @@ export class WargaService {
     return { message: 'Bukti pembayaran berhasil dikirim. Menunggu konfirmasi.', data: pembayaran };
   }
 
-  // ================================================================
-  // USER / WARGA CRUD — dikerjakan pengurus RT untuk warga RT-nya
-  // ================================================================
 
-  /**
-   * Baca: semua penghuni di wilayahnya (termasuk pengurus yang tinggal di situ).
-   * Tulis: hanya warga biasa (level warga) di areanya. Pengurus tidak boleh diubah, dihapus,
-   * atau di-reset passwordnya oleh pengurus RT; jabatan mereka diatur admin.
-   */
   private async findWargaScoped(ctx: AccessContext, id: number, tulis = false) {
     const area = areaFilter(ctx);
-    // Admin (scope ALL) boleh mengubah warga maupun pengurus, tapi akun administrator tidak ikut dikelola di sini.
     const penuh = area === null && (await this.adalahAdmin(ctx));
     const warga = await this.prisma.user.findFirst({
       where: penuh
@@ -382,7 +356,6 @@ export class WargaService {
     return warga;
   }
 
-  /** Dilihat dari level role pemanggil, bukan nama role, supaya role admin baru ikut berlaku. */
   private async adalahAdmin(ctx: AccessContext): Promise<boolean> {
     const role = await this.prisma.role.findUnique({
       where: { id: ctx.user.roleId },
@@ -393,13 +366,40 @@ export class WargaService {
 
   private handleUniqueError(error: any): never {
     if (error?.code === 'P2002') {
-      const target = String(error.meta?.target ?? '');
-      if (target.includes('email')) {
-        throw new ConflictException('Email ini sudah terdaftar. Gunakan email lain atau kosongkan.');
-      }
       throw new ConflictException('Nama pengguna / no HP ini sudah terdaftar. Gunakan yang lain.');
     }
     throw error;
+  }
+
+  async usernameTersedia(username: string, abaikanId?: number) {
+    const u = username.trim();
+    if (!u) return false;
+    const ada = await this.prisma.user.findFirst({
+      where: { username: u, ...(abaikanId ? { id: { not: abaikanId } } : {}) },
+      select: { id: true },
+    });
+    return !ada;
+  }
+
+  async saranUsername(nama: string, noHp?: string, abaikanId?: number) {
+    const kata = (nama ?? '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .split(/\s+/)
+      .map((k) => k.replace(/[^a-z0-9]/g, ''))
+      .filter(Boolean);
+    const dasar = (kata[kata.length - 1] ?? 'warga').slice(0, 20);
+    const digit = (noHp ?? '').replace(/\D/g, '');
+    const kandidat: string[] = [];
+    if (digit.length >= 2) kandidat.push(dasar + digit.slice(-2));
+    if (digit.length >= 3) kandidat.push(dasar + digit.slice(-3));
+    for (let i = 0; i < 30; i++) kandidat.push(dasar + String(10 + Math.floor(Math.random() * 90)));
+    for (let i = 0; i < 30; i++) kandidat.push(dasar + String(100 + Math.floor(Math.random() * 9900)));
+    for (const k of kandidat) {
+      if (await this.usernameTersedia(k, abaikanId)) return k;
+    }
+    return dasar + Date.now().toString().slice(-6);
   }
 
   async create(ctx: AccessContext, dto: CreateWargaDto) {
@@ -412,11 +412,13 @@ export class WargaService {
       throw new InternalServerErrorException('Peran warga belum tersedia. Jalankan seed database.');
     }
 
-    const username = (dto.username ?? dto.no_hp).trim();
+    const username = dto.username?.trim() || (await this.saranUsername(dto.nama, dto.no_hp));
     const passwordAwal = dto.password ?? generatePassword();
     const password = await bcrypt.hash(passwordAwal, SALT_ROUNDS);
     const status = dto.statusRumah ?? StatusRumah.DIHUNI_TETAP;
     const actor = ctx.user.nama;
+    const ctxBolehKontrak =
+      dto.sebagaiPenyewa !== true || (await this.permissions.scopeOf(ctx.user.roleId, 'rumah.kontrak')) !== null;
 
     try {
       const user = await this.prisma.$transaction(async (tx) => {
@@ -428,7 +430,15 @@ export class WargaService {
             `Blok ${dto.blokRumah} di ${dto.rt.replace('_', ' ')} belum terdaftar. Minta admin menambahkan rumah ini terlebih dahulu.`,
           );
         }
-        if (rumah.userId) {
+        const sebagaiPenyewa = dto.sebagaiPenyewa === true;
+        if (sebagaiPenyewa) {
+          if (!ctxBolehKontrak) {
+            throw new ForbiddenException('Anda tidak berhak mendaftarkan penyewa kontrak.');
+          }
+          if (rumah.penyewaId) {
+            throw new ConflictException(`Blok ${dto.blokRumah} masih punya penyewa aktif. Akhiri kontraknya dulu.`);
+          }
+        } else if (rumah.userId) {
           throw new ConflictException(`Blok ${dto.blokRumah} sudah ada pemilik/penanggung jawab lain.`);
         }
 
@@ -436,7 +446,6 @@ export class WargaService {
           data: {
             namaUser: dto.nama.trim(),
             username,
-            email: dto.email ?? null,
             noTelp: dto.no_hp,
             password,
             roleId: roleWarga.id,
@@ -446,15 +455,27 @@ export class WargaService {
           select: { id: true },
         });
 
-        // Klaim rumah secara atomik: pengecekan `rumah.userId` di atas bisa lolos bersamaan untuk
-        // dua request, jadi hanya yang berhasil mengubah baris yang boleh lanjut. Yang kalah
-        // melempar error sehingga akun yang baru dibuatnya ikut dibatalkan (rollback).
-        const klaim = await tx.rumah.updateMany({
-          where: { id: rumah.id, userId: null, isDelete: false },
-          data: { userId: created.id, status, updateBy: actor, updateDate: new Date() },
-        });
+        const klaim = sebagaiPenyewa
+          ? await tx.rumah.updateMany({
+              where: { id: rumah.id, penyewaId: null, isDelete: false },
+              data: {
+                penyewaId: created.id,
+                kontrakMulai: new Date(),
+                status: StatusRumah.DIHUNI_KONTRAK,
+                updateBy: actor,
+                updateDate: new Date(),
+              },
+            })
+          : await tx.rumah.updateMany({
+              where: { id: rumah.id, userId: null, isDelete: false },
+              data: { userId: created.id, status, updateBy: actor, updateDate: new Date() },
+            });
         if (klaim.count !== 1) {
-          throw new ConflictException(`Blok ${dto.blokRumah} sudah ada pemilik/penanggung jawab lain.`);
+          throw new ConflictException(
+            sebagaiPenyewa
+              ? `Blok ${dto.blokRumah} baru saja mendapat penyewa lain.`
+              : `Blok ${dto.blokRumah} sudah ada pemilik/penanggung jawab lain.`,
+          );
         }
         return created;
       });
@@ -462,8 +483,6 @@ export class WargaService {
       return {
         message: 'Akun warga dan data rumah berhasil dibuat!',
         data: await this.findWargaScoped(ctx, user.id),
-        // Selalu dikirim (juga bila diketik pengurus sendiri) supaya frontend bisa menampilkan
-        // kartu akun untuk di-screenshot dan disampaikan ke warga.
         passwordAwal,
       };
     } catch (error) {
@@ -484,6 +503,7 @@ export class WargaService {
           { username: { contains: q } },
           { noTelp: { contains: q } },
           { rumah: { some: { blokRumah: { contains: q }, isDelete: false } } },
+          { rumahSewa: { some: { blokRumah: { contains: q }, isDelete: false } } },
         ],
       });
     }
@@ -494,7 +514,6 @@ export class WargaService {
     });
   }
 
-  /** Dropdown di form Tambah / Edit Rumah */
   async findAllUsers(ctx: AccessContext) {
     const area = areaFilter(ctx);
     return this.prisma.user.findMany({
@@ -518,7 +537,6 @@ export class WargaService {
           ...(dto.nama !== undefined && { namaUser: dto.nama.trim() }),
           ...(dto.no_hp !== undefined && { noTelp: dto.no_hp }),
           ...(dto.username !== undefined && { username: dto.username.trim() }),
-          ...(dto.email !== undefined && { email: dto.email }),
           ...(dto.password && {
             password: await bcrypt.hash(dto.password, SALT_ROUNDS),
             wajibGantiPassword: true,
@@ -537,11 +555,8 @@ export class WargaService {
     }
     await this.findWargaScoped(ctx, id, true);
 
-    // Rumah kosong pun sudah pasti terjual: akun tidak boleh dihapus selama masih
-    // jadi satu-satunya pemilik/penanggung jawab rumah mana pun. Pengurus wajib
-    // menunjuk pemilik pengganti dulu lewat Ubah Rumah.
     const rumahMilik = await this.prisma.rumah.findMany({
-      where: { userId: id, isDelete: false },
+      where: { OR: [{ userId: id }, { penyewaId: id }], isDelete: false },
       select: { id: true, blokRumah: true, rt: true, status: true },
     });
     if (rumahMilik.length > 0) {
@@ -570,7 +585,6 @@ export class WargaService {
     return { message: 'Warga berhasil dihapus.' };
   }
 
-  /** Pengurus RT membuatkan password sementara untuk warga yang lupa password. */
   async resetPassword(ctx: AccessContext, id: number) {
     const warga = await this.findWargaScoped(ctx, id, true);
 
@@ -594,10 +608,6 @@ export class WargaService {
     };
   }
 
-  // ================================================================
-  // PENGAJUAN HAPUS AKUN — pemegang warga.ajukan_hapus (mis. sekre RT) mengajukan untuk
-  // warga yang sudah tidak tinggal di cluster; pemegang warga.approve_hapus (RW) memutuskan.
-  // ================================================================
 
   async ajukanHapus(ctx: AccessContext, id: number, alasan: string) {
     if (id === ctx.user.sub) {
@@ -606,8 +616,6 @@ export class WargaService {
     const warga = await this.findWargaScoped(ctx, id, true);
 
     const area = warga.area ?? 'RW';
-    // Kunci baris warga dulu (SELECT ... FOR UPDATE) supaya klik ganda / dua pengurus bersamaan
-    // diproses bergantian; tanpa ini keduanya lolos cek "belum ada pengajuan" dan terbuat dobel.
     await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM tb_User WHERE id = ${id} FOR UPDATE`;
       const sudahAda = await tx.pengajuanHapusWarga.findFirst({
@@ -636,7 +644,7 @@ export class WargaService {
     });
     await this.notifikasiService.kirimKePermission(
       'warga.approve_hapus',
-      null, // diputuskan RW untuk seluruh RT
+      null,
       'PENGAJUAN_MASUK',
       'Pengajuan Hapus Akun Warga',
       `${ctx.user.nama} mengajukan penghapusan akun ${warga.namaUser} (${area.replace('_', ' ')}), menunggu persetujuan.`,
@@ -647,7 +655,6 @@ export class WargaService {
     return { message: `Pengajuan hapus akun ${warga.namaUser} dikirim ke RW untuk disetujui.` };
   }
 
-  /** AREA: pengajuan di wilayahnya; ALL: semua RT. Default hanya yang masih menunggu. */
   async getPengajuanHapus(ctx: AccessContext, status?: string) {
     const area = areaFilter(ctx);
     return this.prisma.pengajuanHapusWarga.findMany({
@@ -680,8 +687,6 @@ export class WargaService {
       throw new NotFoundException('Akun warga ini sudah tidak ada. Tolak pengajuan ini untuk menutupnya.');
     }
 
-    // Riwayat bayar/pengaduan terikat ke akun (FK), jadi akun tidak bisa dihapus bila ada.
-    // Dicek sebelum rumahnya dilepas supaya kalau gagal, tidak ada yang berubah.
     const [pembayaran, pengaduan] = await Promise.all([
       this.prisma.pembayaranIpl.count({ where: { idUser: p.userId } }),
       this.prisma.pengaduan.count({ where: { idUser: p.userId } }),
@@ -698,19 +703,19 @@ export class WargaService {
     });
 
     await this.prisma.$transaction(async (tx) => {
-      // Klaim pengajuan dulu: dua pemegang approve yang menekan Setujui bersamaan tidak boleh
-      // sama-sama menghapus akunnya (yang kedua akan gagal di user.delete dengan error 500).
       const klaim = await tx.pengajuanHapusWarga.updateMany({
         where: { id, status: 'MENUNGGU' },
         data: { status: 'DISETUJUI', diprosesOleh: ctx.user.nama, diprosesAt: new Date() },
       });
       if (klaim.count !== 1) throw new BadRequestException('Pengajuan ini sudah diputuskan sebelumnya.');
 
-      // Rumah yang tadinya atas nama akun ini dilepas jadi kosong tanpa akun pemilik,
-      // supaya penghuni/pemilik berikutnya bisa mendaftar ke blok itu.
       await tx.rumah.updateMany({
         where: { userId: p.userId },
         data: { userId: null, status: 'KOSONG', updateBy: ctx.user.nama, updateDate: new Date() },
+      });
+      await tx.rumah.updateMany({
+        where: { penyewaId: p.userId },
+        data: { penyewaId: null, kontrakMulai: null, status: 'KOSONG', updateBy: ctx.user.nama, updateDate: new Date() },
       });
       await tx.notifikasi.deleteMany({ where: { idUser: p.userId } });
       await tx.user.delete({ where: { id: p.userId } });
@@ -750,16 +755,7 @@ export class WargaService {
     return { message: `Pengajuan hapus akun ${p.namaUser} ditolak.` };
   }
 
-  // ================================================================
-  // RUMAH / BLOK RUMAH
-  // ================================================================
 
-  /**
-   * Status hunian terpisah dari kepemilikan: rumah kosong pun sudah pasti terjual
-   * sehingga boleh tetap ada pemilik/penanggung jawab IPL (`userId`).
-   * `userId = null` hanya berarti "pemilik belum terdaftar akun", bukan "tak bertuan".
-   * Aturan: DIHUNI_* wajib ada pemilik; KOSONG boleh ada pemilik atau belum.
-   */
   private resolveStatus(userId: number | null, status?: StatusRumah): StatusRumah {
     if (status === 'KOSONG') {
       return StatusRumah.KOSONG;
@@ -770,7 +766,6 @@ export class WargaService {
       }
       return status;
     }
-    // Status tidak diisi: ikuti kepemilikan (ada pemilik -> tetap, tanpa pemilik -> kosong).
     return userId ? StatusRumah.DIHUNI_TETAP : StatusRumah.KOSONG;
   }
 
@@ -787,7 +782,10 @@ export class WargaService {
     const area = areaFilter(ctx);
     return this.prisma.rumah.findMany({
       where: { isDelete: false, ...rtFilter(area) },
-      include: { penghuni: { select: PENGHUNI_SELECT } },
+      include: {
+        penghuni: { select: PENGHUNI_SELECT },
+        penyewa: { select: { id: true, namaUser: true, username: true, noTelp: true } },
+      },
       orderBy: [{ rt: 'asc' }, { blokRumah: 'asc' }],
     });
   }
@@ -806,7 +804,6 @@ export class WargaService {
     }
 
     const include = { penghuni: { select: PENGHUNI_SELECT } };
-    // Blok yang pernah dihapus (soft delete) dihidupkan lagi, karena kombinasi RT+blok unik.
     if (existing) {
       const revived = await this.prisma.rumah.update({
         where: { id: existing.id },
@@ -841,7 +838,6 @@ export class WargaService {
     const userId = dto.userId !== undefined ? dto.userId : existing.userId;
     if (dto.userId) await this.assertPenghuniBoleh(ctx, dto.userId);
 
-    // Status eksplisit dari klien menang; kalau penghuni berubah tanpa status, ikuti penghuni.
     const statusDiminta =
       dto.status ??
       (dto.userId !== undefined && (dto.userId === null) !== (existing.userId === null)
@@ -862,9 +858,6 @@ export class WargaService {
         },
         include: { penghuni: { select: PENGHUNI_SELECT } },
       });
-      // Jejak audit anti-kecurangan: perubahan status/pemilik selalu tercatat.
-      // Flip ke KOSONG diteruskan ke pimpinan RW karena porsi IPL rumah itu
-      // berhenti disetor ke RW dan masuk kas RT.
       if (existing.status !== status || existing.userId !== userId) {
         const rtLabel = (existing.rt as string).replace('_', ' ');
         await this.audit.catat(ctx.user.sub, 'rumah.ubah_status', {
@@ -893,6 +886,99 @@ export class WargaService {
     }
   }
 
+  async mulaiKontrak(ctx: AccessContext, rumahId: number, dto: MulaiKontrakDto) {
+    const rumah = await this.prisma.rumah.findFirst({ where: { id: rumahId, isDelete: false } });
+    if (!rumah) throw new NotFoundException(`Rumah dengan ID ${rumahId} tidak ditemukan`);
+    assertInArea(ctx, rumah.rt);
+    if (rumah.penyewaId) {
+      throw new ConflictException('Rumah ini masih punya penyewa aktif. Akhiri kontraknya dulu sebelum menambah penyewa baru.');
+    }
+    if (dto.penyewaId === rumah.userId) {
+      throw new BadRequestException('Penyewa tidak boleh akun pemilik rumah itu sendiri.');
+    }
+    const penyewa = await this.prisma.user.findFirst({
+      where: { id: dto.penyewaId, role: { level: LEVEL_WARGA } },
+      select: { id: true, namaUser: true, area: true },
+    });
+    if (!penyewa) throw new NotFoundException('Akun warga untuk penyewa tidak ditemukan.');
+    assertInArea(ctx, penyewa.area);
+
+    const updated = await this.prisma.rumah.update({
+      where: { id: rumahId },
+      data: {
+        penyewaId: penyewa.id,
+        kontrakMulai: new Date(),
+        status: StatusRumah.DIHUNI_KONTRAK,
+        updateBy: ctx.user.nama,
+        updateDate: new Date(),
+      },
+      include: { penyewa: { select: { id: true, namaUser: true, username: true, noTelp: true } } },
+    });
+    const rtLabel = (rumah.rt as string).replace('_', ' ');
+    await this.audit.catat(ctx.user.sub, 'rumah.kontrak_mulai', {
+      target: 'Rumah',
+      targetId: rumahId,
+      keterangan: `Blok ${rumah.blokRumah} (${rtLabel}): kontrak dimulai, penyewa ${penyewa.namaUser}.`,
+    });
+    await this.notifikasiService.kirimBanyak(
+      [penyewa.id],
+      'PERUBAHAN_DATA',
+      'Anda Terdaftar Sebagai Penyewa',
+      `Anda terdaftar sebagai penyewa blok ${rumah.blokRumah} (${rtLabel}). Tagihan IPL rumah ini berikutnya akan masuk ke akun Anda.`,
+      '/dashboard/kelola-ipl/tagihan-warga',
+    );
+    return { message: `Kontrak dimulai. ${penyewa.namaUser} kini menjadi penyewa blok ${rumah.blokRumah}.`, data: updated };
+  }
+
+  async akhiriKontrak(ctx: AccessContext, rumahId: number, dto: AkhiriKontrakDto) {
+    const rumah = await this.prisma.rumah.findFirst({
+      where: { id: rumahId, isDelete: false },
+      include: { penyewa: { select: { id: true, namaUser: true } } },
+    });
+    if (!rumah) throw new NotFoundException(`Rumah dengan ID ${rumahId} tidak ditemukan`);
+    assertInArea(ctx, rumah.rt);
+    if (!rumah.penyewaId || !rumah.penyewa) {
+      throw new BadRequestException('Rumah ini tidak sedang dikontrakkan.');
+    }
+    const statusSetelah = dto.statusSetelah ?? StatusRumah.KOSONG;
+    if (statusSetelah === StatusRumah.DIHUNI_TETAP && !rumah.userId) {
+      throw new BadRequestException('Rumah tanpa pemilik terdaftar tidak bisa berstatus dihuni tetap.');
+    }
+
+    const updated = await this.prisma.rumah.update({
+      where: { id: rumahId },
+      data: {
+        penyewaId: null,
+        kontrakMulai: null,
+        status: statusSetelah,
+        updateBy: ctx.user.nama,
+        updateDate: new Date(),
+      },
+    });
+    const rtLabel = (rumah.rt as string).replace('_', ' ');
+    await this.audit.catat(ctx.user.sub, 'rumah.kontrak_akhir', {
+      target: 'Rumah',
+      targetId: rumahId,
+      keterangan: `Blok ${rumah.blokRumah} (${rtLabel}): kontrak ${rumah.penyewa.namaUser} berakhir, status -> ${statusSetelah}.`,
+    });
+    await this.notifikasiService.kirimBanyak(
+      [rumah.penyewa.id],
+      'PERUBAHAN_DATA',
+      'Kontrak Rumah Berakhir',
+      `Kontrak Anda di blok ${rumah.blokRumah} (${rtLabel}) telah diakhiri pengurus. Tagihan baru rumah ini tidak lagi ke akun Anda.`,
+    );
+    if (rumah.userId) {
+      await this.notifikasiService.kirimBanyak(
+        [rumah.userId],
+        'PERUBAHAN_DATA',
+        'Kontrak Rumah Berakhir',
+        `Kontrak penyewa di blok ${rumah.blokRumah} (${rtLabel}) telah berakhir. Tagihan IPL rumah ini kembali ke akun Anda.`,
+        '/dashboard/kelola-ipl/tagihan-warga',
+      );
+    }
+    return { message: 'Kontrak diakhiri. Tagihan berikutnya kembali ke pemilik.', data: updated };
+  }
+
   async removeRumah(ctx: AccessContext, id: number) {
     const existing = await this.prisma.rumah.findFirst({ where: { id, isDelete: false } });
     if (!existing) throw new NotFoundException(`Rumah dengan ID ${id} tidak ditemukan`);
@@ -911,18 +997,7 @@ export class WargaService {
     return { message: 'Rumah berhasil dihapus.' };
   }
 
-  // ================================================================
-  // REGISTRASI MANDIRI (Bagian 3) — warga daftar sendiri, masuk status Menunggu
-  // Persetujuan; pengurus RT (permission warga.approve_registrasi) yang
-  // menyetujui/menolak. Endpoint daftar & rumah-kosong bersifat publik
-  // (lihat @Public() di WargaController), sisanya butuh permission seperti biasa.
-  // ================================================================
 
-  /**
-   * Publik: blok rumah KOSONG yang pemiliknya belum terdaftar akun
-   * (`userId null` = pemilik belum punya akun, bukan tak bertuan),
-   * untuk dropdown form register mandiri.
-   */
   async getRumahKosong(rt: string) {
     if (!SEMUA_RT.includes(rt as RT)) {
       throw new BadRequestException('RT tidak valid.');
@@ -946,7 +1021,7 @@ export class WargaService {
 
     const [userDuplikat, pendaftaranDuplikat] = await Promise.all([
       this.prisma.user.findFirst({
-        where: { OR: [{ username: dto.noTelp }, ...(dto.email ? [{ email: dto.email }] : [])] },
+        where: { username: dto.noTelp },
         select: { id: true },
       }),
       this.prisma.pendaftaranWarga.findFirst({
@@ -955,7 +1030,7 @@ export class WargaService {
       }),
     ]);
     if (userDuplikat) {
-      throw new ConflictException('Nomor HP atau email ini sudah terdaftar sebagai akun.');
+      throw new ConflictException('Nomor HP ini sudah terdaftar sebagai akun.');
     }
     if (pendaftaranDuplikat) {
       throw new ConflictException(
@@ -968,15 +1043,12 @@ export class WargaService {
       data: {
         namaUser: dto.namaUser.trim(),
         noTelp: dto.noTelp.trim(),
-        email: dto.email ?? null,
         password,
         rt: dto.rt,
         rumahId: dto.rumahId,
       },
     });
 
-    // Area di sini selalu RT (tidak pernah 'RW'), jadi kirimKePermission biasa sudah
-    // mencocokkan area persis — lihat catatan seluruhRw di NotifikasiService.
     await this.notifikasiService.kirimKePermission(
       'warga.approve_registrasi',
       dto.rt,
@@ -989,7 +1061,6 @@ export class WargaService {
     return { message: 'Pendaftaran berhasil dikirim. Menunggu persetujuan pengurus RT.' };
   }
 
-  /** Pengurus: daftar pendaftaran di area-nya (default hanya yang masih Menunggu). */
   async getPendaftaran(ctx: AccessContext, status?: string) {
     const area = areaFilter(ctx);
     return this.prisma.pendaftaranWarga.findMany({
@@ -1014,9 +1085,6 @@ export class WargaService {
 
   async setujuiPendaftaran(ctx: AccessContext, id: number, statusHunian?: StatusRumah) {
     const pendaftaran = await this.findPendaftaranScoped(ctx, id);
-    // Default KOSONG: pendaftar umumnya pemilik rumah kosong yang tetap tidak
-    // menempati rumahnya (tetap ditagih IPL, masuk kas RT). Pengurus dapat
-    // memilih DIHUNI_* bila pendaftar langsung menempati rumah tersebut.
     const statusAwal: StatusRumah = statusHunian ?? StatusRumah.KOSONG;
 
     const roleWarga = await this.prisma.role.findFirst({
@@ -1028,8 +1096,6 @@ export class WargaService {
 
     try {
       const user = await this.prisma.$transaction(async (tx) => {
-        // Cek ulang rumah masih kosong — bisa saja sudah diisi pengurus lewat menu Data
-        // Warga sejak pendaftaran ini masuk.
         const rumah = await tx.rumah.findUnique({ where: { id: pendaftaran.rumahId } });
         if (!rumah || rumah.isDelete || rumah.userId) {
           throw new ConflictException(
@@ -1041,19 +1107,15 @@ export class WargaService {
           data: {
             namaUser: pendaftaran.namaUser,
             username: pendaftaran.noTelp,
-            email: pendaftaran.email,
             noTelp: pendaftaran.noTelp,
-            password: pendaftaran.password, // sudah di-hash sejak daftarMandiri()
+            password: pendaftaran.password,
             roleId: roleWarga.id,
             area: pendaftaran.rt,
-            wajibGantiPassword: false, // password sudah dipilih sendiri, bukan sementara
+            wajibGantiPassword: false,
           },
           select: { id: true },
         });
 
-        // Klaim atomik: rumah harus masih tanpa pemilik, dan pendaftaran masih PENDING. Dua
-        // persetujuan bersamaan (rumah yang sama, atau pendaftaran yang sama) tidak boleh lolos
-        // dua-duanya; yang kalah melempar error sehingga akun yang baru dibuatnya dibatalkan.
         const klaimRumah = await tx.rumah.updateMany({
           where: { id: rumah.id, userId: null, isDelete: false },
           data: { userId: created.id, status: statusAwal, updateBy: ctx.user.nama, updateDate: new Date() },

@@ -19,7 +19,6 @@ const STATUS_FILTER_OPTIONS = [
   { val: "LUNAS", label: "Lunas" },
 ];
 
-// ── Warga: lihat & bayar tagihan milik sendiri ────────────────────────────────
 function formatRt(rt) {
   return String(rt || "").replace("_", " ");
 }
@@ -40,7 +39,6 @@ function WargaStatusBadge({ status }) {
 
 const rupiah = formatRupiah;
 
-// ── Modal: Riwayat Transaksi (read-only, untuk tagihan Lunas role Warga) ────
 function RiwayatTransaksiModal({ ipl, onClose }) {
   const pembayaran = ipl?.pembayaran?.[0];
   const buktiPath = pembayaran?.buktiTransaksi
@@ -55,12 +53,10 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
           <button className="ipl-modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="ipl-modal-body">
-          {/* Bukti transfer (di atas data tagihan) */}
           <div className="review-bukti-section">
             <ProtectedImage path={buktiPath} alt="Bukti Transfer" className="review-bukti-img" />
           </div>
 
-          {/* Info tagihan */}
           <div className="review-info-grid riwayat-info-grid">
             <div className="review-info-item">
               <span className="review-info-label">Unit</span>
@@ -102,8 +98,6 @@ function RiwayatTransaksiModal({ ipl, onClose }) {
   );
 }
 
-// View tagihan milik sendiri — dipakai route /kelola-ipl/tagihan-warga (warga)
-// dan /kelola-ipl/tagihan-pengurus (pengurus) tanpa duplikasi kode.
 export function WargaIuranView({ user }) {
   const currentYm = getCurrentYm();
   const monthDiffInclusive = (dari, sampai) => {
@@ -116,13 +110,9 @@ export function WargaIuranView({ user }) {
   const [tagihanGabungan, setTagihanGabungan] = useState([]);
   const [loadingRumah, setLoadingRumah] = useState(true);
   const [loadingTagihan, setLoadingTagihan] = useState(false);
-  const [modalIpl, setModalIpl] = useState(null); // IPL yang akan dibayar
-  const [riwayatIpl, setRiwayatIpl] = useState(null); // IPL Lunas yang dilihat riwayatnya
+  const [modalIpl, setModalIpl] = useState(null);
+  const [riwayatIpl, setRiwayatIpl] = useState(null);
 
-  // Filter hijau model popover — sama seperti Tagihan IPL admin,
-  // dengan pola draft + Terapkan + Reset ala filter Keuangan:
-  // data baru terfilter setelah tombol Terapkan diklik.
-  // Default WARGA: kosong = Semua Periode (langsung tampil semua data)
   const [periodeDari, setPeriodeDari] = useState("");
   const [periodeSampai, setPeriodeSampai] = useState("");
   const [filterStatus, setFilterStatus] = useState("SEMUA");
@@ -130,14 +120,12 @@ export function WargaIuranView({ user }) {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  // Draft popover (baru diterapkan saat Terapkan diklik)
   const [filterOpen, setFilterOpen] = useState(false);
   const [draftDari, setDraftDari] = useState("");
   const [draftSampai, setDraftSampai] = useState("");
   const [draftStatus, setDraftStatus] = useState("SEMUA");
   const [draftUnit, setDraftUnit] = useState("semua");
 
-  // Normalisasi + validasi turunan — kosong = Semua Periode (tanpa filter)
   const [dari, sampai] = periodeDari && periodeSampai
     ? periodeDari > periodeSampai
       ? [periodeSampai, periodeDari]
@@ -147,7 +135,6 @@ export function WargaIuranView({ user }) {
     ? "Rentang periode maksimal 12 bulan."
     : "";
 
-  // Validasi draft di dalam popover (sebelum diterapkan)
   const [draftDariN, draftSampaiN] = draftDari && draftSampai
     ? draftDari > draftSampai
       ? [draftSampai, draftDari]
@@ -158,7 +145,6 @@ export function WargaIuranView({ user }) {
     : "";
 
   const hasActiveFilter = !!periodeDari || !!periodeSampai || filterStatus !== "SEMUA" || selectedRumahId !== "semua";
-  // displayDari/displaySampai terurut kronologis agar label tidak terbalik jika user isi Dari > Sampai
   const displayDari = periodeDari && periodeSampai && periodeDari > periodeSampai ? periodeSampai : periodeDari;
   const displaySampai = periodeDari && periodeSampai && periodeDari > periodeSampai ? periodeDari : periodeSampai;
   const periodeLabel = !displayDari && !displaySampai
@@ -169,7 +155,6 @@ export function WargaIuranView({ user }) {
         ? formatYmPanjang(displayDari)
         : `${formatYmPanjang(displayDari)} - ${formatYmPanjang(displaySampai)}`;
 
-  // Sinkronkan draft dari filter yang sedang diterapkan setiap popover dibuka
   const handleFilterOpenChange = (next) => {
     if (next) {
       setDraftDari(periodeDari);
@@ -215,8 +200,6 @@ export function WargaIuranView({ user }) {
       setTagihanGabungan(res.tagihan || []);
     } catch (err) {
       console.warn("getTagihanByUser gagal, fallback per-rumah:", err);
-      // Fallback: ambil rumah lalu tagihan per rumah satu-satu,
-      // lalu filter range + status + search di sisi klien
       const rumah = await portalApi.getRumahByUser(uid);
       setRumahList(rumah || []);
       const all = [];
@@ -247,13 +230,11 @@ export function WargaIuranView({ user }) {
     }
   };
 
-  // Load data gabungan on mount & saat filter berubah
   useEffect(() => {
     loadGabungan(user.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dari, sampai, filterStatus, search]);
 
-  // Search debounce (sama seperti filter keuangan admin)
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400);
     return () => clearTimeout(t);
@@ -263,16 +244,12 @@ export function WargaIuranView({ user }) {
     loadGabungan(user.id);
   };
 
-  // Data tabel: filter по rumah terpilih
   const displayData = useMemo(() => {
     if (selectedRumahId === "semua") return tagihanGabungan;
     const id = Number(selectedRumahId);
     return tagihanGabungan.filter((t) => (t.rumah?.id ?? t.idRumah) === id);
   }, [tagihanGabungan, selectedRumahId]);
 
-  // Ringkasan tampilan (periode terpilih, sesuai filter rumah).
-  // Nominal hanya menjumlah tagihan yang belum lunas (BELUM_LUNAS + MENUNGGU_KONFIRMASI);
-  // yang sudah LUNAS dikecualikan.
   const ringkasan = useMemo(() => {
     const tagihanAktif = displayData.filter((t) => t.statusPembayaran !== "LUNAS");
     const total = tagihanAktif.reduce((s, t) => s + (Number(t.nominal) || 0), 0);
@@ -285,7 +262,6 @@ export function WargaIuranView({ user }) {
     };
   }, [displayData]);
 
-  // Label periode untuk hero & tabel (mengikuti filter range yang dipilih)
   const heroLabel = periodeLabel;
 
   const { page: pageRiwayat, totalPages: totalPagesRiwayat, paginatedItems: riwayatPage, prev: prevRiwayat, next: nextRiwayat } = usePagination(
@@ -322,7 +298,6 @@ export function WargaIuranView({ user }) {
 
   return (
     <div className="page-stack">
-      {/* Ringkasan Total Gabungan */}
       <BillSummaryCard
         unitLabel={
           selectedRumahId === "semua"
@@ -339,7 +314,6 @@ export function WargaIuranView({ user }) {
         loading={loadingTagihan}
       />
 
-      {/* ── Search + Filter (sama seperti Tagihan IPL admin) ── */}
       <div className="list-toolbar-row">
         <div className="list-search-wrap">
           <Search size={15} className="list-search-icon" />
@@ -427,7 +401,6 @@ export function WargaIuranView({ user }) {
         </FilterPopover>
       </div>
 
-      {/* Tabel Riwayat Tagihan */}
       <section className="content-card">
         <div className="card-header-row">
           <h3>Riwayat Tagihan {heroLabel}</h3>
@@ -459,7 +432,7 @@ export function WargaIuranView({ user }) {
                     <th>Periode</th>
                     <th>Nominal</th>
                     <th>Status</th>
-                    <th>Aksi</th>
+                    <th className="th-aksi">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -507,7 +480,6 @@ export function WargaIuranView({ user }) {
               {riwayatPage.map((ipl) => {
                 const bisaRiwayat = ipl.statusPembayaran === "LUNAS" && !!ipl.pembayaran?.[0];
                 const bisaBayar = ipl.statusPembayaran === "BELUM_LUNAS";
-                // Kartu belum lunas: klik membuka pop up bayar. Kartu lunas: klik membuka riwayat transaksi.
                 const aksiKartu = bisaBayar ? () => setModalIpl(ipl) : bisaRiwayat ? () => setRiwayatIpl(ipl) : null;
                 return (
                 <div
@@ -541,7 +513,6 @@ export function WargaIuranView({ user }) {
         )}
       </section>
 
-      {/* Modal Upload Bukti */}
       {modalIpl && (
         <BuktiUploadModal
           ipl={modalIpl}
@@ -552,7 +523,6 @@ export function WargaIuranView({ user }) {
         />
       )}
 
-      {/* Modal Riwayat Transaksi */}
       {riwayatIpl && (
         <RiwayatTransaksiModal
           ipl={riwayatIpl}

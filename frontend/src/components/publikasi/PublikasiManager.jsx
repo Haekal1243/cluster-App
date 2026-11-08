@@ -1,5 +1,6 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
 import { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
@@ -31,13 +32,8 @@ import { formatTanggalPendek as formatDate } from "@/lib/format";
 
 const PAGE_SIZE = 10;
 
-/**
- * Halaman kelola kegiatan / pengumuman. Keduanya berbagi alur yang sama:
- * milik RT pembuatnya, diajukan sekre RT ke RW, di-ACC ketua/sekre RW.
- * Tombol yang tampil mengikuti permission user (dari tabel role-permission).
- */
 export default function PublikasiManager({
-  menu, // "kegiatan" | "pengumuman"
+  menu,
   title,
   subtitle,
   noun,
@@ -48,6 +44,7 @@ export default function PublikasiManager({
   dateField,
   dateLabel,
   searchFields,
+  tabs,
 }) {
   const { user, ready } = useUser();
   const [items, setItems] = useState([]);
@@ -65,9 +62,6 @@ export default function PublikasiManager({
   const bolehTambah = can(user, `${menu}.create`);
   const bolehApprove = can(user, `${menu}.approve`);
   const bolehUbahStatus = (item) => bolehTulis(user, `${menu}.update`, item);
-  // Dipakai buat nyembunyiin kolom/toggle Status sepenuhnya kalau role ini memang
-  // nggak pernah punya hak ubah (bukan cuma didisable) — mis. Bendahara/Ketua RT&RW
-  // yang di tabel permission cuma punya read, beda dari Sekre yang punya CRUD penuh.
   const bisaUbahStatusMenu = can(user, `${menu}.update`);
   const lihatSemuaWilayah = user?.permissions?.[`${menu}.read`] === "ALL";
 
@@ -88,7 +82,6 @@ export default function PublikasiManager({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, user?.id]);
 
-  // Refetch berkala (pengumuman/kegiatan baru dari sesama pengurus langsung kelihatan).
   useAutoRefresh(() => {
     if (ready && user) loadData(true);
   });
@@ -99,7 +92,6 @@ export default function PublikasiManager({
 
   const handleSubmit = async ({ file, ...fields }) => {
     try {
-      // Kolom yang tidak boleh diubah pengurus tanpa hak ACC ikut terkirim kosong; backend mengabaikannya.
       const payload = { ...fields, file };
       if (modal.mode === "edit" && modal.item) {
         await api.update(modal.item.id, payload);
@@ -186,7 +178,6 @@ export default function PublikasiManager({
     });
 
     return [...filtered].sort((a, b) => {
-      // Pengajuan yang perlu diputuskan RW paling atas
       if (bolehApprove && (a.statusPengajuan === "DIAJUKAN") !== (b.statusPengajuan === "DIAJUKAN")) {
         return a.statusPengajuan === "DIAJUKAN" ? -1 : 1;
       }
@@ -203,8 +194,6 @@ export default function PublikasiManager({
   if (!ready || !user) return null;
 
   const renderPengajuanBadge = (item) => {
-    // Item area RW otomatis tampil ke semua warga, sama seperti pengajuan yang disetujui.
-    // Ditolak RW tampil sebagai "Hanya RT ini"; alasan penolakannya ada di detail & tooltip.
     const p = item.area === "RW"
       ? PENGAJUAN.DISETUJUI
       : item.statusPengajuan === "DITOLAK"
@@ -217,7 +206,6 @@ export default function PublikasiManager({
     );
   };
 
-  // `hideDetail`: dipakai di kartu HP — kartunya sendiri bisa diklik buat buka detail.
   const renderActions = (item, size, hideDetail = false) => (
     <div className="table-actions">
       {DetailModal && !hideDetail && (
@@ -269,7 +257,10 @@ export default function PublikasiManager({
           <h2>{title}</h2>
           <p>{subtitle}</p>
         </div>
+        <PageHelp id={menu} />
       </div>
+
+      {tabs}
 
       {bolehApprove && menungguCount > 0 && (
         <div className="pengajuan-banner">
@@ -386,7 +377,7 @@ export default function PublikasiManager({
                 {lihatSemuaWilayah && <th>Wilayah</th>}
                 <th>Visibilitas</th>
                 {bisaUbahStatusMenu && <th>Status</th>}
-                <th>Aksi</th>
+                <th className="th-aksi">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -406,7 +397,6 @@ export default function PublikasiManager({
           </table>
         </div>
 
-        {/* Role pengelola (punya aksi ubah/hapus/ajukan) dapat 1 kartu per baris biar tombolnya lega. */}
         <div className={`pengumuman-grid${bolehTambah ? " pengumuman-grid-single" : ""}`}>
           {!isLoading &&
             paginatedItems.map((item) => (

@@ -3,16 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { DEFAULT_PAGE_SIZE } from "@/components/ui/Pagination";
 
-/**
- * Hook pagination client-side: 10 data per halaman.
- * Otomatis reset ke halaman 1 setiap `resetKeys` (search/filter) berubah
- * dan menjepit halaman aktif bila total data menyusut.
- */
 export function usePagination(items, resetKeys = [], pageSize = DEFAULT_PAGE_SIZE) {
   const [page, setPage] = useState(1);
 
-  // Reset ke halaman pertama saat filter/pencarian berubah
-  // (pola yang sama dipakai PublikasiManager untuk PAGE_SIZE 10).
   useEffect(() => {
     setPage(1);
   }, resetKeys);

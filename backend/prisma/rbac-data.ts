@@ -83,6 +83,7 @@ export const PERMISSIONS: Record<string, Record<string, string>> = {
     create: 'Tambah rumah baru',
     update: 'Ubah data rumah (pemilik/status)',
     delete: 'Hapus rumah',
+    kontrak: 'Kelola kontrak penyewa rumah (mulai/akhiri)',
   },
   role: {
     manage: 'Kelola role dan matriks permission',
@@ -223,6 +224,7 @@ export const MATRIX: Record<string, Grant[]> = {
     ['warga.approve_registrasi', 'AREA'],
     ['rumah.read', 'AREA'],
     ['rumah.update', 'AREA'],
+    ['rumah.kontrak', 'AREA'],
     ['ipl.read', 'AREA'],
     ['ipl.bayar', 'OWN'],
     ['keuangan.read', 'AREA'],
@@ -259,5 +261,6 @@ export const MATRIX: Record<string, Grant[]> = {
     ['warga.delete', 'ALL'],
     ['warga.reset_password', 'ALL'],
     ...CRUD('rumah', 'ALL'),
+    ['rumah.kontrak', 'ALL'],
   ],
 };

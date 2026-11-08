@@ -3,13 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-/**
- * Tautan ke halaman login dengan transisi sederhana: saat diklik, layar navy melebar dari tombol yang diklik
- * (lingkaran membesar) sambil memunculkan logo Topaz, lalu pindah ke halaman login, dan layar itu memudar setelah
- * halaman login tampil. Gayanya ditulis inline lewat JS karena elemennya hidup melewati pergantian halaman
- * (CSS landing bisa terlepas saat route berganti). Tanpa animasi kalau sistem diatur "kurangi gerak",
- * atau kalau tautan dibuka di tab baru (Ctrl/Cmd/Shift-klik).
- */
 function mulaiTransisi(tombol, pindah, tujuan) {
   if (document.getElementById("tz-transisi")) return pindah();
 
@@ -48,10 +41,8 @@ function mulaiTransisi(tombol, pindah, tujuan) {
     logo.style.transform = "scale(1) rotate(0deg)";
   });
 
-  // Pindah setelah layar penuh menutupi halaman.
   setTimeout(pindah, 620);
 
-  // Lepas layar setelah halaman tujuan benar-benar tampil (maks. 8 detik supaya tidak pernah menggantung).
   const mulai = Date.now();
   const cek = setInterval(() => {
     const lama = Date.now() - mulai;

@@ -23,13 +23,10 @@ export default function Navbar() {
   const [spinCount, setSpinCount] = useState(0);
   const drawerRef = useRef(null);
 
-  // key={spinCount} bikin tombolnya remount tiap klik, supaya animasi spin 360°
-  // selalu terputar ulang dari awal (bukan cuma sekali lalu diam).
   const toggleDrawer = () => {
     setDrawerOpen((prev) => !prev);
     setSpinCount((c) => c + 1);
   };
-  // Di halaman lain (mis. Portofolio) tautan #bagian harus kembali ke beranda dulu.
   const pathname = usePathname();
   const base = pathname === "/landingpage" ? "" : "/landingpage";
   const resolveHref = (href) => (href.startsWith("#") ? `${base}${href}` : href);
@@ -43,7 +40,6 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Kunci scroll body selagi drawer terbuka, biar konten di belakangnya tidak ikut geser.
   useEffect(() => {
     if (!drawerOpen) return;
     const prevOverflow = document.body.style.overflow;
@@ -53,7 +49,6 @@ export default function Navbar() {
     };
   }, [drawerOpen]);
 
-  // Tutup drawer dengan tombol Escape.
   useEffect(() => {
     if (!drawerOpen) return;
     const onKeyDown = (e) => {
@@ -109,7 +104,6 @@ export default function Navbar() {
           Masuk
         </LinkMasuk>
 
-        {/* Tombol buka sidebar drawer — pengganti .lp-nav-link di layar <=1024px. */}
         <button
           key={spinCount}
           type="button"
@@ -122,7 +116,6 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Overlay + sidebar drawer (mobile/tablet) */}
       <div
         className={`lp-drawer-overlay ${drawerOpen ? "is-open" : ""}`}
         onClick={() => setDrawerOpen(false)}

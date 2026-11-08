@@ -39,7 +39,6 @@ function monthDiffInclusive(dari, sampai) {
   return (y2 - y1) * 12 + (m2 - m1) + 1;
 }
 
-/** Dashboard khusus Bendahara RW: ringkasan setoran IPL RT → kas RW. */
 export default function DashboardRW({ user }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,12 +82,10 @@ export default function DashboardRW({ user }) {
   }, [dari, sampai, rangeError]);
 
   useEffect(() => {
-    // Fetch awal; state berikutnya mengalir dari promise, bukan render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     muat();
   }, [muat]);
 
-  // Kegiatan & pengumuman: sama seperti dashboard warga — hanya yang aktif/akan datang.
   useEffect(() => {
     let cancelled = false;
     async function loadKegiatan() {
@@ -98,12 +95,11 @@ export default function DashboardRW({ user }) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const batasSelesai = new Date(today);
-      batasSelesai.setDate(batasSelesai.getDate() - 7); // sama dengan lama kegiatan dianggap aktif
+      batasSelesai.setDate(batasSelesai.getDate() - 7);
       const akanDatang = (data || []).filter((k) => {
         const t = new Date(k.tanggalAcara);
         return Number.isNaN(t.getTime()) || t >= batasSelesai;
       });
-      // yang akan datang paling dekat di depan; yang baru selesai (masih bisa dinilai) di belakang
       const hariIni = (k) => new Date(k.tanggalAcara) >= today;
       akanDatang.sort((a, b) => {
         if (hariIni(a) !== hariIni(b)) return hariIni(a) ? -1 : 1;
@@ -137,7 +133,6 @@ export default function DashboardRW({ user }) {
 
   return (
     <div className="page-stack rw-dash">
-      {/* ── Hero ── */}
       <section
         className="welcome-banner"
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}
@@ -211,7 +206,6 @@ export default function DashboardRW({ user }) {
         </div>
       )}
 
-      {/* ── KPI ── */}
       <section className="ipl-summary-grid keu-summary-grid" aria-label="Indikator setoran">
         {loading || !data ? (
           <>
@@ -235,7 +229,6 @@ export default function DashboardRW({ user }) {
         )}
       </section>
 
-      {/* ── Bawah: tren + kolom tindakan/aktivitas ── */}
       {!loading && data && (
         <div className="rw-bottom">
           <div className="rw-tren">
@@ -248,7 +241,6 @@ export default function DashboardRW({ user }) {
         </div>
       )}
 
-      {/* Kegiatan Cluster */}
       <section className="content-card">
         <div className="db-section-header">
           <CalendarDays size={17} />
@@ -297,7 +289,6 @@ export default function DashboardRW({ user }) {
         )}
       </section>
 
-      {/* Pengumuman */}
       <section className="content-card">
         <div className="db-section-header">
           <Megaphone size={17} />

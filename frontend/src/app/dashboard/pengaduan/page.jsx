@@ -1,8 +1,9 @@
 "use client";
 
+import PageHelp from "@/components/ui/PageHelp";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Plus, Eye, MessageSquareReply, MessageSquareWarning, Calendar, Search, Forward, User, Tag,
+  Plus, Eye, MessageSquareReply, MessageSquareWarning, Calendar, Search, Forward, User, Tag, Inbox, UserRound,
 } from "lucide-react";
 import { pengaduanApi } from "@/lib/api";
 import { showMessage } from "@/lib/message";
@@ -32,8 +33,6 @@ const STATUS_LABELS = {
   DITOLAK: { label: "Ditolak", cls: "status-ditolak" },
 };
 
-// Urutan prioritas: yang masih perlu ditindaklanjuti (Menunggu/Diproses) duluan,
-// baru Selesai, lalu Ditolak. Di dalam grup yang sama, diurutkan tanggal terbaru dulu.
 const STATUS_PRIORITY = {
   MENUNGGU: 0,
   DIPROSES: 0,
@@ -41,13 +40,11 @@ const STATUS_PRIORITY = {
   DITOLAK: 2,
 };
 
-// Urutan tanggal di filter. "prioritas" (khusus pengurus) = status yang perlu ditindaklanjuti dulu.
 const URUTAN_LABELS = {
   terbaru: "Terbaru dulu",
   terlama: "Terlama dulu",
 };
 
-/** Urutkan berdasarkan tanggal lapor; `terlama` = naik (asc), selain itu turun (desc). */
 function urutkanTanggal(list, urutan) {
   const arah = urutan === "terlama" ? 1 : -1;
   return [...list].sort((a, b) => arah * (new Date(a.createdAt) - new Date(b.createdAt)));
@@ -58,7 +55,6 @@ function StatusBadge({ status }) {
   return <span className={`ipl-status-badge ${s.cls}`}>{s.label}</span>;
 }
 
-// Hanya yang punya permission pengaduan.respon yang boleh menanggapi; lainnya hanya melihat.
 function canRespond(item, boleh = true) {
   return boleh && (item.status === "MENUNGGU" || item.status === "DIPROSES");
 }
@@ -90,7 +86,6 @@ function PengaduanActionButton({ item, onAction, bolehRespon }) {
   );
 }
 
-/** Kartu pengaduan untuk layar HP (desktop memakai tabel). Dipakai bersama oleh tampilan pengurus dan warga. */
 function PengaduanCard({ item, onOpen, pelapor, aksi }) {
   const metaItems = [
     pelapor && { icon: User, label: pelapor },
@@ -129,7 +124,6 @@ function PengaduanCard({ item, onOpen, pelapor, aksi }) {
   );
 }
 
-// ── Admin/Pengurus: lihat & tanggapi semua pengaduan ──────────────────────────
 function AdminPengaduanView({ user }) {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -190,7 +184,6 @@ function AdminPengaduanView({ user }) {
     loadData();
   }, []);
 
-  // Refetch berkala biar pengaduan baru dari warga langsung kelihatan tanpa reload manual.
   useAutoRefresh(() => loadData(true));
 
   const currentUserName = user?.nama || user?.name || "Admin";
@@ -233,7 +226,6 @@ function AdminPengaduanView({ user }) {
     });
   }, [items, filterKategori, filterStatus, filterBulan, filterTahun, urutan, search]);
 
-  // Opsi Bulan & Tahun di filter cuma nampilin yang beneran ada datanya
   const availableTahun = useMemo(() => {
     const years = new Set(
       items.filter((i) => i.createdAt).map((i) => String(new Date(i.createdAt).getFullYear()))
@@ -374,7 +366,7 @@ function AdminPengaduanView({ user }) {
                   <th>Kategori</th>
                   <th>Tanggal</th>
                   <th>Status</th>
-                  <th>Aksi</th>
+                  <th className="th-aksi">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -425,7 +417,6 @@ function AdminPengaduanView({ user }) {
   );
 }
 
-// ── Warga: ajukan & pantau pengaduan sendiri ──────────────────────────────────
 function WargaPengaduanView({ user }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -470,7 +461,6 @@ function WargaPengaduanView({ user }) {
     }
   };
 
-  // Refetch berkala biar status/tanggapan terbaru langsung kelihatan tanpa reload manual.
   useAutoRefresh(() => loadData(true));
 
   useEffect(() => {
@@ -591,7 +581,7 @@ function WargaPengaduanView({ user }) {
                   <th>Kategori</th>
                   <th>Tanggal</th>
                   <th>Status</th>
-                  <th>Aksi</th>
+                  <th className="th-aksi">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -605,7 +595,7 @@ function WargaPengaduanView({ user }) {
                     <td>{KATEGORI_LABELS[item.kategori] || item.kategori}</td>
                     <td className="pengaduan-col-tanggal">{formatDate(item.createdAt)}</td>
                     <td><StatusBadge status={item.status} /></td>
-                    <td>
+                    <td className="td-aksi">
                       <button type="button" className="btn-icon" onClick={() => setDetailItem(item)} aria-label="Lihat detail" title="Lihat detail">
                         <Eye size={14} />
                       </button>
@@ -636,16 +626,12 @@ function WargaPengaduanView({ user }) {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PengaduanPage() {
   const { user, ready } = useUser();
   const [activeView, setActiveView] = useState("masuk");
 
   if (!ready || !user) return null;
 
-  // Berbasis permission (bukan roleLevel): pengurus yang juga bisa mengadu (create_rw/create_rt)
-  // dapat tab "Pengaduan Saya" di samping "Pengaduan Masuk"; warga biasa (scope OWN di
-  // pengaduan.read) hanya dapat tampilan ajukan pengaduan sendiri tanpa bar tab.
   const bisaLihatMasuk = scopeOf(user, "pengaduan.read") !== "OWN" && can(user, "pengaduan.read");
   const bisaMengadu =
     can(user, "pengaduan.create_rw") ||
@@ -653,20 +639,27 @@ export default function PengaduanPage() {
     scopeOf(user, "pengaduan.read") === "OWN";
 
   const showTabs = bisaLihatMasuk && bisaMengadu;
+  const banner =
+    showTabs && activeView === "saya"
+      ? { id: "pengaduan-saya", judul: "Pengaduan Saya", ket: "Pantau pengaduan yang Anda ajukan sendiri dan tanggapan pengurus." }
+      : showTabs
+      ? { id: "pengaduan-masuk", judul: "Pengaduan Masuk", ket: "Tinjau dan tanggapi laporan kendala dari warga cluster." }
+      : null;
 
   return (
     <div className="page-stack">
       <div className="ipl-page-header">
         <div>
-          <h2 className="ipl-page-title">Pengaduan Lingkungan</h2>
+          <h2 className="ipl-page-title">{banner ? banner.judul : "Pengaduan Lingkungan"}</h2>
           <p className="ipl-page-subtitle">
-            {showTabs
-              ? "Tinjau dan tanggapi laporan warga, atau pantau pengaduan yang Anda ajukan sendiri"
+            {banner
+              ? banner.ket
               : bisaLihatMasuk
               ? "Tinjau dan tanggapi laporan kendala dari warga cluster"
               : "Laporkan kendala di lingkungan cluster dan pantau tindak lanjutnya"}
           </p>
         </div>
+        <PageHelp id={banner ? banner.id : bisaLihatMasuk ? "pengaduan-masuk" : "pengaduan-warga"} />
       </div>
 
       {showTabs && (
@@ -678,7 +671,7 @@ export default function PengaduanPage() {
             className={`db-toggle-btn ${activeView === "masuk" ? "is-active" : ""}`}
             onClick={() => setActiveView("masuk")}
           >
-            Pengaduan Masuk
+            <Inbox size={14} /> Pengaduan Masuk
           </button>
           <button
             type="button"
@@ -687,7 +680,7 @@ export default function PengaduanPage() {
             className={`db-toggle-btn ${activeView === "saya" ? "is-active" : ""}`}
             onClick={() => setActiveView("saya")}
           >
-            Pengaduan Saya
+            <UserRound size={14} /> Pengaduan Saya
           </button>
         </div>
       )}

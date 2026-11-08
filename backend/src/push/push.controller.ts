@@ -6,7 +6,6 @@ import { Public } from '../auth/public.decorator';
 
 interface JwtPayload {
   sub: number;
-  email: string;
   role: string;
 }
 

@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Check, X as XIcon } from "lucide-react";
-import Swal from "sweetalert2";
 import { wargaApi } from "@/lib/api";
 import { areaLabel, can } from "@/lib/session";
 import { useUser } from "@/lib/useUser";
-import { showConfirm, showMessage } from "@/lib/message";
+import { showConfirm, showMessage, showPrompt } from "@/lib/message";
 import Pagination from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 
@@ -18,7 +17,6 @@ const STATUS = {
 
 const tgl = (d) => new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 
-/** RW (approve_hapus) memutuskan; sekre RT (ajukan_hapus) hanya memantau pengajuannya. */
 export default function PengajuanHapusPage() {
   const { user } = useUser();
   const bolehApprove = can(user, "warga.approve_hapus");
@@ -63,14 +61,11 @@ export default function PengajuanHapusPage() {
   };
 
   const tolak = async (p) => {
-    const { value: alasan } = await Swal.fire({
+    const alasan = await showPrompt({
       title: `Tolak pengajuan hapus ${p.namaUser}?`,
-      input: "textarea",
-      inputLabel: "Alasan penolakan",
-      showCancelButton: true,
-      confirmButtonText: "Tolak",
-      cancelButtonText: "Batal",
-      inputValidator: (v) => (!v?.trim() ? "Alasan wajib diisi" : undefined),
+      label: "Alasan penolakan",
+      confirmText: "Tolak",
+      pesanWajib: "Alasan wajib diisi",
     });
     if (!alasan) return;
     try {
@@ -115,7 +110,7 @@ export default function PengajuanHapusPage() {
               <th>Alasan</th>
               <th>Diajukan</th>
               <th>Status</th>
-              {bolehApprove && <th>Aksi</th>}
+              {bolehApprove && <th className="th-aksi">Aksi</th>}
             </tr>
           </thead>
           <tbody>

@@ -16,9 +16,6 @@ export class SubscribePushDto {
   @IsNotEmpty()
   endpoint!: string;
 
-  // Selalu ikut terkirim dari PushSubscription.toJSON() milik browser (biasanya null) —
-  // tidak dipakai di sini, tapi harus dideklarasikan supaya tidak ditolak ValidationPipe
-  // (forbidNonWhitelisted: true menolak seluruh request kalau ada field tak dikenal).
   @IsOptional()
   expirationTime?: number | string | null;
 

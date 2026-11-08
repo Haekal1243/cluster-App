@@ -9,7 +9,6 @@ import {
 
 const YM = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-/** Query params GET /keuangan/export — filter sama seperti tabel Riwayat Kas. */
 export class ExportKasDto {
   @IsIn(['csv', 'xlsx'], { message: 'format harus csv atau xlsx' })
   format: 'csv' | 'xlsx';
@@ -38,7 +37,6 @@ export class ExportKasDto {
   @IsString()
   area?: string;
 
-  /** Saldo awal sebelum baris pertama (default 0). */
   @IsOptional()
   @Type(() => Number)
   @IsNumber({}, { message: 'saldoAwal harus angka' })

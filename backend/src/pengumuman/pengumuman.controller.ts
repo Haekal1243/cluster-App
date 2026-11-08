@@ -37,7 +37,6 @@ export class PengumumanController {
     return this.pengumumanService.create(ctx, dto, file);
   }
 
-  /** Halaman kelola. ?pengajuan=DIAJUKAN untuk antrean ACC RW. */
   @Get()
   @RequirePermission('pengumuman', 'read')
   findAll(
@@ -48,7 +47,6 @@ export class PengumumanController {
     return this.pengumumanService.findAll(ctx, { pengajuan, area });
   }
 
-  /** Umpan dashboard warga (sudah menghormati batas tampil). */
   @Get('feed')
   @RequirePermission('pengumuman', 'read')
   feed(@Access() ctx: AccessContext) {
@@ -67,14 +65,12 @@ export class PengumumanController {
     return this.pengumumanService.findOne(ctx, id);
   }
 
-  /** Sekre RT mengajukan pengumuman RT-nya agar tampil ke seluruh RW. */
   @Post(':id/ajukan')
   @RequirePermission('pengumuman', 'ajukan')
   ajukan(@Access() ctx: AccessContext, @Param('id', ParseIntPipe) id: number) {
     return this.pengumumanService.ajukan(ctx, id);
   }
 
-  /** Ketua/sekre RW menyetujui atau menolak pengajuan. */
   @Patch(':id/pengajuan')
   @RequirePermission('pengumuman', 'approve')
   putuskanPengajuan(

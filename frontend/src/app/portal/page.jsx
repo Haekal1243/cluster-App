@@ -75,8 +75,6 @@ export default function PortalDashboardPage() {
     fetchData();
   }, []);
 
-  // Warga hanya melihat yang aktif: kegiatan yang belum lewat tanggalnya dan pengumuman
-  // berstatus aktif. Yang sudah lewat/dinonaktifkan tidak ditampilkan (tanpa tab arsip).
   useEffect(() => {
     let cancelled = false;
     async function loadKegiatan() {
@@ -194,7 +192,6 @@ export default function PortalDashboardPage() {
 
   return (
     <div className="page-stack portal-dashboard">
-      {/* Hero — Task 1 & 2 */}
       <section className={`portal-hero ${isLunasSemua ? "is-success" : ""}`}>
         <div className="portal-hero-accent" aria-hidden />
         <div className="portal-hero-main">
@@ -261,7 +258,6 @@ export default function PortalDashboardPage() {
         <div className="portal-hero-orb orb-b" aria-hidden />
       </section>
 
-      {/* Rincian Tunggakan — grouped by BULAN, nested unit rows, single CTA */}
       {adaTunggakan ? (
         <section className="content-card warga-detail-card">
           <div className="warga-tunggakan-header">
@@ -398,7 +394,6 @@ export default function PortalDashboardPage() {
         </section>
       )}
 
-      {/* Pengumuman */}
       <section className="content-card">
         <div className="card-header-row">
           <div>
@@ -459,7 +454,6 @@ export default function PortalDashboardPage() {
         )}
       </section>
 
-      {/* Kegiatan */}
       <section className="content-card portal-keg-section">
         <div className="card-header-row">
           <div>

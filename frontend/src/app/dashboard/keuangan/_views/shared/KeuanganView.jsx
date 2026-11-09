@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Plus, Search, Wallet, TrendingUp, TrendingDown, Calendar, Scale, PiggyBank, Eye, Pencil, Trash2, Download, ChevronDown } from "lucide-react";
+import { Plus, Search, Wallet, TrendingUp, TrendingDown, Calendar, Scale, Eye, Pencil, Trash2, Download, ChevronDown } from "lucide-react";
 import { keuanganApi, openProtectedFile } from "@/lib/api";
 import { areaLabel, can, scopeOf } from "@/lib/session";
 import { showMessage, showConfirm } from "@/lib/message";
@@ -410,65 +410,6 @@ export function KeuanganView({ user, areaTetap = null, judul = "Keuangan" }) {
           </button>
         )}
       </div>
-
-      {/* ── Rincian pemasukan otomatis & per wilayah ── */}
-      {ringkasan && (
-        <div className="content-card keu-rincian">
-          <div className="db-section-header">
-            <PiggyBank size={17} />
-            <h3>Sumber Pemasukan &amp; Wilayah</h3>
-            <span className="db-section-sub">{periodeLabel}</span>
-          </div>
-          <div className="keu-rincian-grid">
-            <div>
-              <p className="keu-rincian-title">Pemasukan otomatis</p>
-              <ul className="keu-rincian-list">
-                {ringkasan.pemasukanOtomatis.kasRt > 0 || ringkasan.areas.some((a) => a !== "RW") ? (
-                  <li>
-                    <span>Kas RT (dari tagihan warga yang lunas)
-                      {ringkasan.pemasukanOtomatis.kasRtDariRumahKosong > 0 && (
-                        <> termasuk {formatRupiah(ringkasan.pemasukanOtomatis.kasRtDariRumahKosong)} dari rumah kosong</>
-                      )}
-                    </span>
-                    <strong>{formatRupiah(ringkasan.pemasukanOtomatis.kasRt)}</strong>
-                  </li>
-                ) : null}
-                {ringkasan.areas.includes("RW") && (
-                  <li><span>Setoran IPL dari RT (sudah dikonfirmasi)</span><strong>{formatRupiah(ringkasan.pemasukanOtomatis.setoranIpl)}</strong></li>
-                )}
-                <li><span>Kas manual (pemasukan lain)</span><strong>{formatRupiah(ringkasan.pemasukanManual)}</strong></li>
-              </ul>
-              {ringkasan.titipanIpl > 0 && (
-                <p className="keu-rincian-note">
-                  Porsi IPL {formatRupiah(ringkasan.titipanIpl)} masih dipegang RT (belum disetor / belum dikonfirmasi RW)
-                  dan belum dihitung sebagai saldo kas.
-                </p>
-              )}
-            </div>
-            {ringkasan.perArea?.length > 1 && (
-              <div>
-                <p className="keu-rincian-title">Per wilayah</p>
-                <table className="ipl-table keu-area-table">
-                  <thead>
-                    <tr><th>No</th><th>Wilayah</th><th>Masuk</th><th>Keluar</th><th>Selisih</th></tr>
-                  </thead>
-                  <tbody>
-                    {ringkasan.perArea.map((a, index) => (
-                      <tr key={a.area}>
-                        <td>{index + 1}</td>
-                        <td><span className="rt-badge">{areaLabel(a.area)}</span></td>
-                        <td>{formatRupiah(a.pemasukan)}</td>
-                        <td>{formatRupiah(a.pengeluaran)}</td>
-                        <td style={{ color: a.saldo >= 0 ? "#15803d" : "#dc2626" }}>{formatRupiah(a.saldo)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Grafik Arus Kas ── */}
       {ringkasan && (
